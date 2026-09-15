@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bodyBg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#181920"/>
+      <stop offset="100%" stop-color="#121318"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="480" rx="16" fill="url(#bodyBg1)"/>
+  <!-- Head -->
+  <circle cx="150" cy="70" r="30" fill="#d4a373"/>
+  <!-- Body Silhouette (Baseline - fuller midsection) -->
+  <path d="M125 105 C100 115, 80 140, 80 200 L95 270 L115 270 L105 380 L135 380 L145 285 L155 285 L165 380 L195 380 L185 270 L205 270 L220 200 C220 140, 200 115, 175 105 Z" fill="#4c566a"/>
+  <!-- Torso contour (Starting weight) -->
+  <path d="M120 160 Q150 180 180 160 Q185 220 180 260 Q150 265 120 260 Z" fill="#434c5e"/>
+  <!-- Baseline Info Card -->
+  <rect x="20" y="415" width="260" height="45" rx="8" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)"/>
+  <text x="150" y="435" text-anchor="middle" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="600">FULL BODY FRONT · DAY 1</text>
+  <text x="150" y="450" text-anchor="middle" fill="#f8fafc" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11">Weight: 85.0 kg · Waist: 38" · Starting</text>
+</svg>

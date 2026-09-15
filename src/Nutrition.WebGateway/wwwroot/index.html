@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diet Dost | AI-Powered Indian Diet & Calorie Tracker</title>
+  <meta name="description" content="South Asian calibrated AI nutrition intelligence adhering to ICMR-NIN guidelines with visual body & face progress tracking.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header / Navbar Component -->
+  <div data-include="partials/header.html"></div>
+
+  <!-- Main Dashboard Container with Max Width & Centered Margins -->
+  <main class="container">
+    <!-- Dietitian Companion Avatar & Greeting -->
+    <div data-include="partials/companion-card.html"></div>
+
+    <!-- Hero Calorie Balance & Macro HUD -->
+    <div data-include="partials/hero-hud.html"></div>
+
+    <!-- Face Transformation & Progress Preview -->
+    <div data-include="partials/face-progress-card.html"></div>
+
+    <!-- AI Food Recognition & Smart Logger -->
+    <div data-include="partials/meal-logger.html"></div>
+
+    <!-- Historical Calorie & Macro Analytics -->
+    <div data-include="partials/analytics-card.html"></div>
+  </main>
+
+  <!-- Interactive Overlays & Modals -->
+  <div data-include="partials/review-modal.html"></div>
+  <div data-include="partials/profile-modal.html"></div>
+  <div data-include="partials/transparency-modal.html"></div>
+  <div data-include="partials/progress-modal.html"></div>
+
+  <!-- Realtime Toast Notifications -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Bootstrap (ES Modules, IoC Container & Component Loader) -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

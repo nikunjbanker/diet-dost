@@ -1,0 +1,204 @@
+<!-- Calculation Transparency One-Pager Modal -->
+<div class="review-modal-overlay" id="transparency-modal">
+  <div class="review-card" style="max-width: 850px; max-height: 92vh;">
+    <div class="review-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+      <div>
+        <div class="hud-title">Clinical Calculation Transparency One-Pager</div>
+        <h2 style="font-size: 1.3rem; font-weight: 700; margin-top: 0.2rem;">How Diet Dost Calculates Your Nutrition</h2>
+        <div style="font-size: 0.75rem; color: var(--accent-brand-hover); margin-top: 2px;">
+          Adhering strictly to ICMR-NIN 2024 Guidelines & WHO South Asian Clinical Standards (Zero Assumptions)
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <button type="button" class="btn btn-sm" onclick="window.print()" title="Print or save as PDF">🖨️ Print One-Pager</button>
+        <button id="btn-close-transparency" class="btn btn-sm" onclick="closeTransparencyModal()">✕</button>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 1.25rem; font-size: 0.85rem; line-height: 1.5;">
+      
+      <!-- Live Audit Trail Card for Active Profile -->
+      <div id="tp-audit-card" style="background: var(--surface-subtle); border: 1px solid rgba(94, 106, 210, 0.3); border-radius: var(--radius-md); padding: 1rem; transition: border-color 0.4s ease, box-shadow 0.4s ease;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <strong style="color: var(--accent-brand-hover); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;">
+              Active Profile Live Audit Trail
+            </strong>
+            <span id="tp-sync-status" class="brand-tag tabular" style="background: rgba(39, 195, 128, 0.15); border-color: rgba(39, 195, 128, 0.4); color: var(--status-emerald); font-size: 0.7rem; padding: 2px 7px;">
+              ✓ Live Synced
+            </span>
+          </div>
+          <span class="brand-tag tabular" id="tp-user-summary">Aarav Sharma · Male, 32y · 175cm (5'9") · 82kg</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem;">
+          <div style="background: var(--surface-card); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div style="color: var(--text-secondary); font-size: 0.75rem;">Step 1: Basal Metabolic Rate (BMR)</div>
+            <div style="font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; margin: 3px 0;" id="tp-bmr-val">1,759 kcal/day</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);" id="tp-bmr-formula">Mifflin-St Jeor: (10 × 82) + (6.25 × 175) - (5 × 32) + 5</div>
+          </div>
+
+          <div style="background: var(--surface-card); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div style="color: var(--text-secondary); font-size: 0.75rem;">Step 2: Total Energy Expenditure (TDEE)</div>
+            <div style="font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; margin: 3px 0;" id="tp-tdee-val">2,111 kcal/day</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);" id="tp-tdee-formula">Activity Multiplier: 1,759 × 1.20 (Sedentary desk job)</div>
+          </div>
+
+          <div style="background: var(--surface-card); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div style="color: var(--text-secondary); font-size: 0.75rem;">Step 3: Deficit & Safety Floor Check</div>
+            <div style="font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; margin: 3px 0;" id="tp-target-val">1,611 kcal/day Target</div>
+            <div style="font-size: 0.7rem; color: var(--status-emerald);" id="tp-deficit-formula">Deficit: -500 kcal (0.5 kg/wk). Above male floor (1,500 kcal) ✓</div>
+          </div>
+
+          <div style="background: var(--surface-card); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle);">
+            <div style="color: var(--text-secondary); font-size: 0.75rem;">Step 4: WHO South Asian BMI & Ideal Wt</div>
+            <div style="font-family: var(--font-mono); font-weight: 600; font-size: 0.95rem; margin: 3px 0;" id="tp-bmi-val">BMI 26.8 (Obese Class I)</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);" id="tp-ibw-formula">Ideal Body Wt (BMI 22): 67.4 kg · Target Protein: 88g (1.3g/kg IBW)</div>
+          </div>
+        </div>
+
+        <!-- Step 5: Clinical Adjustments & Active Meds -->
+        <div id="tp-adjustments-box" style="margin-top: 0.75rem; background: rgba(94, 106, 210, 0.08); border: 1px solid rgba(94, 106, 210, 0.25); border-radius: var(--radius-sm); padding: 0.6rem 0.8rem; font-size: 0.75rem;">
+          <div style="display: flex; gap: 0.5rem; align-items: flex-start;">
+            <span style="color: var(--accent-brand-hover); font-weight: 700; white-space: nowrap;">Step 5 (Clinical Rules):</span>
+            <span id="tp-adjustments-text" style="color: var(--text-secondary); line-height: 1.4;">Active medical adjustments: Net carb ceiling 35-40%, meal GL &lt; 10 (Pre-Diabetes / Diabetes).</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 1: Standard Formulas -->
+      <div>
+        <div class="hud-title" style="margin-bottom: 0.5rem; color: var(--accent-brand-hover);">1. Energy & Calorie Formulae (South Asian Calibrated)</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary);">
+              <th style="padding: 6px;">Metric</th>
+              <th style="padding: 6px;">Formula / Clinical Standard</th>
+              <th style="padding: 6px;">Clinical Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">BMR (Men)</td>
+              <td style="padding: 6px; font-family: var(--font-mono);">(10 × wt in kg) + (6.25 × ht in cm) - (5 × age) + 5</td>
+              <td style="padding: 6px; color: var(--text-muted);">Mifflin-St Jeor equation, validated for baseline resting energy.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">BMR (Women)</td>
+              <td style="padding: 6px; font-family: var(--font-mono);">(10 × wt in kg) + (6.25 × ht in cm) - (5 × age) - 161</td>
+              <td style="padding: 6px; color: var(--text-muted);">Calibrated for female metabolic resting expenditure.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">TDEE Multipliers</td>
+              <td style="padding: 6px; font-family: var(--font-mono);">Sedentary: 1.20 | Light: 1.375 | Mod: 1.55 | High: 1.725</td>
+              <td style="padding: 6px; color: var(--text-muted);">Steps/day: &lt;5k (1.2), 5k-7.5k (1.375), 7.5k-10k (1.55), &gt;12k (1.725).</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Safe Deficit Paces</td>
+              <td style="padding: 6px; font-family: var(--font-mono);">0.25 kg/wk (-250 kcal) | 0.5 kg/wk (-500 kcal) | 0.75 kg/wk (-750 kcal)</td>
+              <td style="padding: 6px; color: var(--text-muted);">1 kg body fat ≈ 7,700 kcal. Deficit capped at 1,000 kcal/day to prevent gallstones.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Starvation Floors</td>
+              <td style="padding: 6px; font-family: var(--font-mono);">Men: ≥ 1,500 kcal/day | Women: ≥ 1,200 kcal/day</td>
+              <td style="padding: 6px; color: var(--status-amber);">Strict clinical floor. Targets are NEVER permitted below this without MD supervision.</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; font-weight: 600;">Height Conversion</td>
+              <td style="padding: 6px; font-family: var(--font-mono);">cm = (feet × 30.48) + (inches × 2.54)</td>
+              <td style="padding: 6px; color: var(--text-muted);">Dual-unit input automatically converts to exact cm for BMR calculations.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 2: ICMR-NIN & WHO Standards -->
+      <div>
+        <div class="hud-title" style="margin-bottom: 0.5rem; color: var(--accent-brand-hover);">2. ICMR-NIN 2024 & WHO South Asian Clinical Matrix</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary);">
+              <th style="padding: 6px;">Guideline</th>
+              <th style="padding: 6px;">Clinical Standard</th>
+              <th style="padding: 6px;">How Diet Dost Enforces It</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Cooking Oil Ceiling</td>
+              <td style="padding: 6px;">Max 20g to 25g visible fat / day (ICMR-NIN)</td>
+              <td style="padding: 6px; color: var(--text-muted);">Tracks cooking fat separately; unlocks 'Tadka Ninja 🥷' badge when staying within limit.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Cereal-Pulse Ratio</td>
+              <td style="padding: 6px;">Minimum 3:1 ratio (ICMR-NIN)</td>
+              <td style="padding: 6px; color: var(--text-muted);">Ensures complete essential amino acid profile (lysine + methionine complementation).</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">South Asian BMI</td>
+              <td style="padding: 6px;">Normal: 18.5–22.9 | Overweight: 23–24.9 | Obese: ≥25</td>
+              <td style="padding: 6px; color: var(--text-muted);">Uses WHO South Asian specific thresholds (cardiometabolic risk rises above 23 kg/m²).</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">WHO Sodium Ceiling</td>
+              <td style="padding: 6px;">&lt; 2,000 mg/day (&lt; 1,500 mg for Hypertension)</td>
+              <td style="padding: 6px; color: var(--text-muted);">Flags single meals &gt; 800mg sodium; restricts achaar, papads, and namkeens.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Free Sugar Ceiling</td>
+              <td style="padding: 6px;">&lt; 25g/day (&lt; 5% total energy) (WHO)</td>
+              <td style="padding: 6px; color: var(--text-muted);">Flags sweetened chai, filter coffee, mithai, and ultra-processed beverages.</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; font-weight: 600;">AI Vision Confidence</td>
+              <td style="padding: 6px;">Threshold ≥ 0.70 (70% confidence score)</td>
+              <td style="padding: 6px; color: var(--text-muted);">Blurry/shadowy photos (&lt; 70%) trigger a friendly retake prompt instead of guessing.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Section 3: Illness & Medication Matrix -->
+      <div>
+        <div class="hud-title" style="margin-bottom: 0.5rem; color: var(--accent-brand-hover);">3. Illness & Medication Adjustment Rulebook</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary);">
+              <th style="padding: 6px;">Condition / Medication</th>
+              <th style="padding: 6px;">Clinical Rule Enforced</th>
+              <th style="padding: 6px;">Safety Directive</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Hypothyroidism (Thyronorm)</td>
+              <td style="padding: 6px;">Baseline TDEE reduced by 12%</td>
+              <td style="padding: 6px; color: var(--text-muted);">Enforces 60-min empty-stomach rule (no tea/breakfast/calcium within 1 hour).</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Diabetes (Metformin, Insulin)</td>
+              <td style="padding: 6px;">Net carbs capped at 35–40%, meal GL &lt; 10</td>
+              <td style="padding: 6px; color: var(--text-muted);">No crash deficits; alerts user to maintain fast-acting glucose for hypoglycemia.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">Hypertension (Telmisartan)</td>
+              <td style="padding: 6px;">Sodium ceiling tightened to &lt; 1,500 mg/day</td>
+              <td style="padding: 6px; color: var(--status-rose);">Prohibits potassium-based salt substitutes (Lona) to avoid fatal hyperkalemia.</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+              <td style="padding: 6px; font-weight: 600;">High Cholesterol (Statins)</td>
+              <td style="padding: 6px;">Saturated fat &lt; 7%, soluble fiber ≥ 12g</td>
+              <td style="padding: 6px; color: var(--status-amber);">Grapefruit / Pomelo strictly contraindicated (inhibits CYP3A4 metabolism).</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px; font-weight: 600;">Gout / Hyperuricemia</td>
+              <td style="padding: 6px;">3.5L to 4L daily hydration mandate</td>
+              <td style="padding: 6px; color: var(--text-muted);">Prohibits acute crash deficits which provoke uric acid crystallization flares.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>

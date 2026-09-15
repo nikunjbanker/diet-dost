@@ -1,0 +1,28 @@
+graph TD
+    subgraph Aspire_AppHost [".NET Aspire Distributed AppHost"]
+        Host["Aspire.Hosting.AppHost (NET 11 RC)"]
+        OTel["OpenTelemetry OTLP Collector"]
+        Dash["Aspire Observability Dashboard (Port 18888)"]
+        RedisRes[("Redis Cache Container")]
+        DbRes[("SQLite / PostgreSQL Resource")]
+    end
+
+    subgraph Microservice_Processes ["Aspire Managed Microservices"]
+        GW["WebGateway (YARP)"]
+        PS["Nutrition.ProfileService"]
+        VS["Nutrition.VisionService"]
+        AS["Nutrition.AnalyticsService"]
+    end
+
+    Host -->|Launch & Wire Lifecycle| GW
+    Host -->|Launch & Wire Lifecycle| PS
+    Host -->|Launch & Wire Lifecycle| VS
+    Host -->|Launch & Wire Lifecycle| AS
+    Host -->|Spin Up| RedisRes
+    Host -->|Attach| DbRes
+
+    GW -.->|Traces / Metrics| OTel
+    PS -.->|Traces / Metrics| OTel
+    VS -.->|Traces / Metrics| OTel
+    AS -.->|Traces / Metrics| OTel
+    OTel -->|Aggregate Telemetry| Dash

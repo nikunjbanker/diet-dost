@@ -1,0 +1,42 @@
+<!-- Instant Meal Logger Component -->
+<section class="card logging-card">
+  <div class="logging-header">
+    <div class="hud-title">Instant Meal Logger</div>
+    <div class="mode-switcher">
+      <button class="mode-btn active" id="btn-mode-camera">📸 AI Camera</button>
+      <button class="mode-btn" id="btn-mode-text">🎙️ Voice & Smart Search</button>
+    </div>
+  </div>
+
+  <!-- Photo Dropzone -->
+  <div class="dropzone" id="photo-dropzone">
+    <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+    <span class="dropzone-icon">🍲</span>
+    <div class="dropzone-text">Snap or Drag & Drop Indian Meal Photo</div>
+    <div class="dropzone-sub">Microsoft Agent AI with Google AI Pro · Verified against ICMR-NIN standards (Confidence ≥ 70%)</div>
+  </div>
+
+  <!-- Shimmer Scanning State -->
+  <div class="scanning-state" id="scanning-state">
+    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🔍</div>
+    <div style="font-weight: 600;">Diet Dost AI is analyzing your delicious plate...</div>
+    <div class="shimmer-bar"></div>
+    <div style="font-size: 0.8rem; color: var(--text-muted);">Detecting rotis, dal tadka, subzis, and cooking medium</div>
+  </div>
+
+  <!-- Natural Language / Voice Logger -->
+  <div class="text-logger-box" id="text-logger-box">
+    <div class="search-input-wrapper">
+      <input type="text" id="text-input" class="text-input" placeholder="e.g. Had 2 phulkas with yellow moong dal tadka and cucumber salad...">
+      <button id="btn-submit-text" class="btn btn-primary">Analyze Meal</button>
+    </div>
+
+    <div class="suggestion-pills">
+      <span class="suggest-chip" data-query="2 Phulkas + 1 Katori Dal Tadka + Cucumber Salad">🥗 2 Phulkas + Dal Tadka + Salad</span>
+      <span class="suggest-chip" data-query="1 Masala Dosa with Sambar & Coconut Chutney">🥞 Masala Dosa + Sambar</span>
+      <span class="suggest-chip" data-query="Palak Paneer with 2 Whole Wheat Rotis">🥬 Palak Paneer + 2 Rotis</span>
+      <span class="suggest-chip" data-query="1 Cup Poha with roasted peanuts & chai">🥜 Poha + Peanuts</span>
+      <span class="suggest-chip" data-query="1 Bowl Moong Dal Khichdi with fresh curd">🥣 Moong Dal Khichdi + Curd</span>
+    </div>
+  </div>
+</section>

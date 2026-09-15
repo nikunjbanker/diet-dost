@@ -1,0 +1,35 @@
+sequenceDiagram
+    autonumber
+    actor User as User (PWA Client)
+    participant ClientDb as Client SQLite / IndexedDB
+    participant Gateway as YARP WebGateway
+    participant VisionSvc as Nutrition.VisionService
+    participant AgentAI as Microsoft Agent (Gemini 2.5)
+    participant AnalyticsSvc as Nutrition.AnalyticsService
+    participant LedgerDb as SQLite / PostgreSQL Ledger
+
+    User->>ClientDb: Snap Meal Photo (Offline-Ready)
+    alt Device is Offline
+        ClientDb-->>User: Cache Photo (Status: PendingSync)
+    else Device is Online
+        ClientDb->>Gateway: POST /api/meals/upload (Multipart Photo)
+        Gateway->>Gateway: Validate Magic Bytes & Strip EXIF
+        Gateway->>VisionSvc: Forward Sanitized Image Stream
+        VisionSvc->>AgentAI: Analyze Meal (Structured Prompt + Image)
+        AgentAI-->>VisionSvc: IndianMealAnalysisResult (JSON Schema)
+        
+        alt Confidence Score >= 70%
+            VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, Macros)
+            Gateway-->>User: Render Interactive 1-Tap Review Screen
+            User->>Gateway: POST /api/meals/confirm (Tap 'Looks Great!')
+            Gateway->>AnalyticsSvc: Emit MealConfirmedEvent
+            AnalyticsSvc->>LedgerDb: Update DailyCalorieLedger
+            AnalyticsSvc-->>User: Trigger Confetti Micro-Burst & Streak +1
+        else Confidence Score < 70%
+            VisionSvc-->>Gateway: HTTP 422 (Low Confidence Alert)
+            Gateway-->>User: Show Friendly Retake Prompt & 1-Tap Retake Button
+            opt User prefers manual
+                User->>Gateway: POST /api/meals/quick-manual
+            end
+        end
+    end

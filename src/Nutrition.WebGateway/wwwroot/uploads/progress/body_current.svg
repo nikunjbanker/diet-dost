@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 480" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bodyBg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#121e1a"/>
+      <stop offset="100%" stop-color="#0e1714"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="480" rx="16" fill="url(#bodyBg2)"/>
+  <!-- Head -->
+  <circle cx="150" cy="70" r="28" fill="#d4a373"/>
+  <!-- Body Silhouette (Current - athletic, narrower waist, V-taper) -->
+  <path d="M120 105 C100 115, 80 135, 80 195 L95 260 L120 260 L110 380 L138 380 L146 280 L154 280 L162 380 L190 380 L180 260 L205 260 L220 195 C220 135, 200 115, 180 105 Z" fill="#3b4252"/>
+  <!-- Torso contour (Tapered Waistline) -->
+  <path d="M125 155 Q150 170 175 155 Q170 215 172 250 Q150 255 128 250 Z" fill="#2e3440"/>
+  <!-- Check-in Info Card -->
+  <rect x="20" y="415" width="260" height="45" rx="8" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.35)"/>
+  <text x="150" y="435" text-anchor="middle" fill="#34d399" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="12" font-weight="700">FULL BODY FRONT · DAY 30</text>
+  <text x="150" y="450" text-anchor="middle" fill="#ecfdf5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="600">Weight: 81.5 kg (▼ 3.5 kg Lost! Waist: 35.5")</text>
+</svg>

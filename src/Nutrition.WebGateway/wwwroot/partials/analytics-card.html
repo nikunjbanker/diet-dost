@@ -1,0 +1,25 @@
+<!-- Analytics Tabs & Periodic Trends Chart Component -->
+<section class="card analytics-card">
+  <div class="tabs-nav">
+    <button class="tab-btn" data-period="1D">Daily (Today)</button>
+    <button class="tab-btn active" data-period="7D">Weekly (7D)</button>
+    <button class="tab-btn" data-period="30D">Monthly (30D)</button>
+    <button class="tab-btn" data-period="90D">Quarterly (90D)</button>
+    <button class="tab-btn" data-period="365D">Yearly (1Y)</button>
+  </div>
+
+  <div class="chart-wrapper">
+    <div class="calorie-hud-header" style="margin-bottom: 0.5rem;">
+      <div style="font-size: 0.85rem; color: var(--text-secondary);" id="analytics-summary-text">
+        <span id="stat-period-title">7-Day</span> Caloric Deficit: <strong style="color: var(--status-emerald);" id="stat-total-deficit">3,500 kcal</strong> (≈ <strong id="stat-projected-weight">0.45 kg</strong> loss)
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);">
+        Protein Compliance: <span id="stat-protein-compliance" style="color: #38bdf8;">92%</span>
+      </div>
+    </div>
+
+    <div class="bar-chart-container" id="bar-chart-container">
+      <!-- Dynamically populated bars -->
+    </div>
+  </div>
+</section>

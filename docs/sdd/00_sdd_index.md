@@ -1,0 +1,61 @@
+# SDD Master Index, Roadmap & Traceability Matrix
+> **Specification Version**: `v1.1.0 (Production & Living SDD)`  
+> **Classification**: Master Software Design Document (SDD) Index  
+> **Approved Domain Focus**: Indian Population, ICMR-NIN 2024 & WHO Medical Standards  
+> **Tech Stack**: .NET 11 RC, .NET Aspire, Swappable SQLite V1 (PWA Offline-First), Microsoft Agent Framework + Google AI Pro, OWASP ASVS, Linear.app Design System  
+
+---
+
+## 1. Executive Architecture Summary
+
+**Diet Dost** is an enterprise-grade, AI-powered nutrition companion engineered specifically for the Indian population and South Asian metabolic phenotypes. It bridges clinical dietetics (ICMR-NIN 2024 and WHO guidelines) with modern AI multimodal meal vision (Microsoft Agent Framework powered by Google AI Gemini models).
+
+The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assumption intake guarantees, OWASP ASVS Level 2 perimeter security, swappable SQLite/PostgreSQL persistence, and offline-first Progressive Web App (PWA) capabilities.
+
+---
+
+## 2. Document Inventory
+
+| Document Ref | Document Title | Description | Status |
+|---|---|---|---|
+| [`00_sdd_index.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/00_sdd_index.md) | **Master Index & Traceability** | Executive summary, document inventory, progress matrix, and traceability | `APPROVED` |
+| [`01_clinical_dietetics_spec.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/01_clinical_dietetics_spec.md) | **Clinical Dietetics Specification** | ICMR-NIN 2024 & WHO rules, Mifflin-St Jeor math, clinical adjustments matrix | `APPROVED` |
+| [`02_solution_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/02_solution_architecture.md) | **Solution Architecture Blueprint** | Master multi-dimensional diagrams (Design, Security, App, DevOps, Functional) | `APPROVED` |
+| [`03_data_models_and_contracts.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/03_data_models_and_contracts.md) | **Data Models & Contracts** | DDD aggregates, value objects, EF Core schema, JSON contract schema | `APPROVED` |
+| [`04_security_and_compliance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/04_security_and_compliance.md) | **Security & Compliance (OWASP)** | OWASP ASVS blueprint, magic-byte validation, prompt guardrails, rate limits | `APPROVED` |
+| [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 11 AppHost topology, OTel pipelines, Redis caching, Docker runbook | `APPROVED` |
+| [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, Aspire test harness, AI vision benchmarks, clinical unit tests | `APPROVED` |
+| [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Log** | Continuous chronological audit trail of features, defect fixes, and RCAs | `SYNCHRONIZED` |
+
+---
+
+## 3. Implementation Progress Matrix
+
+| Layer / Component | Specification Section | Implementation Status | Test Coverage |
+|---|---|---|---|
+| **Zero-Assumption Clinical Engine** | Skill §1.1 – §1.5 | Complete (`ClinicalCalculators.cs`, `ClinicalDietitianService.cs`) | 100% Passed (Unit Tests) |
+| **Mifflin-St Jeor & TDEE Math** | Skill §1.2 | Complete (Men/Women baselines, activity multipliers) | 100% Passed (Unit Tests) |
+| **Clinical Adjustment Matrix** | Skill §1.5 | Complete (Diabetes, HTN, Thyroid, Lipids, PCOS, Gout, NAFLD) | 100% Passed (Unit Tests) |
+| **AI Multimodal Vision Agent** | Skill §2.1 – §2.4 | Complete (`MicrosoftAgentFoodVisionService.cs`, Confidence Gating $\ge 70\%$) | 100% Passed (Eval Harness) |
+| **Swappable Persistence Engine** | Skill §3.1 – §3.2 | Complete (`StorageInfrastructureExtensions.cs`, SQLite V1) | 100% Passed (Integration) |
+| **Linear.app Design System PWA** | Skill §5.1 – §5.3 | Complete (Obsidian dark glassmorphism, HUD, Toast, Transparency) | Verified via Browser Subagent |
+| **Modular ES Modules & Partials** | Skill §5.1 | Complete (10 HTML partials, DI container, EventBus, State store) | Verified via Browser Subagent |
+| **Visual Transformation & Progress**| Skill §5.4 | Complete (Baseline vs Latest Face, Full Body, Check-In capture) | Verified via Browser Subagent |
+| **DevOps & Aspire Topology** | Skill §4.1, §7.1 | Complete (`Nutrition.AppHost`, .NET 11 RC) | Compiled & Verified |
+
+---
+
+## 4. Traceability Matrix
+
+| User & Clinical Requirement | Architecture Component | Domain Entity / Service | Verification Harness |
+|---|---|---|---|
+| **Zero-Assumption Intake** | `Nutrition.ProfileService` | `UserProfile.ValidateIntakeCompleteness()` | `ClinicalCalculatorsTests.ZeroAssumptionRule_ThrowsOnMissingMetrics` |
+| **Asian-Indian BMI Cutoffs** | `Nutrition.Domain.Clinical` | `ClinicalCalculators.ComputeWhoAsianIndianBmi()` | `ClinicalCalculatorsTests.ComputeWhoAsianIndianBmi_FollowsSouthAsianCutoffs` |
+| **Starvation Safety Floor** | `Nutrition.Domain.Clinical` | `ClinicalCalculators.CalculateCaloricBudget()` | `ClinicalCalculatorsTests.CalculateCaloricBudget_EnforcesStarvationFloor_ForFemale` |
+| **Hypothyroidism TDEE -12%** | `Nutrition.Domain.Clinical` | `ClinicalCalculators.CalculateCaloricBudget()` | `ClinicalCalculatorsTests.CalculateCaloricBudget_Hypothyroidism_ReducesTdeeBy12Percent` |
+| **AI Food Vision with Confidence Gating** | `Nutrition.VisionService` | `IFoodVisionAgent`, `MealsController` | `FoodVisionEvalHarnessTests` |
+| **1-Tap Review & Modifiers** | `Nutrition.WebGateway` (PWA) | `review-modal.html`, `review-modal.js` | Browser Verification Subagent |
+| **Daily Ledger Recalculation** | `Nutrition.AnalyticsService` | `DailyCalorieLedger.RecalculateLedger()` | `DailyCalorieLedgerTests` |
+| **Visual Body & Face Progress** | `Nutrition.WebGateway` (PWA) | `progress-modal.html`, `progress-modal.js` | Browser Verification Subagent |
+| **Modular Component Loader** | `Nutrition.WebGateway` (PWA) | `index.html`, `main.js`, `di-container.js` | Browser Verification Subagent |
+

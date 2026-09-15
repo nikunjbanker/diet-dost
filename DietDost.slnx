@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Nutrition.Domain/Nutrition.Domain.csproj" />
+    <Project Path="src/Nutrition.Application/Nutrition.Application.csproj" />
+    <Project Path="src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj" />
+    <Project Path="src/Nutrition.WebGateway/Nutrition.WebGateway.csproj" />
+    <Project Path="src/Nutrition.AppHost/Nutrition.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj" />
+    <Project Path="tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj" />
+  </Folder>
+</Solution>

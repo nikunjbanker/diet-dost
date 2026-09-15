@@ -1,0 +1,51 @@
+<!-- Face Transformation & Progress Check-In Dashboard Card -->
+<section class="card progress-card" id="face-progress-card">
+  <div class="progress-card-header">
+    <div>
+      <div class="hud-title" style="display: flex; align-items: center; gap: 8px;">
+        <span>✨ Face Transformation & Progress</span>
+        <span class="progress-delta-pill" id="face-delta-pill">▼ 3.5 kg in 30 Days</span>
+      </div>
+      <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+        Facial slimming & non-scale victory tracking across caloric deficit milestones
+      </div>
+    </div>
+    <div class="progress-header-actions">
+      <button type="button" class="btn btn-sm btn-outline" id="btn-open-body-modal" onclick="openProgressModal('pane-body-progress')">🧍 Full Body & Detail View</button>
+      <button type="button" class="btn btn-sm btn-primary" id="btn-quick-photo-checkin" onclick="openProgressModal('pane-checkin-upload')">📸 New Check-In</button>
+    </div>
+  </div>
+
+  <div class="face-comparison-grid">
+    <!-- Baseline Face Card -->
+    <div class="photo-compare-col">
+      <div class="compare-badge baseline-badge">Day 1 · Baseline</div>
+      <div class="photo-frame">
+        <img id="img-baseline-face" src="/uploads/progress/face_baseline.svg" alt="Baseline Face Photo" class="progress-img">
+        <div class="photo-meta-overlay">
+          <span id="txt-baseline-date">Day 1 (Aug 16)</span>
+          <span id="txt-baseline-weight" class="weight-tag">85.0 kg</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- VS Divider -->
+    <div class="compare-divider">
+      <div class="vs-circle">VS</div>
+      <div class="days-pill" id="txt-days-elapsed">30 Days</div>
+      <div class="delta-sub" id="txt-net-loss">-3.5 kg</div>
+    </div>
+
+    <!-- Current Face Card -->
+    <div class="photo-compare-col">
+      <div class="compare-badge current-badge">Latest Check-In · Day 30</div>
+      <div class="photo-frame current-glow">
+        <img id="img-current-face" src="/uploads/progress/face_current.svg" alt="Latest Face Photo" class="progress-img">
+        <div class="photo-meta-overlay">
+          <span id="txt-current-date">Today (Day 30)</span>
+          <span id="txt-current-weight" class="weight-tag emerald-tag">81.5 kg (▼ 3.5 kg)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,21 @@
+{
+  "name": "Diet Dost - AI Indian Calorie Tracker",
+  "short_name": "Diet Dost",
+  "description": "Clinical AI-powered Indian Diet Calorie & Weight Loss Tracker adhering to ICMR-NIN 2024 and WHO South Asian standards.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08090a",
+  "theme_color": "#5e6ad2",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

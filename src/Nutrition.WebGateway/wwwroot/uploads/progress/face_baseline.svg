@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1c23"/>
+      <stop offset="100%" stop-color="#121317"/>
+    </linearGradient>
+    <linearGradient id="faceGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e8c2a5"/>
+      <stop offset="100%" stop-color="#ce9c7b"/>
+    </linearGradient>
+  </defs>
+  <rect width="300" height="360" rx="14" fill="url(#bg1)"/>
+  
+  <!-- Face Shape (Rounder Baseline) -->
+  <circle cx="150" cy="150" r="74" fill="url(#faceGrad1)"/>
+  
+  <!-- Hair -->
+  <path d="M76 140 C76 70, 224 70, 224 140 C204 90, 96 90, 76 140 Z" fill="#2d2d34"/>
+  
+  <!-- Eyes -->
+  <ellipse cx="124" cy="144" rx="7" ry="5.5" fill="#1e1e24"/>
+  <ellipse cx="176" cy="144" rx="7" ry="5.5" fill="#1e1e24"/>
+  
+  <!-- Eyebrows -->
+  <path d="M114 133 Q124 130 134 133" stroke="#2d2d34" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  <path d="M166 133 Q176 130 186 133" stroke="#2d2d34" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  
+  <!-- Gentle Smile -->
+  <path d="M136 178 Q150 190 164 178" stroke="#a47253" stroke-width="3" fill="none" stroke-linecap="round"/>
+  
+  <!-- Neck and Broad Shoulders -->
+  <path d="M120 220 L115 250 L46 345 L254 345 L185 250 L180 220 Z" fill="#3b4252"/>
+</svg>

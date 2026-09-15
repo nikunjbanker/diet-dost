@@ -1,0 +1,138 @@
+<!-- Clinical Onboarding & Profile Modal Component -->
+<div class="review-modal-overlay" id="profile-modal">
+  <div class="review-card" style="max-width: 650px;">
+    <div class="review-header">
+      <div>
+        <div class="hud-title">Zero Assumption Clinical Intake</div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.2rem;">Your Health Profile</h2>
+      </div>
+      <button id="btn-close-profile" class="btn btn-sm" onclick="closeProfileModal()">✕</button>
+    </div>
+
+    <!-- Visual Transformation & Body Progress Section in Profile -->
+    <div style="background: var(--surface-subtle); border: 1px solid rgba(94, 106, 210, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+      <div>
+        <div style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
+          <span>🧍 Visual Transformation & Full Body Progress</span>
+          <span class="progress-delta-pill" style="font-size: 0.68rem; padding: 2px 6px;">▼ 3.5 kg Tracked</span>
+        </div>
+        <div style="font-size: 0.73rem; color: var(--text-muted); margin-top: 2px;">
+          Compare baseline vs latest face contours, full body milestones & photo checkpoints.
+        </div>
+      </div>
+      <button type="button" class="btn btn-sm btn-outline" id="btn-profile-open-progress" onclick="openProgressModal('pane-face-progress')">
+        View Photos ➔
+      </button>
+    </div>
+
+    <form id="profile-form" style="display: flex; flex-direction: column; gap: 1rem;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Full Name *</label>
+          <input type="text" id="inp-name" class="text-input" required value="Aarav Sharma" style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Biological Sex *</label>
+          <select id="inp-sex" class="text-input" style="width: 100%;">
+            <option value="0">Male</option>
+            <option value="1">Female</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 2fr 1fr 1fr; gap: 0.75rem; align-items: start;">
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Age (Yrs) *</label>
+          <input type="number" id="inp-age" class="text-input" required value="32" style="width: 100%;">
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 0.75rem; color: var(--text-secondary);">Height *</label>
+            <div class="mode-switcher" style="padding: 1px;">
+              <button type="button" class="mode-btn active" id="btn-unit-cm" style="padding: 1px 6px; font-size: 0.7rem;">cm</button>
+              <button type="button" class="mode-btn" id="btn-unit-ft" style="padding: 1px 6px; font-size: 0.7rem;">ft / in</button>
+            </div>
+          </div>
+          <!-- cm input container -->
+          <div id="height-cm-wrapper">
+            <input type="number" id="inp-height" class="text-input" required value="175" step="0.1" style="width: 100%;" placeholder="e.g. 175 cm">
+          </div>
+          <!-- ft + in input container -->
+          <div id="height-ft-wrapper" style="display: none; grid-template-columns: 1fr 1fr; gap: 0.4rem;">
+            <div style="position: relative;">
+              <input type="number" id="inp-height-ft" class="text-input" value="5" min="3" max="8" style="width: 100%; padding-right: 24px;">
+              <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: var(--text-muted);">ft</span>
+            </div>
+            <div style="position: relative;">
+              <input type="number" id="inp-height-in" class="text-input" value="9" min="0" max="11.9" step="0.1" style="width: 100%; padding-right: 24px;">
+              <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; color: var(--text-muted);">in</span>
+            </div>
+          </div>
+          <div style="font-size: 0.68rem; color: var(--accent-brand-hover); margin-top: 2px;" id="height-conversion-hint">≈ 5 ft 9 in</div>
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Current (kg) *</label>
+          <input type="number" id="inp-weight" class="text-input" required value="82" step="0.1" style="width: 100%;">
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Target (kg) *</label>
+          <input type="number" id="inp-target-weight" class="text-input" required value="72" step="0.1" style="width: 100%;">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Loss Pace (Safe Ceiling: 0.75 kg/wk) *</label>
+          <select id="inp-pace" class="text-input" style="width: 100%;">
+            <option value="0.25">Steady (0.25 kg/week, -250 kcal/day)</option>
+            <option value="0.50" selected>Moderate (0.50 kg/week, -500 kcal/day)</option>
+            <option value="0.75">Upper Safe Limit (0.75 kg/week, -750 kcal/day)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Daily Activity Level *</label>
+          <select id="inp-activity" class="text-input" style="width: 100%;">
+            <option value="0">Sedentary (&lt; 5,000 steps)</option>
+            <option value="1">Light (5,000 - 7,500 steps)</option>
+            <option value="2">Moderate (7,500 - 10,000 steps)</option>
+            <option value="3">High (&gt; 12,000 steps)</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Diagnosed Health Conditions (MANDATORY under Zero Assumption Rule)</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;" id="conditions-list">
+          <label class="fat-chip"><input type="checkbox" value="Type 2 Diabetes"> Type 2 Diabetes</label>
+          <label class="fat-chip active"><input type="checkbox" value="Pre-Diabetes" checked> Pre-Diabetes</label>
+          <label class="fat-chip"><input type="checkbox" value="Hypertension"> Hypertension (High BP)</label>
+          <label class="fat-chip"><input type="checkbox" value="Hypothyroidism"> Hypothyroidism</label>
+          <label class="fat-chip"><input type="checkbox" value="High Cholesterol"> High Cholesterol</label>
+          <label class="fat-chip"><input type="checkbox" value="PCOS"> PCOS/PCOD</label>
+          <label class="fat-chip"><input type="checkbox" value="Gout"> Hyperuricemia (Gout)</label>
+          <label class="fat-chip"><input type="checkbox" value="Fatty Liver"> Fatty Liver (NAFLD)</label>
+        </div>
+      </div>
+
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Current Medications & Dosages *</label>
+          <span style="font-size: 0.68rem; color: var(--accent-brand-hover);" id="med-placeholder-hint">Auto-suggested from conditions</span>
+        </div>
+        <input type="text" id="inp-medications" class="text-input" value="Metformin 500mg" style="width: 100%;" placeholder="e.g. Metformin 500mg, Thyronorm 50mcg, Telmisartan 40mg">
+        
+        <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem;" id="med-quick-suggestions">
+          <!-- Dynamically populated 1-tap suggestion chips -->
+        </div>
+
+        <div style="font-size: 0.72rem; color: #ffb84d; margin-top: 5px; background: rgba(245, 166, 35, 0.08); border: 1px solid rgba(245, 166, 35, 0.25); padding: 5px 8px; border-radius: 4px;" id="med-prompt-note">
+          ⚠️ <strong>Review & Modify</strong>: Standard typical medication and dosage added based on your condition. Please adjust to your exact prescribed dosage, or type 'None' if unmedicated.
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
+        <button type="submit" class="btn btn-primary">Save & Recalculate Clinical Targets</button>
+      </div>
+    </form>
+  </div>
+</div>

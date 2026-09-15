@@ -1,0 +1,160 @@
+<!-- Visual Progress Detail & Full Body Modal -->
+<div class="modal-overlay review-modal-overlay" id="progress-modal" style="display: none;">
+  <div class="modal-card progress-detail-modal">
+    <div class="modal-header">
+      <div>
+        <div class="hud-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>🧍 Visual Transformation & Full Body Progress</span>
+          <span class="progress-delta-pill" id="modal-delta-pill">▼ 3.5 kg in 30 Days</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+          Full body composition tracking, face transformation, and chronological progress checkpoints
+        </div>
+      </div>
+      <button type="button" class="modal-close" id="btn-close-progress" onclick="closeProgressModal()">&times;</button>
+    </div>
+
+    <!-- Navigation Tabs inside Progress Modal -->
+    <div class="progress-tabs-nav">
+      <button type="button" class="progress-tab-btn active" data-tab="pane-face-progress" onclick="openProgressModal('pane-face-progress')">👤 Face Progress</button>
+      <button type="button" class="progress-tab-btn" data-tab="pane-body-progress" onclick="openProgressModal('pane-body-progress')">🧍 Full Body Progress</button>
+      <button type="button" class="progress-tab-btn" data-tab="pane-timeline-gallery" onclick="openProgressModal('pane-timeline-gallery')">🖼️ Timeline Gallery</button>
+      <button type="button" class="progress-tab-btn primary-tab" data-tab="pane-checkin-upload" onclick="openProgressModal('pane-checkin-upload')">📸 Capture New Check-In</button>
+    </div>
+
+    <!-- Tab 1: Face Progress Detail -->
+    <div class="progress-tab-pane active" id="pane-face-progress">
+      <div class="detail-comparison-grid">
+        <div class="detail-photo-col">
+          <div class="compare-badge baseline-badge">Day 1 · Baseline Face</div>
+          <div class="detail-photo-frame">
+            <img id="detail-baseline-face-img" src="/uploads/progress/face_baseline.svg" alt="Baseline Face" class="detail-img">
+            <div class="detail-overlay">
+              <span id="detail-baseline-face-date">30 Days Ago (Aug 16)</span>
+              <span id="detail-baseline-face-weight" class="weight-tag">85.0 kg</span>
+            </div>
+          </div>
+          <div class="photo-caption" id="detail-baseline-face-notes">Starting point before caloric deficit. Baseline portrait.</div>
+        </div>
+
+        <div class="detail-photo-col">
+          <div class="compare-badge current-badge">Latest Check-In · Face</div>
+          <div class="detail-photo-frame current-glow">
+            <img id="detail-current-face-img" src="/uploads/progress/face_current.svg" alt="Latest Face" class="detail-img">
+            <div class="detail-overlay">
+              <span id="detail-current-face-date">Today (Day 30)</span>
+              <span id="detail-current-face-weight" class="weight-tag emerald-tag">81.5 kg (▼ 3.5 kg)</span>
+            </div>
+          </div>
+          <div class="photo-caption" id="detail-current-face-notes">Noticeable jawline definition, reduced facial bloating & sharper contours.</div>
+        </div>
+      </div>
+
+      <div class="clinical-note-box" style="margin-top: 1rem;">
+        <strong style="color: var(--accent-brand-hover);">💡 Clinical Insight:</strong> Facial changes often appear earlier than visible abdomen fat reduction due to rapid loss of visceral water retention and interstitial sodium following the WHO &lt; 1,500mg protocol.
+      </div>
+    </div>
+
+    <!-- Tab 2: Full Body Progress -->
+    <div class="progress-tab-pane" id="pane-body-progress" style="display: none;">
+      <div class="detail-comparison-grid">
+        <div class="detail-photo-col">
+          <div class="compare-badge baseline-badge">Day 1 · Full Body (Front)</div>
+          <div class="detail-photo-frame body-frame">
+            <img id="detail-baseline-body-img" src="/uploads/progress/body_baseline.svg" alt="Baseline Body" class="detail-img">
+            <div class="detail-overlay">
+              <span id="detail-baseline-body-date">Day 1 (Aug 16)</span>
+              <span id="detail-baseline-body-weight" class="weight-tag">85.0 kg</span>
+            </div>
+          </div>
+          <div class="photo-caption">Starting waistline (38 inches), postural stance.</div>
+        </div>
+
+        <div class="detail-photo-col">
+          <div class="compare-badge current-badge">Latest Check-In · Full Body (Front)</div>
+          <div class="detail-photo-frame body-frame current-glow">
+            <img id="detail-current-body-img" src="/uploads/progress/body_current.svg" alt="Latest Body" class="detail-img">
+            <div class="detail-overlay">
+              <span id="detail-current-body-date">Today (Day 30)</span>
+              <span id="detail-current-body-weight" class="weight-tag emerald-tag">81.5 kg (▼ 3.5 kg)</span>
+            </div>
+          </div>
+          <div class="photo-caption">Noticeably tapered midsection (down 2.5 inches to 35.5"), improved shoulder-to-waist ratio.</div>
+        </div>
+      </div>
+
+      <div class="clinical-note-box" style="margin-top: 1rem;">
+        <strong style="color: var(--status-emerald);">🎯 Progress Trajectory:</strong> At a measured rate of 0.5 kg/week, your 3.5 kg drop over 30 days is clinically optimal and preserves lean skeletal muscle mass.
+      </div>
+    </div>
+
+    <!-- Tab 3: Timeline Gallery -->
+    <div class="progress-tab-pane" id="pane-timeline-gallery" style="display: none;">
+      <div class="timeline-gallery-grid" id="timeline-gallery-grid">
+        <!-- Dynamically injected gallery cards -->
+      </div>
+    </div>
+
+    <!-- Tab 4: Capture Check-In Photo -->
+    <div class="progress-tab-pane" id="pane-checkin-upload" style="display: none;">
+      <form id="form-progress-upload" class="progress-upload-form">
+        <div class="form-group">
+          <label class="form-label">Photo Category</label>
+          <div class="photo-type-selector">
+            <button type="button" class="type-pill active" data-type="0">👤 Face Photo</button>
+            <button type="button" class="type-pill" data-type="1">🧍 Full Body (Front)</button>
+            <button type="button" class="type-pill" data-type="2">🧍 Full Body (Side)</button>
+          </div>
+          <input type="hidden" id="inp-photo-type" value="0">
+        </div>
+
+        <!-- Photo Dropzone -->
+        <div class="form-group">
+          <label class="form-label">Photo File</label>
+          <div class="progress-dropzone" id="progress-dropzone">
+            <input type="file" id="progress-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+            <div id="dropzone-prompt">
+              <span style="font-size: 2rem;">📸</span>
+              <div style="font-weight: 600; margin-top: 6px;">Tap to Take Photo or Drag & Drop File</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">JPEG, PNG, WebP up to 8MB · Automatic EXIF telemetry stripping for privacy</div>
+            </div>
+            <div id="dropzone-preview" style="display: none;">
+              <img id="progress-img-preview" src="" alt="Upload preview" style="max-height: 160px; border-radius: 8px;">
+              <div style="font-size: 0.75rem; color: var(--status-emerald); margin-top: 4px;">✓ Photo selected. Click Save below.</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label class="form-label" for="inp-checkin-weight">Weight on this day (kg)</label>
+            <input type="number" id="inp-checkin-weight" class="form-input" step="0.1" min="30" max="250" placeholder="e.g. 81.2">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="inp-checkin-date">Check-In Date</label>
+            <input type="date" id="inp-checkin-date" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; cursor: pointer; color: var(--text-secondary);">
+            <input type="checkbox" id="chk-is-baseline">
+            <span>Mark this photo as starting <strong>Baseline Milestone</strong></span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="inp-checkin-notes">Personal Observations & Notes (Optional)</label>
+          <input type="text" id="inp-checkin-notes" class="form-input" placeholder="e.g. Feeling lighter, jawline sharper, waistline down 1 inch">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-progress-upload" onclick="openProgressModal('pane-face-progress')">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-progress-upload">Save Progress Check-In 🎉</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,64 @@
+graph TB
+    subgraph SKELETON ["index.html (48-line Skeleton)"]
+        HTML_Root["index.html Skeleton<br/>([data-include] Tags)"]
+        LOADER["Async loadPartials()<br/>(Zero-Bundler Native Fetch)"]
+    end
+
+    subgraph PARTIALS ["Modular HTML Partials (src/.../partials/)"]
+        P1["header.html"]
+        P2["companion-card.html"]
+        P3["hero-hud.html"]
+        P4["face-progress-card.html"]
+        P5["meal-logger.html"]
+        P6["analytics-card.html"]
+        P7["review-modal.html"]
+        P8["profile-modal.html"]
+        P9["transparency-modal.html"]
+        P10["progress-modal.html"]
+    end
+
+    subgraph IOC ["DI & Messaging Infrastructure (src/.../js/core/)"]
+        DI["ServiceContainer (di-container.js)<br/>IoC / DIP"]
+        BUS["EventBus (event-bus.js)<br/>Decoupled Pub/Sub"]
+        STATE["AppState (state.js)<br/>Reactive State Store"]
+    end
+
+    subgraph SERVICES ["Injectable API Services (src/.../js/services/)"]
+        API["ApiClient"]
+        MEALS["MealsService"]
+        PROFILE["ProfileService"]
+        ANALYTICS["AnalyticsService"]
+        PROGRESS["ProgressPhotosService"]
+        MEDS["MedicationService"]
+    end
+
+    subgraph CONTROLLERS ["UI Controllers (src/.../js/ui/)"]
+        C_HUD["DailyHudController"]
+        C_LOGGER["MealLoggerController"]
+        C_REVIEW["ReviewModalController"]
+        C_CHART["AnalyticsChartController"]
+        C_PROFILE["ProfileModalController"]
+        C_TP["TransparencyModalController"]
+        C_PROG["ProgressModalController"]
+        C_TOAST["ToastNotificationService"]
+        C_CONFETTI["ConfettiService"]
+    end
+
+    HTML_Root --> LOADER
+    LOADER --> P1 & P2 & P3 & P4 & P5 & P6 & P7 & P8 & P9 & P10
+
+    DI --> CONTROLLERS
+    DI --> SERVICES
+    SERVICES --> API
+
+    CONTROLLERS --> BUS
+    CONTROLLERS --> STATE
+    CONTROLLERS --> SERVICES
+
+    C_HUD --> P3
+    C_LOGGER --> P5
+    C_REVIEW --> P7
+    C_CHART --> P6
+    C_PROFILE --> P8
+    C_TP --> P9
+    C_PROG --> P4 & P10

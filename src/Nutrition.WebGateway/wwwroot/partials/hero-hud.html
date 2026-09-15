@@ -1,0 +1,103 @@
+<!-- Hero HUD: Daily Calorie Balance, Macro Gauges & Indian Badges -->
+<section class="hero-grid">
+  <!-- Left: Big Calorie Numbers & Macros -->
+  <div class="card">
+    <div class="calorie-hud-header">
+      <div class="hud-title">Daily Calorie Balance</div>
+      <div class="brand-tag tabular" id="date-tag">Today</div>
+    </div>
+
+    <div class="calorie-numbers-row">
+      <div class="stat-box">
+        <div class="stat-box-label">Consumed</div>
+        <div class="stat-box-val val-consumed tabular" id="val-consumed">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Daily Budget</div>
+        <div class="stat-box-val val-budget tabular" id="val-budget">1,600</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-box-label">Remaining</div>
+        <div class="stat-box-val val-remaining tabular" id="val-remaining">1,600</div>
+      </div>
+    </div>
+
+    <div class="progress-container">
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="calorie-progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- 4-Column Macro Pill Gauges -->
+    <div class="macro-grid">
+      <div class="macro-pill">
+        <div class="macro-pill-header">
+          <span>Protein</span>
+          <span class="tabular" id="macro-protein-target">/ 75g</span>
+        </div>
+        <div class="macro-pill-val tabular" id="macro-protein-val">0g</div>
+        <div class="macro-meter">
+          <div class="macro-meter-fill protein" id="meter-protein" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="macro-pill">
+        <div class="macro-pill-header">
+          <span>Carbs</span>
+          <span class="tabular" id="macro-carbs-target">/ 180g</span>
+        </div>
+        <div class="macro-pill-val tabular" id="macro-carbs-val">0g</div>
+        <div class="macro-meter">
+          <div class="macro-meter-fill carbs" id="meter-carbs" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="macro-pill">
+        <div class="macro-pill-header">
+          <span>Fat (Oil)</span>
+          <span class="tabular" id="macro-fat-target">/ 45g</span>
+        </div>
+        <div class="macro-pill-val tabular" id="macro-fat-val">0g</div>
+        <div class="macro-meter">
+          <div class="macro-meter-fill fat" id="meter-fat" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <div class="macro-pill">
+        <div class="macro-pill-header">
+          <span>Fiber</span>
+          <span class="tabular" id="macro-fiber-target">/ 30g</span>
+        </div>
+        <div class="macro-pill-val tabular" id="macro-fiber-val">0g</div>
+        <div class="macro-meter">
+          <div class="macro-meter-fill fiber" id="meter-fiber" style="width: 0%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Daily Health Score & Badges -->
+  <div class="card clinical-hud-card">
+    <div>
+      <div class="hud-title" style="margin-bottom: 0.75rem;">Daily Health Score</div>
+      <div class="health-score-container">
+        <div class="score-circle">
+          <div class="score-val tabular" id="score-circle-val">85</div>
+          <div class="score-label">Points</div>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary);" id="score-status-text">
+          Wholesome Compliance
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="hud-title" style="margin-bottom: 0.5rem;">Earned Indian Badges</div>
+      <div class="badges-row" id="badges-container">
+        <span class="badge-chip">Tadka Ninja 🥷</span>
+        <span class="badge-chip">Salt Sentry 🛡️</span>
+        <span class="badge-chip">Deficit Sniper 🎯</span>
+      </div>
+    </div>
+  </div>
+</section>
