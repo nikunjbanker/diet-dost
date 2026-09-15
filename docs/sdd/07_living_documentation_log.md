@@ -456,6 +456,32 @@
   - Browser subagent validation confirmed `Veg Puff with Tomato Sauce` rendered in review modal (`veg_puff_review_modal_1789475647742.png`).
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+### [LOG-20260915-010] Aspire.Hosting Modernization: Migrated to Aspire.AppHost.Sdk 13.5.4 & Exclusive .NET 11 Target
+- **Date / Timestamp**: 2026-09-15 19:15:00 UTC
+- **Change Type**: `[DEVOPS]` & `[REFACTOR]`
+- **Affected Microservices / Components**: `Nutrition.AppHost`, `Nutrition.WebGateway`, `Nutrition.Domain`, `Nutrition.Application`, `Nutrition.Infrastructure`
+- **Summary of Change**:
+  1. Updated entire solution from dual-targeting (`net11.0;net10.0`) exclusively to `.NET 11 RC` (`<TargetFramework>net11.0</TargetFramework>`), removing all `.NET 10` artifacts.
+  2. Upgraded `Nutrition.AppHost` project SDK from deprecated workload approach to the modern `Aspire.AppHost.Sdk/13.5.4` MSBuild project SDK (`<Project Sdk="Aspire.AppHost.Sdk/13.5.4">`).
+  3. Resolved DCP orchestration and Aspire Dashboard binary path resolution issues.
+  4. Successfully verified `dotnet run --project src/Nutrition.AppHost` launching both the Aspire Dashboard and the underlying `Nutrition.WebGateway` service hosting the Linear Obsidian PWA.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: `dotnet run --project src/Nutrition.AppHost` failed with `System.AggregateException: Property CliPath: The path to the DCP executable used for Aspire orchestration is required.; Property DashboardPath: The path to the Aspire Dashboard binaries is missing.`
+  - *Root Cause*: Previous configuration used `<Project Sdk="Microsoft.NET.Sdk">` referencing `Aspire.Hosting.AppHost 9.0.0`, which relied on the deprecated .NET CLI Aspire workload. Without the workload bundle installed, DCP binaries and dashboard assets were not copied into the build output.
+  - *Preventative Action*: Migrated to `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">`, which bundles the standalone DCP orchestration binaries and Aspire Dashboard as first-class SDK targets, completely eliminating external workload dependencies.
+- **Modified Code Files**:
+  - `src/Nutrition.AppHost/Nutrition.AppHost.csproj`
+  - `src/Nutrition.WebGateway/Nutrition.WebGateway.csproj`
+  - `src/Nutrition.Domain/Nutrition.Domain.csproj`
+  - `src/Nutrition.Application/Nutrition.Application.csproj`
+  - `src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - CLI Command: `dotnet build src/Nutrition.AppHost/Nutrition.AppHost.csproj` -> Build succeeded (0 Errors)
+  - CLI Command: `dotnet run --project src/Nutrition.AppHost` -> Distributed application started; Aspire Dashboard online with DCP API server running; WebGateway responding on `http://localhost:5240` with `HTTP/1.1 200 OK`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+
 
 
 

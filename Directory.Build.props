@@ -1,10 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
-
+<Project>
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>preview</LangVersion>
+    <!-- Suppress preview notifications and pruning hints for explicit preview packages -->
+    <NoWarn>$(NoWarn);NETSDK1057;NU1510;ASPIRE010</NoWarn>
   </PropertyGroup>
-
 </Project>
