@@ -57,7 +57,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             if (!string.IsNullOrWhiteSpace(primaryModel)) modelsToTry.Add(primaryModel);
             if (!string.IsNullOrWhiteSpace(fallbackModel)) modelsToTry.Add(fallbackModel);
 
-            foreach (var m in new[] { "gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.7-flash" })
+            foreach (var m in new[] { "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.8-flash" })
             {
                 if (!modelsToTry.Contains(m)) modelsToTry.Add(m);
             }
@@ -101,12 +101,13 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             var fallbackModel = _config["AI:FallbackModelId"];
             if (!string.IsNullOrWhiteSpace(fallbackModel)) modelsToTry.Add(fallbackModel);
 
-            foreach (var m in new[] { "gemini-3-flash-preview", "gemini-flash-latest", "gemini-3.6-flash", "gemini-3.7-flash" })
+            foreach (var m in new[] { "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.8-flash" })
             {
                 if (!modelsToTry.Contains(m)) modelsToTry.Add(m);
             }
 
             var prompt = BuildDescriptionSystemPrompt(description, mealType, userContext, userLearnedCorrections);
+            var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
 
             foreach (var model in modelsToTry)
             {
@@ -129,7 +130,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                         {
                             response_mime_type = "application/json",
                             temperature = 0.2,
-                            max_output_tokens = 2048
+                            max_output_tokens = maxTokens
                         }
                     };
 
@@ -192,6 +193,8 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
 
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelId}:generateContent?key={apiKey}";
 
+        var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
+
         var payload = new
         {
             contents = new object[]
@@ -216,7 +219,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             {
                 response_mime_type = "application/json",
                 temperature = 0.15,
-                max_output_tokens = 2048
+                max_output_tokens = maxTokens
             }
         };
 
@@ -239,10 +242,34 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             return null;
 
         var candidate = candidates[0];
+        if (candidate.TryGetProperty("finishReason", out var finishReasonProp))
+        {
+            var finishReason = finishReasonProp.GetString();
+            if (string.Equals(finishReason, "MAX_TOKENS", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Google AI model {Model} reached MAX_TOKENS limit ({MaxTokens}). Output may be truncated.", modelId, maxTokens);
+            }
+        }
+
         if (!candidate.TryGetProperty("content", out var content) || !content.TryGetProperty("parts", out var parts) || parts.GetArrayLength() == 0)
             return null;
 
-        var text = parts[0].GetProperty("text").GetString();
+        string? text = null;
+        foreach (var part in parts.EnumerateArray())
+        {
+            if (part.TryGetProperty("text", out var textProp))
+            {
+                var partText = textProp.GetString();
+                if (!string.IsNullOrWhiteSpace(partText))
+                {
+                    if (partText.Contains("{") || text == null)
+                    {
+                        text = partText;
+                    }
+                }
+            }
+        }
+
         if (string.IsNullOrWhiteSpace(text)) return null;
 
         var cleanedJson = text.Trim();
@@ -254,7 +281,15 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             cleanedJson = cleanedJson.Substring(0, cleanedJson.Length - 3);
         cleanedJson = cleanedJson.Trim();
 
-        return JsonSerializer.Deserialize<IndianMealAnalysisResult>(cleanedJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        try
+        {
+            return JsonSerializer.Deserialize<IndianMealAnalysisResult>(cleanedJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (JsonException jex)
+        {
+            _logger.LogWarning(jex, "Failed to parse JSON response from model {Model}. Snippet: {Snippet}", modelId, cleanedJson.Length > 200 ? cleanedJson.Substring(0, 200) : cleanedJson);
+            return null;
+        }
     }
 
     private string BuildVisionSystemPrompt(string? regionalContext, UserProfile? userContext, List<UserCorrectionRecord>? userLearnedCorrections)
