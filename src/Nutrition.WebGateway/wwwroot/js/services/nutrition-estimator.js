@@ -766,3 +766,128 @@ export async function estimateFoodNutritionWithAi(rawName, portion = null, optio
 export function clearAiNutritionCache() {
   aiNutritionCache.clear();
 }
+
+/**
+ * Dynamically generates clinical dietitian advice adhering to ICMR-NIN 2024 standards
+ * based on current food items, portions, macros, and added cooking fats.
+ *
+ * @param {Array} items - Array of meal items { name, quantity, calories, proteinGrams, carbsGrams, fatGrams, fiberGrams, sodiumMg }
+ * @param {Object} options - { addedGhee, addedTadka, mealType, userConditions }
+ * @returns {string} Clinical dietitian advice string
+ */
+export function generateDietitianAdvice(items = [], options = {}) {
+  if (!items || items.length === 0) {
+    return 'Add food items to your meal plate to receive real-time ICMR-NIN 2024 clinical dietitian guidance.';
+  }
+
+  const addedGheeKcal = options.addedGhee || 0;
+  const addedTadkaKcal = options.addedTadka || 0;
+
+  let totalKcal = 0;
+  let totalProtein = 0;
+  let totalCarbs = 0;
+  let totalFat = 0;
+  let totalFiber = 0;
+  let totalSodium = 0;
+
+  items.forEach(i => {
+    const qty = i.quantity || 1;
+    totalKcal += (i.calories || 0) * qty;
+    totalProtein += (i.proteinGrams || 0) * qty;
+    totalCarbs += (i.carbsGrams || 0) * qty;
+    totalFat += (i.fatGrams || 0) * qty;
+    totalFiber += (i.fiberGrams || 0) * qty;
+    totalSodium += (i.sodiumMg || 0) * qty;
+  });
+
+  totalKcal += addedGheeKcal + addedTadkaKcal;
+  totalFat += (addedGheeKcal + addedTadkaKcal) / 9;
+
+  // Classify items by Indian culinary & clinical nutritional categories
+  const paneerItems = items.filter(i => /paneer|tofu|soya|soy/i.test(i.name));
+  const dalItems = items.filter(i => /dal|dhal|chana|rajma|chole|moong|urad|masoor|toor|sambhar|kadhi|lobia|lentil/i.test(i.name));
+  const grainItems = items.filter(i => /roti|phulka|chapati|rice|chawal|paratha|naan|bhakri|pulao|biryani|oats|khichdi|dosa|idli/i.test(i.name));
+  const subziItems = items.filter(i => /subzi|sabzi|bhindi|okra|palak|spinach|gobi|cauliflower|aloo|potato|lauki|bottle gourd|methi|fenugreek|baingan|eggplant|brinjal|tinda|karela|beans|mushroom|peas|matar|mix veg/i.test(i.name) && !/paneer/i.test(i.name));
+  const saladItems = items.filter(i => /salad|cucumber|kakdi|kheera|tomato|radish|mooli|onion|pyaz|pyaj|carrot|gajar|beetroot|kachumber|sprout/i.test(i.name));
+  const curdItems = items.filter(i => /curd|dahi|yogurt|raita|chaas|buttermilk/i.test(i.name));
+  const nonVegItems = items.filter(i => /chicken|egg|fish|mutton|prawn|keema/i.test(i.name));
+
+  const sentences = [];
+
+  // Sentence 1: Portion & Calorie assessment
+  if (totalKcal < 300) {
+    sentences.push(`Light portion (~${Math.round(totalKcal)} kcal). Ensure you are meeting your baseline daily energy and satiety requirements.`);
+  } else if (totalKcal <= 650) {
+    sentences.push(`Excellent portion control.`);
+  } else if (totalKcal <= 850) {
+    sentences.push(`Substantial, energy-rich meal (~${Math.round(totalKcal)} kcal).`);
+  } else {
+    sentences.push(`Calorie-dense meal (~${Math.round(totalKcal)} kcal). Consider moderating grain or cooking fat portions to maintain caloric balance.`);
+  }
+
+  // Sentence 2: Specific Key Food Highlights
+  const highlights = [];
+  if (paneerItems.length > 0) {
+    const pNames = paneerItems.map(p => p.name.replace(/\s*\([^)]*\)/g, '').trim()).join(' & ');
+    highlights.push(`The inclusion of ${pNames} provides essential calcium and high-quality protein`);
+  }
+  if (dalItems.length > 0) {
+    const dNames = dalItems.map(d => d.name.replace(/\s*\([^)]*\)/g, '').trim()).join(' & ');
+    if (paneerItems.length > 0) {
+      highlights.push(`while ${dNames} supplies wholesome plant-based protein and prebiotic fiber`);
+    } else {
+      highlights.push(`The ${dNames} provides wholesome plant-based protein and prebiotic fiber`);
+    }
+  }
+  if (nonVegItems.length > 0) {
+    const nvNames = nonVegItems.map(n => n.name.replace(/\s*\([^)]*\)/g, '').trim()).join(' & ');
+    highlights.push(`The ${nvNames} delivers high biological value complete protein`);
+  }
+  if (subziItems.length > 0 && paneerItems.length === 0) {
+    const sNames = subziItems.map(s => s.name.replace(/\s*\([^)]*\)/g, '').trim()).join(' & ');
+    if (dalItems.length > 0) {
+      highlights.push(`and ${sNames} adds essential micronutrients and dietary fiber`);
+    } else {
+      highlights.push(`The inclusion of ${sNames} provides essential micronutrients, antioxidants, and dietary fiber`);
+    }
+  }
+
+  if (highlights.length > 0) {
+    sentences.push(highlights.join(', ') + '.');
+  } else if (grainItems.length > 0) {
+    const gNames = grainItems.map(g => g.name.replace(/\s*\([^)]*\)/g, '').trim()).join(' & ');
+    sentences.push(`${gNames} supplies complex carbohydrates for sustained energy.`);
+  }
+
+  // Sentence 3: Amino Acid Complementation & Protein targets (ICMR-NIN 2024)
+  if (grainItems.length > 0 && dalItems.length > 0) {
+    sentences.push(`Features classic cereal-to-pulse amino acid complementation (${totalProtein.toFixed(1)}g Protein).`);
+  } else if (totalProtein >= 20) {
+    sentences.push(`High protein density (${totalProtein.toFixed(1)}g Protein), supporting metabolic satiety.`);
+  } else if (totalProtein < 12 && (options.mealType === 'Lunch' || options.mealType === 'Dinner')) {
+    sentences.push(`Protein is on the lower side (${totalProtein.toFixed(1)}g). Consider adding curd, sprouts, or paneer to reach your target.`);
+  }
+
+  // Sentence 4: Probiotics
+  if (curdItems.length > 0) {
+    sentences.push(`Plain Curd contributes gut-friendly probiotics and bioavailable calcium.`);
+  }
+
+  // Sentence 5: Salad & Micronutrient Optimization (ICMR-NIN 2024 "My Plate for the Day")
+  if (saladItems.length > 0) {
+    const salNames = saladItems.map(s => s.name.replace(/\s*\([^)]*\)/g, '').trim()).join(' & ');
+    sentences.push(`The inclusion of ${salNames} increases hydration and micronutrient density adhering to ICMR-NIN 2024 guidelines.`);
+  } else {
+    sentences.push(`To further optimize for ICMR-NIN 2024 standards, consider adding a small portion of raw cucumber or radish (Green Salad) to increase hydration and micronutrient density.`);
+  }
+
+  // Sentence 6: Added Fats
+  if (addedGheeKcal > 0 || addedTadkaKcal > 0) {
+    const fats = [];
+    if (addedGheeKcal > 0) fats.push('Ghee Smear (+45 kcal)');
+    if (addedTadkaKcal > 0) fats.push('Extra Oil Tadka (+60 kcal)');
+    sentences.push(`Note: Added ${fats.join(' & ')} increases fat-soluble vitamin absorption; balance within your daily allowance.`);
+  }
+
+  return sentences.join(' ');
+}

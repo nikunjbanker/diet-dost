@@ -1,10 +1,9 @@
-const CACHE_NAME = 'diet-dost-v2';
+const CACHE_NAME = 'diet-dost-v6';
 const ASSETS = [
   '/',
   '/index.html',
   '/styles.css',
-  '/manifest.json',
-  '/js/main.js'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', event => {
@@ -24,7 +23,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // Pass-through API requests or return cached assets for offline-first
+  // Pass-through API requests
   if (event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -32,6 +31,11 @@ self.addEventListener('fetch', event => {
           headers: { 'Content-Type': 'application/json' }
         });
       })
+    );
+  } else if (event.request.url.includes('/js/') || event.request.url.includes('partials/')) {
+    // Network-first for JavaScript modules and partials to guarantee latest code
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
     );
   } else {
     event.respondWith(

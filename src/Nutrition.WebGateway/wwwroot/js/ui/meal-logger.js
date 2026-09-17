@@ -28,7 +28,8 @@ export class MealLoggerController {
       modeText: document.getElementById('btn-mode-text'),
       textLoggerBox: document.getElementById('text-logger-box'),
       textInput: document.getElementById('text-input'),
-      btnSubmitText: document.getElementById('btn-submit-text')
+      btnSubmitText: document.getElementById('btn-submit-text'),
+      btnSampleThali: document.getElementById('btn-sample-thali')
     };
   }
 
@@ -70,6 +71,24 @@ export class MealLoggerController {
       el.fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
           this.handleImageUpload(e.target.files[0]);
+        }
+      });
+    }
+
+    // Sample Indian Lunch Thali Button
+    if (el.btnSampleThali) {
+      el.btnSampleThali.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        try {
+          const resp = await fetch('/uploads/meals/sample_lunch_thali.jpg');
+          const blob = await resp.blob();
+          const sampleFile = new File([blob], 'sample_lunch_thali.jpg', { type: 'image/jpeg' });
+          await this.handleImageUpload(sampleFile);
+        } catch (err) {
+          this._toast.show({
+            title: 'Sample Photo Error',
+            message: 'Could not load sample meal photo.'
+          });
         }
       });
     }
@@ -120,6 +139,7 @@ export class MealLoggerController {
     if (el.scanning) el.scanning.style.display = 'block';
 
     try {
+      const localPhotoUrl = URL.createObjectURL(file);
       const detectedMealType = this.detectMealTypeByTime();
       const data = await this._meals.uploadMealImage(file, this._state.userId, detectedMealType, 'North Indian');
 
@@ -134,6 +154,9 @@ export class MealLoggerController {
       if (!data.analysis.mealType) {
         data.analysis.mealType = detectedMealType;
       }
+
+      // Attach photo URL (server URL if available, otherwise local object URL)
+      data.analysis.photoUrl = data.photoUrl || data.analysis.photoUri || localPhotoUrl;
 
       // Notify ReviewModal to open
       this._bus.emit('meal:analyzed', data.analysis);

@@ -16,67 +16,116 @@
       </div>
     </div>
 
-    <!-- Meal Type Timing Selector -->
-    <div class="meal-timing-bar">
-      <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Meal Type:</span>
-      <div class="meal-type-pills" id="review-meal-type-pills">
-        <button type="button" class="meal-pill" data-type="Breakfast">🌅 Breakfast</button>
-        <button type="button" class="meal-pill active" data-type="Lunch">☀️ Lunch</button>
-        <button type="button" class="meal-pill" data-type="Snack">☕ Snack</button>
-        <button type="button" class="meal-pill" data-type="Dinner">🌙 Dinner</button>
+    <!-- Responsive Layout: Media Column (Left) + Details Column (Right) -->
+    <div class="review-body-layout" id="review-body-layout">
+      <!-- Media Column: Constrained Photo Preview, Timing Bar & Dietitian Advice -->
+      <div class="review-media-column" id="review-media-column">
+        <!-- Uploaded Meal Photo Evidence (Responsive dynamic fit) -->
+        <div class="review-photo-container" id="review-photo-container" style="display: none;">
+          <div class="review-photo-wrapper" id="review-photo-wrapper" title="Click to inspect photo in high-resolution lightbox">
+            <img id="review-meal-photo" src="" alt="Uploaded Meal Evidence" class="review-meal-img" />
+            <div class="review-photo-overlay-top">
+              <span class="review-photo-badge">📸 Plate Photo</span>
+              <button type="button" class="review-photo-zoom-btn" id="btn-zoom-meal-photo" title="Click to open full photo in high-res lightbox">
+                🔍 <span id="photo-zoom-label">Inspect</span>
+              </button>
+            </div>
+            <div class="review-photo-caption">
+              <span>Click to inspect full photo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Meal Type Timing Selector -->
+        <div class="meal-timing-bar">
+          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.25rem;">
+            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Meal Type:</span>
+            <span id="meal-time-auto-hint" style="font-size: 0.65rem; color: var(--accent-brand-hover);">Auto-detected</span>
+          </div>
+          <div class="meal-type-pills" id="review-meal-type-pills">
+            <button type="button" class="meal-pill" data-type="Breakfast">🌅 Breakfast</button>
+            <button type="button" class="meal-pill active" data-type="Lunch">☀️ Lunch</button>
+            <button type="button" class="meal-pill" data-type="Snack">☕ Snack</button>
+            <button type="button" class="meal-pill" data-type="Dinner">🌙 Dinner</button>
+          </div>
+        </div>
+
+        <!-- Clinical Dietitian Insight -->
+        <div class="review-dietitian-box">
+          <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-weight: 600; color: var(--text-primary); font-size: 0.75rem;">
+            <span>🩺</span> <span>Clinical Dietitian Insight (ICMR-NIN 2024)</span>
+            <span style="margin-left: auto; font-size: 0.65rem; color: var(--status-emerald); background: rgba(39, 195, 128, 0.1); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(39, 195, 128, 0.25);">Live Sync</span>
+          </div>
+          <div id="review-dietitian-advice" style="color: var(--text-secondary); line-height: 1.45;">
+            <!-- Actionable dietitian advice -->
+          </div>
+        </div>
       </div>
-      <span id="meal-time-auto-hint" style="font-size: 0.68rem; color: var(--accent-brand-hover); margin-left: auto;">Auto-detected from clock</span>
-    </div>
 
-    <!-- Model Training & Memory Notice -->
-    <div class="training-banner" id="training-banner">
-      <span style="font-size: 0.95rem;">🧠</span>
-      <div>
-        <strong>Continuous Smart Training Active:</strong> If AI detected salad instead of your vegetable, correct the item name below (e.g. <em>Bhindi Masala, Palak Paneer, Aloo Gobi</em>). Diet Dost will memorize this and re-train detection for future scans!
+      <!-- Details Column: Items List, Portions, Quick Subzis, Cooking Fats, Flags -->
+      <div class="review-details-column" id="review-details-column">
+        <!-- Model Training & Memory Notice -->
+        <div class="training-banner" id="training-banner">
+          <span style="font-size: 0.95rem;">🧠</span>
+          <div>
+            <strong>Continuous Smart Training Active:</strong> If AI detected salad instead of your vegetable, correct the item name below (e.g. <em>Bhindi Masala, Palak Paneer, Aloo Gobi</em>). Diet Dost will memorize this and re-train detection for future scans!
+          </div>
+        </div>
+
+        <!-- Items List with Inline Edit & Steppers -->
+        <div class="dish-items-list" id="review-items-list">
+          <!-- Dynamically rendered with edit controls -->
+        </div>
+
+        <!-- Quick Add Item Button & Subzi Suggestion Chips -->
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.2rem; align-items: center;">
+          <button type="button" class="btn btn-sm" id="btn-add-review-item" style="border-style: dashed; font-size: 0.75rem; padding: 4px 10px;">
+            + Add Item / Subzi
+          </button>
+          <div class="subzi-quick-add" style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+            <span class="subzi-chip" onclick="quickAddSubzi('Bhindi Masala (Okra)', 115, 2.8, 9.5, 7.2)">+ Bhindi Masala</span>
+            <span class="subzi-chip" onclick="quickAddSubzi('Palak Paneer', 220, 12.0, 8.0, 16.0)">+ Palak Paneer</span>
+            <span class="subzi-chip" onclick="quickAddSubzi('Aloo Gobi Subzi', 135, 3.2, 17.0, 6.0)">+ Aloo Gobi</span>
+            <span class="subzi-chip" onclick="quickAddSubzi('Lauki Chana Dal', 125, 4.5, 14.0, 4.0)">+ Lauki Chana</span>
+            <span class="subzi-chip" onclick="quickAddSubzi('Cucumber Salad', 20, 0.8, 3.5, 0.2)">+ Cucumber Salad</span>
+          </div>
+        </div>
+
+        <!-- 1-Tap Cooking Fat Modifiers -->
+        <div>
+          <div class="hud-title" style="margin-bottom: 0.35rem;">Hidden Cooking Fat (1-Tap Add)</div>
+          <div class="cooking-fat-row">
+            <button class="fat-chip" id="chip-ghee" data-kcal="45">+ Ghee Smear (+45 kcal)</button>
+            <button class="fat-chip" id="chip-tadka" data-kcal="60">+ Extra Oil Tadka (+60 kcal)</button>
+            <button class="fat-chip" id="chip-oilfree">Dry / Oil-Free (0 kcal)</button>
+          </div>
+        </div>
+
+        <!-- Clinical Matrix Warnings & Advice -->
+        <div class="flags-container" id="review-flags-container">
+          <!-- Warnings will be inserted here -->
+        </div>
       </div>
     </div>
 
-    <!-- Items List with Inline Edit & Steppers -->
-    <div class="dish-items-list" id="review-items-list">
-      <!-- Dynamically rendered with edit controls -->
-    </div>
-
-    <!-- Quick Add Item Button & Subzi Suggestion Chips -->
-    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.4rem; align-items: center;">
-      <button type="button" class="btn btn-sm" id="btn-add-review-item" style="border-style: dashed; font-size: 0.75rem; padding: 4px 10px;">
-        + Add Item / Subzi
-      </button>
-      <div class="subzi-quick-add" style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
-        <span class="subzi-chip" onclick="quickAddSubzi('Bhindi Masala (Okra)', 115, 2.8, 9.5, 7.2)">+ Bhindi Masala</span>
-        <span class="subzi-chip" onclick="quickAddSubzi('Palak Paneer', 220, 12.0, 8.0, 16.0)">+ Palak Paneer</span>
-        <span class="subzi-chip" onclick="quickAddSubzi('Aloo Gobi Subzi', 135, 3.2, 17.0, 6.0)">+ Aloo Gobi</span>
-        <span class="subzi-chip" onclick="quickAddSubzi('Lauki Chana Dal', 125, 4.5, 14.0, 4.0)">+ Lauki Chana</span>
-        <span class="subzi-chip" onclick="quickAddSubzi('Cucumber Salad', 20, 0.8, 3.5, 0.2)">+ Cucumber Salad</span>
-      </div>
-    </div>
-
-    <!-- 1-Tap Cooking Fat Modifiers -->
-    <div>
-      <div class="hud-title" style="margin-bottom: 0.4rem;">Hidden Cooking Fat (1-Tap Add)</div>
-      <div class="cooking-fat-row">
-        <button class="fat-chip" id="chip-ghee" data-kcal="45">+ Ghee Smear (+45 kcal)</button>
-        <button class="fat-chip" id="chip-tadka" data-kcal="60">+ Extra Oil Tadka (+60 kcal)</button>
-        <button class="fat-chip" id="chip-oilfree">Dry / Oil-Free (0 kcal)</button>
-      </div>
-    </div>
-
-    <!-- Clinical Matrix Warnings & Advice -->
-    <div class="flags-container" id="review-flags-container">
-      <!-- Warnings will be inserted here -->
-    </div>
-
-    <div style="background: var(--surface-subtle); padding: 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); font-size: 0.85rem;" id="review-dietitian-advice">
-      <!-- Actionable dietitian advice -->
-    </div>
-
-    <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 0.5rem;">
+    <!-- Pinned Modal Footer (Always directly visible without scrolling) -->
+    <div class="review-footer">
       <button id="btn-cancel-review" class="btn">Cancel</button>
       <button id="btn-confirm-meal" class="btn btn-primary">Looks Great! Log Meal 🎉</button>
+    </div>
+  </div>
+
+  <!-- Dedicated High-Resolution Plate Lightbox Modal Overlay -->
+  <div class="review-lightbox-overlay" id="review-lightbox" style="display: none;">
+    <div class="review-lightbox-frame">
+      <div class="review-lightbox-topbar">
+        <span class="review-lightbox-title" id="review-lightbox-title">📸 Plate Photo Inspection</span>
+        <button type="button" class="review-lightbox-close" id="btn-close-lightbox" title="Close inspector (Esc)">✕ Close</button>
+      </div>
+      <div class="review-lightbox-image-container">
+        <img id="review-lightbox-img" src="" alt="Full resolution meal plate" />
+      </div>
+      <div class="review-lightbox-hint">Press Esc or click outside to close</div>
     </div>
   </div>
 </div>

@@ -1,4 +1,4 @@
-import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi } from '../services/nutrition-estimator.js';
+import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi, generateDietitianAdvice } from '../services/nutrition-estimator.js?v=1.2.6';
 
 /**
  * ReviewModalController
@@ -40,6 +40,16 @@ export class ReviewModalController {
       dietitianAdvice: document.getElementById('review-dietitian-advice'),
       btnCancel: document.getElementById('btn-cancel-review'),
       btnConfirm: document.getElementById('btn-confirm-meal'),
+      photoContainer: document.getElementById('review-photo-container'),
+      photoWrapper: document.getElementById('review-photo-wrapper'),
+      mealPhoto: document.getElementById('review-meal-photo'),
+      btnZoomPhoto: document.getElementById('btn-zoom-meal-photo'),
+      photoZoomLabel: document.getElementById('photo-zoom-label'),
+      bodyLayout: document.getElementById('review-body-layout'),
+      lightbox: document.getElementById('review-lightbox'),
+      lightboxImg: document.getElementById('review-lightbox-img'),
+      lightboxTitle: document.getElementById('review-lightbox-title'),
+      btnCloseLightbox: document.getElementById('btn-close-lightbox'),
       chipGhee: document.getElementById('chip-ghee'),
       chipTadka: document.getElementById('chip-tadka'),
       chipOilfree: document.getElementById('chip-oilfree'),
@@ -88,6 +98,47 @@ export class ReviewModalController {
       el.btnConfirm.addEventListener('click', () => this.handleConfirmMeal());
     }
 
+    // Photo Lightbox Inspection
+    const openLightbox = () => {
+      const currentPhoto = (this._state.currentMeal && (this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri)) || (el.mealPhoto ? el.mealPhoto.src : '');
+      if (!currentPhoto || !el.lightbox || !el.lightboxImg) return;
+      el.lightboxImg.src = currentPhoto;
+      if (el.lightboxTitle && this._state.currentMeal) {
+        el.lightboxTitle.textContent = `📸 ${this._state.currentMeal.dishName || 'Meal Plate Inspection'}`;
+      }
+      el.lightbox.style.display = 'flex';
+    };
+
+    const closeLightbox = () => {
+      if (el.lightbox) el.lightbox.style.display = 'none';
+      if (el.lightboxImg) el.lightboxImg.src = '';
+    };
+
+    if (el.btnZoomPhoto) {
+      el.btnZoomPhoto.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openLightbox();
+      });
+    }
+    if (el.photoWrapper) {
+      el.photoWrapper.addEventListener('click', openLightbox);
+    }
+    if (el.btnCloseLightbox) {
+      el.btnCloseLightbox.addEventListener('click', closeLightbox);
+    }
+    if (el.lightbox) {
+      el.lightbox.addEventListener('click', (e) => {
+        if (e.target === el.lightbox || e.target.classList.contains('review-lightbox-frame')) {
+          closeLightbox();
+        }
+      });
+    }
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && el.lightbox && el.lightbox.style.display === 'flex') {
+        closeLightbox();
+      }
+    });
+
     // Meal Timing Selector Pills
     document.querySelectorAll('#review-meal-type-pills .meal-pill').forEach(pill => {
       pill.addEventListener('click', () => {
@@ -99,6 +150,7 @@ export class ReviewModalController {
           if (el.mealType) {
             el.mealType.textContent = `${typeIcons[pill.dataset.type] || ''} ${pill.dataset.type} Review & Correction`;
           }
+          this.recalculateTotals();
         }
       });
     });
@@ -195,6 +247,30 @@ export class ReviewModalController {
       }
     }
 
+    // Render uploaded meal photo evidence if available
+    const photoUrl = analysis.photoUrl || analysis.photoUri;
+    if (photoUrl) {
+      if (el.mealPhoto) {
+        el.mealPhoto.src = photoUrl;
+      }
+      if (el.photoContainer) {
+        el.photoContainer.style.display = 'block';
+      }
+      if (el.bodyLayout) {
+        el.bodyLayout.classList.remove('no-photo');
+      }
+    } else {
+      if (el.photoContainer) {
+        el.photoContainer.style.display = 'none';
+      }
+      if (el.mealPhoto) {
+        el.mealPhoto.src = '';
+      }
+      if (el.bodyLayout) {
+        el.bodyLayout.classList.add('no-photo');
+      }
+    }
+
     this.renderItems();
     this.renderFlags();
 
@@ -207,6 +283,8 @@ export class ReviewModalController {
 
   close() {
     const el = this.elements;
+    if (el.lightbox) el.lightbox.style.display = 'none';
+    if (el.lightboxImg) el.lightboxImg.src = '';
     if (el.modal) el.modal.style.display = 'none';
     this._state.currentMeal = null;
   }
@@ -439,6 +517,33 @@ export class ReviewModalController {
       .trim();
 
     el.dishName.textContent = `${cleanDish} (~${Math.round(totalKcal)} kcal)`;
+
+    // Dynamically update clinical dietitian advice in real-time
+    this.updateDietitianAdvice();
+  }
+
+  updateDietitianAdvice() {
+    const el = this.elements;
+    if (!this._state.currentMeal || !el.dietitianAdvice) return;
+
+    const items = this._state.currentMeal.identifiedItems || [];
+    const advice = generateDietitianAdvice(items, {
+      addedGhee: this._state.addedGhee || 0,
+      addedTadka: this._state.addedTadka || 0,
+      mealType: this._state.currentMeal.mealType || 'Lunch'
+    });
+
+    this._state.currentMeal.dietitianAdvice = advice;
+    el.dietitianAdvice.textContent = advice;
+
+    // Trigger subtle visual pulse on container
+    const box = el.dietitianAdvice.closest('.review-dietitian-box');
+    if (box) {
+      box.classList.remove('advice-updated');
+      void box.offsetWidth;
+      box.classList.add('advice-updated');
+      setTimeout(() => box.classList.remove('advice-updated'), 700);
+    }
   }
 
   async handleConfirmMeal() {
@@ -460,6 +565,7 @@ export class ReviewModalController {
         userId: this._state.userId,
         mealType: numericMealType,
         dishName: this._state.currentMeal.dishName,
+        photoUri: this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri || null,
         overallConfidenceScore: this._state.currentMeal.overallConfidenceScore || 0.88,
         addedGheeKcal: this._state.addedGhee,
         addedTadkaKcal: this._state.addedTadka,

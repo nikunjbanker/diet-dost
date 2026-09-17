@@ -89,6 +89,9 @@ public class IndianMealAnalysisResult
     [JsonPropertyName("detectedByModel")]
     public string? DetectedByModel { get; set; }
 
+    [JsonPropertyName("photoUri")]
+    public string? PhotoUri { get; set; }
+
     public bool IsConfidenceGatedPassed => OverallConfidenceScore >= 0.70;
 }
 

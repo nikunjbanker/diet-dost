@@ -18,7 +18,7 @@ import { toastService } from './ui/toast.js';
 import { confettiService } from './ui/confetti.js';
 import { DailyHudController } from './ui/daily-hud.js';
 import { MealLoggerController } from './ui/meal-logger.js';
-import { ReviewModalController } from './ui/review-modal.js';
+import { ReviewModalController } from './ui/review-modal.js?v=1.2.6';
 import { AnalyticsChartController } from './ui/analytics-chart.js';
 import { ProfileModalController } from './ui/profile-modal.js';
 import { TransparencyModalController } from './ui/transparency-modal.js';
@@ -99,7 +99,7 @@ async function loadPartials() {
   await Promise.all(Array.from(elements).map(async (el) => {
     const file = el.getAttribute('data-include');
     try {
-      const res = await fetch(file);
+      const res = await fetch(file, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status} while loading ${file}`);
       const html = await res.text();
       el.outerHTML = html;

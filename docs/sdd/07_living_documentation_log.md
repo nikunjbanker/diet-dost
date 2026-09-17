@@ -735,6 +735,53 @@
   - Verified REST profile update: appended `"Insulin Resistance"` to `diagnosedConditions`, persisted to SQLite, and retrieved accurately.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
+
+### [LOG-20260917-020] Uploaded Meal Photo Evidence & Interactive Zoom in Lunch Review & Correction Screen
+- **Date / Timestamp**: 2026-09-17 13:25:00 UTC
+- **Change Type**: `[FEATURE]` & `[UI_ENHANCEMENT]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.WebGateway` (API & PWA Client)
+- **Summary of Change**:
+  1. **Uploaded Meal Photo Display in Review Modal**:
+     - Added `#review-photo-container` in `review-modal.html` displaying the actual uploaded photo above the detected items list.
+     - Implemented `📸 Uploaded Plate Photo` status badge and caption instructing users: *"Compare your actual plate against the AI-detected items below before logging"*.
+     - Added smooth zoom/enlarge toggle (`#btn-zoom-meal-photo` & clicking the photo) expanding the view from 185px to 330px with `object-fit: contain` and dark radial backdrop for inspecting fine dish details.
+  2. **Permanent Server-Side Meal Photo Storage**:
+     - Updated `MealsController.UploadAndAnalyzeMeal` to persist uploaded image streams to `wwwroot/uploads/meals/{uniqueId}.{ext}`.
+     - Assigned `analysis.PhotoUri = photoUrl` and returned `photoUrl` in the JSON response payload.
+     - Added `[JsonPropertyName("photoUri")] public string? PhotoUri` to `IndianMealAnalysisResult.cs`.
+     - In `review-modal.js`, updated `handleConfirmMeal` to pass `photoUri` to `POST /api/meals/confirm`, ensuring the meal photo URL is permanently saved in SQLite `MealLogs` table.
+  3. **Instant 1-Click Sample Lunch Thali Photo Testing**:
+     - Added `#btn-sample-thali` (*"📸 Try Sample Indian Lunch Thali Photo"*) inside the meal logger dropzone in `meal-logger.html`.
+     - Allows instant validation of the complete multimodal meal vision and review flow without requiring manual file selection.
+  4. **Cache Invalidation & Partial Loading Optimization**:
+     - Bumped Service Worker cache to `diet-dost-v3`.
+     - Updated `loadPartials()` in `main.js` to fetch partials with `cache: 'no-cache'`.
+     - Added version query strings `?v=1.2.1` to `styles.css` and `main.js` in `index.html`.
+- **Modified Code Files**:
+  - `src/Nutrition.Application/Agents/IndianMealAnalysisResult.cs`
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/partials/meal-logger.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/meal-logger.js`
+  - `src/Nutrition.WebGateway/wwwroot/styles.css`
+  - `src/Nutrition.WebGateway/wwwroot/sw.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js`
+  - `src/Nutrition.WebGateway/wwwroot/index.html`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - CLI Build: `dotnet build` succeeded with **0 Warnings, 0 Errors**.
+  - Browser subagent automated verification:
+    - Loaded `http://localhost:5240/?nocache=true`.
+    - Triggered `#btn-sample-thali`, observing shimmer status and automated popup of the Lunch Review & Correction screen.
+    - Verified the uploaded photo was rendered inside `#review-photo-container` with badge and caption.
+    - Tested zoom toggle (`🔍 Enlarge` -> `🔍 Fit` -> `🔍 Enlarge`), verifying smooth height expansion and fit mode.
+    - Verified detected items, portion steppers, and model badge (`gemini-3-flash-preview`).
+    - Captured screenshot artifact: `lunch_review_modal_1789651482451.png`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+
 
 
 

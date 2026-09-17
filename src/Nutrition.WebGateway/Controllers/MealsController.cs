@@ -19,17 +19,20 @@ public class MealsController : ControllerBase
     private readonly ClinicalDietitianService _dietitianService;
     private readonly IRepository<UserCorrectionRecord> _correctionsRepo;
     private readonly IUnitOfWork _uow;
+    private readonly IWebHostEnvironment _env;
 
     public MealsController(
         IFoodVisionAgent visionAgent,
         ClinicalDietitianService dietitianService,
         IRepository<UserCorrectionRecord> correctionsRepo,
-        IUnitOfWork uow)
+        IUnitOfWork uow,
+        IWebHostEnvironment env)
     {
         _visionAgent = visionAgent;
         _dietitianService = dietitianService;
         _correctionsRepo = correctionsRepo;
         _uow = uow;
+        _env = env;
     }
 
     [HttpPost("upload")]
@@ -60,6 +63,47 @@ public class MealsController : ControllerBase
         stream.Position = 0;
         var analysis = await _visionAgent.AnalyzeMealPhotoAsync(stream, mimeType!, regionalContext, userProfile, userCorrections, ct);
 
+        // Persist photo to wwwroot/uploads/meals for visual review & diary history
+        string? photoUrl = null;
+        try
+        {
+            var webRoot = !string.IsNullOrEmpty(_env.WebRootPath)
+                ? _env.WebRootPath
+                : Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var uploadsFolder = Path.Combine(webRoot, "uploads", "meals");
+            if (!Directory.Exists(uploadsFolder))
+            {
+                Directory.CreateDirectory(uploadsFolder);
+            }
+
+            var fileExtension = Path.GetExtension(image.FileName);
+            if (string.IsNullOrWhiteSpace(fileExtension) || fileExtension.Length > 5)
+            {
+                fileExtension = mimeType switch
+                {
+                    "image/png" => ".png",
+                    "image/webp" => ".webp",
+                    _ => ".jpg"
+                };
+            }
+
+            var uniqueFileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}{fileExtension}";
+            var destinationPath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(destinationPath, FileMode.Create))
+            {
+                stream.Position = 0;
+                await stream.CopyToAsync(fileStream, ct);
+            }
+
+            photoUrl = $"/uploads/meals/{uniqueFileName}";
+            analysis.PhotoUri = photoUrl;
+        }
+        catch
+        {
+            // Non-blocking fallback if disk write fails
+        }
+
         // Check Confidence Gating Threshold (>= 70%)
         if (!analysis.IsConfidenceGatedPassed)
         {
@@ -69,7 +113,8 @@ public class MealsController : ControllerBase
                 confidenceScore = analysis.OverallConfidenceScore,
                 message = "The photo is too shadowy, blurry, or occluded to accurately identify portions.",
                 advice = analysis.DietitianAdvice ?? "Please retake the photo with the plate centered under good lighting, or use 1-Tap Voice / Smart Search.",
-                requiresRetake = true
+                requiresRetake = true,
+                photoUrl
             });
         }
 
@@ -78,6 +123,7 @@ public class MealsController : ControllerBase
             confidenceGated = true,
             confidenceScore = analysis.OverallConfidenceScore,
             detectedByModel = analysis.DetectedByModel,
+            photoUrl,
             analysis
         });
     }
