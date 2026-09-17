@@ -33,6 +33,8 @@ export class ReviewModalController {
       mealType: document.getElementById('review-meal-type'),
       dishName: document.getElementById('review-dish-name'),
       confidenceBadge: document.getElementById('review-confidence-badge'),
+      modelBadge: document.getElementById('review-model-badge'),
+      modelName: document.getElementById('review-model-name'),
       itemsList: document.getElementById('review-items-list'),
       flagsContainer: document.getElementById('review-flags-container'),
       dietitianAdvice: document.getElementById('review-dietitian-advice'),
@@ -182,6 +184,15 @@ export class ReviewModalController {
     if (el.confidenceBadge) {
       el.confidenceBadge.textContent = `✓ ${confPct}% Confidence`;
       el.confidenceBadge.className = confPct >= 70 ? 'confidence-badge confidence-pass' : 'confidence-badge confidence-fail';
+    }
+
+    if (el.modelBadge && el.modelName) {
+      if (analysis.detectedByModel) {
+        el.modelName.textContent = analysis.detectedByModel;
+        el.modelBadge.style.display = 'inline-flex';
+      } else {
+        el.modelBadge.style.display = 'none';
+      }
     }
 
     this.renderItems();

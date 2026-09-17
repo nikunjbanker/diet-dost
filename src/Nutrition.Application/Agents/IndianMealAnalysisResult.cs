@@ -86,6 +86,9 @@ public class IndianMealAnalysisResult
     [JsonPropertyName("dietitianAdvice")]
     public string? DietitianAdvice { get; set; }
 
+    [JsonPropertyName("detectedByModel")]
+    public string? DetectedByModel { get; set; }
+
     public bool IsConfidenceGatedPassed => OverallConfidenceScore >= 0.70;
 }
 

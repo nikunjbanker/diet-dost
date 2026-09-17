@@ -77,6 +77,7 @@ public class MealsController : ControllerBase
         {
             confidenceGated = true,
             confidenceScore = analysis.OverallConfidenceScore,
+            detectedByModel = analysis.DetectedByModel,
             analysis
         });
     }
@@ -100,6 +101,7 @@ public class MealsController : ControllerBase
         {
             confidenceGated = true,
             confidenceScore = analysis.OverallConfidenceScore,
+            detectedByModel = analysis.DetectedByModel,
             analysis
         });
     }

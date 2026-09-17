@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Nutrition.Domain.Model.Ledger;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
@@ -24,22 +25,35 @@ public class DietTrackerDbContext : DbContext
     {
         base.OnModelCreating(modelBuilder);
 
-        // UserProfile JSON converters
+        // Reusable ValueComparers for collections to guarantee proper EF Core change tracking without data loss or warnings
+        var stringListComparer = new ValueComparer<List<string>>(
+            (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && c1.SequenceEqual(c2)),
+            c => c != null ? c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())) : 0,
+            c => c != null ? c.ToList() : new List<string>());
+
+        var medicationListComparer = new ValueComparer<List<MedicationEntry>>(
+            (c1, c2) => (c1 == null && c2 == null) || (c1 != null && c2 != null && JsonSerializer.Serialize(c1, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(c2, (JsonSerializerOptions?)null)),
+            c => c != null ? JsonSerializer.Serialize(c, (JsonSerializerOptions?)null).GetHashCode() : 0,
+            c => c != null ? JsonSerializer.Deserialize<List<MedicationEntry>>(JsonSerializer.Serialize(c, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null) ?? new List<MedicationEntry>() : new List<MedicationEntry>());
+
+        // UserProfile JSON converters with ValueComparers
         modelBuilder.Entity<UserProfile>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.DiagnosedConditions)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>(),
+                    stringListComparer);
 
             entity.Property(e => e.Medications)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<MedicationEntry>>(v, (JsonSerializerOptions?)null) ?? new List<MedicationEntry>());
+                    v => JsonSerializer.Deserialize<List<MedicationEntry>>(v, (JsonSerializerOptions?)null) ?? new List<MedicationEntry>(),
+                    medicationListComparer);
         });
 
-        // MealLog configuration with AutoInclude for Items
+        // MealLog configuration with AutoInclude for Items and ValueComparers
         modelBuilder.Entity<MealLog>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -53,12 +67,14 @@ public class DietTrackerDbContext : DbContext
             entity.Property(e => e.WhoComplianceFlags)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>(),
+                    stringListComparer);
 
             entity.Property(e => e.MedicationWarnings)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>(),
+                    stringListComparer);
         });
 
         // FoodItemRecord
@@ -74,14 +90,15 @@ public class DietTrackerDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.OriginalDetectedItem });
         });
 
-        // DailyCalorieLedger JSON converters
+        // DailyCalorieLedger JSON converters with ValueComparer
         modelBuilder.Entity<DailyCalorieLedger>(entity =>
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.EarnedBadges)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>(),
+                    stringListComparer);
         });
 
         // ProgressPhoto entity configuration

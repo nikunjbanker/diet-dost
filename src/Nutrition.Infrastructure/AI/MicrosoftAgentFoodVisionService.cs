@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -5,6 +6,7 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Agents;
+using Nutrition.Application.Common;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 
@@ -34,9 +36,12 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         List<UserCorrectionRecord>? userLearnedCorrections = null,
         CancellationToken ct = default)
     {
+        using var activity = NutritionTelemetry.ActivitySource.StartActivity(NutritionTelemetry.SpanAiVisionAnalysis, ActivityKind.Internal);
+
         var apiKey = _config["AI:ApiKey"] ?? Environment.GetEnvironmentVariable("GOOGLE_AI_KEY") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
         var primaryModel = _config["AI:ModelId"] ?? "gemini-3.8-flash";
         var fallbackModel = _config["AI:FallbackModelId"] ?? "gemini-3.7-flash";
+        var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
 
         byte[] imageBytes;
         using (var ms = new MemoryStream())
@@ -45,10 +50,43 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             imageBytes = ms.ToArray();
         }
 
+        var systemPrompt = BuildVisionSystemPrompt(regionalContext, userContext, userLearnedCorrections);
+
+        activity?.SetTag(NutritionTelemetry.TagGenAiSystem, "google_gemini");
+        activity?.SetTag(NutritionTelemetry.TagGenAiOperation, "vision_meal_analysis");
+        activity?.SetTag(NutritionTelemetry.TagGenAiRequestModel, primaryModel);
+        activity?.SetTag(NutritionTelemetry.TagGenAiSystemPrompt, systemPrompt);
+        activity?.SetTag(NutritionTelemetry.TagGenAiUserPrompt, $"[Meal Photo: {mimeType}, {imageBytes.Length} bytes, RegionalContext={regionalContext ?? "Pan-Indian"}]");
+        activity?.SetTag(NutritionTelemetry.TagGenAiTemperature, 0.15);
+        activity?.SetTag(NutritionTelemetry.TagGenAiMaxTokens, maxTokens);
+
+        EnrichActivityWithUserContext(activity, userContext, userLearnedCorrections, regionalContext);
+
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["UserId"] = userContext?.Id ?? "anonymous",
+            ["Operation"] = "VisionMealAnalysis",
+            ["PrimaryModel"] = primaryModel,
+            ["DiagnosedConditions"] = userContext != null && userContext.DiagnosedConditions.Count > 0 ? string.Join(", ", userContext.DiagnosedConditions) : "None",
+            ["Medications"] = userContext != null && userContext.Medications.Count > 0 ? string.Join(", ", userContext.Medications.Select(m => m.DrugName)) : "None",
+            ["RegionalContext"] = regionalContext ?? "Pan-Indian"
+        });
+
+        _logger.LogInformation(
+            "AI Vision meal analysis started. User: {UserId}, Conditions: {Conditions}, Medications: {Medications}, ImageSize: {ImageBytes} bytes | Model: {Model}\n[SYSTEM PROMPT]:\n{SystemPrompt}",
+            userContext?.Id ?? "anonymous",
+            userContext != null && userContext.DiagnosedConditions.Count > 0 ? string.Join(", ", userContext.DiagnosedConditions) : "None",
+            userContext != null && userContext.Medications.Count > 0 ? string.Join(", ", userContext.Medications.Select(m => m.DrugName)) : "None",
+            imageBytes.Length,
+            primaryModel,
+            systemPrompt);
+
         // Detect if blurry or too small for confidence gating (<70%)
         if (imageBytes.Length < 1000)
         {
-            return CreateLowConfidenceResult("The photo appears too low resolution or dark to accurately count rotis and dishes. Please center the plate with good lighting.");
+            var lowConfidence = CreateLowConfidenceResult("The photo appears too low resolution or dark to accurately count rotis and dishes. Please center the plate with good lighting.");
+            EnrichActivityWithResult(activity, lowConfidence, primaryModel);
+            return lowConfidence;
         }
 
         if (!string.IsNullOrWhiteSpace(apiKey))
@@ -66,10 +104,26 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             {
                 try
                 {
-                    var result = await CallGoogleAiVisionAsync(imageBytes, mimeType, model, apiKey, regionalContext, userContext, userLearnedCorrections, ct);
+                    var result = await CallGoogleAiVisionAsync(imageBytes, mimeType, model, apiKey, systemPrompt, maxTokens, ct);
                     if (result != null && result.IdentifiedItems != null && result.IdentifiedItems.Count > 0)
                     {
-                        _logger.LogInformation("Successfully analyzed meal photo using model {Model}", model);
+                        if (bool.TryParse(_config["AI:ShowModelDetails"], out var showModel) ? showModel : true)
+                        {
+                            result.DetectedByModel = model;
+                        }
+
+                        EnrichActivityWithResult(activity, result, model);
+
+                        _logger.LogInformation(
+                            "AI Vision meal analysis succeeded using {Model}. Dish: {DishName} ({MealType}), Calories: {Calories} kcal, Protein: {Protein}g, Confidence: {Confidence:P0}, Items: {ItemsSummary}",
+                            model,
+                            result.DishName,
+                            result.MealType,
+                            result.TotalCalories,
+                            result.TotalProteinGrams,
+                            result.OverallConfidenceScore,
+                            string.Join(", ", result.IdentifiedItems.Select(i => $"{i.EstimatedPortion} {i.Name} ({i.Calories} kcal)")));
+
                         return result;
                     }
                 }
@@ -81,7 +135,21 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         }
 
         // Intelligent high-fidelity local clinical nutrition engine with continuous learned memory
-        return GenerateIntelligentLocalAnalysis(imageBytes, regionalContext, userContext, userLearnedCorrections);
+        var localResult = GenerateIntelligentLocalAnalysis(imageBytes, regionalContext, userContext, userLearnedCorrections);
+        if (bool.TryParse(_config["AI:ShowModelDetails"], out var showLocalModel) ? showLocalModel : true)
+        {
+            localResult.DetectedByModel = "Local Clinical Engine (Offline)";
+        }
+
+        EnrichActivityWithResult(activity, localResult, "Local Clinical Engine (Offline)");
+
+        _logger.LogInformation(
+            "AI Vision analysis completed via fallback engine. Dish: {DishName}, Calories: {Calories} kcal, Items: {ItemsCount}",
+            localResult.DishName,
+            localResult.TotalCalories,
+            localResult.IdentifiedItems.Count);
+
+        return localResult;
     }
 
     public async Task<IndianMealAnalysisResult> AnalyzeMealDescriptionAsync(
@@ -91,23 +159,53 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         List<UserCorrectionRecord>? userLearnedCorrections = null,
         CancellationToken ct = default)
     {
+        using var activity = NutritionTelemetry.ActivitySource.StartActivity(NutritionTelemetry.SpanAiTextAnalysis, ActivityKind.Internal);
+
         var apiKey = _config["AI:ApiKey"] ?? Environment.GetEnvironmentVariable("GOOGLE_AI_KEY") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        var primaryModel = _config["AI:ModelId"] ?? "gemini-3.8-flash";
+        var fallbackModel = _config["AI:FallbackModelId"] ?? "gemini-3.7-flash";
+        var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
+
+        var systemPrompt = BuildDescriptionSystemPrompt(description, mealType, userContext, userLearnedCorrections);
+
+        activity?.SetTag(NutritionTelemetry.TagGenAiSystem, "google_gemini");
+        activity?.SetTag(NutritionTelemetry.TagGenAiOperation, "text_meal_analysis");
+        activity?.SetTag(NutritionTelemetry.TagGenAiRequestModel, primaryModel);
+        activity?.SetTag(NutritionTelemetry.TagGenAiSystemPrompt, systemPrompt);
+        activity?.SetTag(NutritionTelemetry.TagGenAiUserPrompt, description);
+        activity?.SetTag(NutritionTelemetry.TagGenAiTemperature, 0.2);
+        activity?.SetTag(NutritionTelemetry.TagGenAiMaxTokens, maxTokens);
+
+        EnrichActivityWithUserContext(activity, userContext, userLearnedCorrections, userContext?.RegionalCuisine);
+
+        using var scope = _logger.BeginScope(new Dictionary<string, object?>
+        {
+            ["UserId"] = userContext?.Id ?? "anonymous",
+            ["Operation"] = "TextMealAnalysis",
+            ["MealType"] = mealType ?? "Unspecified",
+            ["PrimaryModel"] = primaryModel,
+            ["DiagnosedConditions"] = userContext != null && userContext.DiagnosedConditions.Count > 0 ? string.Join(", ", userContext.DiagnosedConditions) : "None",
+            ["Medications"] = userContext != null && userContext.Medications.Count > 0 ? string.Join(", ", userContext.Medications.Select(m => m.DrugName)) : "None"
+        });
+
+        _logger.LogInformation(
+            "AI Text meal analysis started. User: {UserId}, MealType: {MealType}, Description: \"{Description}\" | Model: {Model}\n[SYSTEM PROMPT]:\n{SystemPrompt}",
+            userContext?.Id ?? "anonymous",
+            mealType ?? "Unspecified",
+            description,
+            primaryModel,
+            systemPrompt);
 
         if (!string.IsNullOrWhiteSpace(apiKey))
         {
             var modelsToTry = new List<string>();
-            var primaryModel = _config["AI:ModelId"];
             if (!string.IsNullOrWhiteSpace(primaryModel)) modelsToTry.Add(primaryModel);
-            var fallbackModel = _config["AI:FallbackModelId"];
             if (!string.IsNullOrWhiteSpace(fallbackModel)) modelsToTry.Add(fallbackModel);
 
             foreach (var m in new[] { "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-flash-latest", "gemini-3.5-flash", "gemini-3.8-flash" })
             {
                 if (!modelsToTry.Contains(m)) modelsToTry.Add(m);
             }
-
-            var prompt = BuildDescriptionSystemPrompt(description, mealType, userContext, userLearnedCorrections);
-            var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
 
             foreach (var model in modelsToTry)
             {
@@ -122,7 +220,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                             {
                                 parts = new object[]
                                 {
-                                    new { text = prompt }
+                                    new { text = systemPrompt }
                                 }
                             }
                         },
@@ -161,6 +259,23 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                                 var parsed = JsonSerializer.Deserialize<IndianMealAnalysisResult>(cleanedJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                                 if (parsed != null && parsed.IdentifiedItems != null && parsed.IdentifiedItems.Count > 0)
                                 {
+                                    if (bool.TryParse(_config["AI:ShowModelDetails"], out var showModel) ? showModel : true)
+                                    {
+                                        parsed.DetectedByModel = model;
+                                    }
+
+                                    EnrichActivityWithResult(activity, parsed, model);
+
+                                    _logger.LogInformation(
+                                        "AI Text meal analysis succeeded using {Model}. Dish: {DishName} ({MealType}), Calories: {Calories} kcal, Protein: {Protein}g, Confidence: {Confidence:P0}, Items: {ItemsSummary}",
+                                        model,
+                                        parsed.DishName,
+                                        parsed.MealType,
+                                        parsed.TotalCalories,
+                                        parsed.TotalProteinGrams,
+                                        parsed.OverallConfidenceScore,
+                                        string.Join(", ", parsed.IdentifiedItems.Select(i => $"{i.EstimatedPortion} {i.Name} ({i.Calories} kcal)")));
+
                                     return parsed;
                                 }
                             }
@@ -174,7 +289,75 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             }
         }
 
-        return ParseDescriptionLocally(description, mealType, userContext, userLearnedCorrections);
+        var localParsed = ParseDescriptionLocally(description, mealType, userContext, userLearnedCorrections);
+        if (bool.TryParse(_config["AI:ShowModelDetails"], out var showLocalModel) ? showLocalModel : true)
+        {
+            localParsed.DetectedByModel = "Local Clinical Engine (Offline)";
+        }
+
+        EnrichActivityWithResult(activity, localParsed, "Local Clinical Engine (Offline)");
+
+        _logger.LogInformation(
+            "AI Text analysis completed via fallback engine. Dish: {DishName}, Calories: {Calories} kcal, Items: {ItemsCount}",
+            localParsed.DishName,
+            localParsed.TotalCalories,
+            localParsed.IdentifiedItems.Count);
+
+        return localParsed;
+    }
+
+    private static void EnrichActivityWithUserContext(
+        Activity? activity,
+        UserProfile? userContext,
+        List<UserCorrectionRecord>? userLearnedCorrections,
+        string? regionalContext)
+    {
+        if (activity == null) return;
+
+        activity.SetTag(NutritionTelemetry.TagUserId, userContext?.Id ?? "anonymous");
+        activity.SetTag(NutritionTelemetry.TagUserName, userContext?.Name ?? "User");
+        activity.SetTag(NutritionTelemetry.TagUserConditions, userContext != null && userContext.DiagnosedConditions.Count > 0
+            ? string.Join(", ", userContext.DiagnosedConditions)
+            : "None");
+        activity.SetTag(NutritionTelemetry.TagUserMedications, userContext != null && userContext.Medications.Count > 0
+            ? string.Join(", ", userContext.Medications.Select(m => $"{m.DrugName} ({m.Frequency})"))
+            : "None");
+        activity.SetTag(NutritionTelemetry.TagUserDietaryPreference, userContext?.DietaryPreference.ToString() ?? "Not Specified");
+        activity.SetTag(NutritionTelemetry.TagUserRegionalCuisine, regionalContext ?? userContext?.RegionalCuisine ?? "Pan-Indian");
+        activity.SetTag(NutritionTelemetry.TagUserLearnedCorrectionsCount, userLearnedCorrections?.Count ?? 0);
+
+        if (userLearnedCorrections != null && userLearnedCorrections.Count > 0)
+        {
+            var top = string.Join("; ", userLearnedCorrections.OrderByDescending(c => c.FrequencyCount).Take(5).Select(c => $"{c.OriginalDetectedItem} -> {c.CorrectedItemName}"));
+            activity.SetTag(NutritionTelemetry.TagUserLearnedCorrectionsSummary, top);
+        }
+    }
+
+    private static void EnrichActivityWithResult(
+        Activity? activity,
+        IndianMealAnalysisResult result,
+        string? requestedModel)
+    {
+        if (activity == null) return;
+
+        activity.SetTag(NutritionTelemetry.TagGenAiResponseModel, result.DetectedByModel ?? requestedModel ?? "Unknown");
+        activity.SetTag(NutritionTelemetry.TagResponseDishName, result.DishName);
+        activity.SetTag(NutritionTelemetry.TagResponseMealType, result.MealType);
+        activity.SetTag(NutritionTelemetry.TagResponseTotalCalories, result.TotalCalories);
+        activity.SetTag(NutritionTelemetry.TagResponseTotalProtein, result.TotalProteinGrams);
+        activity.SetTag(NutritionTelemetry.TagResponseTotalCarbs, result.TotalCarbsGrams);
+        activity.SetTag(NutritionTelemetry.TagResponseTotalFat, result.TotalFatGrams);
+        activity.SetTag(NutritionTelemetry.TagResponseConfidence, result.OverallConfidenceScore);
+        activity.SetTag(NutritionTelemetry.TagResponseConfidenceGated, result.IsConfidenceGatedPassed);
+        activity.SetTag(NutritionTelemetry.TagResponseItemsCount, result.IdentifiedItems.Count);
+
+        var itemsSummary = string.Join(", ", result.IdentifiedItems.Select(i => $"{i.EstimatedPortion} {i.Name} ({i.Calories} kcal)"));
+        activity.SetTag(NutritionTelemetry.TagResponseItemsSummary, itemsSummary);
+
+        if (!string.IsNullOrWhiteSpace(result.DietitianAdvice))
+        {
+            activity.SetTag(NutritionTelemetry.TagResponseDietitianAdvice, result.DietitianAdvice);
+        }
     }
 
     private async Task<IndianMealAnalysisResult?> CallGoogleAiVisionAsync(
@@ -182,18 +365,14 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         string mimeType,
         string modelId,
         string apiKey,
-        string? regionalContext,
-        UserProfile? userContext,
-        List<UserCorrectionRecord>? userLearnedCorrections,
+        string prompt,
+        int maxTokens,
         CancellationToken ct)
     {
         var base64 = Convert.ToBase64String(imageBytes);
-        var prompt = BuildVisionSystemPrompt(regionalContext, userContext, userLearnedCorrections);
         var cleanMime = string.IsNullOrWhiteSpace(mimeType) ? "image/jpeg" : mimeType;
 
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelId}:generateContent?key={apiKey}";
-
-        var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
 
         var payload = new
         {
