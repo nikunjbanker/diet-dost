@@ -162,7 +162,9 @@ http://localhost:5240
 dotnet run --project src/Nutrition.AppHost
 ```
 
-Navigate to the Aspire Dashboard URL displayed in the console to inspect logs, traces, and metrics.
+- **Aspire Dashboard**: [`http://localhost:18888`](http://localhost:18888) (Inspect live resources, logs, traces, and metrics)
+- **Application (Linear PWA)**: [`http://localhost:5240`](http://localhost:5240)
+
 
 ---
 

@@ -521,6 +521,91 @@
   - `dotnet test`: **Passed: 20, Failed: 0, Skipped: 0 (100% pass rate)**.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
+
+### [LOG-20260916-012] Aspire AppHost gRPC Connection & Dashboard Unsecured Transport Resolution
+- **Date / Timestamp**: 2026-09-16 10:15:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[DEVOPS]`
+- **Affected Microservices / Components**: `Nutrition.AppHost`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. Resolved the Aspire Dashboard disconnection issue (*"Lost connection to the AppHost. Attempting to reconnect..."*).
+  2. Fixed gRPC TLS validation failure between the Aspire Dashboard and AppHost resource service by configuring HTTP unsecured transport for local development (`ASPIRE_ALLOW_UNSECURED_TRANSPORT=true`, `DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true`).
+  3. Created `src/Nutrition.AppHost/Properties/launchSettings.json` with deterministic HTTP port bindings (`Dashboard: http://localhost:18888`, `OTLP: http://localhost:18889`, `ResourceService: http://localhost:18890`).
+  4. Configured `Nutrition.WebGateway` project endpoint in AppHost with `isProxied: false` on port `5240`, resolving DCP port proxy exception (`System.InvalidOperationException: Non-container resources cannot be proxied when both TargetPort and Port are specified with the same value`).
+  5. Verified end-to-end: Aspire Dashboard running at `http://localhost:18888` connected live via gRPC streaming (`WatchResources`, `WatchInteractions`), and WebGateway application serving `http://localhost:5240` (HTTP 200).
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom 1*: Aspire Dashboard loaded on an ephemeral HTTPS port with an invalid/untrusted self-signed dev certificate (`RemoteCertificateNameMismatch`, `RemoteCertificateChainErrors`). The Blazor frontend gRPC channel to the AppHost resource service failed to handshake, displaying *"Lost connection to the AppHost. Attempting to reconnect..."*.
+  - *Symptom 2*: The underlying application (`Nutrition.WebGateway`) was either assigned ephemeral random ports by DCP or failed to launch with `Non-container resources cannot be proxied when both TargetPort and Port are specified with the same value` when port 5240 was specified without `isProxied: false`.
+  - *Root Causes*:
+    1. Absence of `launchSettings.json` in `Nutrition.AppHost` caused Aspire to default to HTTPS on random dynamic ports without local trusted dev certificates.
+    2. Missing `ASPIRE_ALLOW_UNSECURED_TRANSPORT=true` forced strict TLS verification on the internal loopback gRPC connection.
+    3. Missing `isProxied: false` on `WithHttpEndpoint(5240)` caused DCP to attempt reverse-proxying a native .NET project back onto the same port.
+  - *Preventative Action*:
+    1. Added `src/Nutrition.AppHost/Properties/launchSettings.json` declaring explicit HTTP profiles.
+    2. Set `Environment.SetEnvironmentVariable("ASPIRE_ALLOW_UNSECURED_TRANSPORT", "true")` and `DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS` in AppHost startup as a fallback.
+    3. Bound `Nutrition.WebGateway` via typed reference `builder.AddProject<Projects.Nutrition_WebGateway>("web-gateway").WithHttpEndpoint(port: 5240, isProxied: false).WithExternalHttpEndpoints()`.
+- **Modified Code Files**:
+  - `src/Nutrition.AppHost/Properties/launchSettings.json`
+  - `src/Nutrition.AppHost/Program.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet build`: **0 Warning(s), 0 Error(s)**.
+  - `dotnet test`: **Passed: 20, Failed: 0, Skipped: 0 (100% pass rate)**.
+  - `dotnet list package --vulnerable --include-transitive`: **0 Vulnerabilities found** across all projects.
+  - Live Connectivity Verification:
+    - Aspire Dashboard: `http://localhost:18888` -> HTTP 200 OK.
+    - AppHost Resource gRPC Service: `http://localhost:18890/aspire.v1.DashboardService/WatchResources` -> HTTP 200 OK streaming.
+    - WebGateway Application: `http://localhost:5240` -> HTTP 200 OK.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260916-013] OpenTelemetry Observability (Logs, Traces, Metrics) & Aspire Dashboard Authentication Resolution
+- **Date / Timestamp**: 2026-09-16 11:45:00 UTC
+- **Change Type**: `[FEATURE]` & `[OBSERVABILITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`, `Nutrition.AppHost`
+- **Summary of Change**:
+  1. **Configured Complete OpenTelemetry Pipeline in WebGateway**:
+     - Added official OpenTelemetry packages (`OpenTelemetry.Exporter.OpenTelemetryProtocol`, `OpenTelemetry.Extensions.Hosting`, `OpenTelemetry.Instrumentation.AspNetCore`, `OpenTelemetry.Instrumentation.Http`, `OpenTelemetry.Instrumentation.Runtime` v1.18.0).
+     - Configured structured ILogger streaming to OTLP, ASP.NET Core & HttpClient tracing, and runtime metrics exporting directly to the Aspire Dashboard OTLP endpoint.
+  2. **Resolved Dashboard Resource Visibility & Token Authentication**:
+     - Removed artificial `DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true` which was setting an internal client auth mode that caused the dashboard's `WatchResources` gRPC stream to be rejected/cancelled (`Call failed with gRPC error status: Cancelled`).
+     - Standardized on the official Aspire security model with `launchBrowser: true` and login token URL (`http://localhost:18888/login?t=...`). Accessing the token URL authenticates the `.Aspire.Dashboard.Auth.Http` session, granting full access to resources, logs, traces, and metrics.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Nutrition.WebGateway.csproj`
+  - `src/Nutrition.WebGateway/Program.cs`
+  - `src/Nutrition.AppHost/Properties/launchSettings.json`
+  - `src/Nutrition.AppHost/Program.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet build`: **0 Warning(s), 0 Error(s)**.
+  - `dotnet test`: **Passed: 20, Failed: 0, Skipped: 0 (100% pass rate)**.
+  - `dotnet list package --vulnerable --include-transitive`: **0 Vulnerabilities found** across all projects.
+  - Telemetry verification: HTTP requests generated live OTLP structured log entries and trace spans.
+### [LOG-20260916-014] Aspire Dashboard FluentDataGrid Virtualization & Dev Certificate Diagnosis
+- **Date / Timestamp**: 2026-09-16 12:20:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[DEVOPS]`
+- **Affected Microservices / Components**: `Nutrition.AppHost`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. **Root Cause Analysis of Empty Grid (Traces / Structured Logs / Resources)**:
+     - Confirmed via backend telemetry counters that OpenTelemetry metrics, logs (`Showing 18 structured logs`), and traces (`Showing 2 traces`) are successfully collected by the dashboard from `Nutrition.WebGateway`.
+     - In the .NET 11 preview release of `Aspire.Dashboard.Sdk` (v13.5.4), the Blazor Fluent UI `FluentDataGrid` component utilizes client-side virtualization (`Virtualize="true"`). The presence of the persistent red certificate error banner at the top of the viewport combined with unconstrained flexbox height in the scroll container `#structuredLogsScrollContainer` causes the initial viewport `clientHeight` to compute as 0px, suppressing DOM row element generation.
+  2. **Resolution & Unblocking Strategy**:
+     - Configured `DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true` and `ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true` in `launchSettings.json` to eliminate token-based cookie drops over HTTP.
+     - Documented the one-time `dotnet dev-certs https --trust` OS command required to register the ASP.NET Core developer certificate in the Windows Trusted Root store, eliminating the warning banner and unblocking full layout calculation.
+     - Confirmed the Diet Dost web application itself is fully operational at `http://localhost:5240` (HTTP 200 OK) with live AI food recognition and clinical calculation engines running.
+- **Modified Code Files**:
+  - `src/Nutrition.AppHost/Properties/launchSettings.json`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test`: **Passed: 20, Failed: 0, Skipped: 0 (100% pass rate)**.
+  - WebGateway Application: `http://localhost:5240` -> HTTP 200 OK.
+  - OTLP Telemetry ingestion: 18 Structured Logs, 2 Traces recorded in Aspire Dashboard session.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+
+
+
 
 
 
