@@ -603,6 +603,139 @@
   - OTLP Telemetry ingestion: 18 Structured Logs, 2 Traces recorded in Aspire Dashboard session.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
+
+### [LOG-20260916-015] Aspire Dashboard Virtualize JS Interop (.NET 11 RC1) Parameter Fix
+- **Date / Timestamp**: 2026-09-16 16:35:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[DEVOPS]`
+- **Affected Microservices / Components**: `Nutrition.AppHost` (Aspire Dashboard)
+- **Summary of Change**:
+  1. Resolved Blazor Virtualize JS interop mismatch exception: `System.ArgumentException: The call to 'OnSpacerBeforeVisible' expects '4' parameters, but received '3'` in `blazor.web.11.js`.
+  2. Identified that .NET 11 RC1 updated the Blazor `Virtualize` C# method signature to require 4 parameters (`spacerIndex`, `spacerBefore`, `spacerSize`, and `SpacerVisibilityReason`), while older client-side script bundles supplied only 3.
+  3. Patched the bundled `blazor.web.11.js` in Aspire Dashboard to supply the 4th parameter (`0` for `SpacerVisibilityReason.Scroll`), eliminating the runtime crash.
+  4. Verified full rendering of Aspire Dashboard tabs: Resources, Structured Logs, Traces, and Metrics.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Blazor unhandled promise rejection in browser console on scrolling or populating any virtualized table in Aspire Dashboard (`/traces`, `/structuredlogs`, `/`).
+  - *Root Cause*: .NET 11 RC1 breaking change in `Virtualize.OnSpacerBeforeVisible` signature expecting 4 parameters.
+  - *Preventative Action*: Patched client-side JS interop bridge to pass standard `SpacerVisibilityReason.Scroll` (0) integer enum.
+- **Modified Code Files**:
+  - Aspire Dashboard client interop runtime (`blazor.web.11.js`)
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - Browser subagent verified full data grid population and scrolling across Resources, Traces, and Structured Logs without JS errors.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260916-016] Gemini 3 Flash Model Handling, Thinking Tokens & Fallback Cascade Fix
+- **Date / Timestamp**: 2026-09-16 18:20:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[AI_AGENT]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure` (`MicrosoftAgentFoodVisionService`)
+- **Summary of Change**:
+  1. Resolved `gemini-3-flash-preview` truncated output bug caused by default 2048 token limit clipping output JSON when thinking tokens were produced.
+  2. Increased `max_output_tokens` ceiling to `8192` and made it configurable via `"AI:MaxTokens": 8192` in `appsettings.json`.
+  3. Implemented safe multi-part response traversal to gracefully skip thought blocks and extract the JSON payload part.
+  4. Constructed robust fallback cascade across model candidates (`gemini-3.8-flash`, `gemini-3.7-flash`, `gemini-3-flash-preview`, `gemini-2.5-flash`, and offline local clinical engine).
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Remote Gemini API returned `finishReason: "MAX_TOKENS"`, truncating JSON payload before completion and failing deserialization.
+  - *Root Cause*: Lower default max tokens in conjunction with Gemini thinking tokens exhausted the token budget.
+  - *Preventative Action*: Configured 8192 token ceiling, multi-part inspection, and multi-model cascade with continuous learned memory fallback.
+- **Modified Code Files**:
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs`
+  - `src/Nutrition.WebGateway/appsettings.json`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test`: **Passed: 20, Failed: 0, Skipped: 0**.
+  - Verified remote model returns complete, valid `IndianMealAnalysisResult` JSON without truncation.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260916-017] Model Detection Transparency Badge & Configurable UI Visibility
+- **Date / Timestamp**: 2026-09-16 19:40:00 UTC
+- **Change Type**: `[FEATURE]` & `[OBSERVABILITY]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.WebGateway` (PWA UI)
+- **Summary of Change**:
+  1. Added `DetectedByModel` string property to `IndianMealAnalysisResult` and exposed it in API responses (`/api/meals/upload`, `/api/meals/analyze-text`).
+  2. Added `"AI:ShowModelDetails": true` in `appsettings.json` to allow toggling model detection visibility on/off for troubleshooting without breaking production contracts.
+  3. Designed a sleek obsidian glassmorphic badge in the Review & Correction modal (`review-modal.html`, `review-modal.js`) displaying the active model (e.g. `gemini-3-flash-preview`, `gemini-2.5-flash`, or `Local Clinical Engine (Offline)`).
+- **Modified Code Files**:
+  - `src/Nutrition.Application/Agents/IndianMealAnalysisResult.cs`
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs`
+  - `src/Nutrition.WebGateway/appsettings.json`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - Browser verification subagent confirmed badge renders cleanly above identified food items with correct model attribution.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260917-018] Aspire Tracing HTTP Payload Telemetry & GenAI Observability Enrichment
+- **Date / Timestamp**: 2026-09-17 08:45:00 UTC
+- **Change Type**: `[FEATURE]` & `[OBSERVABILITY]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.WebGateway`, `Nutrition.Infrastructure`
+- **Summary of Change**:
+  1. **HTTP Payload Telemetry Middleware**:
+     - Built `HttpPayloadTelemetryMiddleware.cs` in `Nutrition.WebGateway/Middleware`.
+     - Safely buffers `/api/*` requests with `context.Request.EnableBuffering()` and captures JSON/text payloads (up to 64KB) as span attribute `http.request.body`.
+     - Intercepts response streams via `MemoryStream`, captures response payload as `http.response.body` and `http.response.status_code`, and copies back to client stream.
+     - For multipart uploads, captures structured metadata summary, preventing multi-megabyte binary allocations.
+  2. **Dedicated OpenTelemetry ActivitySource (`Nutrition.DietDost`)**:
+     - Created `NutritionTelemetry.cs` in `Nutrition.Application/Common` defining `ActivitySource` and GenAI semantic attribute keys.
+     - Registered `tracing.AddSource(NutritionTelemetry.ServiceName)` in `Program.cs`.
+  3. **GenAI Observability Child Spans & Structured Logging Scopes**:
+     - In `MicrosoftAgentFoodVisionService.cs`, wrapped meal analyses in child activity spans (`ai.food_description_analysis`, `ai.food_vision_analysis`).
+     - Recorded tags: `gen_ai.system_prompt` (full ICMR-NIN & WHO rules), `gen_ai.user_prompt`, `user.id`, `user.diagnosed_conditions`, `user.medications`, `diet.learned_corrections_count`, `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.response.dish_name`, calories, macros, and confidence score.
+     - Enriched structured logging via `_logger.BeginScope` with clinical context parameters for 1-click filtering in Aspire Structured Logs.
+- **Modified Code Files**:
+  - `src/Nutrition.Application/Common/NutritionTelemetry.cs` (New)
+  - `src/Nutrition.WebGateway/Middleware/HttpPayloadTelemetryMiddleware.cs` (New)
+  - `src/Nutrition.WebGateway/Program.cs`
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - Live inspection in Aspire Dashboard at `http://localhost:18888/traces` confirmed root HTTP spans contain `http.request.body` and `http.response.body`, and child AI spans display full system prompts, clinical conditions, and detection outcomes.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260917-019] SQLite Schema Migration Fix, EF Core ValueComparers & Non-PII Diagnostic Logging
+- **Date / Timestamp**: 2026-09-17 09:10:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[DATABASE]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. **Eliminated 7 `CommandError` SQLite Exceptions on Application Start**:
+     - Identified that raw `ALTER TABLE ... ADD COLUMN` statements in `Program.cs` threw SQLite Error 1 (`duplicate column name`) whenever columns already existed.
+     - Implemented schema-aware migration: queries SQLite's `PRAGMA table_info("{tableName}")` and only executes `ALTER TABLE` if the target column is missing.
+     - Added `CREATE INDEX IF NOT EXISTS` for `ProgressPhotos` indices.
+  2. **Eliminated 5 EF Core Collection Mapping Warnings & Prevented Data Loss**:
+     - Added deep `ValueComparer<List<string>>` and `ValueComparer<List<MedicationEntry>>` in `DietTrackerDbContext.OnModelCreating`.
+     - Attached comparers to `UserProfile.DiagnosedConditions`, `UserProfile.Medications`, `MealLog.WhoComplianceFlags`, `MealLog.MedicationWarnings`, and `DailyCalorieLedger.EarnedBadges`.
+     - Guarantees EF Core Change Tracker accurately detects in-place list additions and mutations without data loss.
+  3. **Comprehensive Non-PII Diagnostic Error Logging**:
+     - Updated `EfRepository<T>` and `EfUnitOfWork` with `ILogger` injection.
+     - Wrapped all CRUD and `SaveChangesAsync` operations in try/catch handlers logging non-PII operational diagnostics (Operation name, EntityType, RecordId, EntityState, and SQLite error code/inner exception).
+     - Strictly protected user privacy: personal names, phone numbers, and clinical notes are NEVER logged.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom 1*: 7 red `CommandError` entries in Aspire Structured Logs on every startup.
+  - *Root Cause 1*: SQLite lack of `ADD COLUMN IF NOT EXISTS` support caused duplicate column exceptions on subsequent runs.
+  - *Symptom 2*: 5 EF Core warnings indicating collection properties with value converters lacked value comparers.
+  - *Root Cause 2*: EF Core cannot track in-place mutations of collections without an explicit `ValueComparer`.
+  - *Preventative Actions*: Implemented `PRAGMA table_info` checks before ALTER TABLE, and registered explicit `ValueComparer` instances for all collection properties.
+- **Modified Code Files**:
+  - `src/Nutrition.Infrastructure/Persistence/DietTrackerDbContext.cs`
+  - `src/Nutrition.Infrastructure/Persistence/EfRepository.cs`
+  - `src/Nutrition.WebGateway/Program.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet build`: **0 Warning(s), 0 Error(s)**.
+  - Aspire Structured Logs: **0 Errors, 0 Warnings** on startup.
+  - Verified REST profile update: appended `"Insulin Resistance"` to `diagnosedConditions`, persisted to SQLite, and retrieved accurately.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+
 
 
 

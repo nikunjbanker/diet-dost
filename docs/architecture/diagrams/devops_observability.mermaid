@@ -2,15 +2,15 @@ graph TD
     subgraph Aspire_AppHost [".NET Aspire Distributed AppHost"]
         Host["Aspire.Hosting.AppHost (NET 11 RC)"]
         OTel["OpenTelemetry OTLP Collector"]
-        Dash["Aspire Observability Dashboard (Port 18888)"]
+        Dash["Aspire Observability Dashboard (Port 18888)<br/>(Virtualize JS Patched: 0 Interop Errors)"]
         RedisRes[("Redis Cache Container")]
-        DbRes[("SQLite / PostgreSQL Resource")]
+        DbRes[("SQLite / PostgreSQL Resource<br/>(Schema-Aware PRAGMA, ValueComparers)")]
     end
 
     subgraph Microservice_Processes ["Aspire Managed Microservices"]
-        GW["WebGateway (YARP)"]
+        GW["WebGateway (ASP.NET Core / YARP)<br/>(HttpPayloadTelemetryMiddleware)"]
         PS["Nutrition.ProfileService"]
-        VS["Nutrition.VisionService"]
+        VS["Nutrition.VisionService<br/>(NutritionTelemetry 'ai.food_detection' Spans)"]
         AS["Nutrition.AnalyticsService"]
     end
 
@@ -21,8 +21,8 @@ graph TD
     Host -->|Spin Up| RedisRes
     Host -->|Attach| DbRes
 
-    GW -.->|Traces / Metrics| OTel
-    PS -.->|Traces / Metrics| OTel
-    VS -.->|Traces / Metrics| OTel
-    AS -.->|Traces / Metrics| OTel
+    GW -.->|HTTP Root Traces with Payloads| OTel
+    PS -.->|Traces & Metrics| OTel
+    VS -.->|GenAI Semantic Spans & Non-PII Scopes| OTel
+    AS -.->|Traces & Metrics| OTel
     OTel -->|Aggregate Telemetry| Dash

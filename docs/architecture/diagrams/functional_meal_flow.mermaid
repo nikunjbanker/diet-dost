@@ -2,9 +2,10 @@ sequenceDiagram
     autonumber
     actor User as User (PWA Client)
     participant ClientDb as Client SQLite / IndexedDB
-    participant Gateway as YARP WebGateway
+    participant Gateway as WebGateway (HttpPayloadTelemetry)
     participant VisionSvc as Nutrition.VisionService
-    participant AgentAI as Microsoft Agent (Gemini 2.5)
+    participant AgentAI as Microsoft Agent (Gemini 3-Flash / 2.5)
+    participant MemoryDb as SQLite (UserCorrectionRecords)
     participant AnalyticsSvc as Nutrition.AnalyticsService
     participant LedgerDb as SQLite / PostgreSQL Ledger
 
@@ -14,13 +15,19 @@ sequenceDiagram
     else Device is Online
         ClientDb->>Gateway: POST /api/meals/upload (Multipart Photo)
         Gateway->>Gateway: Validate Magic Bytes & Strip EXIF
+        Gateway->>Gateway: Start Activity 'POST /api/meals/upload' with Body Telemetry
         Gateway->>VisionSvc: Forward Sanitized Image Stream
-        VisionSvc->>AgentAI: Analyze Meal (Structured Prompt + Image)
-        AgentAI-->>VisionSvc: IndianMealAnalysisResult (JSON Schema)
+        VisionSvc->>VisionSvc: Start Span 'ai.food_detection' with GenAI Tags
+        VisionSvc->>AgentAI: Analyze Meal (Structured Prompt + Fallback Cascade)
+        AgentAI-->>VisionSvc: IndianMealAnalysisResult (JSON Schema + detectedByModel)
+        VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, detectedByModel)
         
         alt Confidence Score >= 70%
-            VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, Macros)
-            Gateway-->>User: Render Interactive 1-Tap Review Screen
+            Gateway-->>User: Render 1-Tap Review Screen (with Model Badge if Enabled)
+            opt User modifies items / portions
+                User->>Gateway: POST /api/meals/confirm (with modified items)
+                Gateway->>MemoryDb: Persist UserCorrectionRecord (Continuous Learning)
+            end
             User->>Gateway: POST /api/meals/confirm (Tap 'Looks Great!')
             Gateway->>AnalyticsSvc: Emit MealConfirmedEvent
             AnalyticsSvc->>LedgerDb: Update DailyCalorieLedger

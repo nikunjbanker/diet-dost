@@ -1,5 +1,5 @@
 # Clinical Dietetics Specification (Indian Population)
-> **Specification Version**: `v1.1.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
 > **Standards Basis**: ICMR-NIN 2024 Dietary Guidelines for Indians & WHO South Asian Consultation  
 > **Target Population**: Adult Indian Male (Ref: 65 kg) & Female (Ref: 55 kg)  
 

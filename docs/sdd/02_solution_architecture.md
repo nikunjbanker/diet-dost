@@ -1,5 +1,5 @@
 # Master Solution Architecture & Multi-Dimensional Diagrams
-> **Specification Version**: `v1.1.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
 > **Architecture Topology**: Distributed Clean Architecture & .NET 11 RC Aspire AppHost  
 > **Key Dimensions**: Design System, Application Microservices, Security Boundary, DevOps, Functional Engine  
 
@@ -15,10 +15,12 @@ graph TB
         direction TB
         UI_Linear["Linear Design System<br/>(Obsidian #08090a, Linear Violet #5e6ad2, Emerald #27c380)<br/>Geist Sans & Tabular Numbers"]
         UI_PWA["PWA Web Client & Mobile Shell<br/>(Camera / Photo Capture, Habit Streak HUD, Macro Gauges)"]
+        UI_Badge["Model Transparency Badge<br/>('AI:ShowModelDetails': true, Live Model Indicator)"]
         UI_Feedback["Delight & Micro-Interactions<br/>(Confetti Micro-Burst, Haptic Feedback, 1-Tap Pill Chips)"]
         UI_Offline["Client-Side Offline Engine<br/>(WASM SQLite with OPFS / IndexedDB Dexie.js & ServiceWorker)"]
         
         UI_Linear --- UI_PWA
+        UI_PWA --- UI_Badge
         UI_PWA --- UI_Feedback
         UI_PWA <-->|Offline Caching & Background Sync| UI_Offline
     end
@@ -29,11 +31,13 @@ graph TB
         SEC_RateLimit["ASP.NET Core RateLimiter<br/>(Token-Bucket per User IP / Bearer Token)"]
         SEC_FileArmor["File Ingestion Armor<br/>(Magic Byte Check: JPEG/PNG/WEBP, Max 8MB, EXIF GPS Stripper)"]
         SEC_AIGuard["AI Prompt Guardrails & Safety<br/>(Prompt Delimiters, Strict JSON Schema, PII Redaction)"]
+        SEC_NonPiiLog["Non-PII Diagnostic Logging<br/>(Sanitized DB Exception Logger: Class & Action Only, Zero Clinical Values)"]
         SEC_DataFilter["Data Isolation Guardrails<br/>(EF Core Global Query Filters: UserId == CurrentUser.Id)"]
     end
 
     subgraph LAYER_GATEWAY ["3. INGRESS & ORCHESTRATION GATEWAY"]
         YARP["YARP API Gateway / Reverse Proxy (.NET 11 RC)<br/>(Path Routing, Auth Token Verification, Distributed Rate Limiting)"]
+        MW_Payload["HttpPayloadTelemetryMiddleware<br/>(Request/Response Body Capture -> Activity.SetTag http.request/response.body)"]
     end
 
     subgraph LAYER_APPLICATION ["4. APPLICATION SERVICES LAYER (DDD Bounded Contexts)"]
@@ -48,8 +52,9 @@ graph TB
         subgraph SVC_VISION ["Nutrition.VisionService"]
             MOD_Vision["AI Multimodal Meal Ingestion Context"]
             AGG_Meal["Aggregate Root: MealLog<br/>(MealType, PhotoUri, Status: Uploaded->Analyzed->Verified)"]
-            AGENT_Food["Microsoft Agent Framework Agent<br/>(System Prompts, Schema-Constrained Parser)"]
+            AGENT_Food["Microsoft Agent Framework Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
             GATE_Confidence["Confidence Gating Engine (>= 70% Auto-Log vs < 70% Retake)"]
+            LEARN_Memory["Adaptive Memory & Continuous Learning<br/>(UserCorrectionRecord: Original vs Modified Diff Log)"]
         end
 
         subgraph SVC_ANALYTICS ["Nutrition.AnalyticsService"]
@@ -69,16 +74,16 @@ graph TB
     end
 
     subgraph LAYER_AI ["6. EXTERNAL AI FOUNDATION"]
-        CLOUD_AI["Google AI Pro (Gemini 2.5 Pro / Flash)<br/>(Vision Ingestion & Structured Indian Meal Reasoning)"]
+        CLOUD_AI["Google AI Pro Cascade<br/>(Gemini 3 Flash Preview [8192 Max Tokens + Thinking] -> 2.5 Flash -> 2.5 Pro)<br/>Tag: detectedByModel"]
     end
 
     subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11 RC)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (NET 11 RC)<br/>(Distributed Orchestration & Lifecycle Controller)"]
-        ASPIRE_Dash["Aspire Developer Dashboard<br/>(Real-Time Health, Distributed Traces, Console Logs)"]
-        OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(Distributed Traces, Meters, ActivitySources, Structured Logs)"]
+        ASPIRE_Host[".NET Aspire AppHost (NET 11 RC)<br/>(Distributed Orchestration & Typed Resource Topology)"]
+        ASPIRE_Dash["Aspire Developer Dashboard (Port 18888)<br/>(Blazor Virtualize JS Patched, Live Resources, Traces, Structured Logs)"]
+        OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')<br/>GenAI Semantic Tags & Structured Logging Scopes"]
         STORE_Cache[("Redis Cache Cluster<br/>(Session Store, Token Bucket, Query Acceleration)")]
-        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Encrypted Local Storage / Cloud Relational Database)")]
+        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Schema-Aware PRAGMA Checks, EF ValueComparers, 0 Startup Errors)")]
         STORE_Blob[("Encrypted Meal Photo Storage<br/>(Local AppData / Cloud Blob Storage)")]
         CONTAINERS["Containerization & CI/CD<br/>(Docker / Podman, GitHub Actions Pipeline, Health Watchdogs)"]
     end
@@ -87,6 +92,7 @@ graph TB
     UI_PWA -->|HTTPS / WSS| SEC_Perimeter
     SEC_Perimeter --> SEC_RateLimit
     SEC_RateLimit --> YARP
+    YARP --- MW_Payload
 
     YARP -->|Route /api/profiles| SVC_PROFILE
     YARP -->|Route /api/meals/upload| SEC_FileArmor
@@ -101,10 +107,11 @@ graph TB
 
     SVC_VISION --> SEC_AIGuard
     SEC_AIGuard --> AGENT_Food
-    AGENT_Food <-->|Multimodal Analysis Request / Response| CLOUD_AI
+    AGENT_Food <-->|Multimodal Request / Response with Fallback| CLOUD_AI
     AGENT_Food --> GATE_Confidence
     GATE_Confidence -->|Confidence >= 70% Verified| AGG_Meal
     GATE_Confidence -->|< 70% Retake Prompt / Manual Fallback| UI_PWA
+    AGG_Meal --> LEARN_Memory
 
     AGG_Meal -.->|Domain Event: MealConfirmedEvent| SVC_ANALYTICS
     SVC_ANALYTICS --> AGG_Ledger
@@ -119,6 +126,7 @@ graph TB
     SEC_DataFilter --> STORE_Db
     SVC_VISION --> STORE_Blob
     YARP <--> STORE_Cache
+    STORE_Db --- SEC_NonPiiLog
 
     %% DevOps & Telemetry Wiring
     ASPIRE_Host -->|Orchestrates| YARP
@@ -128,9 +136,9 @@ graph TB
     ASPIRE_Host -->|Orchestrates| STORE_Cache
     ASPIRE_Host -->|Orchestrates| STORE_Db
 
-    YARP -.->|Traces & Metrics| OTEL_Collector
+    YARP -.->|Traces with Payloads| OTEL_Collector
     SVC_PROFILE -.->|Traces & Metrics| OTEL_Collector
-    SVC_VISION -.->|Traces & Metrics| OTEL_Collector
+    SVC_VISION -.->|GenAI Semantic Spans & Scopes| OTEL_Collector
     SVC_ANALYTICS -.->|Traces & Metrics| OTEL_Collector
     OTEL_Collector --> ASPIRE_Dash
 ```
@@ -181,5 +189,35 @@ graph TB
     DI --> SERVICES
     DI --> CONTROLLERS
     CONTROLLERS --> PARTIALS
+```
+
+---
+
+### 2.5 End-to-End Trace & Observability Hierarchy
+
+To achieve transparent observability in the .NET Aspire Dashboard without compromising clinical privacy or PII, the request and detection pipeline is instrumented with hierarchical OpenTelemetry spans:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Client as PWA Client
+    participant MW as HttpPayloadTelemetryMiddleware
+    participant API as MealsController (ASP.NET Core)
+    participant Telemetry as NutritionTelemetry (ActivitySource)
+    participant AI as MicrosoftAgentFoodVisionService
+    participant OTel as OpenTelemetry / Aspire Dashboard
+
+    Client->>MW: POST /api/meals/analyze (multipart/form-data)
+    Note over MW: Root Activity: POST /api/meals/analyze
+    MW->>API: Next(context)
+    API->>Telemetry: ActivitySource.StartActivity("ai.food_detection")
+    Note over Telemetry: Child Span: ai.food_detection<br/>gen_ai.system=GoogleGemini<br/>gen_ai.request.model=gemini-3-flash-preview<br/>user.diagnosed_conditions=Type 2 Diabetes<br/>user.medications=Metformin
+    API->>AI: AnalyzeFoodImageAsync(stream, profile, history)
+    AI-->>API: IndianMealAnalysisResult (detectedByModel, items)
+    Telemetry->>OTel: End Child Span (gen_ai.response.model, items_detected)
+    API-->>MW: 200 OK (JSON Body)
+    Note over MW: Attach Activity Tags:<br/>http.request.body=[Binary Photo Data 45.2 KB]<br/>http.response.body={"success":true,"detectedByModel":"gemini-3-flash-preview",...}
+    MW-->>Client: 200 OK
+    MW->>OTel: Export Complete Trace Hierarchy
 ```
 

@@ -34,7 +34,7 @@
   - `MealType`: MealType (Breakfast, Lunch, Snack, Dinner)
   - `DishName`: string
   - `PhotoUri`: string?
-  - `Items`: `List<FoodItem>`
+  - `Items`: `List<FoodItemRecord>`
   - `TotalCalories`: double
   - `TotalProteinGrams`: double
   - `TotalCarbsGrams`: double
@@ -44,23 +44,38 @@
   - `ConfidenceScore`: double
   - `IsConfidenceGatedPassed`: bool (true if >= 0.70)
   - `IsVerifiedByUser`: bool
+  - `DetectedByModel`: string? (Attributed AI model e.g. `gemini-3-flash-preview` or `Local Clinical Engine`)
   - `WhoComplianceFlags`: `List<string>`
   - `MedicationWarnings`: `List<string>`
   - `DietitianAdvice`: string?
   - `LoggedAt`: DateTime (UTC)
-- **Entity**: `FoodItem`
+- **Entity**: `FoodItemRecord`
   - `Id`: string
+  - `MealLogId`: string
   - `Name`: string
   - `HindiOrRegionalName`: string?
   - `EstimatedPortion`: string
-  - `Grams`: double
   - `Calories`: double
   - `ProteinGrams`: double
   - `CarbsGrams`: double
   - `FatGrams`: double
   - `FiberGrams`: double
   - `SodiumMg`: double
-  - `CookingMediumEstimate`: string?
+  - `OriginalDetection`: string (Initial detection before user correction)
+- **Aggregate Root**: `UserCorrectionRecord` (Continuous Model Training & Memory)
+  - `Id`: string
+  - `UserId`: string
+  - `OriginalDetectedItem`: string
+  - `CorrectedItemName`: string
+  - `HindiOrRegionalName`: string
+  - `EstimatedPortion`: string
+  - `Calories`: double
+  - `ProteinGrams`: double
+  - `CarbsGrams`: double
+  - `FatGrams`: double
+  - `MealType`: string
+  - `CreatedAtUtc`: DateTime
+  - `FrequencyCount`: int (Usage frequency ranking for system prompt injection)
 
 ### 1.3 `Nutrition.AnalyticsService` Context
 - **Aggregate Root**: `DailyCalorieLedger`
@@ -82,9 +97,21 @@
   - `ConsumedSodiumMg`: double
   - `VisibleCookingOilLimitGrams`: double
   - `ConsumedCookingOilGrams`: double
+  - `EarnedBadges`: `List<string>`
   - `HealthScore`: int (0 - 100)
   - `StreakCount`: int
   - `LoggedMealCount`: int
+
+### 1.4 `Nutrition.ProgressService` Context
+- **Aggregate Root**: `ProgressPhoto` (Visual Transformation Tracking)
+  - `Id`: string (GUID)
+  - `UserId`: string
+  - `CapturedAtUtc`: DateTime
+  - `WeightKg`: double
+  - `PhotoType`: ProgressPhotoType (Face, FullBodyFront, FullBodySide, FullBodyBack)
+  - `PhotoUri`: string
+  - `IsBaseline`: bool
+  - `Notes`: string?
 
 ---
 
@@ -98,6 +125,7 @@
   "properties": {
     "mealType": { "type": "string", "enum": ["Breakfast", "Lunch", "Snack", "Dinner"] },
     "dishName": { "type": "string" },
+    "detectedByModel": { "type": "string" },
     "identifiedItems": {
       "type": "array",
       "items": {
@@ -106,7 +134,6 @@
           "name": { "type": "string" },
           "hindiOrRegionalName": { "type": "string" },
           "estimatedPortion": { "type": "string" },
-          "grams": { "type": "number" },
           "calories": { "type": "number" },
           "proteinGrams": { "type": "number" },
           "carbsGrams": { "type": "number" },
@@ -116,7 +143,7 @@
           "cookingMediumEstimate": { "type": "string" },
           "confidenceScore": { "type": "number" }
         },
-        "required": ["name", "estimatedPortion", "grams", "calories", "proteinGrams", "carbsGrams", "fatGrams"]
+        "required": ["name", "estimatedPortion", "calories", "proteinGrams", "carbsGrams", "fatGrams"]
       }
     },
     "totalCalories": { "type": "number" },
@@ -138,7 +165,13 @@
 
 ## 3. SQLite Persistence & Entity Framework Core Mappings
 
-- Configured via `DietTrackerDbContext`:
-  - `Profiles` mapped with complex JSON serialization for `DiagnosedConditions` and `Medications`.
-  - `Meals` mapped with navigation collection `Items`.
-  - `Ledgers` mapped with composite index on `(UserId, Date)`.
+Configured in `Nutrition.Infrastructure.Persistence.DietTrackerDbContext`:
+- **Collection ValueComparers (Zero Warnings & Change-Tracking Guarantee)**:
+  - `ValueComparer<List<string>>` registered on `UserProfile.DiagnosedConditions`, `MealLog.WhoComplianceFlags`, `MealLog.MedicationWarnings`, and `DailyCalorieLedger.EarnedBadges`.
+  - `ValueComparer<List<MedicationEntry>>` registered on `UserProfile.Medications`.
+  - Guarantees EF Core accurately tracks additions, updates, and removals within collection properties without data loss.
+- **AutoInclude Navigation**:
+  - `MealLog.Items` navigation is configured with `.AutoInclude()` and cascade delete.
+- **Schema-Aware SQLite Startup Migration**:
+  - `Program.cs` inspects `PRAGMA table_info("{tableName}")` prior to executing `ALTER TABLE ... ADD COLUMN` statements, preventing SQLite duplicate column exceptions.
+  - `CREATE INDEX IF NOT EXISTS` applied for `ProgressPhotos` indices (`UserId, CapturedAtUtc` and `UserId, PhotoType`).

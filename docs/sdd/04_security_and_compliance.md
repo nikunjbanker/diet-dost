@@ -1,7 +1,7 @@
 # Security & Compliance Specification (OWASP ASVS)
-> **Specification Version**: `v1.1.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
 > **Standard**: OWASP Top 10 & ASVS Level 2 Baseline  
-> **Scope**: Multimodal Ingestion, Prompt Defense, Rate Limiting, Storage Isolation  
+> **Scope**: Multimodal Ingestion, Prompt Defense, Rate Limiting, Storage Isolation, PII-Free Telemetry  
 
 ---
 
@@ -14,6 +14,7 @@
 | **THREAT-03** | Broken Tenant Access Control (IDOR) | Exposure of clinical intake or medical regimens | EF Core Global Query Filters (`UserId == CurrentUser.Id`) | `SecurityHarnessTests.CrossTenantAccess_Blocked` |
 | **THREAT-04** | Distributed Denial of Service (DDoS) on AI Vision | Depletion of Google AI credits / Server exhaustion | ASP.NET Core RateLimiter Token Bucket (10 uploads/min per user/IP) | `SecurityHarnessTests.BurstUploads_RateLimited` |
 | **THREAT-05** | Location Leaks via Photo Metadata | User privacy violation (GPS coordinates) | Automated EXIF metadata stripper before stream storage | `ImageUploadValidatorTests.ExifLocation_Stripped` |
+| **THREAT-06** | PII / Clinical Data Leakage in Observability Logs & Traces | Privacy breach, non-compliance with health data regulations | Strict PII redaction policy across all repositories and middleware. Only non-PII operational diagnostics (EntityType, RecordId, EntityState, SQLite error codes) logged in EF Core errors. Binary uploads summarized without payload dumps. | Verified in Aspire Dashboard Structured Logs |
 
 ---
 
@@ -49,9 +50,12 @@ public static (bool IsValid, string? ErrorMessage, string? MimeType) ValidateIma
 
 ---
 
-## 3. Perimeter & Content Security Policies
+## 3. Perimeter, Observability & Content Security Policies
 
 - **TLS 1.3 Transport Security**: Strict transport security enforcement.
 - **Content-Security-Policy (CSP)**:
   `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https://generativelanguage.googleapis.com;`
-- **Data Protection**: Sensitive health condition profiles encrypted locally or guarded via EF Core tenant boundaries.
+- **Data Protection & Non-PII Observability**:
+  - Sensitive health condition profiles guarded via EF Core tenant boundaries.
+  - Logging and tracing streams strictly redact personal identifiable information (PII) including full names, contact info, and medical details from exception handlers.
+
