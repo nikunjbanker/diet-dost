@@ -7,22 +7,38 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient } from './services/api-client.js?v=1.2.8';
-import { MealsService } from './services/meals-service.js?v=1.2.8';
-import { ProfileService } from './services/profile-service.js?v=1.2.8';
-import { AnalyticsService } from './services/analytics-service.js?v=1.2.8';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.2.8';
-import { MedicationService } from './services/medication-service.js?v=1.2.8';
+import { ApiClient, apiClient } from './services/api-client.js?v=1.3.1';
+import { MealsService } from './services/meals-service.js?v=1.3.1';
+import { ProfileService } from './services/profile-service.js?v=1.3.1';
+import { AnalyticsService } from './services/analytics-service.js?v=1.3.1';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.3.1';
+import { MedicationService } from './services/medication-service.js?v=1.3.1';
 
-import { toastService } from './ui/toast.js?v=1.2.8';
-import { confettiService } from './ui/confetti.js?v=1.2.8';
-import { DailyHudController } from './ui/daily-hud.js?v=1.2.8';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.2.8';
-import { ReviewModalController } from './ui/review-modal.js?v=1.2.8';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.2.8';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.2.8';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.2.8';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.2.8';
+import { toastService } from './ui/toast.js?v=1.3.1';
+import { confettiService } from './ui/confetti.js?v=1.3.1';
+import { DailyHudController } from './ui/daily-hud.js?v=1.3.1';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.3.1';
+import { ReviewModalController } from './ui/review-modal.js?v=1.3.1';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.1';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.3.1';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.1';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.3.1';
+
+// ============================================================================
+// Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
+// ============================================================================
+window.addEventListener('error', (event) => {
+  const target = event.target;
+  if (target && target.tagName === 'IMG') {
+    if (!target.dataset.hasFallback) {
+      target.dataset.hasFallback = 'true';
+      const id = target.id || '';
+      const cls = typeof target.className === 'string' ? target.className : '';
+      const isProgress = id.includes('face') || id.includes('body') || cls.includes('progress') || cls.includes('timeline-thumb');
+      target.src = isProgress ? '/assets/placeholder-progress.svg' : '/assets/placeholder-meal.svg';
+    }
+  }
+}, true);
 
 // ============================================================================
 // 1. Dependency Injection Registration (DIP & IoC)

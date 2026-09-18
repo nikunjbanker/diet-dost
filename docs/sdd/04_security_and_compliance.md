@@ -1,7 +1,7 @@
 # Security & Compliance Specification (OWASP ASVS)
-> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Standard**: OWASP Top 10 & ASVS Level 2 Baseline  
-> **Scope**: Multimodal Ingestion, Prompt Defense, Rate Limiting, Storage Isolation, PII-Free Telemetry  
+> **Scope**: Multimodal Ingestion, Prompt Defense, Rate Limiting, Storage Isolation, PII-Free Telemetry, Temporal Consistency, Static SVG Armor  
 
 ---
 
@@ -15,6 +15,8 @@
 | **THREAT-04** | Distributed Denial of Service (DDoS) on AI Vision | Depletion of Google AI credits / Server exhaustion | ASP.NET Core RateLimiter Token Bucket (10 uploads/min per user/IP) | `SecurityHarnessTests.BurstUploads_RateLimited` |
 | **THREAT-05** | Location Leaks via Photo Metadata | User privacy violation (GPS coordinates) | Automated EXIF metadata stripper before stream storage | `ImageUploadValidatorTests.ExifLocation_Stripped` |
 | **THREAT-06** | PII / Clinical Data Leakage in Observability Logs & Traces | Privacy breach, non-compliance with health data regulations | Strict PII redaction policy across all repositories and middleware. Only non-PII operational diagnostics (EntityType, RecordId, EntityState, SQLite error codes) logged in EF Core errors. Binary uploads summarized without payload dumps. | Verified in Aspire Dashboard Structured Logs |
+| **THREAT-07** | Timezone Spoofing & Circadian Boundary Manipulation | Falsification of daily deficit calculations or streak tampering across date boundaries | All timestamps strictly recorded and persisted in universal UTC via EF Core `ValueConverter`. Local timezone formatting performed strictly as presentation layer translation against validated IANA timezone strings (`TimeZoneInfo.FindSystemTimeZoneById`). | `ClinicalDomainTests` and `DateTimeKind.Utc` verification |
+| **THREAT-08** | Malicious SVG Script Injection via Fallback Assets | Cross-Site Scripting (XSS) via injected SVG `<script>` or event handlers | All SVG fallback assets (`placeholder-meal.svg`, `placeholder-progress.svg`) are static, purely declarative vector graphics containing zero `<script>`, `onload`, or foreign object tags. Served directly from `wwwroot/assets/` under strict CSP `img-src 'self' data: blob:; object-src 'none';`. | Static vector review & browser fallback error interceptor tests |
 
 ---
 
@@ -54,8 +56,11 @@ public static (bool IsValid, string? ErrorMessage, string? MimeType) ValidateIma
 
 - **TLS 1.3 Transport Security**: Strict transport security enforcement.
 - **Content-Security-Policy (CSP)**:
-  `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https://generativelanguage.googleapis.com;`
+  `default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline' fonts.googleapis.com; font-src fonts.gstatic.com; script-src 'self' 'unsafe-inline'; connect-src 'self' https://generativelanguage.googleapis.com; object-src 'none';`
 - **Data Protection & Non-PII Observability**:
   - Sensitive health condition profiles guarded via EF Core tenant boundaries.
   - Logging and tracing streams strictly redact personal identifiable information (PII) including full names, contact info, and medical details from exception handlers.
-
+- **Temporal Storage Isolation & UTC Consistency**:
+  - Global `ValueConverter<DateTime, DateTime>` guarantees that any incoming timestamp is converted to Universal Time (`.ToUniversalTime()`) prior to persistence in SQLite, and all fetched entities have their `Kind` set to `DateTimeKind.Utc`.
+- **Static SVG Fallback Armor**:
+  - Fallback placeholders (`placeholder-meal.svg`, `placeholder-progress.svg`) provide high-contrast Obsidian dark styling without external script references, third-party CDNs, or interactive DOM capabilities.

@@ -1,5 +1,5 @@
 # SDD Master Index, Roadmap & Traceability Matrix
-> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Classification**: Master Software Design Document (SDD) Index  
 > **Approved Domain Focus**: Indian Population, ICMR-NIN 2024 & WHO Medical Standards  
 > **Tech Stack**: .NET 11 RC, .NET Aspire, Swappable SQLite V1 (PWA Offline-First), Microsoft Agent Framework + Google AI Pro, OWASP ASVS, Linear.app Design System  
@@ -26,6 +26,8 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 11 AppHost topology, OTel pipelines, Redis caching, Docker runbook | `APPROVED` |
 | [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, Aspire test harness, AI vision benchmarks, clinical unit tests | `APPROVED` |
 | [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Log** | Continuous chronological audit trail of features, defect fixes, and RCAs | `SYNCHRONIZED` |
+| [`ICMR_NIN_2024_FEATURE_ROADMAP.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/ICMR_NIN_2024_FEATURE_ROADMAP.md) | **ICMR-NIN 2024 Feature Roadmap** | Comprehensive 17-guideline feature recommendations, prioritization matrix, and roadmap | `PROPOSED & AUDITED` |
+
 
 ---
 
@@ -39,11 +41,17 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **AI Multimodal Vision Agent** | Skill §2.1 – §2.4 | Complete (`MicrosoftAgentFoodVisionService.cs`, Confidence Gating $\ge 70\%$) | 100% Passed (Eval Harness) |
 | **Gemini 3 Flash Thinking & Fallback** | Skill §2.2 | Complete (8192 `max_output_tokens`, thought-parts traversal, fallback cascade) | Verified in Live Evals |
 | **Configurable Model Transparency Badge** | Skill §2.3, §5.1 | Complete (`"AI:ShowModelDetails": true`, `review-modal.html`, `review-modal.js`) | Verified via Browser Subagent |
+| **Quantity Detection & Editable Portions** | Skill §2.3 | Complete (`Quantity` detection, unit steppers, real-time macro recalculation) | Verified in Browser |
+| **Fiber & Sugar Nutrition Tracking** | Skill §1.1, §1.3 | Complete (`FiberGrams`, `SugarGrams`, WHO free sugar ceiling < 25g/day) | 100% Passed (Unit Tests) |
+| **Food Diary & Excel Export** | Skill §5.1 | Complete (1D/7D/30D/90D/365D filter, Card/Grid layouts, XLSX/CSV export) | Verified in Browser |
+| **Obsidian Dark Delete Confirmation Modal** | Skill §5.1 | Complete (Linear danger modal, 6-macro pills, deficit impact advisory) | Verified in Browser |
+| **Profile Timezone & Universal UTC Persistence** | Skill §3.3, §3.4 | Complete (EF Core ValueConverter, `Timezone` column, circadian day grouping) | 100% Passed (Unit Tests) |
+| **Universal Obsidian SVG Image Fallbacks** | Skill §3.5 | Complete (`placeholder-meal.svg`, `placeholder-progress.svg`, window error listener) | Verified via Browser Subagent |
 | **Continuous Learning & Adaptive Memory**| Skill §2.4, §3.1 | Complete (`UserCorrectionRecord.cs`, `UserCorrectionRecordConfiguration.cs`) | Verified via Integration |
 | **Swappable Persistence Engine** | Skill §3.1 – §3.2 | Complete (`StorageInfrastructureExtensions.cs`, SQLite V1) | 100% Passed (Integration) |
 | **Schema-Safe DB Migrations & Comparers**| Skill §3.1, §4.2 | Complete (`PRAGMA table_info` checks, EF Core collection `ValueComparer`s) | 0 Warnings, 0 Runtime Errors |
 | **Linear.app Design System PWA** | Skill §5.1 – §5.3 | Complete (Obsidian dark glassmorphism, HUD, Toast, Transparency) | Verified via Browser Subagent |
-| **Modular ES Modules & Partials** | Skill §5.1 | Complete (10 HTML partials, DI container, EventBus, State store) | Verified via Browser Subagent |
+| **Modular ES Modules & Partials** | Skill §5.1 | Complete (11 HTML partials, DI container, EventBus, State store) | Verified via Browser Subagent |
 | **Visual Transformation & Progress**| Skill §5.4 | Complete (Baseline vs Latest Face, Full Body, Check-In capture) | Verified via Browser Subagent |
 | **DevOps & Aspire AppHost Topology**| Skill §4.1, §7.1 | Complete (`Nutrition.AppHost`, typed resource references, launch settings) | Compiled & Verified |
 | **Aspire Dashboard Virtualize JS Patch**| Skill §4.1, §7.1 | Complete (4th parameter `SpacerVisibilityReason` patch in `blazor.web.11.js`) | 0 JS Interop Exceptions |
@@ -62,6 +70,12 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Hypothyroidism TDEE -12%** | `Nutrition.Domain.Clinical` | `ClinicalCalculators.CalculateCaloricBudget()` | `ClinicalCalculatorsTests.CalculateCaloricBudget_Hypothyroidism_ReducesTdeeBy12Percent` |
 | **AI Food Vision with Confidence Gating** | `Nutrition.VisionService` | `IFoodVisionAgent`, `MealsController` | `FoodVisionEvalHarnessTests` |
 | **Model Detection Transparency** | `Nutrition.WebGateway` (PWA) | `IndianMealAnalysisResult.DetectedByModel`, `review-modal.html` | Browser Verification Subagent |
+| **Quantity Detection & Editable Portions** | `Nutrition.VisionService` & Client | `FoodItemRecord.Quantity`, `review-modal.js` | Browser Verification Subagent |
+| **Fiber & Sugar Nutrition Tracking** | `Nutrition.Domain.Model` | `MealLog.TotalFiberGrams`, `MealLog.TotalSugarGrams` | `DailyCalorieLedgerTests` |
+| **Logged Meals Food Diary & Excel Export** | `Nutrition.WebGateway` | `analytics-card.html`, `analytics-chart.js` | Browser Verification Subagent |
+| **Obsidian Dark Delete Dialog** | `Nutrition.WebGateway` | `delete-meal-modal.html`, `analytics-chart.js` | Browser Verification Subagent |
+| **Profile Timezone & Universal UTC Storage**| `Nutrition.Infrastructure` & Domain | `UserProfile.Timezone`, EF Core ValueConverter | `ClinicalDietitianServiceTests` |
+| **Universal Obsidian SVG Image Fallbacks** | `Nutrition.WebGateway` | `assets/placeholder-meal.svg`, `main.js` capturing listener | Browser Verification Subagent |
 | **Multi-Model Fallback Cascade** | `Nutrition.Infrastructure.AI` | `MicrosoftAgentFoodVisionService` (3-Flash -> 2.5-Flash -> 2.5-Pro) | Live Vision Evals |
 | **Continuous Learning on Correction** | `Nutrition.Infrastructure.Data` | `UserCorrectionRecord`, `NutritionDbContext` | Integration Verification |
 | **1-Tap Review & Modifiers** | `Nutrition.WebGateway` (PWA) | `review-modal.html`, `review-modal.js` | Browser Verification Subagent |

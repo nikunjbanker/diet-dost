@@ -1,5 +1,5 @@
 # Master Solution Architecture & Multi-Dimensional Diagrams
-> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Architecture Topology**: Distributed Clean Architecture & .NET 11 RC Aspire AppHost  
 > **Key Dimensions**: Design System, Application Microservices, Security Boundary, DevOps, Functional Engine  
 
@@ -7,7 +7,7 @@
 
 ## 1. Master Solution Architecture Blueprint
 
-The solution architecture integrates 5 core dimensions into a cohesive, decoupled topology:
+The solution architecture integrates core architectural dimensions into a cohesive, decoupled topology:
 
 ```mermaid
 graph TB
@@ -16,11 +16,17 @@ graph TB
         UI_Linear["Linear Design System<br/>(Obsidian #08090a, Linear Violet #5e6ad2, Emerald #27c380)<br/>Geist Sans & Tabular Numbers"]
         UI_PWA["PWA Web Client & Mobile Shell<br/>(Camera / Photo Capture, Habit Streak HUD, Macro Gauges)"]
         UI_Badge["Model Transparency Badge<br/>('AI:ShowModelDetails': true, Live Model Indicator)"]
+        UI_Diary["Food Diary & Logged Meals<br/>(Section Filters: 1D/7D/30D/90D/365D, Card/Grid Views, Excel Export)"]
+        UI_DeleteModal["Obsidian Delete Modal<br/>(Danger Pulse, 6-Macro Mini-Pills, Deficit Advisory)"]
+        UI_Fallback["Obsidian SVG Image Fallbacks<br/>(Plate & Progress Vector Assets, Capturing Error Interceptor)"]
         UI_Feedback["Delight & Micro-Interactions<br/>(Confetti Micro-Burst, Haptic Feedback, 1-Tap Pill Chips)"]
         UI_Offline["Client-Side Offline Engine<br/>(WASM SQLite with OPFS / IndexedDB Dexie.js & ServiceWorker)"]
         
         UI_Linear --- UI_PWA
         UI_PWA --- UI_Badge
+        UI_PWA --- UI_Diary
+        UI_PWA --- UI_DeleteModal
+        UI_PWA --- UI_Fallback
         UI_PWA --- UI_Feedback
         UI_PWA <-->|Offline Caching & Background Sync| UI_Offline
     end
@@ -44,14 +50,17 @@ graph TB
         direction TB
         subgraph SVC_PROFILE ["Nutrition.ProfileService"]
             MOD_Profile["User Profile & Clinical Assessment Context"]
-            AGG_Profile["Aggregate Root: UserProfile<br/>(Height, Weight, Pace, Dietary Preference)"]
+            AGG_Profile["Aggregate Root: UserProfile<br/>(Height, Weight, Pace, Dietary Preference, Timezone)"]
             VO_ClinIntake["Value Objects: ClinicalRecord & MedicationRegimen<br/>(Metformin, Thyronorm, Telmisartan, etc.)"]
+            VO_Tz["Timezone & Circadian Window<br/>(Auto-Detected IANA Timezone, UTC Normalization)"]
             CALC_BMR["Mifflin-St Jeor & TDEE Calculation Engine"]
         end
 
         subgraph SVC_VISION ["Nutrition.VisionService"]
             MOD_Vision["AI Multimodal Meal Ingestion Context"]
             AGG_Meal["Aggregate Root: MealLog<br/>(MealType, PhotoUri, Status: Uploaded->Analyzed->Verified)"]
+            QTY_Parser["Indian Cooking Quantity Parser<br/>(1.5 Cup, 1 Katori, 5-6 Slices, Steppers)"]
+            MACRO_Nutrients["6-Macro Real-Time Aggregator<br/>(Calories, Protein, Carbs, Fat, Fiber, Sugar)"]
             AGENT_Food["Microsoft Agent Framework Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
             GATE_Confidence["Confidence Gating Engine (>= 70% Auto-Log vs < 70% Retake)"]
             LEARN_Memory["Adaptive Memory & Continuous Learning<br/>(UserCorrectionRecord: Original vs Modified Diff Log)"]
@@ -59,8 +68,8 @@ graph TB
 
         subgraph SVC_ANALYTICS ["Nutrition.AnalyticsService"]
             MOD_Ledger["Calorie Ledger & Analytics Context"]
-            AGG_Ledger["Aggregate Root: DailyCalorieLedger<br/>(Date, Consumed, Budget, Pending Deficit)"]
-            PROJ_Trends["Multi-Period Trend Projections<br/>(7D Deficit, 30D Weight Curve, 90D Plateau Alert)"]
+            AGG_Ledger["Aggregate Root: DailyCalorieLedger<br/>(User Local Circadian Date, Consumed, Budget, Sugar Ceiling)"]
+            PROJ_Trends["Multi-Period Trend Projections<br/>(1D, 7D Deficit, 30D Weight Curve, 90D, 365D Trends)"]
             ENG_Game["Dietitian Dost & Gamification Engine<br/>(Streaks, Daily Health Score 0-100, Achievement Badges)"]
         end
     end
@@ -69,7 +78,7 @@ graph TB
         direction TB
         FUNC_ZeroAssump["Zero-Assumption Intake Engine<br/>(HALTS on missing height/weight/conditions/meds)"]
         FUNC_Matrix["Clinical & Medication Adjustment Matrix<br/>(Diabetes: NetCarbs <= 40% | HTN: Sodium < 1500mg | Thyroid: -12% TDEE)"]
-        FUNC_WHO["WHO & ICMR-NIN Rulebook<br/>(Max 20-25g Visible Cooking Fat | 3:1 Cereal:Pulse | Salt < 5g | Trans Fat < 1%)"]
+        FUNC_WHO["WHO & ICMR-NIN Rulebook<br/>(Max 20-25g Visible Cooking Fat | 3:1 Cereal:Pulse | Salt < 5g | Free Sugar < 25g | Trans Fat < 1%)"]
         FUNC_Safety["Clinical Safety Floor Checks<br/>(Floor: 1200 kcal F / 1500 kcal M | Max Deficit: 1000 kcal/day)"]
     end
 
@@ -83,7 +92,7 @@ graph TB
         ASPIRE_Dash["Aspire Developer Dashboard (Port 18888)<br/>(Blazor Virtualize JS Patched, Live Resources, Traces, Structured Logs)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')<br/>GenAI Semantic Tags & Structured Logging Scopes"]
         STORE_Cache[("Redis Cache Cluster<br/>(Session Store, Token Bucket, Query Acceleration)")]
-        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Schema-Aware PRAGMA Checks, EF ValueComparers, 0 Startup Errors)")]
+        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Universal UTC ValueConverters, Schema-Aware PRAGMA Checks, EF ValueComparers)")]
         STORE_Blob[("Encrypted Meal Photo Storage<br/>(Local AppData / Cloud Blob Storage)")]
         CONTAINERS["Containerization & CI/CD<br/>(Docker / Podman, GitHub Actions Pipeline, Health Watchdogs)"]
     end

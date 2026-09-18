@@ -19,10 +19,15 @@
 - **⚡ Gemini 3 Flash Thinking & Multi-Model Cascade**: Built-in resiliency for Gemini 3 Flash preview models with 8192 output token allocations and thinking tokens traversal, cascading seamlessly to Gemini 2.5 Flash and Gemini 2.5 Pro on quota or timeout.
 - **🔍 End-to-End Aspire Observability & Tracing**: Complete HTTP request and response payload inspection in Aspire distributed traces (`HttpPayloadTelemetryMiddleware`), coupled with child `ai.food_detection` GenAI semantic spans (`gen_ai.system_prompt`, `user.diagnosed_conditions`, `user.medications`).
 - **🔒 Resilient Database Engine & Non-PII Safeguards**: Schema-aware idempotent column migrations (`PRAGMA table_info`), EF Core collection `ValueComparer` instances (preventing change-tracking loss), and strict non-PII diagnostic error logging.
-- **💡 Real-Time AI Macro Recalculation**: Change food items, serving quantities, or oil levels on the fly. The intelligent client/gateway recalculates calories, protein, carbs, fats, fiber, and sodium in real-time.
+- **💡 Real-Time AI Macro Recalculation & Quantity Parsing**: Flexible detection of Indian cooking quantities (e.g. *"1.5 Cup"*, *"1 Katori"*, *"5-6 Slices"*, *"2 Phulkas"*). Dynamically recalculates total calories, protein, carbs, fat, fiber, and sugar whenever portions or ingredients are adjusted.
+- **🥗 Complete Fiber & Sugar Nutrition Tracking**: Tracks dietary fiber (30g/day ICMR-NIN target) and free sugars (< 25g/day WHO threshold) across all meals, daily ledgers, and clinical targets.
+- **📖 Logged Meals Diary & Excel Export**: Filter historical meals by graph section (1D, 7D, 30D, 90D, 365D), switch between interactive Card and Data Grid layouts, update or delete entries in place, and export complete nutritional history to Excel.
+- **🗑️ Obsidian Dark Custom Delete Modal**: Replaces browser-native popups with a polished Linear.app modal featuring a pulsing danger icon, 6-macro mini-pills, and clinical deficit recalculation advisories.
+- **🌍 User Profile Timezone & Universal UTC Storage**: Configurable user timezone with automatic browser detection (`Intl.DateTimeFormat`), EF Core universal UTC value converters, and circadian day-boundary meal groupings.
+- **🖼️ Universal Obsidian Image Fallbacks**: Custom SVG vector graphics (`placeholder-meal.svg` and `placeholder-progress.svg`) with global capturing phase error interceptors ensuring zero broken image icons across all views.
 - **🛡️ ICMR-NIN 2024 Clinical Safeguards**:
   - Enforced starvation caloric floors (1,200 kcal/day for females, 1,500 kcal/day for males).
-  - Condition-specific metabolic adjustments (Hypothyroidism -12% TDEE, Diabetes low GI / low carb distribution, Hypertension 2g/day sodium ceiling, NAFLD saturated fat limits).
+  - Condition-specific metabolic adjustments (Hypothyroidism -12% TDEE, Diabetes low GI / low carb distribution, Hypertension 1.5g/day sodium ceiling, NAFLD saturated fat limits).
 - **📸 Visual Transformation & Progress Tracking**: Face-fat reduction tracking, side-by-side baseline vs latest progress comparisons, and check-in timeline logging.
 - **✨ Obsidian Linear-Class UI**: Ultra-refined dark glassmorphic design inspired by Linear.app with micro-animations, real-time HUD stats, and full calculation transparency sheets.
 
@@ -37,8 +42,9 @@ graph TD
     subgraph Client ["Frontend (PWA)"]
         UI["Linear Obsidian Web Client (HTML5 / Vanilla ES Modules)"]
         DI["Client Dependency Injection & EventBus"]
-        Partials["Modular HTML Partials (HUD, Camera, Modals, History)"]
+        Partials["Modular HTML Partials (HUD, Camera, Modals, Diary, History)"]
         Badge["Model Transparency Badge (Configurable)"]
+        Assets["Obsidian SVG Fallbacks (Plate & Progress Silhouettes)"]
     end
 
     subgraph Gateway ["Web & API Gateway"]
@@ -55,7 +61,7 @@ graph TD
     end
 
     subgraph Infra ["Infrastructure & Persistence"]
-        SQLite["Swappable SQLite Persistence (PRAGMA Checks & ValueComparers)"]
+        SQLite["Swappable SQLite Persistence (Universal UTC Converters & PRAGMA Checks)"]
         AgentVision["Microsoft Agent Framework Vision Agent"]
         Cascade["Multi-Model Fallback Cascade (3-Flash -> 2.5-Flash -> 2.5-Pro)"]
         Aspire["Aspire Orchestrator & Dashboard (Blazor JS Patched)"]
@@ -83,7 +89,7 @@ graph TD
 | **Domain Logic** | Clean Architecture / Domain-Driven Design (DDD) |
 | **AI / Multimodal Vision** | Microsoft Agent Framework + Google Gemini AI (3-Flash, 2.5-Flash, 2.5-Pro Cascade) |
 | **Frontend** | Vanilla ES Modules, CSS Glassmorphism, Chart.js, HTML5 Canvas, PWA |
-| **Database** | SQLite V1 (Schema-aware `PRAGMA table_info` checks, EF Core collection `ValueComparer`s) |
+| **Database** | SQLite V1 (Universal UTC `ValueConverter`, Schema-aware `PRAGMA table_info` checks, EF Core collection `ValueComparer`s) |
 | **Clinical Guidelines** | ICMR-NIN 2024, WHO Asian-Indian Guidelines, Mifflin-St Jeor Equation |
 
 ---
@@ -100,17 +106,18 @@ diet-dost/
 │   ├── Nutrition.Infrastructure/    # AI Vision agent, EF Core DbContext, repositories, ValueComparers
 │   └── Nutrition.WebGateway/        # ASP.NET Core gateway, HttpPayloadTelemetryMiddleware, PWA
 │       └── wwwroot/
+│           ├── assets/              # SVG vectors (placeholder-meal.svg, placeholder-progress.svg)
 │           ├── css/                 # Linear.app glassmorphic stylesheets
 │           ├── js/                  # ES Module client (di, services, state, ui)
-│           ├── partials/            # 10 modular HTML UI components (review-modal, HUD, etc.)
+│           ├── partials/            # 11 modular HTML components (review-modal, delete-meal-modal, HUD, etc.)
 │           └── index.html           # Single Page App shell
 ├── tests/
 │   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & safeguards
 │   └── Nutrition.Vision.Evals/      # AI food vision evaluation harness & benchmark tests
 ├── docs/
 │   ├── architecture/diagrams/       # Standalone synchronized Mermaid architecture diagrams
-│   └── sdd/                         # Comprehensive Software Design Documents (SDD v1.2.0)
-│       ├── 00_sdd_index.md          # Master index & traceability matrix (v1.2.0)
+│   └── sdd/                         # Comprehensive Software Design Documents (SDD v1.3.1)
+│       ├── 00_sdd_index.md          # Master index & traceability matrix (v1.3.1)
 │       ├── 01_clinical_dietetics_spec.md
 │       ├── 02_solution_architecture.md
 │       ├── 03_data_models_and_contracts.md

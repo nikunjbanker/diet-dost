@@ -121,6 +121,19 @@ export class ReviewModalController {
     }
 
     // Photo Lightbox Inspection
+    if (el.mealPhoto) {
+      el.mealPhoto.addEventListener('error', () => {
+        el.mealPhoto.src = '/assets/placeholder-meal.svg';
+        const caption = el.photoWrapper?.querySelector('.review-photo-caption span');
+        if (caption) caption.textContent = 'Plate preview (image unavailable)';
+      });
+    }
+    if (el.lightboxImg) {
+      el.lightboxImg.addEventListener('error', () => {
+        el.lightboxImg.src = '/assets/placeholder-meal.svg';
+      });
+    }
+
     const openLightbox = () => {
       const currentPhoto = (this._state.currentMeal && (this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri)) || (el.mealPhoto ? el.mealPhoto.src : '');
       if (!currentPhoto || !el.lightbox || !el.lightboxImg) return;

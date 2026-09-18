@@ -68,6 +68,12 @@ public class UserProfile
     public List<string> DiagnosedConditions { get; set; } = new();
     public List<MedicationEntry> Medications { get; set; } = new();
 
+    /// <summary>
+    /// User's preferred/detected IANA Timezone identifier (default: "Asia/Kolkata").
+    /// Essential for calculating circadian day boundaries and daily calorie ledgers.
+    /// </summary>
+    public string Timezone { get; set; } = "Asia/Kolkata";
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
@@ -78,6 +84,8 @@ public class UserProfile
     {
         if (string.IsNullOrWhiteSpace(Name))
             throw new InvalidOperationException("Zero Assumption Rule: Name must be specified.");
+        if (string.IsNullOrWhiteSpace(Timezone))
+            throw new InvalidOperationException("Zero Assumption Rule: Timezone must be specified.");
         if (Age <= 0 || Age > 120)
             throw new InvalidOperationException("Zero Assumption Rule: Age must be specified with a valid value (1-120).");
         if (HeightCm < 80 || HeightCm > 250)

@@ -1,5 +1,5 @@
 # Test Harnesses, AI Vision Evals & Quality Engineering
-> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Methodology**: Closed-Loop Harness Engineering & Contract-First Validation  
 > **Test Frameworks**: xUnit, Microsoft.NET.Test.Sdk, Playwright / Browser Agent  
 
@@ -7,12 +7,15 @@
 
 ## 1. Quality Engineering Blueprint
 
-In adherence with Skill §7.1 and §7.2, all implementations must satisfy five verification tiers:
+In adherence with Skill §7.1 and §7.2, all implementations must satisfy eight verification tiers:
 1. **Clinical Dietetics Unit Test Suite (`Nutrition.Domain.Tests`)**: Validates Mifflin-St Jeor math, WHO Asian-Indian BMI cutoffs, safety floors, deficit ceilings, and the clinical adjustment matrix.
 2. **AI Multimodal Vision Evaluation Suite (`Nutrition.Vision.Evals`)**: Evaluates JSON schema compliance, portion heuristic tolerances, confidence gating threshold ($\ge 70\%$), Gemini 3 Flash thinking token support, and multi-model fallback cascade.
-3. **Database Resilience & Integrity Verification**: Validates schema-aware idempotent column migrations (`PRAGMA table_info`), EF Core collection `ValueComparer` instances (preventing change-tracking loss and eliminating model configuration warnings), and non-PII diagnostic error logging.
-4. **OpenTelemetry & Observability Verification**: Verifies full HTTP request/response payload capture in root spans (`HttpPayloadTelemetryMiddleware`), GenAI semantic convention tags (`gen_ai.system_prompt`, `user.diagnosed_conditions`, `user.medications`), and non-PII structured logging scopes.
-5. **OWASP Security & ASVS Verification Suite**: Tests file armor, magic bytes, prompt guardrails, and PII redaction.
+3. **Quantity Detection & Macro Recalculation**: Validates natural portion strings (`1.5 Cup`, `1 Katori`, `5-6 Slices`, `2 Phulkas`) parsing to numeric multipliers and synchronous recalculation of all 6 macronutrients.
+4. **Dietary Fiber & Free Sugar Tracking**: Validates 30g/day Dietary Fiber (ICMR-NIN) target and < 25g/day Free Sugar (WHO threshold) tracking across meals, food items, and daily ledgers.
+5. **Universal UTC Persistence & Timezone Normalization**: Validates EF Core `ValueConverter` converting all `DateTime` instances to UTC on write and restoring `DateTimeKind.Utc` on read, with circadian boundaries correctly calculated across user timezones.
+6. **Food Diary & In-Place Meal Management**: Validates period filtering (1D, 7D, 30D, 90D, 365D), switchable Card/Grid views, Excel export formatting, and in-place meal deletion with daily ledger recalculation.
+7. **Database Resilience & Integrity Verification**: Validates schema-aware idempotent column migrations (`PRAGMA table_info`), EF Core collection `ValueComparer` instances (preventing change-tracking loss and eliminating model configuration warnings), and non-PII diagnostic error logging.
+8. **Universal SVG Fallback Verification**: Validates capturing-phase error listener substituting broken/missing image URIs with Obsidian Dark vector placeholders (`placeholder-meal.svg`, `placeholder-progress.svg`).
 
 ---
 
@@ -29,13 +32,18 @@ In adherence with Skill §7.1 and §7.2, all implementations must satisfy five v
 | **FIX-07** | Aspire Tracing Payload Inspection | Request & Response in Trace | `http.request.body` and `http.response.body` visible in Aspire trace details |
 | **FIX-08** | GenAI Semantic Span Tagging | Child Span `ai.food_detection` | `gen_ai.system_prompt`, `user.diagnosed_conditions`, `user.medications` captured |
 | **FIX-09** | Non-PII Diagnostic Logging | Sanitized Error Logs | Zero patient names, raw weights, or clinical metrics in repository error logs |
+| **FIX-10** | Quantity Multiplier & Macro Recalculation | Instant reactive math | Updating portion from `1 Katori` to `1.5` updates calories, protein, carbs, fat, fiber, sugar by 1.5x |
+| **FIX-11** | Dietary Fiber & Sugar Threshold Warnings | Clinical Advice generation | Meals with > 10g free sugar trigger WHO sugar warning; daily fiber deficiency highlighted |
+| **FIX-12** | Universal UTC Temporal Persistence | ISO 8601 UTC in SQLite | Datetime values stored in SQLite are UTC strings; queries restore `DateTimeKind.Utc` |
+| **FIX-13** | Food Diary Period & Export Generation | Complete 6-macro sheet | Filter by 1D/7D/30D/90D/365D; Excel export generates structured CSV with all 6 macros and cooking fat |
+| **FIX-14** | Universal SVG Fallback Interception | Zero broken image icons | Inaccessible photo URIs instantly render Obsidian `placeholder-meal.svg` or `placeholder-progress.svg` |
 
 ---
 
 ## 3. CLI Test Execution
 
 ```bash
-# Run all unit and eval harness suites
+# Run all unit and eval harness suites (29 tests)
 dotnet test --logger "console;verbosity=detailed"
 
 # Validate WebGateway builds with zero warnings or errors

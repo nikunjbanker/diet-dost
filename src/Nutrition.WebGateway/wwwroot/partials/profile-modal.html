@@ -100,6 +100,49 @@
         </div>
       </div>
 
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Dietary Preference *</label>
+          <select id="inp-dietary" class="text-input" style="width: 100%;">
+            <option value="0">Vegetarian (Lacto)</option>
+            <option value="1">Eggetarian</option>
+            <option value="2">Non-Vegetarian</option>
+            <option value="3">Vegan</option>
+            <option value="4">Jain (No Root Veg)</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Regional Cuisine *</label>
+          <select id="inp-cuisine" class="text-input" style="width: 100%;">
+            <option value="North Indian">North Indian</option>
+            <option value="South Indian">South Indian</option>
+            <option value="Gujarati">Gujarati</option>
+            <option value="Maharashtrian">Maharashtrian</option>
+            <option value="Bengali">Bengali</option>
+            <option value="Pan-Indian">Pan-Indian</option>
+          </select>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <label style="font-size: 0.75rem; color: var(--text-secondary); display: block;">Timezone *</label>
+            <span style="font-size: 0.65rem; color: var(--accent-brand-hover);" id="timezone-auto-hint">Auto-detected</span>
+          </div>
+          <select id="inp-timezone" class="text-input" style="width: 100%;">
+            <option value="Asia/Kolkata">India (IST - UTC+05:30)</option>
+            <option value="UTC">UTC (Coordinated Universal Time)</option>
+            <option value="Asia/Dubai">Dubai / UAE (GST - UTC+04:00)</option>
+            <option value="Asia/Singapore">Singapore (SGT - UTC+08:00)</option>
+            <option value="Europe/London">London / UK (GMT/BST)</option>
+            <option value="America/New_York">New York / US Eastern (EST/EDT)</option>
+            <option value="America/Chicago">Chicago / US Central (CST/CDT)</option>
+            <option value="America/Denver">Denver / US Mountain (MST/MDT)</option>
+            <option value="America/Los_Angeles">Los Angeles / US Pacific (PST/PDT)</option>
+            <option value="Australia/Sydney">Sydney / Australia (AEST/AEDT)</option>
+            <option value="Asia/Tokyo">Tokyo / Japan (JST - UTC+09:00)</option>
+          </select>
+        </div>
+      </div>
+
       <div>
         <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Diagnosed Health Conditions (MANDATORY under Zero Assumption Rule)</label>
         <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;" id="conditions-list">

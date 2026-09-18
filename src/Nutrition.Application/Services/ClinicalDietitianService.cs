@@ -74,14 +74,17 @@ public class ClinicalDietitianService
             existing.RegionalCuisine = profile.RegionalCuisine;
             existing.DiagnosedConditions = profile.DiagnosedConditions;
             existing.Medications = profile.Medications;
+            existing.Timezone = profile.Timezone;
             existing.UpdatedAtUtc = profile.UpdatedAtUtc;
             await _profileRepo.UpdateAsync(existing, ct);
             await _uow.SaveChangesAsync(ct);
             profile = existing;
         }
 
-        // Immediately update today's ledger targets with new clinical budget
-        await GetOrCreateDailyLedgerAsync(profile.Id, DateOnly.FromDateTime(DateTime.UtcNow), ct);
+        // Immediately update today's ledger targets with new clinical budget using user's local day
+        var userTz = GetUserTimeZoneInfo(profile.Timezone);
+        var userToday = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
+        await GetOrCreateDailyLedgerAsync(profile.Id, userToday, ct);
 
         return profile;
     }
@@ -142,9 +145,15 @@ public class ClinicalDietitianService
             }
         }
 
-        // Fetch day's meals to synchronize ledger
+        // Fetch day's meals to synchronize ledger using user's local timezone
+        var userTz = GetUserTimeZoneInfo(profile?.Timezone);
         var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
-        var dayMeals = allUserMeals.Where(m => DateOnly.FromDateTime(m.LoggedAt) == date || DateOnly.FromDateTime(m.LoggedAt.ToLocalTime()) == date).ToList();
+        var dayMeals = allUserMeals.Where(m =>
+        {
+            var userLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz));
+            var utcDate = DateOnly.FromDateTime(m.LoggedAt);
+            return userLocalDate == date || utcDate == date;
+        }).ToList();
         ledger.RecalculateLedger(dayMeals);
         await _ledgerRepo.UpdateAsync(ledger, ct);
         await _uow.SaveChangesAsync(ct);
@@ -184,11 +193,14 @@ public class ClinicalDietitianService
         }
 
         meal.RecalculateTotals();
+        meal.LoggedAt = meal.LoggedAt.Kind == DateTimeKind.Utc ? meal.LoggedAt : meal.LoggedAt.ToUniversalTime();
         await _mealRepo.AddAsync(meal, ct);
         await _uow.SaveChangesAsync(ct);
 
-        // Update day ledger
-        await GetOrCreateDailyLedgerAsync(meal.UserId, DateOnly.FromDateTime(meal.LoggedAt), ct);
+        // Update day ledger using user's local timezone
+        var userTz = GetUserTimeZoneInfo(profile?.Timezone);
+        var mealLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(meal.LoggedAt, userTz));
+        await GetOrCreateDailyLedgerAsync(meal.UserId, mealLocalDate, ct);
 
         return meal;
     }
@@ -324,8 +336,10 @@ public class ClinicalDietitianService
         await _mealRepo.UpdateAsync(existing, ct);
         await _uow.SaveChangesAsync(ct);
 
-        // Synchronize and update daily ledger
-        await GetOrCreateDailyLedgerAsync(existing.UserId, DateOnly.FromDateTime(existing.LoggedAt), ct);
+        // Synchronize and update daily ledger using user's local timezone
+        var userTz = GetUserTimeZoneInfo(profile?.Timezone);
+        var mealLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(existing.LoggedAt, userTz));
+        await GetOrCreateDailyLedgerAsync(existing.UserId, mealLocalDate, ct);
 
         return existing;
     }
@@ -339,7 +353,9 @@ public class ClinicalDietitianService
         }
 
         var userId = meal.UserId;
-        var mealDate = DateOnly.FromDateTime(meal.LoggedAt);
+        var profile = await _profileRepo.GetByIdAsync(userId, ct);
+        var userTz = GetUserTimeZoneInfo(profile?.Timezone);
+        var mealLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(meal.LoggedAt, userTz));
 
         // Delete child items explicitly
         if (meal.Items != null && meal.Items.Count > 0)
@@ -354,15 +370,16 @@ public class ClinicalDietitianService
         await _uow.SaveChangesAsync(ct);
 
         // Recalculate daily ledger for this date
-        await GetOrCreateDailyLedgerAsync(userId, mealDate, ct);
+        await GetOrCreateDailyLedgerAsync(userId, mealLocalDate, ct);
         return true;
     }
 
     public async Task<AnalyticsProjection> GetAnalyticsProjectionAsync(string userId, string period, CancellationToken ct = default)
     {
         var normPeriod = (period ?? "7D").ToUpperInvariant();
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var profile = await _profileRepo.GetByIdAsync(userId, ct);
+        var userTz = GetUserTimeZoneInfo(profile?.Timezone);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
         var budgetObj = profile != null ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
         var targetBudget = budgetObj?.TargetCalories ?? 1600.0;
         var targetProtein = (profile != null && budgetObj != null) 
@@ -372,7 +389,7 @@ public class ClinicalDietitianService
         if (normPeriod is "1D" or "DAILY")
         {
             var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
-            var meals = allUserMeals.Where(m => DateOnly.FromDateTime(m.LoggedAt) == today || DateOnly.FromDateTime(m.LoggedAt.ToLocalTime()) == today).ToList();
+            var meals = allUserMeals.Where(m => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz)) == today).ToList();
             var todayLedger = (await _ledgerRepo.FindAsync(l => l.UserId == userId && l.Date == today, ct)).FirstOrDefault();
 
             double bFast = Math.Round(meals.Where(m => m.MealType == MealType.Breakfast).Sum(m => m.TotalCalories), 0);
@@ -591,15 +608,16 @@ public class ClinicalDietitianService
         CancellationToken ct = default)
     {
         var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
+        var profile = await _profileRepo.GetByIdAsync(userId, ct);
+        var userTz = GetUserTimeZoneInfo(profile?.Timezone);
 
         if (specificDate.HasValue)
         {
             var target = specificDate.Value;
             var filtered = allUserMeals.Where(m =>
             {
-                var d1 = DateOnly.FromDateTime(m.LoggedAt);
-                var d2 = DateOnly.FromDateTime(m.LoggedAt.ToLocalTime());
-                return d1 == target || d2 == target;
+                var userLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz));
+                return userLocalDate == target;
             });
 
             if (mealType.HasValue)
@@ -610,7 +628,7 @@ public class ClinicalDietitianService
             return filtered.OrderByDescending(m => m.LoggedAt).ToList();
         }
 
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
         var normPeriod = period?.Trim().ToUpperInvariant() ?? "7D";
 
         DateOnly startDate = normPeriod switch
@@ -625,9 +643,8 @@ public class ClinicalDietitianService
 
         var query = allUserMeals.Where(m =>
         {
-            var d1 = DateOnly.FromDateTime(m.LoggedAt);
-            var d2 = DateOnly.FromDateTime(m.LoggedAt.ToLocalTime());
-            return (d1 >= startDate && d1 <= today) || (d2 >= startDate && d2 <= today);
+            var userLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz));
+            return userLocalDate >= startDate && userLocalDate <= today;
         });
 
         if (mealType.HasValue)
@@ -636,5 +653,52 @@ public class ClinicalDietitianService
         }
 
         return query.OrderByDescending(m => m.LoggedAt).ToList();
+    }
+
+    public static TimeZoneInfo GetUserTimeZoneInfo(string? timezoneId)
+    {
+        if (string.IsNullOrWhiteSpace(timezoneId))
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+        }
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            if (TimeZoneInfo.TryConvertIanaIdToWindowsId(timezoneId, out var windowsId))
+            {
+                try
+                {
+                    return TimeZoneInfo.FindSystemTimeZoneById(windowsId);
+                }
+                catch
+                {
+                    // Fallback below
+                }
+            }
+        }
+        catch (InvalidTimeZoneException)
+        {
+            // Fallback below
+        }
+
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Asia/Kolkata");
+        }
+        catch
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
+            }
+            catch
+            {
+                return TimeZoneInfo.Utc;
+            }
+        }
     }
 }

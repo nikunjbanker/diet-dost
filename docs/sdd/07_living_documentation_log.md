@@ -1049,4 +1049,83 @@
   - Captured verification screenshot: `aspire_dashboard_webgateway_running_1789742572855.png`.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
+
+### [LOG-20260918-014] Profile Timezone Configuration, Universal UTC Date Storage & Obsidian Image Fallbacks
+- **Date / Timestamp**: 2026-09-18 18:35:00 UTC
+- **Change Type**: `[FEATURE]` & `[ARCHITECTURE]`
+- **Affected Microservices / Components**: `Nutrition.Domain`, `Nutrition.Infrastructure`, `Nutrition.Application`, `Nutrition.WebGateway`, `Skills/indian-diet-calorie-tracker`
+- **Summary of Change**:
+  1. **User Profile Timezone Integration**:
+     - Added `UserProfile.Timezone` domain property (defaults to `"Asia/Kolkata"` / IST) with mandatory intake validation.
+     - Added `PRAGMA table_info` dynamic schema migration for `Profiles.Timezone` column (`TEXT NOT NULL DEFAULT 'Asia/Kolkata'`) in `Program.cs`.
+     - Added Timezone `<select>` dropdown (`#inp-timezone`) and auto-detection via `Intl.DateTimeFormat().resolvedOptions().timeZone` in `profile-modal.html` and `profile-modal.js`.
+     - Exposed `userTimezone` in global `AppState` and persisted on profile update.
+  2. **Universal UTC Persistence & Temporal Normalization Standard**:
+     - Configured EF Core `ValueConverter<DateTime, DateTime>` and `ValueConverter<DateTime?, DateTime?>` across all entity properties in `DietTrackerDbContext.OnModelCreating`, guaranteeing that 100% of persisted dates are stored in UTC (`.ToUniversalTime()`) and materialized with `DateTimeKind.Utc`.
+     - Implemented `GetUserTimeZoneInfo(string? timezoneId)` in `ClinicalDietitianService` with cross-platform fallback (IANA $\leftrightarrow$ Windows IDs via `TryConvertIanaIdToWindowsId`).
+     - Aligned Circadian Day Boundary calculation across `LogMealAsync`, `UpdateMealAsync`, `DeleteMealAsync`, `GetOrCreateDailyLedgerAsync`, `GetMealHistoryAsync`, and `GetAnalyticsProjectionAsync` using `TimeZoneInfo.ConvertTimeFromUtc(meal.LoggedAt, userTz)` to correctly bucket meals into the user's localized civil day.
+  3. **Universal Image Fallback Standard**:
+     - Designed Obsidian Dark SVG placeholder assets matching the Linear.app design aesthetic:
+       - `src/Nutrition.WebGateway/wwwroot/assets/placeholder-meal.svg`: Thali plate silhouette with neon glowing rim and cutlery.
+       - `src/Nutrition.WebGateway/wwwroot/assets/placeholder-progress.svg`: Silhouette vector for missing baseline/current progress photos.
+     - Wired multi-layered defense:
+       - Global capturing event listener in `main.js` (`window.addEventListener('error', callback, true)`) intercepting all non-bubbling `HTMLImageElement` load failures.
+       - Inline `onerror="this.onerror=null; this.src='/assets/placeholder-meal.svg';"` fallbacks on `#review-meal-photo`, `#review-lightbox-img`, `#img-baseline-face`, `#img-current-face`, detail photo previews, and timeline thumbnails.
+  4. **Skill & Living SDD Governance**:
+     - Updated `SKILL.md` with Timezone in Section 1.4, Section 3.3 (Universal UTC Temporal Storage), Section 3.4 (Generic Date Instruction), and Section 3.5 (Image Fallback Standard).
+     - Updated `01_clinical_dietetics_spec.md` (Section 1.4: Circadian Day Boundaries) and `03_data_models_and_contracts.md` (Section 1.1 & Section 3).
+- **Modified / Added Files**:
+  - `src/Nutrition.Domain/Model/Profile/UserProfile.cs`
+  - `src/Nutrition.Infrastructure/Persistence/DietTrackerDbContext.cs`
+  - `src/Nutrition.Application/Services/ClinicalDietitianService.cs`
+  - `src/Nutrition.WebGateway/Program.cs`
+  - `src/Nutrition.WebGateway/wwwroot/assets/placeholder-meal.svg`
+  - `src/Nutrition.WebGateway/wwwroot/assets/placeholder-progress.svg`
+  - `src/Nutrition.WebGateway/wwwroot/partials/profile-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/partials/face-progress-card.html`
+  - `src/Nutrition.WebGateway/wwwroot/partials/progress-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/profile-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/progress-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/core/state.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js`
+  - `src/Nutrition.WebGateway/wwwroot/index.html`
+  - `C:\Users\nikunj.banker\.gemini\config\skills\indian-diet-calorie-tracker\SKILL.md`
+  - `docs/sdd/01_clinical_dietetics_spec.md`
+  - `docs/sdd/03_data_models_and_contracts.md`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - Code build and test execution: `dotnet test`
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260919-015] ICMR-NIN 2024 Dietary Guidelines for Indians (DGI) Audit & Feature Recommendations
+- **Date / Timestamp**: 2026-09-19 00:30:00 UTC
+- **Change Type**: `[ANALYSIS]`, `[SPECIFICATION]` & `[ROADMAP]`
+- **Affected Microservices / Components**: `docs/sdd/`, `docs/ICMR_NIN_2024_FEATURE_ROADMAP.md`, Entire Clinical Dietetics Domain
+- **Summary of Change**:
+  1. **Primary Source Ingestion & Technical Extraction**:
+     - Programmatically ingested and analyzed the complete 148-page official ICMR-NIN *Dietary Guidelines for Indians (DGI) - 2024 (Revised Edition)* (`diet-ref/DGI_2024.pdf`).
+     - Extracted all 17 Core Guidelines, My Plate for the Day (2000 kcal model), 10 Food Group classification, Annexure I (Standard Katori C6–C9), Annexure II (Household utensil conversions), Annexure III (Glycemic Index & Glycemic Load lab database), Annexure IV (Food group item mappings), and Annexure V (Life-stage diets for sedentary/moderate adults, pregnancy, lactation, and elderly).
+  2. **Feature Recommendations Document**:
+     - Published [`docs/ICMR_NIN_2024_FEATURE_ROADMAP.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/ICMR_NIN_2024_FEATURE_ROADMAP.md) detailing 14 concrete clinical features across 5 strategic pillars:
+       - **Pillar A**: Visual Plate & Dietary Diversity ("My Plate" HUD Donut, 10 Food Groups Tracker, Nutricereal/Millet 30-40% Ratio, 500g Produce Goal).
+       - **Pillar B**: Protein Quality & Complementarity (Cereal:Pulse 3:1 Mutual Supplementation Index, Real-Food Protein First advisory).
+       - **Pillar C**: Glycemic Load & Metabolic Health (Annexure III GI/GL Badges, Waist-to-Height Ratio WHtR < 0.5 Tracker, Hidden Salt Alert, Energy Density <250 kcal/100g Ceiling, NOVA-4 UPF Filter).
+       - **Pillar D**: Kitchen Measurement & Preparation Science (Annexure I Standard Katori C6-C9 portion picker, Soaking/Sprouting/Fermentation Bioavailability tips).
+       - **Pillar E**: Smart Label Scanner & Life-Stage Adaptations (FSSAI Back-of-pack Label Inspector, Pregnancy/Lactation/Elderly templates).
+  3. **Value vs. Impact Prioritization Matrix**:
+     - Formulated 4-dimensional weighted scoring (Clinical Value 35%, User Delight 25%, Technical Feasibility 20%, Strategic Differentiation 20%).
+     - Identified Top Priority Phase 1 Quick Wins: Standard Katori Sizes (C6–C9), "My Plate for the Day" HUD Visualizer, Waist-to-Height Ratio (WHtR), and Annexure III Glycemic Index Badges.
+- **Modified / Added Files**:
+  - `docs/ICMR_NIN_2024_FEATURE_ROADMAP.md`
+  - `docs/sdd/00_sdd_index.md`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Sign-Off Status**: `DOCUMENTED & ROADMAP ESTABLISHED`
+
+
+
 

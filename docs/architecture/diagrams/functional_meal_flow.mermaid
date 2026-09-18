@@ -7,36 +7,58 @@ sequenceDiagram
     participant AgentAI as Microsoft Agent (Gemini 3-Flash / 2.5)
     participant MemoryDb as SQLite (UserCorrectionRecords)
     participant AnalyticsSvc as Nutrition.AnalyticsService
-    participant LedgerDb as SQLite / PostgreSQL Ledger
+    participant LedgerDb as SQLite Ledger (Universal UTC Converter)
+    participant DiaryUI as Food Diary (Card / Grid / Excel Export)
 
-    User->>ClientDb: Snap Meal Photo (Offline-Ready)
+    User->>ClientDb: Snap Meal Photo or Enter Text Description
     alt Device is Offline
-        ClientDb-->>User: Cache Photo (Status: PendingSync)
+        ClientDb-->>User: Cache Photo / Meal (Status: PendingSync)
     else Device is Online
-        ClientDb->>Gateway: POST /api/meals/upload (Multipart Photo)
-        Gateway->>Gateway: Validate Magic Bytes & Strip EXIF
-        Gateway->>Gateway: Start Activity 'POST /api/meals/upload' with Body Telemetry
-        Gateway->>VisionSvc: Forward Sanitized Image Stream
+        ClientDb->>Gateway: POST /api/meals/upload or /analyze-text
+        Gateway->>Gateway: Validate Magic Bytes, Strip EXIF & Enforce Rate Limits
+        Gateway->>Gateway: Start Activity 'POST /api/meals/...' with Body Telemetry
+        Gateway->>VisionSvc: Forward Sanitized Stream / Description
         VisionSvc->>VisionSvc: Start Span 'ai.food_detection' with GenAI Tags
-        VisionSvc->>AgentAI: Analyze Meal (Structured Prompt + Fallback Cascade)
-        AgentAI-->>VisionSvc: IndianMealAnalysisResult (JSON Schema + detectedByModel)
-        VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, detectedByModel)
+        VisionSvc->>AgentAI: Analyze Meal (Structured Prompt + Quantity Multiplier + Fallback Cascade)
+        AgentAI-->>VisionSvc: IndianMealAnalysisResult (6 Macros, Portion Multipliers, detectedByModel)
+        VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, Protein, Carbs, Fat, Fiber, Sugar)
         
         alt Confidence Score >= 70%
-            Gateway-->>User: Render 1-Tap Review Screen (with Model Badge if Enabled)
-            opt User modifies items / portions
+            Gateway-->>User: Render Review Modal (Quantity Input, 6-Macro Mini-Pills, Model Badge)
+            opt User edits Quantity / Portion / Items
+                User->>User: Update Quantity (e.g. 1.0 -> 1.5)
+                User->>User: Instant Reactive Recalculation across all 6 Macros + Cooking Fat
                 User->>Gateway: POST /api/meals/confirm (with modified items)
-                Gateway->>MemoryDb: Persist UserCorrectionRecord (Continuous Learning)
+                Gateway->>MemoryDb: Persist UserCorrectionRecord (Continuous Learning Memory)
             end
             User->>Gateway: POST /api/meals/confirm (Tap 'Looks Great!')
+            Gateway->>LedgerDb: Persist MealLog (UTC Timestamp via ValueConverter)
             Gateway->>AnalyticsSvc: Emit MealConfirmedEvent
-            AnalyticsSvc->>LedgerDb: Update DailyCalorieLedger
+            AnalyticsSvc->>LedgerDb: Update DailyCalorieLedger (Fiber 30g & Sugar 25g Tracking)
             AnalyticsSvc-->>User: Trigger Confetti Micro-Burst & Streak +1
+            AnalyticsSvc->>DiaryUI: Refresh Food Diary (Card / Grid Views)
         else Confidence Score < 70%
             VisionSvc-->>Gateway: HTTP 422 (Low Confidence Alert)
             Gateway-->>User: Show Friendly Retake Prompt & 1-Tap Retake Button
             opt User prefers manual
                 User->>Gateway: POST /api/meals/quick-manual
             end
+        end
+    end
+
+    opt User Manages Food Diary
+        User->>DiaryUI: Select Period (1D, 7D, 30D, 90D, 365D) or Switch Card/Grid View
+        DiaryUI-->>User: Display Formatted Meal History with 6-Macro Badges & Timezone Conversion
+        opt User Exports Data
+            User->>DiaryUI: Click 'Export to Excel'
+            DiaryUI-->>User: Download Structured .csv / .xlsx Sheet
+        end
+        opt User Deletes Meal
+            User->>DiaryUI: Click Delete Button on Meal
+            DiaryUI-->>User: Show Custom Obsidian Delete Modal (Danger Pulse & Deficit Advisory)
+            User->>Gateway: DELETE /api/meals/{id}
+            Gateway->>LedgerDb: Remove MealLog
+            Gateway->>AnalyticsSvc: Recalculate Ledger for Circadian Day
+            AnalyticsSvc-->>User: Update Daily HUD & Refresh Diary View
         end
     end

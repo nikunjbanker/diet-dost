@@ -2,6 +2,12 @@ graph TB
     subgraph SKELETON ["index.html (48-line Skeleton)"]
         HTML_Root["index.html Skeleton<br/>([data-include] Tags)"]
         LOADER["Async loadPartials()<br/>(Zero-Bundler Native Fetch)"]
+        FALLBACK["Universal SVG Image Fallback<br/>(Capturing Error Interceptor)"]
+    end
+
+    subgraph ASSETS ["Static Vector Armor (assets/)"]
+        SVG_MEAL["placeholder-meal.svg<br/>(Obsidian Food Fallback)"]
+        SVG_PROG["placeholder-progress.svg<br/>(Obsidian Selfie Fallback)"]
     end
 
     subgraph PARTIALS ["Modular HTML Partials (src/.../partials/)"]
@@ -10,11 +16,12 @@ graph TB
         P3["hero-hud.html"]
         P4["face-progress-card.html"]
         P5["meal-logger.html"]
-        P6["analytics-card.html"]
-        P7["review-modal.html"]
-        P8["profile-modal.html"]
+        P6["analytics-card.html (Food Diary Grid/Card & Charts)"]
+        P7["review-modal.html (Quantity & 6-Macro Recalc)"]
+        P8["profile-modal.html (Timezone & Intake)"]
         P9["transparency-modal.html"]
         P10["progress-modal.html"]
+        P11["delete-meal-modal.html (Obsidian Danger Modal)"]
     end
 
     subgraph IOC ["DI & Messaging Infrastructure (src/.../js/core/)"]
@@ -24,10 +31,10 @@ graph TB
     end
 
     subgraph SERVICES ["Injectable API Services (src/.../js/services/)"]
-        API["ApiClient"]
-        MEALS["MealsService"]
-        PROFILE["ProfileService"]
-        ANALYTICS["AnalyticsService"]
+        API["ApiClient (UTC Normalization & IANA Tz)"]
+        MEALS["MealsService (CRUD & Excel Export)"]
+        PROFILE["ProfileService (Timezone & Intake)"]
+        ANALYTICS["AnalyticsService (Period Aggregates)"]
         PROGRESS["ProgressPhotosService"]
         MEDS["MedicationService"]
     end
@@ -35,9 +42,9 @@ graph TB
     subgraph CONTROLLERS ["UI Controllers (src/.../js/ui/)"]
         C_HUD["DailyHudController"]
         C_LOGGER["MealLoggerController"]
-        C_REVIEW["ReviewModalController"]
-        C_CHART["AnalyticsChartController"]
-        C_PROFILE["ProfileModalController"]
+        C_REVIEW["ReviewModalController (Quantity Detection)"]
+        C_CHART["AnalyticsChartController (Diary & Period Filter)"]
+        C_PROFILE["ProfileModalController (Timezone Auto-Detect)"]
         C_TP["TransparencyModalController"]
         C_PROG["ProgressModalController"]
         C_TOAST["ToastNotificationService"]
@@ -45,7 +52,9 @@ graph TB
     end
 
     HTML_Root --> LOADER
-    LOADER --> P1 & P2 & P3 & P4 & P5 & P6 & P7 & P8 & P9 & P10
+    HTML_Root --> FALLBACK
+    FALLBACK -.-> SVG_MEAL & SVG_PROG
+    LOADER --> P1 & P2 & P3 & P4 & P5 & P6 & P7 & P8 & P9 & P10 & P11
 
     DI --> CONTROLLERS
     DI --> SERVICES
@@ -58,7 +67,7 @@ graph TB
     C_HUD --> P3
     C_LOGGER --> P5
     C_REVIEW --> P7
-    C_CHART --> P6
+    C_CHART --> P6 & P11
     C_PROFILE --> P8
     C_TP --> P9
     C_PROG --> P4 & P10

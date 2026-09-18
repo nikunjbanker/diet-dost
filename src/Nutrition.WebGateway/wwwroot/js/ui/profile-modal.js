@@ -45,6 +45,10 @@ export class ProfileModalController {
       inpTargetWeight: document.getElementById('inp-target-weight'),
       inpPace: document.getElementById('inp-pace'),
       inpActivity: document.getElementById('inp-activity'),
+      inpDietary: document.getElementById('inp-dietary'),
+      inpCuisine: document.getElementById('inp-cuisine'),
+      inpTimezone: document.getElementById('inp-timezone'),
+      timezoneAutoHint: document.getElementById('timezone-auto-hint'),
       inpMedications: document.getElementById('inp-medications'),
       medSuggestions: document.getElementById('med-quick-suggestions'),
       medPromptNote: document.getElementById('med-prompt-note'),
@@ -122,16 +126,96 @@ export class ProfileModalController {
     }
   }
 
-  open() {
+  async open() {
     const el = this.elements;
     this.syncFromCm(parseFloat(el.inpHeight?.value) || 175);
     this.updateMedicationSuggestions(false);
+    this._autoDetectTimezone();
+
     if (el.modal) el.modal.style.display = 'flex';
+
+    try {
+      const data = await this._profile.getProfile(this._state.userId);
+      if (data && data.profile) {
+        this.populateProfile(data.profile);
+      }
+    } catch (err) {
+      console.warn('[ProfileModal] Could not fetch profile from server, using local defaults:', err);
+    }
   }
 
   close() {
     const el = this.elements;
     if (el.modal) el.modal.style.display = 'none';
+  }
+
+  populateProfile(p) {
+    const el = this.elements;
+    if (p.name && el.inpName) el.inpName.value = p.name;
+    if (p.sex !== undefined && el.inpSex) el.inpSex.value = p.sex;
+    if (p.age && el.inpAge) el.inpAge.value = p.age;
+    if (p.heightCm && el.inpHeight) {
+      el.inpHeight.value = p.heightCm;
+      this.syncFromCm(p.heightCm);
+    }
+    if (p.currentWeightKg && el.inpWeight) el.inpWeight.value = p.currentWeightKg;
+    if (p.targetWeightKg && el.inpTargetWeight) el.inpTargetWeight.value = p.targetWeightKg;
+    if (p.desiredPaceKgPerWeek && el.inpPace) el.inpPace.value = p.desiredPaceKgPerWeek.toFixed(2);
+    if (p.activityLevel !== undefined && el.inpActivity) el.inpActivity.value = p.activityLevel;
+    if (p.dietaryPreference !== undefined && el.inpDietary) el.inpDietary.value = p.dietaryPreference;
+    if (p.regionalCuisine && el.inpCuisine) el.inpCuisine.value = p.regionalCuisine;
+    
+    if (p.timezone && el.inpTimezone) {
+      let match = Array.from(el.inpTimezone.options).find(o => o.value === p.timezone);
+      if (!match) {
+        const opt = document.createElement('option');
+        opt.value = p.timezone;
+        opt.textContent = `${p.timezone} (Profile)`;
+        el.inpTimezone.appendChild(opt);
+      }
+      el.inpTimezone.value = p.timezone;
+      this._state.userTimezone = p.timezone;
+      if (el.timezoneAutoHint) {
+        el.timezoneAutoHint.textContent = p.timezone;
+      }
+    }
+
+    if (Array.isArray(p.diagnosedConditions)) {
+      document.querySelectorAll('#conditions-list input[type="checkbox"]').forEach(cb => {
+        cb.checked = p.diagnosedConditions.includes(cb.value);
+      });
+      this.updateMedicationSuggestions(false);
+    }
+
+    if (Array.isArray(p.medications) && p.medications.length > 0 && el.inpMedications) {
+      el.inpMedications.value = p.medications.map(m => m.drugName || m).join(', ');
+    }
+  }
+
+  _autoDetectTimezone() {
+    const el = this.elements;
+    if (!el.inpTimezone) return;
+    try {
+      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (detected) {
+        let match = Array.from(el.inpTimezone.options).find(o => o.value === detected);
+        if (!match) {
+          const opt = document.createElement('option');
+          opt.value = detected;
+          opt.textContent = `${detected} (Auto-detected)`;
+          el.inpTimezone.appendChild(opt);
+        }
+        if (!el.inpTimezone.dataset.userModified) {
+          el.inpTimezone.value = detected;
+          this._state.userTimezone = detected;
+          if (el.timezoneAutoHint) {
+            el.timezoneAutoHint.textContent = `Auto-detected: ${detected}`;
+          }
+        }
+      }
+    } catch {
+      // Ignore if Intl unavailable
+    }
   }
 
   syncFromCm(cm) {
@@ -250,6 +334,8 @@ export class ProfileModalController {
     const medsText = el.inpMedications ? el.inpMedications.value.trim() : '';
     const meds = medsText ? medsText.split(',').map(m => ({ drugName: m.trim() })) : [];
 
+    const selectedTimezone = el.inpTimezone ? el.inpTimezone.value : (this._state.userTimezone || 'Asia/Kolkata');
+
     const profile = {
       id: this._state.userId,
       name: el.inpName ? el.inpName.value.trim() : 'Patient',
@@ -260,14 +346,16 @@ export class ProfileModalController {
       targetWeightKg: parseFloat(el.inpTargetWeight ? el.inpTargetWeight.value : '72'),
       desiredPaceKgPerWeek: parseFloat(el.inpPace ? el.inpPace.value : '0.5'),
       activityLevel: parseInt(el.inpActivity ? el.inpActivity.value : '1'),
-      dietaryPreference: 1, // Lacto-Veg
-      regionalCuisine: 'North Indian',
+      dietaryPreference: parseInt(el.inpDietary ? el.inpDietary.value : '0'),
+      regionalCuisine: el.inpCuisine ? el.inpCuisine.value : 'North Indian',
+      timezone: selectedTimezone,
       diagnosedConditions: selectedConditions,
       medications: meds
     };
 
     try {
       const data = await this._profile.saveProfile(profile);
+      this._state.userTimezone = profile.timezone;
 
       if (submitBtn) {
         submitBtn.disabled = false;

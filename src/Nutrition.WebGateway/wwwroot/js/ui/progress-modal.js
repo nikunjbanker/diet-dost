@@ -265,7 +265,7 @@ export class ProgressModalController {
       return `
         <div class="timeline-card">
           <div class="timeline-thumb-frame">
-            <img src="${p.photoUri}" alt="Progress photo" class="timeline-thumb">
+            <img src="${p.photoUri}" alt="Progress photo" class="timeline-thumb" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="photo-meta-overlay" style="padding: 6px 8px;">
               <span class="weight-tag" style="font-size: 0.72rem;">${p.weightKg.toFixed(1)} kg</span>
               <span class="compare-badge ${tagClass}" style="font-size: 0.65rem; padding: 1px 5px;">${tagLabel}</span>

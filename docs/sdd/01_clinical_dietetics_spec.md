@@ -1,5 +1,5 @@
 # Clinical Dietetics Specification (Indian Population)
-> **Specification Version**: `v1.2.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Standards Basis**: ICMR-NIN 2024 Dietary Guidelines for Indians & WHO South Asian Consultation  
 > **Target Population**: Adult Indian Male (Ref: 65 kg) & Female (Ref: 55 kg)  
 
@@ -29,6 +29,12 @@
 - **Starvation Safety Floor**: Daily targets must **NEVER drop below 1,200 kcal/day for women or 1,500 kcal/day for men** without medical supervision.
 - **Maximum Safe Deficit**: Deficit must **NEVER exceed 1,000 kcal/day** or a weight loss rate of **> 0.75 kg/week (recommended: 0.5 kg/week)** to prevent cholelithiasis, metabolic slowdown, and muscle wasting.
 
+### 1.4 Circadian Day Boundaries & Timezone Alignment
+- **Temporal Synchronization**: All biological metabolic events (meal timing, fasting intervals, daily deficits) are synchronized to the user's local `Timezone` (e.g. `Asia/Kolkata` IST).
+- **Circadian Day Boundary**: A user's eating day is bucketed based on user-local civil midnight to midnight:
+  $$\text{UserLocalDate} = \text{DateOnly.FromDateTime}(\text{TimeZoneInfo.ConvertTimeFromUtc}(\text{Meal.LoggedAtUtc}, \text{UserTz}))$$
+- **Cross-Border Interoperability**: Regardless of server hosting region or UTC persistence format, the clinical dietitian engine dynamically computes meal groupings using the user's localized circadian day.
+
 ---
 
 ## 2. Energy & Macronutrient Formulas
@@ -47,6 +53,8 @@
 - **Protein**: $1.2\text{g to } 1.6\text{g per kg of ideal body weight}$ (25–30% of energy).
 - **Complex Carbohydrates**: 40–45% of total calories (Jowar, Bajra, Ragi, Whole wheat phulka, Brown rice).
 - **Healthy Fats**: 25–30% of total calories, strictly tracking visible cooking fat.
+- **Dietary Fiber Target**: Minimum **30g/day** (ICMR-NIN 2024 standard). Key sources: unpolished millets, whole pulses, leafy vegetables (palak, methi), salads (kakdi/cucumber), and psyllium husk.
+- **Free Sugar Ceiling**: Maximum **< 25g/day (< 5% of total calories)** per WHO guidelines. Flag all refined sugars, jaggery (gur - GI 84), sweetened beverages, and mithai.
 
 ---
 

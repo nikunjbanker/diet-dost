@@ -160,6 +160,7 @@ using (var scope = app.Services.CreateScope())
         await EnsureColumnExistsAsync("FoodItems", "SugarGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync("Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
+        await EnsureColumnExistsAsync("Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
 
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""ProgressPhotos"" (
@@ -216,6 +217,7 @@ using (var scope = app.Services.CreateScope())
             ActivityLevel = ActivityLevel.Sedentary,
             DietaryPreference = DietaryPreference.LactoVeg,
             RegionalCuisine = "North Indian",
+            Timezone = "Asia/Kolkata",
             DiagnosedConditions = new() { "Pre-Diabetes" },
             Medications = new()
             {
@@ -227,7 +229,8 @@ using (var scope = app.Services.CreateScope())
 
         // Also pre-seed today's ledger
         var dietitian = scope.ServiceProvider.GetRequiredService<ClinicalDietitianService>();
-        await dietitian.GetOrCreateDailyLedgerAsync(defaultProfile.Id, DateOnly.FromDateTime(DateTime.UtcNow));
+        var userTz = ClinicalDietitianService.GetUserTimeZoneInfo(defaultProfile.Timezone);
+        await dietitian.GetOrCreateDailyLedgerAsync(defaultProfile.Id, DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz)));
     }
 
     if (!await db.ProgressPhotos.AnyAsync())

@@ -51,7 +51,7 @@
         <!-- Uploaded Meal Photo Evidence (Responsive dynamic fit) -->
         <div class="review-photo-container" id="review-photo-container" style="display: none;">
           <div class="review-photo-wrapper" id="review-photo-wrapper" title="Click to inspect photo in high-resolution lightbox">
-            <img id="review-meal-photo" src="" alt="Uploaded Meal Evidence" class="review-meal-img" />
+            <img id="review-meal-photo" src="" alt="Uploaded Meal Evidence" class="review-meal-img" onerror="this.onerror=null; this.src='/assets/placeholder-meal.svg';" />
             <div class="review-photo-overlay-top">
               <span class="review-photo-badge">📸 Plate Photo</span>
               <button type="button" class="review-photo-zoom-btn" id="btn-zoom-meal-photo" title="Click to open full photo in high-res lightbox">
@@ -187,7 +187,7 @@
         <button type="button" class="review-lightbox-close" id="btn-close-lightbox" title="Close inspector (Esc)">✕ Close</button>
       </div>
       <div class="review-lightbox-image-container">
-        <img id="review-lightbox-img" src="" alt="Full resolution meal plate" />
+        <img id="review-lightbox-img" src="" alt="Full resolution meal plate" onerror="this.onerror=null; this.src='/assets/placeholder-meal.svg';" />
       </div>
       <div class="review-lightbox-hint">Press Esc or click outside to close</div>
     </div>

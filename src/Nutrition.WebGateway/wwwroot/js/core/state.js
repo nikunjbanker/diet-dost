@@ -6,6 +6,7 @@ export class AppState {
   constructor(initialState = {}) {
     this._state = {
       userId: 'user-default',
+      userTimezone: 'Asia/Kolkata',
       currentMeal: null,
       activePeriod: '7D',
       addedGhee: 0,
@@ -17,6 +18,9 @@ export class AppState {
 
   get userId() { return this._state.userId; }
   set userId(val) { this._update('userId', val); }
+
+  get userTimezone() { return this._state.userTimezone || 'Asia/Kolkata'; }
+  set userTimezone(val) { this._update('userTimezone', val); }
 
   get currentMeal() { return this._state.currentMeal; }
   set currentMeal(val) { this._update('currentMeal', val); }

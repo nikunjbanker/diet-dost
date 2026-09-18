@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Nutrition.Domain.Model.Ledger;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
@@ -117,5 +118,32 @@ public class DietTrackerDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.CreatedAtUtc });
             entity.HasIndex(e => e.Rating);
         });
+
+        // ============================================================================
+        // Universal UTC Date Storage Standard
+        // Guarantees all DateTime properties are saved as UTC in SQLite and read back as DateTimeKind.Utc
+        // ============================================================================
+        var utcDateTimeConverter = new ValueConverter<DateTime, DateTime>(
+            v => v.Kind == DateTimeKind.Utc ? v : v.ToUniversalTime(),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc));
+
+        var utcNullableDateTimeConverter = new ValueConverter<DateTime?, DateTime?>(
+            v => !v.HasValue ? v : (v.Value.Kind == DateTimeKind.Utc ? v : v.Value.ToUniversalTime()),
+            v => !v.HasValue ? v : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc));
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime))
+                {
+                    property.SetValueConverter(utcDateTimeConverter);
+                }
+                else if (property.ClrType == typeof(DateTime?))
+                {
+                    property.SetValueConverter(utcNullableDateTimeConverter);
+                }
+            }
+        }
     }
 }
