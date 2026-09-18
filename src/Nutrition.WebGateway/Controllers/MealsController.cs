@@ -253,6 +253,60 @@ public class MealsController : ControllerBase
         });
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetMealById([FromRoute] string id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return BadRequest(new { error = "Meal id is required." });
+
+        var meal = await _dietitianService.GetMealByIdAsync(id, ct);
+        if (meal is null)
+            return NotFound(new { error = $"Meal with ID '{id}' was not found." });
+
+        return Ok(meal);
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateMeal([FromRoute] string id, [FromBody] MealLog meal, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return BadRequest(new { error = "Meal id is required." });
+
+        if (meal is null)
+            return BadRequest(new { error = "Meal payload cannot be null." });
+
+        meal.Id = id;
+        var updated = await _dietitianService.UpdateMealAsync(meal, ct);
+        if (updated is null)
+            return NotFound(new { error = $"Meal with ID '{id}' was not found." });
+
+        var ledger = await _dietitianService.GetOrCreateDailyLedgerAsync(updated.UserId, DateOnly.FromDateTime(updated.LoggedAt), ct);
+
+        return Ok(new
+        {
+            meal = updated,
+            dailyLedger = ledger,
+            message = "Meal updated successfully! Daily ledger and trends synchronized ✨"
+        });
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteMeal([FromRoute] string id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return BadRequest(new { error = "Meal id is required." });
+
+        var success = await _dietitianService.DeleteMealAsync(id, ct);
+        if (!success)
+            return NotFound(new { error = $"Meal with ID '{id}' was not found." });
+
+        return Ok(new
+        {
+            success = true,
+            message = "Meal deleted successfully! Daily ledger recalculated 🗑️"
+        });
+    }
+
     [HttpGet("corrections")]
     public async Task<IActionResult> GetUserCorrections([FromQuery] string userId, CancellationToken ct)
     {
@@ -457,6 +511,141 @@ public class MealsController : ControllerBase
         }
 
         return Ok(baseline);
+    }
+
+    [HttpGet("history")]
+    public async Task<IActionResult> GetMealHistory(
+        [FromQuery] string userId,
+        [FromQuery] string period = "7D",
+        [FromQuery] string? date = null,
+        [FromQuery] string? mealType = null,
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return BadRequest(new { error = "UserId is required." });
+
+        DateOnly? parsedDate = null;
+        if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
+        {
+            parsedDate = d;
+        }
+
+        MealType? parsedMealType = null;
+        if (!string.IsNullOrWhiteSpace(mealType) && Enum.TryParse<MealType>(mealType, true, out var mt))
+        {
+            parsedMealType = mt;
+        }
+
+        var meals = await _dietitianService.GetMealHistoryAsync(userId, period, parsedDate, parsedMealType, ct);
+
+        // Aggregate summary metrics
+        double totalCalories = Math.Round(meals.Sum(m => m.TotalCalories), 1);
+        double totalProtein = Math.Round(meals.Sum(m => m.TotalProteinGrams), 1);
+        double totalCarbs = Math.Round(meals.Sum(m => m.TotalCarbsGrams), 1);
+        double totalFat = Math.Round(meals.Sum(m => m.TotalFatGrams), 1);
+        double totalFiber = Math.Round(meals.Sum(m => m.TotalFiberGrams), 1);
+        double totalSugar = Math.Round(meals.Sum(m => m.TotalSugarGrams), 1);
+        double totalSodium = Math.Round(meals.Sum(m => m.TotalSodiumMg), 1);
+
+        return Ok(new
+        {
+            userId,
+            period,
+            selectedDate = parsedDate?.ToString("yyyy-MM-dd"),
+            mealType = parsedMealType?.ToString(),
+            totalMealsCount = meals.Count,
+            summary = new
+            {
+                totalCalories,
+                totalProteinGrams = totalProtein,
+                totalCarbsGrams = totalCarbs,
+                totalFatGrams = totalFat,
+                totalFiberGrams = totalFiber,
+                totalSugarGrams = totalSugar,
+                totalSodiumMg = totalSodium
+            },
+            meals
+        });
+    }
+
+    [HttpGet("export")]
+    public async Task<IActionResult> ExportMealHistory(
+        [FromQuery] string userId,
+        [FromQuery] string period = "7D",
+        [FromQuery] string? date = null,
+        [FromQuery] string? mealType = null,
+        [FromQuery] string format = "csv",
+        CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return BadRequest(new { error = "UserId is required." });
+
+        DateOnly? parsedDate = null;
+        if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
+        {
+            parsedDate = d;
+        }
+
+        MealType? parsedMealType = null;
+        if (!string.IsNullOrWhiteSpace(mealType) && Enum.TryParse<MealType>(mealType, true, out var mt))
+        {
+            parsedMealType = mt;
+        }
+
+        var meals = await _dietitianService.GetMealHistoryAsync(userId, period, parsedDate, parsedMealType, ct);
+
+        // Build RFC 4180 compliant CSV with UTF-8 BOM (\uFEFF) for immediate native Microsoft Excel compatibility
+        var sb = new System.Text.StringBuilder();
+        sb.Append('\uFEFF'); // UTF-8 Byte Order Mark for Excel
+
+        // CSV Header
+        sb.AppendLine("Meal ID,Date,Time,Meal Type,Dish Name,Calories (kcal),Protein (g),Carbs (g),Fat (g),Fiber (g),Sugar (g),Sodium (mg),Ghee/Tadka (kcal),Food Items Breakdown,AI Confidence,Verified By User,Dietitian Clinical Advice,Feedback Rating,Feedback Remarks");
+
+        static string EscapeCsv(string? value)
+        {
+            if (string.IsNullOrEmpty(value)) return "\"\"";
+            var escaped = value.Replace("\"", "\"\"");
+            return $"\"{escaped}\"";
+        }
+
+        foreach (var meal in meals)
+        {
+            var localTime = meal.LoggedAt.ToLocalTime();
+            var dateStr = localTime.ToString("yyyy-MM-dd");
+            var timeStr = localTime.ToString("HH:mm:ss");
+
+            var itemsBreakdown = string.Join("; ", meal.Items.Select(i =>
+                $"{i.Name} [Portion: {i.EstimatedPortion}, Qty: {i.Quantity}, Kcal: {i.Calories}, P: {i.ProteinGrams}g, C: {i.CarbsGrams}g, F: {i.FatGrams}g, Fib: {i.FiberGrams}g, Sug: {i.SugarGrams}g, Sod: {i.SodiumMg}mg]"));
+
+            var addedCookingFat = Math.Round(meal.AddedGheeKcal + meal.AddedTadkaKcal, 1);
+
+            sb.AppendLine(string.Join(",",
+                EscapeCsv(meal.Id),
+                EscapeCsv(dateStr),
+                EscapeCsv(timeStr),
+                EscapeCsv(meal.MealType.ToString()),
+                EscapeCsv(meal.DishName),
+                meal.TotalCalories.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                meal.TotalProteinGrams.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                meal.TotalCarbsGrams.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                meal.TotalFatGrams.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                meal.TotalFiberGrams.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                meal.TotalSugarGrams.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                meal.TotalSodiumMg.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                addedCookingFat.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
+                EscapeCsv(itemsBreakdown),
+                meal.OverallConfidenceScore.ToString("P0", System.Globalization.CultureInfo.InvariantCulture),
+                meal.IsVerifiedByUser ? "Yes" : "No",
+                EscapeCsv(meal.DietitianAdvice),
+                EscapeCsv(meal.AiFeedbackRating),
+                EscapeCsv(meal.AiFeedbackRemarks)
+            ));
+        }
+
+        var csvBytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+        var fileName = $"DietDost_Meals_{period}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
+
+        return File(csvBytes, "text/csv; charset=utf-8", fileName);
     }
 }
 

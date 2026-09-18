@@ -7,22 +7,22 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient } from './services/api-client.js';
-import { MealsService } from './services/meals-service.js';
-import { ProfileService } from './services/profile-service.js';
-import { AnalyticsService } from './services/analytics-service.js';
-import { ProgressPhotosService } from './services/progress-service.js';
-import { MedicationService } from './services/medication-service.js';
+import { ApiClient, apiClient } from './services/api-client.js?v=1.2.8';
+import { MealsService } from './services/meals-service.js?v=1.2.8';
+import { ProfileService } from './services/profile-service.js?v=1.2.8';
+import { AnalyticsService } from './services/analytics-service.js?v=1.2.8';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.2.8';
+import { MedicationService } from './services/medication-service.js?v=1.2.8';
 
-import { toastService } from './ui/toast.js';
-import { confettiService } from './ui/confetti.js';
-import { DailyHudController } from './ui/daily-hud.js';
-import { MealLoggerController } from './ui/meal-logger.js';
-import { ReviewModalController } from './ui/review-modal.js?v=1.2.6';
-import { AnalyticsChartController } from './ui/analytics-chart.js';
-import { ProfileModalController } from './ui/profile-modal.js';
-import { TransparencyModalController } from './ui/transparency-modal.js';
-import { ProgressModalController } from './ui/progress-modal.js';
+import { toastService } from './ui/toast.js?v=1.2.8';
+import { confettiService } from './ui/confetti.js?v=1.2.8';
+import { DailyHudController } from './ui/daily-hud.js?v=1.2.8';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.2.8';
+import { ReviewModalController } from './ui/review-modal.js?v=1.2.8';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.2.8';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.2.8';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.2.8';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.2.8';
 
 // ============================================================================
 // 1. Dependency Injection Registration (DIP & IoC)
@@ -63,6 +63,8 @@ container.register('reviewModal', (c) => new ReviewModalController({
 
 container.register('analyticsChart', (c) => new AnalyticsChartController({
   analyticsService: c.resolve('analyticsService'),
+  mealsService: c.resolve('mealsService'),
+  toastService: c.resolve('toastService'),
   appState: c.resolve('appState'),
   eventBus: c.resolve('eventBus')
 }));

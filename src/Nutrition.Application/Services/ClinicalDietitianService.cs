@@ -31,17 +31,20 @@ public class ClinicalDietitianService
 {
     private readonly IRepository<UserProfile> _profileRepo;
     private readonly IRepository<MealLog> _mealRepo;
+    private readonly IRepository<FoodItemRecord> _foodItemRepo;
     private readonly IRepository<DailyCalorieLedger> _ledgerRepo;
     private readonly IUnitOfWork _uow;
 
     public ClinicalDietitianService(
         IRepository<UserProfile> profileRepo,
         IRepository<MealLog> mealRepo,
+        IRepository<FoodItemRecord> foodItemRepo,
         IRepository<DailyCalorieLedger> ledgerRepo,
         IUnitOfWork uow)
     {
         _profileRepo = profileRepo;
         _mealRepo = mealRepo;
+        _foodItemRepo = foodItemRepo;
         _ledgerRepo = ledgerRepo;
         _uow = uow;
     }
@@ -188,6 +191,171 @@ public class ClinicalDietitianService
         await GetOrCreateDailyLedgerAsync(meal.UserId, DateOnly.FromDateTime(meal.LoggedAt), ct);
 
         return meal;
+    }
+
+    public async Task<MealLog?> GetMealByIdAsync(string mealId, CancellationToken ct = default)
+    {
+        var meals = await _mealRepo.FindAsync(m => m.Id == mealId, ct);
+        return meals.FirstOrDefault();
+    }
+
+    public async Task<MealLog?> UpdateMealAsync(MealLog updatedMeal, CancellationToken ct = default)
+    {
+        var existing = (await _mealRepo.FindAsync(m => m.Id == updatedMeal.Id, ct)).FirstOrDefault();
+        if (existing is null)
+        {
+            return null;
+        }
+
+        // Update core scalar properties
+        existing.DishName = updatedMeal.DishName;
+        existing.MealType = updatedMeal.MealType;
+        existing.AddedGheeKcal = updatedMeal.AddedGheeKcal;
+        existing.AddedTadkaKcal = updatedMeal.AddedTadkaKcal;
+        if (!string.IsNullOrWhiteSpace(updatedMeal.DietitianAdvice))
+        {
+            existing.DietitianAdvice = updatedMeal.DietitianAdvice;
+        }
+        if (!string.IsNullOrWhiteSpace(updatedMeal.AiFeedbackRating))
+        {
+            existing.AiFeedbackRating = updatedMeal.AiFeedbackRating;
+        }
+        if (!string.IsNullOrWhiteSpace(updatedMeal.AiFeedbackRemarks))
+        {
+            existing.AiFeedbackRemarks = updatedMeal.AiFeedbackRemarks;
+        }
+
+        // Synchronize child food items
+        var updatedItemIds = updatedMeal.Items
+            .Where(i => !string.IsNullOrWhiteSpace(i.Id))
+            .Select(i => i.Id)
+            .ToHashSet();
+
+        // Remove deleted items
+        var toRemove = existing.Items.Where(i => !updatedItemIds.Contains(i.Id)).ToList();
+        foreach (var item in toRemove)
+        {
+            existing.Items.Remove(item);
+            await _foodItemRepo.DeleteAsync(item.Id, ct);
+        }
+
+        // Update existing or add new items
+        foreach (var item in updatedMeal.Items)
+        {
+            var existingItem = existing.Items.FirstOrDefault(i => i.Id == item.Id);
+            if (existingItem != null)
+            {
+                existingItem.Name = item.Name;
+                existingItem.HindiOrRegionalName = item.HindiOrRegionalName;
+                existingItem.EstimatedPortion = item.EstimatedPortion;
+                existingItem.Quantity = item.Quantity;
+                existingItem.Grams = item.Grams;
+                existingItem.Calories = item.Calories;
+                existingItem.ProteinGrams = item.ProteinGrams;
+                existingItem.CarbsGrams = item.CarbsGrams;
+                existingItem.FatGrams = item.FatGrams;
+                existingItem.FiberGrams = item.FiberGrams;
+                existingItem.SugarGrams = item.SugarGrams;
+                existingItem.SodiumMg = item.SodiumMg;
+                existingItem.CookingMediumEstimate = item.CookingMediumEstimate;
+                await _foodItemRepo.UpdateAsync(existingItem, ct);
+            }
+            else
+            {
+                var newItem = new FoodItemRecord
+                {
+                    Id = string.IsNullOrWhiteSpace(item.Id) ? Guid.NewGuid().ToString() : item.Id,
+                    MealLogId = existing.Id,
+                    Name = item.Name,
+                    OriginalDetection = string.IsNullOrWhiteSpace(item.OriginalDetection) ? item.Name : item.OriginalDetection,
+                    HindiOrRegionalName = item.HindiOrRegionalName,
+                    EstimatedPortion = item.EstimatedPortion,
+                    Quantity = item.Quantity,
+                    Grams = item.Grams,
+                    Calories = item.Calories,
+                    ProteinGrams = item.ProteinGrams,
+                    CarbsGrams = item.CarbsGrams,
+                    FatGrams = item.FatGrams,
+                    FiberGrams = item.FiberGrams,
+                    SugarGrams = item.SugarGrams,
+                    SodiumMg = item.SodiumMg,
+                    CookingMediumEstimate = item.CookingMediumEstimate,
+                    ConfidenceScore = item.ConfidenceScore > 0 ? item.ConfidenceScore : 0.85
+                };
+                existing.Items.Add(newItem);
+                await _foodItemRepo.AddAsync(newItem, ct);
+            }
+        }
+
+        existing.RecalculateTotals();
+
+        // Clinical compliance re-assessment
+        var profile = await _profileRepo.GetByIdAsync(existing.UserId, ct);
+        if (profile != null)
+        {
+            existing.WhoComplianceFlags.Clear();
+            existing.MedicationWarnings.Clear();
+
+            var conditions = profile.DiagnosedConditions.Select(c => c.ToLowerInvariant()).ToList();
+            var meds = profile.Medications.Select(m => m.DrugName.ToLowerInvariant()).ToList();
+
+            if (existing.TotalSodiumMg > 800)
+            {
+                existing.WhoComplianceFlags.Add($"High single-meal sodium ({existing.TotalSodiumMg:F0}mg). WHO suggests keeping whole day < 2,000mg.");
+            }
+
+            if (conditions.Any(c => c.Contains("diabet")) && existing.TotalCarbsGrams > 60)
+            {
+                existing.WhoComplianceFlags.Add($"Carb spike notice: Meal contains {existing.TotalCarbsGrams:F0}g carbs. Ensure adequate fiber (e.g. cucumber salad) to balance Glycemic Load.");
+            }
+
+            if (conditions.Any(c => c.Contains("hypertens")) && existing.TotalSodiumMg > 500)
+            {
+                existing.WhoComplianceFlags.Add("Hypertension Alert: Limit achaar/papad/salted snacks to maintain sodium under 1,500mg/day.");
+            }
+
+            if (meds.Any(m => m.Contains("telmisartan") || m.Contains("ramipril")) &&
+                existing.Items.Any(i => i.Name.ToLowerInvariant().Contains("coconut water") || i.Name.ToLowerInvariant().Contains("diet salt")))
+            {
+                existing.MedicationWarnings.Add("Medication Warning: High potassium item detected with ARB/ACE inhibitor. Avoid excessive potassium to prevent hyperkalemia.");
+            }
+        }
+
+        await _mealRepo.UpdateAsync(existing, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        // Synchronize and update daily ledger
+        await GetOrCreateDailyLedgerAsync(existing.UserId, DateOnly.FromDateTime(existing.LoggedAt), ct);
+
+        return existing;
+    }
+
+    public async Task<bool> DeleteMealAsync(string mealId, CancellationToken ct = default)
+    {
+        var meal = (await _mealRepo.FindAsync(m => m.Id == mealId, ct)).FirstOrDefault();
+        if (meal is null)
+        {
+            return false;
+        }
+
+        var userId = meal.UserId;
+        var mealDate = DateOnly.FromDateTime(meal.LoggedAt);
+
+        // Delete child items explicitly
+        if (meal.Items != null && meal.Items.Count > 0)
+        {
+            foreach (var item in meal.Items)
+            {
+                await _foodItemRepo.DeleteAsync(item.Id, ct);
+            }
+        }
+
+        await _mealRepo.DeleteAsync(meal.Id, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        // Recalculate daily ledger for this date
+        await GetOrCreateDailyLedgerAsync(userId, mealDate, ct);
+        return true;
     }
 
     public async Task<AnalyticsProjection> GetAnalyticsProjectionAsync(string userId, string period, CancellationToken ct = default)
@@ -413,5 +581,60 @@ public class ClinicalDietitianService
             PlateauRiskDetected: isPlateau,
             DailyTrends: defaultTrends
         );
+    }
+
+    public async Task<List<MealLog>> GetMealHistoryAsync(
+        string userId,
+        string? period = "7D",
+        DateOnly? specificDate = null,
+        MealType? mealType = null,
+        CancellationToken ct = default)
+    {
+        var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
+
+        if (specificDate.HasValue)
+        {
+            var target = specificDate.Value;
+            var filtered = allUserMeals.Where(m =>
+            {
+                var d1 = DateOnly.FromDateTime(m.LoggedAt);
+                var d2 = DateOnly.FromDateTime(m.LoggedAt.ToLocalTime());
+                return d1 == target || d2 == target;
+            });
+
+            if (mealType.HasValue)
+            {
+                filtered = filtered.Where(m => m.MealType == mealType.Value);
+            }
+
+            return filtered.OrderByDescending(m => m.LoggedAt).ToList();
+        }
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var normPeriod = period?.Trim().ToUpperInvariant() ?? "7D";
+
+        DateOnly startDate = normPeriod switch
+        {
+            "1D" or "DAILY" => today,
+            "7D" or "WEEKLY" => today.AddDays(-6),
+            "30D" or "MONTHLY" => today.AddDays(-29),
+            "90D" or "QUARTERLY" => today.AddDays(-89),
+            "365D" or "YEARLY" or "1Y" => today.AddDays(-364),
+            _ => today.AddDays(-6)
+        };
+
+        var query = allUserMeals.Where(m =>
+        {
+            var d1 = DateOnly.FromDateTime(m.LoggedAt);
+            var d2 = DateOnly.FromDateTime(m.LoggedAt.ToLocalTime());
+            return (d1 >= startDate && d1 <= today) || (d2 >= startDate && d2 <= today);
+        });
+
+        if (mealType.HasValue)
+        {
+            query = query.Where(m => m.MealType == mealType.Value);
+        }
+
+        return query.OrderByDescending(m => m.LoggedAt).ToList();
     }
 }

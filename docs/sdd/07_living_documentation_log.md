@@ -954,3 +954,99 @@
      - Verified per-item fiber and sugar rendering (e.g. Whole Wheat Roti: 4.4g Fiber / 0.5g Sugar; Toor Dal Tadka: 5.2g Fiber / 0.8g Sugar; Bhindi Masala: 4.8g Fiber / 1.5g Sugar).
      - Captured screenshot artifact: `lunch_review_modal_1789730654338.png`.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260918-011] Logged Meals & Food Diary: Update and Delete Actions with Live Ledger Recalculation
+- **Date / Timestamp**: 2026-09-18 14:15:00 UTC
+- **Change Type**: `[FEATURE]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.WebGateway`, Frontend UI Controllers
+- **Summary of Change**:
+  Implemented full lifecycle Update (Edit) and Delete actions for logged meals in the "Logged Meals & Food Diary" details section:
+  1. **Application Layer (`ClinicalDietitianService.cs`)**:
+     - Added `GetMealByIdAsync(string mealId, CancellationToken ct)` to retrieve individual meal logs.
+     - Added `UpdateMealAsync(MealLog updatedMeal, CancellationToken ct)` supporting scalar property edits, child item synchronization (additions, updates, deletions with EF Core cascade), clinical rule re-evaluation (WHO sodium limits, diabetic carbohydrate notices, ARB/ACE inhibitor potassium warnings), and automatic daily calorie/macro ledger recalculation via `GetOrCreateDailyLedgerAsync`.
+     - Added `DeleteMealAsync(string mealId, CancellationToken ct)` with explicit child item removal, meal deletion, and automatic re-synchronization of the daily calorie ledger for that date.
+  2. **WebGateway Controllers (`MealsController.cs`)**:
+     - Added `GET /api/meals/{id}` endpoint returning the full meal record.
+     - Added `PUT /api/meals/{id}` endpoint accepting updated meal JSON, updating the record, recalculating the daily ledger, and returning the updated meal and ledger.
+     - Added `DELETE /api/meals/{id}` endpoint deleting the meal and recalculating the daily ledger.
+  3. **HTTP Client & API Services (`api-client.js` & `meals-service.js`)**:
+     - Added `putJson(url, body)` and `delete(url)` to `ApiClient`.
+     - Added `getMeal(id)`, `updateMeal(id, mealData)`, and `deleteMeal(id)` to `MealsService`.
+  4. **Review Modal Controller (`review-modal.js`)**:
+     - Added `openForEdit(meal)` method to populate existing meal fields, cooking fats (`addedGhee`, `addedTadka`), and child food items.
+     - Set `_isEditing = true` and `_editingMealId = meal.id`.
+     - Changed modal title to `✏️ Edit [MealType] ([Timestamp])` and button label to `💾 Save Changes ✨`.
+     - Modified `handleConfirmMeal()` to invoke `_meals.updateMeal()` during edit mode, triggering global `meal:logged` EventBus dispatch and toast notification.
+     - Listens to `meal:edit` event on EventBus.
+  5. **Analytics Chart & Food Diary Controller (`analytics-chart.js` & `analytics-card.html`)**:
+     - Rendered `✏️ Edit` and `🗑️ Delete` action buttons in each meal card in the Cards layout.
+     - Added `Actions` header column in table markup and rendered action buttons in each row of the Grid layout.
+     - Added `_bindMealActions` with event delegation for Edit (emits `meal:edit` to ReviewModal) and Delete (prompts confirmation, calls `deleteMeal()`, emits `meal:logged`, shows toast, and refreshes the diary view).
+  6. **Obsidian Dark Styling (`styles.css`)**:
+     - Added `.meal-card-top-right`, `.meal-card-actions`, `.btn-card-action` (`.btn-edit-meal`, `.btn-delete-meal`), `.table-actions-wrap`, `.btn-table-action`, and `.action-col`.
+  7. **Automated Unit Tests & Verification**:
+     - All 29 tests passed across `Nutrition.Domain.Tests` and `Nutrition.EvalHarness.Tests` (100% pass rate).
+     - Full solution compiled with 0 warnings, 0 errors.
+     - Verified end-to-end via browser subagent: verified Edit and Delete buttons in Cards view (`meal_cards_view_1789740491740.png`), verified Grid view (`grid_table_view_1789740232694.png`), verified Edit modal (`open_edit_modal_1789740578621.png`), and verified successful update toast notification (`meal_updated_toast_1789740656279.png`).
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260918-012] Obsidian Dark Custom Delete Confirmation Modal (Linear.app Aesthetic)
+- **Date / Timestamp**: 2026-09-18 14:35:00 UTC
+- **Change Type**: `[FEATURE]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (Frontend UI Partial, Styling, Analytics Controller)
+- **Summary of Change**:
+  Replaced the unstyled browser-native `window.confirm(...)` dialog with a custom Obsidian Dark modal matching the application's Linear.app design aesthetic:
+  1. **HTML Partial (`delete-meal-modal.html`)**:
+     - Created `src/Nutrition.WebGateway/wwwroot/partials/delete-meal-modal.html` containing `#delete-meal-modal`.
+     - Integrated animated danger trash icon (`.delete-modal-icon`), modal header with clear advisory copy, full dish preview card (`.delete-meal-preview`), meal type pill badge (`.delete-preview-type-badge`), timestamp, macro mini-pills (`#delete-macro-cals`, `#delete-macro-protein`, `#delete-macro-carbs`, `#delete-macro-fat`, `#delete-macro-fiber`, `#delete-macro-sugar`), clinical impact advisory box (`.delete-advisory-box`), and dual action buttons (`#btn-cancel-delete`, `#btn-confirm-delete`).
+     - Added `<div data-include="partials/delete-meal-modal.html"></div>` in `index.html`.
+  2. **Obsidian Dark & Linear Styling (`styles.css`)**:
+     - Implemented `.delete-modal-overlay` with frosted glass backdrop (`background: rgba(4, 5, 7, 0.82)`, `backdrop-filter: blur(10px)`).
+     - Styled `.delete-modal-card` with `#0e0f12` background, `rgba(235, 87, 87, 0.32)` border, and cubic-bezier scale-up animation.
+     - Added `.delete-modal-icon` with animated `dangerPulse` keyframes and subtle crimson aura.
+     - Styled `.delete-preview-type-badge` for breakfast, lunch, snack, and dinner variants.
+     - Styled `.btn-delete-confirm` with crimson gradient (`linear-gradient(135deg, #e11d48, #be123c)`), hover lift, and box shadow glow.
+     - Added `.macro-mini-pill.fiber` and `.macro-mini-pill.sugar` styling.
+  3. **Promise-Based Dialog Controller (`analytics-chart.js`)**:
+     - Created `_showDeleteConfirmModal(meal)` returning a `Promise<boolean>`.
+     - Populated dish name, meal type badge, formatted date/time, and six-dimensional macro values.
+     - Handled multi-input cancellation: Cancel button, close `✕` button, `Escape` keydown, or backdrop overlay click.
+     - Attached clean event listeners that unbind on dismissal, preventing memory leaks.
+     - Replaced `window.confirm` in `_bindMealActions` with `await this._showDeleteConfirmModal(meal)`.
+  4. **PWA Cache Refresh (`sw.js` & `index.html`)**:
+     - Bumped service worker cache name to `diet-dost-v10`.
+     - Bumped `styles.css?v=1.3.0` and `main.js?v=1.3.0`.
+  5. **Automated & Browser Verification**:
+     - Verified modal rendering via browser subagent: observed high-contrast Obsidian dark backdrop blur, centered card, dish preview, and macros.
+     - Verified Cancel button closes modal cleanly without mutating state.
+     - Verified Delete Meal button triggers deletion, updates meal counter from 17 to 16, recalculates ledger, and emits toast notification.
+     - Captured screenshot artifact: `delete_meal_modal_1789741879356.png`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260918-013] Aspire AppHost Port Conflict Resolution & Dashboard Health
+- **Date / Timestamp**: 2026-09-18 14:50:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[DEVOPS]`
+- **Affected Microservices / Components**: `Nutrition.AppHost`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. Diagnosed root cause of `web-gateway` failing to load in `dotnet run --project src/Nutrition.AppHost`:
+     - Discovered DCP child process crashed with `System.IO.IOException: Failed to bind to address http://127.0.0.1:5240: address already in use (SocketException 10048)` due to a lingering standalone `Nutrition.WebGateway` process holding port 5240.
+  2. Terminated the conflicting standalone process and verified port 5240 was released.
+  3. Verified `web-gateway` resource in Aspire Dashboard (`http://localhost:18888`) transitioned to **`Running`** state.
+  4. Verified WebGateway endpoint `http://localhost:5240` responding with `HTTP/1.1 200 OK`.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Running `dotnet run --project src/Nutrition.AppHost` showed dashboard online at port 18888, but the child project `web-gateway` was not functioning or failed to start, and browser circuit disconnect warnings appeared.
+  - *Root Cause*: A previous standalone run of `Nutrition.WebGateway` was active on port 5240. When Aspire AppHost launched `web-gateway` on port 5240 (`isProxied: false`), Kestrel threw `AddressInUseException` during socket bind.
+  - *Preventative Action*: Terminated conflicting PID holding port 5240. Confirmed that running via AppHost manages lifecycle cleanly.
+- **Harness Verification Result**:
+  - Aspire Dashboard: `http://localhost:18888` -> Resources table shows `web-gateway` in **`Running`** state.
+  - WebGateway HTTP Probe: `curl -I http://localhost:5240` -> `HTTP/1.1 200 OK`.
+  - Captured verification screenshot: `aspire_dashboard_webgateway_running_1789742572855.png`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+

@@ -23,11 +23,14 @@ export class ReviewModalController {
 
     this._feedbackRating = null;
     this._feedbackSubmitted = false;
+    this._isEditing = false;
+    this._editingMealId = null;
 
     this._bindEvents();
 
     // Listen for meal analyzed event from MealLogger
     this._bus.on('meal:analyzed', (analysis) => this.open(analysis));
+    this._bus.on('meal:edit', (meal) => this.openForEdit(meal));
   }
 
   get elements() {
@@ -425,8 +428,141 @@ export class ReviewModalController {
     if (el.feedbackRetrainStatus) el.feedbackRetrainStatus.style.display = 'none';
     this._feedbackRating = null;
     this._feedbackSubmitted = false;
+    this._isEditing = false;
+    this._editingMealId = null;
+    if (el.btnConfirm) {
+      el.btnConfirm.disabled = false;
+      el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
+    }
     if (el.modal) el.modal.style.display = 'none';
     this._state.currentMeal = null;
+  }
+
+  /**
+   * Open review modal to edit an existing logged meal.
+   * @param {Object} meal
+   */
+  openForEdit(meal) {
+    if (!meal) return;
+    this._isEditing = true;
+    this._editingMealId = meal.id;
+
+    const mealTypeNames = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+    const typeIndex = typeof meal.mealType === 'number' ? meal.mealType : 1;
+    const currentMealType = mealTypeNames[typeIndex] || meal.mealType || 'Lunch';
+
+    this._state.addedGhee = meal.addedGheeKcal || 0;
+    this._state.addedTadka = meal.addedTadkaKcal || 0;
+
+    const el = this.elements;
+    if (el.chipGhee) el.chipGhee.classList.toggle('active', this._state.addedGhee > 0);
+    if (el.chipTadka) el.chipTadka.classList.toggle('active', this._state.addedTadka > 0);
+    if (el.chipOilfree) el.chipOilfree.classList.remove('active');
+
+    const rawItems = meal.items || meal.Items || [];
+    const identifiedItems = rawItems.map(i => ({
+      id: i.id || i.Id,
+      mealLogId: i.mealLogId || i.MealLogId || meal.id,
+      name: i.name || i.Name,
+      originalDetection: i.originalDetection || i.OriginalDetection || i.name || i.Name,
+      hindiOrRegionalName: i.hindiOrRegionalName || i.HindiOrRegionalName || i.name || i.Name,
+      estimatedPortion: i.estimatedPortion || i.EstimatedPortion || '1 Portion',
+      quantity: i.quantity || i.Quantity || 1,
+      grams: i.grams || i.Grams || 100,
+      calories: i.calories !== undefined ? i.calories : (i.Calories || 0),
+      proteinGrams: i.proteinGrams !== undefined ? i.proteinGrams : (i.ProteinGrams || 0),
+      carbsGrams: i.carbsGrams !== undefined ? i.carbsGrams : (i.CarbsGrams || 0),
+      fatGrams: i.fatGrams !== undefined ? i.fatGrams : (i.FatGrams || 0),
+      fiberGrams: i.fiberGrams !== undefined ? i.fiberGrams : (i.FiberGrams !== undefined ? i.FiberGrams : 2.0),
+      sugarGrams: i.sugarGrams !== undefined ? i.sugarGrams : (i.SugarGrams !== undefined ? i.SugarGrams : 1.5),
+      sodiumMg: i.sodiumMg !== undefined ? i.sodiumMg : (i.SodiumMg !== undefined ? i.SodiumMg : 100),
+      cookingMediumEstimate: i.cookingMediumEstimate || i.CookingMediumEstimate || 'Standard Home Cooking'
+    }));
+
+    this._state.currentMeal = {
+      id: meal.id,
+      userId: meal.userId || this._state.userId,
+      dishName: meal.dishName || meal.DishName || 'Logged Meal',
+      mealType: currentMealType,
+      loggedAt: meal.loggedAt || meal.LoggedAt,
+      photoUrl: meal.photoUri || meal.PhotoUri || null,
+      overallConfidenceScore: meal.overallConfidenceScore || meal.OverallConfidenceScore || 0.88,
+      identifiedItems,
+      whoComplianceFlags: meal.whoComplianceFlags || meal.WhoComplianceFlags || [],
+      medicationWarnings: meal.medicationWarnings || meal.MedicationWarnings || [],
+      dietitianAdvice: meal.dietitianAdvice || meal.DietitianAdvice || 'Wholesome homestyle preparation adhering to ICMR-NIN guidelines.'
+    };
+
+    const d = new Date(this._state.currentMeal.loggedAt);
+    const dateFormatted = !isNaN(d)
+      ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    if (el.mealType) {
+      el.mealType.textContent = `✏️ Edit ${currentMealType} (${dateFormatted})`;
+    }
+    if (el.dishName) {
+      el.dishName.textContent = this._state.currentMeal.dishName;
+    }
+
+    // Update active pill
+    document.querySelectorAll('#review-meal-type-pills .meal-pill').forEach(pill => {
+      if (pill.dataset.type.toLowerCase() === currentMealType.toLowerCase()) {
+        pill.classList.add('active');
+      } else {
+        pill.classList.remove('active');
+      }
+    });
+
+    const autoHint = document.getElementById('meal-time-auto-hint');
+    if (autoHint) {
+      autoHint.textContent = `Editing logged entry from ${dateFormatted}`;
+    }
+
+    const confPct = Math.round((this._state.currentMeal.overallConfidenceScore || 0.88) * 100);
+    if (el.confidenceBadge) {
+      el.confidenceBadge.textContent = `✓ ${confPct}% Confidence`;
+      el.confidenceBadge.className = 'confidence-badge confidence-pass';
+    }
+
+    if (el.modelBadge && el.modelName) {
+      el.modelName.textContent = 'Diet Dost Clinical Engine';
+      el.modelBadge.style.display = 'inline-flex';
+    }
+
+    const photoUrl = this._state.currentMeal.photoUrl;
+    if (photoUrl) {
+      if (el.mealPhoto) el.mealPhoto.src = photoUrl;
+      if (el.photoContainer) el.photoContainer.style.display = 'block';
+      if (el.bodyLayout) el.bodyLayout.classList.remove('no-photo');
+    } else {
+      if (el.photoContainer) el.photoContainer.style.display = 'none';
+      if (el.mealPhoto) el.mealPhoto.src = '';
+      if (el.bodyLayout) el.bodyLayout.classList.add('no-photo');
+    }
+
+    // Reset AI feedback
+    this._feedbackRating = meal.aiFeedbackRating || null;
+    this._feedbackSubmitted = false;
+    if (el.feedbackRemarksRow) el.feedbackRemarksRow.style.display = 'none';
+    if (el.feedbackRemarksInput) el.feedbackRemarksInput.value = meal.aiFeedbackRemarks || '';
+    if (el.feedbackRetrainStatus) el.feedbackRetrainStatus.style.display = 'none';
+
+    // Change button text to indicate update mode
+    if (el.btnConfirm) {
+      el.btnConfirm.disabled = false;
+      el.btnConfirm.textContent = '💾 Save Changes ✨';
+    }
+
+    this.renderItems();
+    this.renderFlags();
+    this.recalculateTotals();
+
+    if (el.dietitianAdvice) {
+      el.dietitianAdvice.textContent = this._state.currentMeal.dietitianAdvice;
+    }
+
+    if (el.modal) el.modal.style.display = 'flex';
   }
 
   /**
@@ -977,6 +1113,83 @@ export class ReviewModalController {
   async handleConfirmMeal() {
     if (!this._state.currentMeal) return;
     const el = this.elements;
+
+    if (this._isEditing) {
+      if (el.btnConfirm) {
+        el.btnConfirm.disabled = true;
+        el.btnConfirm.textContent = 'Saving Changes...';
+      }
+
+      try {
+        const mealTypeMap = { 'Breakfast': 0, 'Lunch': 1, 'Snack': 2, 'Dinner': 3 };
+        const numericMealType = mealTypeMap[this._state.currentMeal.mealType] !== undefined
+          ? mealTypeMap[this._state.currentMeal.mealType]
+          : 1;
+
+        const payload = {
+          id: this._editingMealId,
+          userId: this._state.userId,
+          mealType: numericMealType,
+          dishName: this._state.currentMeal.dishName,
+          loggedAt: this._state.currentMeal.loggedAt,
+          photoUri: this._state.currentMeal.photoUrl || null,
+          overallConfidenceScore: this._state.currentMeal.overallConfidenceScore || 0.88,
+          addedGheeKcal: this._state.addedGhee || 0,
+          addedTadkaKcal: this._state.addedTadka || 0,
+          items: this._state.currentMeal.identifiedItems.map(i => ({
+            id: i.id || null,
+            mealLogId: this._editingMealId,
+            name: i.name,
+            originalDetection: i.originalDetection || i.name,
+            hindiOrRegionalName: i.hindiOrRegionalName || i.name,
+            estimatedPortion: i.estimatedPortion || '1 Portion',
+            quantity: i.quantity || 1,
+            grams: i.grams || 100,
+            calories: i.calories || 0,
+            proteinGrams: i.proteinGrams || 0,
+            carbsGrams: i.carbsGrams || 0,
+            fatGrams: i.fatGrams || 0,
+            fiberGrams: i.fiberGrams || 0,
+            sugarGrams: i.sugarGrams || 0,
+            sodiumMg: i.sodiumMg || 0,
+            cookingMediumEstimate: i.cookingMediumEstimate || 'Standard Home Cooking'
+          })),
+          whoComplianceFlags: this._state.currentMeal.whoComplianceFlags || [],
+          medicationWarnings: this._state.currentMeal.medicationWarnings || [],
+          dietitianAdvice: this._state.currentMeal.dietitianAdvice,
+          aiFeedbackRating: this._feedbackRating || null,
+          aiFeedbackRemarks: el.feedbackRemarksInput ? (el.feedbackRemarksInput.value.trim() || null) : null
+        };
+
+        const data = await this._meals.updateMeal(this._editingMealId, payload);
+
+        if (el.btnConfirm) {
+          el.btnConfirm.disabled = false;
+          el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
+        }
+
+        this.close();
+        this._confetti.burst();
+
+        // Emit global meal:logged event to trigger Daily HUD & Analytics refresh
+        this._bus.emit('meal:logged', data);
+
+        this._toast.show({
+          title: 'Meal Updated! ✏️',
+          message: `Updated ${this._state.currentMeal?.dishName || 'meal'}! Daily calorie ledger synchronized.`
+        });
+      } catch (err) {
+        if (el.btnConfirm) {
+          el.btnConfirm.disabled = false;
+          el.btnConfirm.textContent = '💾 Save Changes ✨';
+        }
+        this._toast.show({
+          title: 'Error Updating Meal',
+          message: err.message || 'Failed to update meal.'
+        });
+      }
+      return;
+    }
 
     if (el.btnConfirm) {
       el.btnConfirm.disabled = true;

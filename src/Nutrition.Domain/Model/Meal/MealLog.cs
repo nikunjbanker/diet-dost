@@ -53,49 +53,63 @@ public class MealLog
     private double? _totalCalories;
     public double TotalCalories
     {
-        get => _totalCalories ?? Math.Round(Items.Sum(i => i.Calories * i.Quantity) + AddedGheeKcal + AddedTadkaKcal, 1);
+        get => (_totalCalories.HasValue && _totalCalories.Value > 0) || Items.Count == 0
+            ? (_totalCalories ?? 0.0)
+            : Math.Round(Items.Sum(i => i.Calories * i.Quantity) + AddedGheeKcal + AddedTadkaKcal, 1);
         set => _totalCalories = value;
     }
 
     private double? _totalProteinGrams;
     public double TotalProteinGrams
     {
-        get => _totalProteinGrams ?? Math.Round(Items.Sum(i => i.ProteinGrams * i.Quantity), 1);
+        get => (_totalProteinGrams.HasValue && _totalProteinGrams.Value > 0) || Items.Count == 0
+            ? (_totalProteinGrams ?? 0.0)
+            : Math.Round(Items.Sum(i => i.ProteinGrams * i.Quantity), 1);
         set => _totalProteinGrams = value;
     }
 
     private double? _totalCarbsGrams;
     public double TotalCarbsGrams
     {
-        get => _totalCarbsGrams ?? Math.Round(Items.Sum(i => i.CarbsGrams * i.Quantity), 1);
+        get => (_totalCarbsGrams.HasValue && _totalCarbsGrams.Value > 0) || Items.Count == 0
+            ? (_totalCarbsGrams ?? 0.0)
+            : Math.Round(Items.Sum(i => i.CarbsGrams * i.Quantity), 1);
         set => _totalCarbsGrams = value;
     }
 
     private double? _totalFatGrams;
     public double TotalFatGrams
     {
-        get => _totalFatGrams ?? Math.Round(Items.Sum(i => i.FatGrams * i.Quantity) + ((AddedGheeKcal + AddedTadkaKcal) / 9.0), 1);
+        get => (_totalFatGrams.HasValue && _totalFatGrams.Value > 0) || Items.Count == 0
+            ? (_totalFatGrams ?? 0.0)
+            : Math.Round(Items.Sum(i => i.FatGrams * i.Quantity) + ((AddedGheeKcal + AddedTadkaKcal) / 9.0), 1);
         set => _totalFatGrams = value;
     }
 
     private double? _totalFiberGrams;
     public double TotalFiberGrams
     {
-        get => _totalFiberGrams ?? Math.Round(Items.Sum(i => i.FiberGrams * i.Quantity), 1);
+        get => (_totalFiberGrams.HasValue && _totalFiberGrams.Value > 0) || Items.Count == 0
+            ? (_totalFiberGrams ?? 0.0)
+            : Math.Round(Items.Sum(i => i.FiberGrams * i.Quantity), 1);
         set => _totalFiberGrams = value;
     }
 
     private double? _totalSugarGrams;
     public double TotalSugarGrams
     {
-        get => _totalSugarGrams ?? Math.Round(Items.Sum(i => i.SugarGrams * i.Quantity), 1);
+        get => (_totalSugarGrams.HasValue && _totalSugarGrams.Value > 0) || Items.Count == 0
+            ? (_totalSugarGrams ?? 0.0)
+            : Math.Round(Items.Sum(i => i.SugarGrams * i.Quantity), 1);
         set => _totalSugarGrams = value;
     }
 
     private double? _totalSodiumMg;
     public double TotalSodiumMg
     {
-        get => _totalSodiumMg ?? Math.Round(Items.Sum(i => i.SodiumMg * i.Quantity), 1);
+        get => (_totalSodiumMg.HasValue && _totalSodiumMg.Value > 0) || Items.Count == 0
+            ? (_totalSodiumMg ?? 0.0)
+            : Math.Round(Items.Sum(i => i.SodiumMg * i.Quantity), 1);
         set => _totalSodiumMg = value;
     }
 

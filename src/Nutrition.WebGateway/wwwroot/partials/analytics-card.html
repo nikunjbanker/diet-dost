@@ -22,4 +22,81 @@
       <!-- Dynamically populated bars -->
     </div>
   </div>
+
+  <!-- Logged Meal Diary & History Section -->
+  <div class="meal-log-section" id="meal-log-section">
+    <div class="meal-log-header">
+      <div class="meal-log-title-wrap">
+        <div class="meal-log-title">
+          <span class="meal-log-icon">📋</span>
+          <span class="meal-log-heading">Logged Meals & Food Diary</span>
+          <span class="meal-log-badge" id="meal-log-count-badge">0 meals</span>
+        </div>
+        <div class="meal-log-subtitle" id="meal-log-filter-subtitle">
+          Showing 7-Day meal history
+        </div>
+      </div>
+
+      <div class="meal-log-toolbar">
+        <button class="btn-clear-filter hidden" id="meal-log-clear-filter" title="Clear Day Filter">
+          <span>✕</span> Show All (<span id="meal-log-clear-period">7D</span>)
+        </button>
+
+        <div class="view-toggle-group" role="group" aria-label="Meal log layout switcher">
+          <button class="btn-toggle-view active" id="btn-view-cards" data-view="cards" title="Visual Cards View">
+            <span class="toggle-icon">🎴</span> Cards
+          </button>
+          <button class="btn-toggle-view" id="btn-view-grid" data-view="grid" title="Detailed Grid Table View">
+            <span class="toggle-icon">📊</span> Grid
+          </button>
+        </div>
+
+        <button class="btn-export-excel" id="btn-export-excel" title="Export all meal & nutrition data to Microsoft Excel">
+          <span class="export-icon">📥</span> Export Excel
+        </button>
+      </div>
+    </div>
+
+    <!-- Cards Layout Container -->
+    <div class="meal-log-cards-container" id="meal-log-cards-container">
+      <!-- Dynamically populated meal cards -->
+    </div>
+
+    <!-- Grid / Table Layout Container -->
+    <div class="meal-log-grid-container hidden" id="meal-log-grid-container">
+      <div class="table-responsive">
+        <table class="meal-grid-table" id="meal-grid-table">
+          <thead>
+            <tr>
+              <th scope="col">Date / Time</th>
+              <th scope="col">Meal</th>
+              <th scope="col">Dish & Food Items</th>
+              <th scope="col" class="num-col">Calories</th>
+              <th scope="col" class="num-col">Protein</th>
+              <th scope="col" class="num-col">Carbs</th>
+              <th scope="col" class="num-col">Fat</th>
+              <th scope="col" class="num-col">Fiber</th>
+              <th scope="col" class="num-col">Sugar</th>
+              <th scope="col" class="num-col">Sodium</th>
+              <th scope="col">AI / Status</th>
+              <th scope="col" style="text-align: center;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="meal-grid-tbody">
+            <!-- Dynamically populated rows -->
+          </tbody>
+          <tfoot id="meal-grid-tfoot">
+            <!-- Aggregate totals row -->
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="meal-log-empty-state hidden" id="meal-log-empty-state">
+      <div class="empty-icon">🥗</div>
+      <div class="empty-title">No meals logged for this period</div>
+      <div class="empty-desc">Use the Camera or Smart Search above to log your meal, or switch to another timeline tab.</div>
+    </div>
+  </div>
 </section>
