@@ -1,9 +1,9 @@
-import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi, generateDietitianAdvice } from '../services/nutrition-estimator.js?v=1.2.6';
+import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi, generateDietitianAdvice, scaleNutritionByPortion } from '../services/nutrition-estimator.js?v=1.2.7';
 
 /**
  * ReviewModalController
  * Manages AI Food Detection Review, interactive portion steppers, ghee/tadka adjustments,
- * item renaming/corrections, and continuous model retraining.
+ * item renaming/corrections, portion scaling, and continuous model retraining.
  */
 export class ReviewModalController {
   /**
@@ -64,7 +64,15 @@ export class ReviewModalController {
       feedbackRemarksRow: document.getElementById('feedback-remarks-row'),
       feedbackRemarksInput: document.getElementById('feedback-remarks-input'),
       btnSubmitFeedback: document.getElementById('btn-submit-feedback'),
-      feedbackRetrainStatus: document.getElementById('feedback-retrain-status')
+      feedbackRetrainStatus: document.getElementById('feedback-retrain-status'),
+      // Top Aggregated Nutrition Bar Elements
+      macroSummaryBar: document.getElementById('review-macro-summary-bar'),
+      totalKcal: document.getElementById('review-total-kcal'),
+      totalProtein: document.getElementById('review-total-protein'),
+      totalCarbs: document.getElementById('review-total-carbs'),
+      totalFat: document.getElementById('review-total-fat'),
+      totalFiber: document.getElementById('review-total-fiber'),
+      totalSugar: document.getElementById('review-total-sugar')
     };
   }
 
@@ -182,6 +190,7 @@ export class ReviewModalController {
           carbsGrams: 10.0,
           fatGrams: 6.0,
           fiberGrams: 3.5,
+          sugarGrams: 2.0,
           sodiumMg: 180.0
         });
         this.renderItems();
@@ -328,10 +337,18 @@ export class ReviewModalController {
       autoHint.textContent = `Auto-detected from clock (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
     }
 
-    // Retain original detection name on each item to track user training
+    // Retain original detection name on each item to track user training, and ensure fiber/sugar exist
     if (analysis.identifiedItems) {
       analysis.identifiedItems.forEach(i => {
         if (!i.originalDetection) i.originalDetection = i.name;
+        if (i.fiberGrams === undefined || i.fiberGrams === null || i.fiberGrams === 0) {
+          const est = estimateIndianFoodNutrition(i.name, i.estimatedPortion);
+          i.fiberGrams = est?.fiberGrams ?? 2.0;
+        }
+        if (i.sugarGrams === undefined || i.sugarGrams === null || i.sugarGrams === 0) {
+          const est = estimateIndianFoodNutrition(i.name, i.estimatedPortion);
+          i.sugarGrams = est?.sugarGrams ?? 1.5;
+        }
       });
     }
 
@@ -389,6 +406,7 @@ export class ReviewModalController {
 
     this.renderItems();
     this.renderFlags();
+    this.recalculateTotals();
 
     if (el.dietitianAdvice) {
       el.dietitianAdvice.textContent = analysis.dietitianAdvice || 'Wholesome homestyle preparation adhering to ICMR-NIN guidelines.';
@@ -435,6 +453,7 @@ export class ReviewModalController {
       carbsGrams: i.carbsGrams || 15,
       fatGrams: i.fatGrams || 3,
       fiberGrams: i.fiberGrams || 2,
+      sugarGrams: i.sugarGrams || 1.5,
       sodiumMg: i.sodiumMg || 100,
       cookingMediumEstimate: i.cookingMediumEstimate || 'Home cooking',
       confidenceScore: i.confidenceScore || 0.85
@@ -503,6 +522,7 @@ export class ReviewModalController {
           targetItem.carbsGrams = est.carbsGrams;
           targetItem.fatGrams = est.fatGrams;
           targetItem.fiberGrams = est.fiberGrams;
+          targetItem.sugarGrams = est.sugarGrams;
           targetItem.sodiumMg = est.sodiumMg;
           targetItem.isAiEstimated = true;
 
@@ -557,17 +577,26 @@ export class ReviewModalController {
       const totalItemProtein = Math.round(item.proteinGrams * qty * 10) / 10;
       const totalItemCarbs = Math.round((item.carbsGrams || 15) * qty);
       const totalItemFat = Math.round((item.fatGrams || 5) * qty);
+      const totalItemFiber = Math.round((item.fiberGrams || 2.5) * qty * 10) / 10;
+      const totalItemSugar = Math.round((item.sugarGrams || 1.5) * qty * 10) / 10;
 
       return `
         <div class="item-row-editable">
           <div class="item-edit-left">
-            <input type="text" class="item-name-input" value="${item.name}" 
-                   placeholder="e.g. Bhindi Masala, Palak Paneer, Moong Dal"
-                   title="Click to edit or rename this dish. Nutrition will auto-update."
-                   data-idx="${idx}" />
+            <div class="item-inputs-row">
+              <input type="text" class="item-name-input" value="${item.name}" 
+                     placeholder="e.g. Bhindi Masala, Palak Paneer, Moong Dal"
+                     title="Click to edit or rename this dish. Nutrition will auto-update."
+                     data-idx="${idx}" />
+              <div class="portion-input-wrap">
+                <span class="portion-icon" title="Quantity / Portion">📏</span>
+                <input type="text" class="item-portion-input" value="${item.estimatedPortion || '1 Katori'}" 
+                       placeholder="Portion (e.g. 1.5 Cup, 1 Katori, 5-6 Slices)"
+                       title="Update quantity detection (e.g. 1.5 Cup, 1 Katori, 5-6 Slices, 200g). Nutrition details will auto-update."
+                       data-idx="${idx}" />
+              </div>
+            </div>
             <div style="display: flex; gap: 8px; align-items: center; font-size: 0.72rem; color: var(--text-muted); flex-wrap: wrap; margin-top: 3px;">
-              <span>${item.estimatedPortion || '1 Katori'}</span>
-              <span>·</span>
               <span class="tabular" style="font-weight: 600; color: var(--text-primary);">${totalItemKcal} kcal</span>
               <span>·</span>
               <span class="tabular" style="color: #38bdf8; font-weight: 600;">${totalItemProtein}g Protein</span>
@@ -575,6 +604,10 @@ export class ReviewModalController {
               <span class="tabular" style="color: #fbbf24;">${totalItemCarbs}g Carbs</span>
               <span>·</span>
               <span class="tabular" style="color: #f87171;">${totalItemFat}g Fat</span>
+              <span>·</span>
+              <span class="tabular" style="color: #34d399;">${totalItemFiber}g Fiber</span>
+              <span>·</span>
+              <span class="tabular" style="color: #f472b6;">${totalItemSugar}g Sugar</span>
             </div>
             ${isCorrected ? `
               <div class="item-correction-indicator" style="color: var(--status-emerald); font-size: 0.72rem; margin-top: 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
@@ -597,7 +630,7 @@ export class ReviewModalController {
       `;
     }).join('');
 
-    // Attach listeners to items
+    // Attach listeners to items: Name input
     el.itemsList.querySelectorAll('.item-name-input').forEach(input => {
       input.addEventListener('change', (e) => {
         const idx = parseInt(e.target.dataset.idx);
@@ -608,6 +641,29 @@ export class ReviewModalController {
         if (this._state.currentMeal && this._state.currentMeal.identifiedItems[idx]) {
           if (this._state.currentMeal.identifiedItems[idx].name.trim().toLowerCase() !== e.target.value.trim().toLowerCase()) {
             this.updateItemName(idx, e.target.value);
+          }
+        }
+      });
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.target.blur();
+        }
+      });
+    });
+
+    // Attach listeners to items: Portion quantity input
+    el.itemsList.querySelectorAll('.item-portion-input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        this.updateItemPortion(idx, e.target.value);
+      });
+      input.addEventListener('blur', (e) => {
+        const idx = parseInt(e.target.dataset.idx);
+        if (this._state.currentMeal && this._state.currentMeal.identifiedItems[idx]) {
+          const currentPortion = (this._state.currentMeal.identifiedItems[idx].estimatedPortion || '').trim().toLowerCase();
+          if (currentPortion !== e.target.value.trim().toLowerCase()) {
+            this.updateItemPortion(idx, e.target.value);
           }
         }
       });
@@ -652,6 +708,7 @@ export class ReviewModalController {
       item.carbsGrams = baseline.carbsGrams;
       item.fatGrams = baseline.fatGrams;
       item.fiberGrams = baseline.fiberGrams;
+      item.sugarGrams = baseline.sugarGrams;
       item.sodiumMg = baseline.sodiumMg;
       item.isAiEstimated = false;
       if (baseline.portion) item.estimatedPortion = baseline.portion;
@@ -687,6 +744,7 @@ export class ReviewModalController {
         item.carbsGrams = aiResult.carbsGrams;
         item.fatGrams = aiResult.fatGrams;
         item.fiberGrams = aiResult.fiberGrams;
+        item.sugarGrams = aiResult.sugarGrams;
         item.sodiumMg = aiResult.sodiumMg;
         item.isAiEstimated = true;
         if (aiResult.portion) item.estimatedPortion = aiResult.portion;
@@ -702,6 +760,56 @@ export class ReviewModalController {
       }
     } catch (_) {
       // Hardcoded ICMR-NIN baseline already applied
+    }
+  }
+
+  async updateItemPortion(idx, newPortion) {
+    if (!this._state.currentMeal || !this._state.currentMeal.identifiedItems[idx]) return;
+    const trimmed = (newPortion || '').trim();
+    if (!trimmed) return;
+
+    const item = this._state.currentMeal.identifiedItems[idx];
+    item.estimatedPortion = trimmed;
+
+    // 1. Instant client-side portion scaling (Zero Latency)
+    const scaled = scaleNutritionByPortion(item, trimmed);
+    item.grams = scaled.grams;
+    item.calories = scaled.calories;
+    item.proteinGrams = scaled.proteinGrams;
+    item.carbsGrams = scaled.carbsGrams;
+    item.fatGrams = scaled.fatGrams;
+    item.fiberGrams = scaled.fiberGrams;
+    item.sugarGrams = scaled.sugarGrams;
+    item.sodiumMg = scaled.sodiumMg;
+
+    this.renderItems();
+    this.recalculateTotals();
+
+    // 2. User toast notice
+    this._toast.show({
+      title: '📏 Portion Quantity Updated!',
+      message: `${item.name} (${trimmed}): ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
+    });
+
+    // 3. Asynchronously query AI agent to refine exact nutrition metrics if needed
+    try {
+      const aiResult = await estimateFoodNutritionWithAi(item.name, trimmed);
+      if (aiResult && (aiResult.isAiEstimated || aiResult.source?.includes('AI'))) {
+        item.calories = aiResult.calories;
+        item.proteinGrams = aiResult.proteinGrams;
+        item.carbsGrams = aiResult.carbsGrams;
+        item.fatGrams = aiResult.fatGrams;
+        item.fiberGrams = aiResult.fiberGrams;
+        item.sugarGrams = aiResult.sugarGrams;
+        item.sodiumMg = aiResult.sodiumMg;
+        if (aiResult.grams) item.grams = aiResult.grams;
+        item.isAiEstimated = true;
+
+        this.renderItems();
+        this.recalculateTotals();
+      }
+    } catch (_) {
+      // Local scaled ICMR-NIN baseline already active
     }
   }
 
@@ -734,6 +842,7 @@ export class ReviewModalController {
       carbsGrams: carbs,
       fatGrams: fat,
       fiberGrams: 3.5,
+      sugarGrams: 2.0,
       sodiumMg: 190.0
     });
     this.renderItems();
@@ -759,22 +868,86 @@ export class ReviewModalController {
 
   recalculateTotals() {
     const el = this.elements;
-    if (!this._state.currentMeal || !el.dishName) return;
+    if (!this._state.currentMeal) return;
 
-    const baseKcal = this._state.currentMeal.identifiedItems.reduce(
-      (acc, i) => acc + (i.calories || 0) * (i.quantity || 1),
-      0
-    );
-    const totalKcal = baseKcal + (this._state.addedGhee || 0) + (this._state.addedTadka || 0);
+    const items = this._state.currentMeal.identifiedItems || [];
+    let baseKcal = 0;
+    let baseProtein = 0;
+    let baseCarbs = 0;
+    let baseFat = 0;
+    let baseFiber = 0;
+    let baseSugar = 0;
 
-    const cleanDish = (this._state.currentMeal.dishName || 'Meal')
-      .replace(/\s*\([~≈]?\d+\s*kcal\)/gi, '')
-      .trim();
+    items.forEach(i => {
+      const qty = i.quantity || 1;
+      baseKcal += (i.calories || 0) * qty;
+      baseProtein += (i.proteinGrams || 0) * qty;
+      baseCarbs += (i.carbsGrams || 0) * qty;
+      baseFat += (i.fatGrams || 0) * qty;
+      baseFiber += (i.fiberGrams || 0) * qty;
+      baseSugar += (i.sugarGrams || 0) * qty;
+    });
 
-    el.dishName.textContent = `${cleanDish} (~${Math.round(totalKcal)} kcal)`;
+    const addedGheeKcal = this._state.addedGhee || 0;
+    const addedTadkaKcal = this._state.addedTadka || 0;
+    const totalKcal = baseKcal + addedGheeKcal + addedTadkaKcal;
+    const totalFat = baseFat + (addedGheeKcal + addedTadkaKcal) / 9;
+    const totalProtein = baseProtein;
+    const totalCarbs = baseCarbs;
+    const totalFiber = baseFiber;
+    const totalSugar = baseSugar;
+
+    if (el.dishName) {
+      const cleanDish = (this._state.currentMeal.dishName || 'Meal')
+        .replace(/\s*\([~≈]?\d+\s*kcal\)/gi, '')
+        .trim();
+      el.dishName.textContent = `${cleanDish} (~${Math.round(totalKcal)} kcal)`;
+    }
+
+    // Update Top Aggregated Nutrition Values Summary Bar
+    if (el.totalKcal) {
+      el.totalKcal.textContent = `${Math.round(totalKcal)} kcal`;
+      this._pulseElement(el.totalKcal);
+    }
+    if (el.totalProtein) {
+      el.totalProtein.textContent = `${totalProtein.toFixed(1)}g`;
+      this._pulseElement(el.totalProtein);
+    }
+    if (el.totalCarbs) {
+      el.totalCarbs.textContent = `${totalCarbs.toFixed(1)}g`;
+      this._pulseElement(el.totalCarbs);
+    }
+    if (el.totalFat) {
+      el.totalFat.textContent = `${totalFat.toFixed(1)}g`;
+      this._pulseElement(el.totalFat);
+    }
+    if (el.totalFiber) {
+      el.totalFiber.textContent = `${totalFiber.toFixed(1)}g`;
+      this._pulseElement(el.totalFiber);
+    }
+    if (el.totalSugar) {
+      el.totalSugar.textContent = `${totalSugar.toFixed(1)}g`;
+      this._pulseElement(el.totalSugar);
+    }
+
+    // Persist in state
+    this._state.currentMeal.totalCalories = Math.round(totalKcal);
+    this._state.currentMeal.totalProteinGrams = Math.round(totalProtein * 10) / 10;
+    this._state.currentMeal.totalCarbsGrams = Math.round(totalCarbs * 10) / 10;
+    this._state.currentMeal.totalFatGrams = Math.round(totalFat * 10) / 10;
+    this._state.currentMeal.totalFiberGrams = Math.round(totalFiber * 10) / 10;
+    this._state.currentMeal.totalSugarGrams = Math.round(totalSugar * 10) / 10;
 
     // Dynamically update clinical dietitian advice in real-time
     this.updateDietitianAdvice();
+  }
+
+  _pulseElement(elem) {
+    if (!elem) return;
+    elem.classList.remove('macro-val-pulse');
+    void elem.offsetWidth;
+    elem.classList.add('macro-val-pulse');
+    setTimeout(() => elem.classList.remove('macro-val-pulse'), 350);
   }
 
   updateDietitianAdvice() {
@@ -836,6 +1009,7 @@ export class ReviewModalController {
           carbsGrams: i.carbsGrams || 15,
           fatGrams: i.fatGrams || 3,
           fiberGrams: i.fiberGrams || 2,
+          sugarGrams: i.sugarGrams || 1.5,
           sodiumMg: i.sodiumMg || 100,
           cookingMediumEstimate: i.cookingMediumEstimate || 'Standard Home Cooking'
         })),

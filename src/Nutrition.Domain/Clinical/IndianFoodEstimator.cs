@@ -15,7 +15,8 @@ public record FoodItemNutritionEstimate(
     double SodiumMg,
     string CookingMediumEstimate,
     string Source = "ICMR-NIN Knowledge Base",
-    double ConfidenceScore = 0.95
+    double ConfidenceScore = 0.95,
+    double SugarGrams = 0.0
 );
 
 /// <summary>
@@ -26,8 +27,19 @@ public static class IndianFoodEstimator
 {
     public static FoodItemNutritionEstimate Estimate(string itemName, string? portion = null)
     {
+        var baseline = GetBaseline(itemName);
+        if (!string.IsNullOrWhiteSpace(portion))
+        {
+            return ApplyPortionScaling(baseline, portion);
+        }
+        return baseline;
+    }
+
+    private static FoodItemNutritionEstimate GetBaseline(string itemName)
+    {
+        string? portion = null;
         if (string.IsNullOrWhiteSpace(itemName))
-            return new FoodItemNutritionEstimate("Unknown Item", "Bhojan", portion ?? "1 Portion", 100, 100, 3, 15, 3, 2, 150, "Homestyle");
+            return new FoodItemNutritionEstimate("Unknown Item", "Bhojan", "1 Portion", 100, 100, 3, 15, 3, 2, 150, "Homestyle");
 
         var clean = itemName.Trim().ToLowerInvariant();
         // Normalize common user misspellings & regional nomenclature
@@ -45,15 +57,15 @@ public static class IndianFoodEstimator
         {
             if (clean.Contains("potato") || clean.Contains("aloo"))
             {
-                return new FoodItemNutritionEstimate("Bhindi Aloo (Okra with Potato)", "Aloo Bhindi ki Subzi", portion ?? "1 Katori (~120g)", 120, 120, 2.6, 16.0, 5.5, 3.5, 180, "Sautéed in Mustard Oil with Haldi & Jeera");
+                return new FoodItemNutritionEstimate("Bhindi Aloo (Okra with Potato)", "Aloo Bhindi ki Subzi", portion ?? "1 Katori (~120g)", 120, 120, 2.6, 16.0, 5.5, 3.5, 180, "Sautéed in Mustard Oil with Haldi & Jeera", SugarGrams: 2.2);
             }
-            return new FoodItemNutritionEstimate("Bhindi Masala (Okra Stir-Fry)", "Tadka Bhindi", portion ?? "1 Katori (~100g)", 100, 110, 2.4, 10.0, 6.0, 3.8, 170, "Sautéed in Mustard Oil with Haldi & Ajwain");
+            return new FoodItemNutritionEstimate("Bhindi Masala (Okra Stir-Fry)", "Tadka Bhindi", portion ?? "1 Katori (~100g)", 100, 110, 2.4, 10.0, 6.0, 3.8, 170, "Sautéed in Mustard Oil with Haldi & Ajwain", SugarGrams: 2.0);
         }
 
         // 2. Palak Paneer / Saag Paneer
         if ((clean.Contains("palak") || clean.Contains("saag")) && clean.Contains("paneer"))
         {
-            return new FoodItemNutritionEstimate("Palak Paneer", "Palak Paneer", portion ?? "1 Katori (~150g)", 150, 220, 12.0, 8.0, 16.0, 3.2, 310, "Simmered in Spiced Spinach Gravy");
+            return new FoodItemNutritionEstimate("Palak Paneer", "Palak Paneer", portion ?? "1 Katori (~150g)", 150, 220, 12.0, 8.0, 16.0, 3.2, 310, "Simmered in Spiced Spinach Gravy", SugarGrams: 2.4);
         }
 
         // 3. Paneer Dishes
@@ -141,21 +153,21 @@ public static class IndianFoodEstimator
                 return new FoodItemNutritionEstimate("Chana Dal Tadka", "Chana Dal", portion ?? "1 Katori (~150ml)", 150, 140, 7.5, 20.0, 4.0, 5.0, 310, "Bengal Gram Dal with Garlic Tadka");
 
             if (clean.Contains("toor") || clean.Contains("tuvar") || clean.Contains("arhar"))
-                return new FoodItemNutritionEstimate("Toor Dal Tadka", "Tuvar / Arhar Dal Fry", portion ?? "1 Katori (~150ml)", 150, 135, 7.2, 19.0, 3.5, 4.0, 310, "Split Pigeon Pea Tempered with Ghee & Hing");
+                return new FoodItemNutritionEstimate("Toor Dal Tadka", "Tuvar / Arhar Dal Fry", portion ?? "1 Katori (~150ml)", 150, 135, 7.2, 19.0, 3.5, 4.0, 310, "Split Pigeon Pea Tempered with Ghee & Hing", SugarGrams: 1.5);
 
-            return new FoodItemNutritionEstimate("Yellow Moong Dal Tadka", "Pili Moong Dal", portion ?? "1 Katori (~150ml)", 150, 125, 7.0, 18.0, 3.5, 4.5, 300, "Jeera & Mustard Seed Tempered Moong Dal");
+            return new FoodItemNutritionEstimate("Yellow Moong Dal Tadka", "Pili Moong Dal", portion ?? "1 Katori (~150ml)", 150, 125, 7.0, 18.0, 3.5, 4.5, 300, "Jeera & Mustard Seed Tempered Moong Dal", SugarGrams: 1.5);
         }
 
         // 16. Kadhi
         if (clean.Contains("kadhi") || clean.Contains("karhi"))
         {
-            return new FoodItemNutritionEstimate("Besan Kadhi", "Dahi Besan Kadhi", portion ?? "1 Katori (~150ml)", 150, 130, 5.0, 14.0, 6.5, 1.5, 320, "Spiced Gram Flour & Yogurt Curry");
+            return new FoodItemNutritionEstimate("Besan Kadhi", "Dahi Besan Kadhi", portion ?? "1 Katori (~150ml)", 150, 130, 5.0, 14.0, 6.5, 1.5, 320, "Spiced Gram Flour & Yogurt Curry", SugarGrams: 2.5);
         }
 
         // 17. Roti / Phulka
         if (clean.Contains("roti") || clean.Contains("phulka") || clean.Contains("chapati") || clean.Contains("chapatti"))
         {
-            return new FoodItemNutritionEstimate("Whole Wheat Phulka / Roti", "Gehu ki Roti", portion ?? "1 piece (folded, ~30g)", 30, 80, 2.6, 16.0, 0.5, 2.2, 3, "Dry Tawa Baked (No Oil)");
+            return new FoodItemNutritionEstimate("Whole Wheat Phulka / Roti", "Gehu ki Roti", portion ?? "1 piece (folded, ~30g)", 30, 80, 2.6, 16.0, 0.5, 2.2, 3, "Dry Tawa Baked (No Oil)", SugarGrams: 0.4);
         }
 
         // 18. Paratha
@@ -257,13 +269,13 @@ public static class IndianFoodEstimator
 
         if (clean.Contains("sauce") || clean.Contains("ketchup") || clean.Contains("tomato sauce"))
         {
-            return new FoodItemNutritionEstimate("Tomato Ketchup / Sauce", "Tomato Sauce", portion ?? "1 tbsp (~18g)", 18, 20, 0.2, 4.6, 0.1, 0.1, 160, "Bottled Condiment with Sugar & Salt");
+            return new FoodItemNutritionEstimate("Tomato Ketchup / Sauce", "Tomato Sauce", portion ?? "1 tbsp (~18g)", 18, 20, 0.2, 4.6, 0.1, 0.1, 160, "Bottled Condiment with Sugar & Salt", SugarGrams: 4.2);
         }
 
         // 24. Salad / Raw
         if (clean.Contains("salad") || clean.Contains("kachumber") || clean.Contains("cucumber") || clean.Contains("kheera"))
         {
-            return new FoodItemNutritionEstimate("Green Salad", "Kachumber Salad", portion ?? "1 Small Plate (~80g)", 80, 30, 1.0, 6.0, 0.2, 2.0, 25, "Fresh Raw Cucumber, Tomato & Onion Slices");
+            return new FoodItemNutritionEstimate("Green Salad", "Kachumber Salad", portion ?? "1 Small Plate (~80g)", 80, 30, 1.0, 6.0, 0.2, 2.0, 25, "Fresh Raw Cucumber, Tomato & Onion Slices", SugarGrams: 2.4);
         }
 
         // Generic Vegetable fallback
@@ -278,7 +290,125 @@ public static class IndianFoodEstimator
             5.5, 
             3.0, 
             180, 
-            "Homestyle Turmeric & Cumin Sauté"
+            "Homestyle Turmeric & Cumin Sauté",
+            SugarGrams: 1.8
         );
+    }
+
+    public static FoodItemNutritionEstimate ApplyPortionScaling(FoodItemNutritionEstimate baseline, string portion)
+    {
+        if (string.IsNullOrWhiteSpace(portion) || baseline.Grams <= 0)
+            return baseline;
+
+        var clean = portion.Trim().ToLowerInvariant();
+        double ratio = 1.0;
+        double targetGrams = baseline.Grams;
+
+        // 1. Direct grams / ml check: e.g. "150g", "200 gm", "250ml", "100 grams"
+        var gramMatch = System.Text.RegularExpressions.Regex.Match(clean, @"(\d+(?:\.\d+)?)\s*(?:g|gm|gram|grams|ml)\b");
+        if (gramMatch.Success && double.TryParse(gramMatch.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var parsedGrams) && parsedGrams > 0)
+        {
+            targetGrams = parsedGrams;
+            ratio = targetGrams / baseline.Grams;
+        }
+        else
+        {
+            // 2. Quantity extraction (Ranges: "5-6", Decimals: "1.5", Fractions: "1/2", Integers: "3")
+            double quantity = 1.0;
+            bool hasQty = false;
+
+            var rangeMatch = System.Text.RegularExpressions.Regex.Match(clean, @"(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)");
+            if (rangeMatch.Success)
+            {
+                if (double.TryParse(rangeMatch.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var n1) &&
+                    double.TryParse(rangeMatch.Groups[2].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var n2))
+                {
+                    quantity = (n1 + n2) / 2.0;
+                    hasQty = true;
+                }
+            }
+            else
+            {
+                var fracMatch = System.Text.RegularExpressions.Regex.Match(clean, @"(\d+)\s*/\s*(\d+)");
+                if (fracMatch.Success &&
+                    double.TryParse(fracMatch.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var num) &&
+                    double.TryParse(fracMatch.Groups[2].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var den) && den > 0)
+                {
+                    quantity = num / den;
+                    hasQty = true;
+                }
+                else
+                {
+                    var numMatch = System.Text.RegularExpressions.Regex.Match(clean, @"^(\d+(?:\.\d+)?)");
+                    if (numMatch.Success && double.TryParse(numMatch.Groups[1].Value, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var singleNum))
+                    {
+                        quantity = singleNum;
+                        hasQty = true;
+                    }
+                }
+            }
+
+            if (hasQty && quantity > 0)
+            {
+                double unitGrams = baseline.Grams;
+
+                if (clean.Contains("cup"))
+                {
+                    unitGrams = 200.0; // Standard 200g Indian Cup
+                    targetGrams = quantity * unitGrams;
+                    ratio = targetGrams / baseline.Grams;
+                }
+                else if (clean.Contains("bowl"))
+                {
+                    unitGrams = 220.0;
+                    targetGrams = quantity * unitGrams;
+                    ratio = targetGrams / baseline.Grams;
+                }
+                else if (clean.Contains("slice"))
+                {
+                    unitGrams = clean.Contains("bread") ? 30.0 : 20.0;
+                    targetGrams = quantity * unitGrams;
+                    ratio = targetGrams / baseline.Grams;
+                }
+                else if (clean.Contains("tbsp") || clean.Contains("tablespoon"))
+                {
+                    unitGrams = 15.0;
+                    targetGrams = quantity * unitGrams;
+                    ratio = targetGrams / baseline.Grams;
+                }
+                else if (clean.Contains("tsp") || clean.Contains("teaspoon"))
+                {
+                    unitGrams = 5.0;
+                    targetGrams = quantity * unitGrams;
+                    ratio = targetGrams / baseline.Grams;
+                }
+                else if (clean.Contains("katori"))
+                {
+                    ratio = quantity;
+                    targetGrams = baseline.Grams * ratio;
+                }
+                else
+                {
+                    ratio = quantity;
+                    targetGrams = baseline.Grams * ratio;
+                }
+            }
+        }
+
+        ratio = Math.Clamp(ratio, 0.1, 10.0);
+        targetGrams = Math.Round(Math.Clamp(targetGrams, 10, 2500));
+
+        return baseline with
+        {
+            EstimatedPortion = portion,
+            Grams = targetGrams,
+            Calories = Math.Round(baseline.Calories * ratio, MidpointRounding.AwayFromZero),
+            ProteinGrams = Math.Round(baseline.ProteinGrams * ratio, 1, MidpointRounding.AwayFromZero),
+            CarbsGrams = Math.Round(baseline.CarbsGrams * ratio, 1, MidpointRounding.AwayFromZero),
+            FatGrams = Math.Round(baseline.FatGrams * ratio, 1, MidpointRounding.AwayFromZero),
+            FiberGrams = Math.Round(baseline.FiberGrams * ratio, 1, MidpointRounding.AwayFromZero),
+            SugarGrams = Math.Round(baseline.SugarGrams * ratio, 1, MidpointRounding.AwayFromZero),
+            SodiumMg = Math.Round(baseline.SodiumMg * ratio, MidpointRounding.AwayFromZero)
+        };
     }
 }

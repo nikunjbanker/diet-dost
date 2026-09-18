@@ -670,6 +670,7 @@ export function estimateIndianFoodNutrition(rawName, portion = null) {
     carbsGrams: 12.0,
     fatGrams: 5.5,
     fiberGrams: 3.0,
+    sugarGrams: 1.8,
     sodiumMg: 180,
     source: 'hardcoded (ICMR-NIN Fallback)',
     isAiEstimated: false
@@ -710,12 +711,10 @@ export async function estimateFoodNutritionWithAi(rawName, portion = null, optio
   try {
     const res = await fetch('/api/meals/estimate-item', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name: trimmed,
-        portion: portion || baseline.portion,
+        portion: portion || baseline.portion || '1 Portion',
         useAi: true
       }),
       signal: controller ? controller.signal : undefined
@@ -735,7 +734,8 @@ export async function estimateFoodNutritionWithAi(rawName, portion = null, optio
           proteinGrams: Number((data.proteinGrams ?? baseline.proteinGrams).toFixed(1)),
           carbsGrams: Number((data.carbsGrams ?? baseline.carbsGrams).toFixed(1)),
           fatGrams: Number((data.fatGrams ?? baseline.fatGrams).toFixed(1)),
-          fiberGrams: Number((data.fiberGrams ?? baseline.fiberGrams).toFixed(1)),
+          fiberGrams: Number((data.fiberGrams ?? baseline.fiberGrams ?? 2.0).toFixed(1)),
+          sugarGrams: Number((data.sugarGrams ?? baseline.sugarGrams ?? 1.5).toFixed(1)),
           sodiumMg: Math.round(data.sodiumMg ?? baseline.sodiumMg),
           cookingMedium: data.cookingMediumEstimate || baseline.cookingMedium || 'Homestyle',
           source: data.source || 'AI (Gemini 3.8 / Clinical NLP)',
@@ -890,4 +890,108 @@ export function generateDietitianAdvice(items = [], options = {}) {
   }
 
   return sentences.join(' ');
+}
+
+/**
+ * Scales an item's nutrition metrics based on an updated portion string.
+ * Supports numbers, ranges ("5-6 Slices"), fractions ("1/2 Cup"), decimals ("1.5 Cup"),
+ * and units like Cup, Katori, Bowl, Slice, Piece, Tbsp, Tsp, Grams.
+ * 
+ * @param {Object} baseline - Item nutrition object
+ * @param {string} portionText - New portion string (e.g. "1.5 Cup", "5-6 Slices", "1 Katori", "200g")
+ * @returns {Object} Scaled nutrition object
+ */
+export function scaleNutritionByPortion(baseline, portionText) {
+  if (!baseline || !portionText || !portionText.trim()) return baseline;
+
+  const clean = portionText.trim().toLowerCase();
+  const baseGrams = baseline.grams || 100;
+  let ratio = 1.0;
+  let targetGrams = baseGrams;
+
+  // 1. Direct grams / ml check: e.g. "150g", "200 gm", "250ml", "100 grams"
+  const gramMatch = clean.match(/(\d+(?:\.\d+)?)\s*(?:g|gm|gram|grams|ml)\b/);
+  if (gramMatch && parseFloat(gramMatch[1]) > 0) {
+    targetGrams = parseFloat(gramMatch[1]);
+    ratio = targetGrams / (baseGrams || 100);
+  } else {
+    // 2. Quantity extraction (Ranges: "5-6", Decimals: "1.5", Fractions: "1/2", Integers: "3")
+    let quantity = 1.0;
+    let hasQty = false;
+
+    const rangeMatch = clean.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)/);
+    if (rangeMatch) {
+      const n1 = parseFloat(rangeMatch[1]);
+      const n2 = parseFloat(rangeMatch[2]);
+      if (!isNaN(n1) && !isNaN(n2)) {
+        quantity = (n1 + n2) / 2.0;
+        hasQty = true;
+      }
+    } else {
+      const fracMatch = clean.match(/(\d+)\s*\/\s*(\d+)/);
+      if (fracMatch) {
+        const num = parseFloat(fracMatch[1]);
+        const den = parseFloat(fracMatch[2]);
+        if (!isNaN(num) && !isNaN(den) && den > 0) {
+          quantity = num / den;
+          hasQty = true;
+        }
+      } else {
+        const numMatch = clean.match(/^(\d+(?:\.\d+)?)/);
+        if (numMatch) {
+          const singleNum = parseFloat(numMatch[1]);
+          if (!isNaN(singleNum)) {
+            quantity = singleNum;
+            hasQty = true;
+          }
+        }
+      }
+    }
+
+    if (hasQty && quantity > 0) {
+      if (clean.includes('cup')) {
+        const unitGrams = 200.0; // Standard 200g Indian Cup
+        targetGrams = quantity * unitGrams;
+        ratio = targetGrams / (baseGrams || 150);
+      } else if (clean.includes('bowl')) {
+        const unitGrams = 220.0;
+        targetGrams = quantity * unitGrams;
+        ratio = targetGrams / (baseGrams || 150);
+      } else if (clean.includes('slice')) {
+        const unitGrams = clean.includes('bread') ? 30.0 : 20.0;
+        targetGrams = quantity * unitGrams;
+        ratio = targetGrams / (baseGrams || 80);
+      } else if (clean.includes('tbsp') || clean.includes('tablespoon')) {
+        const unitGrams = 15.0;
+        targetGrams = quantity * unitGrams;
+        ratio = targetGrams / (baseGrams || 15);
+      } else if (clean.includes('tsp') || clean.includes('teaspoon')) {
+        const unitGrams = 5.0;
+        targetGrams = quantity * unitGrams;
+        ratio = targetGrams / (baseGrams || 5);
+      } else if (clean.includes('katori')) {
+        ratio = quantity;
+        targetGrams = (baseGrams || 120) * ratio;
+      } else {
+        ratio = quantity;
+        targetGrams = (baseGrams || 100) * ratio;
+      }
+    }
+  }
+
+  ratio = Math.max(0.1, Math.min(10.0, ratio));
+  targetGrams = Math.round(Math.max(10, Math.min(2500, targetGrams)));
+
+  return {
+    ...baseline,
+    estimatedPortion: portionText,
+    grams: targetGrams,
+    calories: Math.round((baseline.calories || 100) * ratio),
+    proteinGrams: Number(((baseline.proteinGrams || 3) * ratio).toFixed(1)),
+    carbsGrams: Number(((baseline.carbsGrams || 12) * ratio).toFixed(1)),
+    fatGrams: Number(((baseline.fatGrams || 5) * ratio).toFixed(1)),
+    fiberGrams: Number(((baseline.fiberGrams || 2) * ratio).toFixed(1)),
+    sugarGrams: Number(((baseline.sugarGrams || 1.5) * ratio).toFixed(1)),
+    sodiumMg: Math.round((baseline.sodiumMg || 100) * ratio)
+  };
 }

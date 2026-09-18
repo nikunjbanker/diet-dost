@@ -444,7 +444,8 @@ public class MealsController : ControllerBase
                         SodiumMg: matched.SodiumMg > 0 ? Math.Round(matched.SodiumMg, 1) : baseline.SodiumMg,
                         CookingMediumEstimate: !string.IsNullOrWhiteSpace(matched.CookingMediumEstimate) ? matched.CookingMediumEstimate : baseline.CookingMediumEstimate,
                         Source: "AI (Gemini 3.8 / Clinical NLP)",
-                        ConfidenceScore: matched.ConfidenceScore > 0 ? matched.ConfidenceScore : (aiResult?.OverallConfidenceScore > 0 ? aiResult.OverallConfidenceScore : 0.90)
+                        ConfidenceScore: matched.ConfidenceScore > 0 ? matched.ConfidenceScore : (aiResult?.OverallConfidenceScore > 0 ? aiResult.OverallConfidenceScore : 0.90),
+                        SugarGrams: matched.SugarGrams > 0 ? Math.Round(matched.SugarGrams, 1) : baseline.SugarGrams
                     );
                     return Ok(aiEstimate);
                 }

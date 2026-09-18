@@ -555,6 +555,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
               "carbsGrams": 18,
               "fatGrams": 6.8,
               "fiberGrams": 4.2,
+              "sugarGrams": 2.5,
               "sodiumMg": 240,
               "cookingMediumEstimate": "Mustard Oil / Ghee Tadka",
               "confidenceScore": 0.9
@@ -565,6 +566,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
           "totalCarbsGrams": 62,
           "totalFatGrams": 10,
           "totalFiberGrams": 8,
+          "totalSugarGrams": 5,
           "totalSodiumMg": 420,
           "whoComplianceFlags": ["..."],
           "medicationWarnings": ["..."],
@@ -947,6 +949,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             TotalCarbsGrams = items.Sum(i => i.CarbsGrams),
             TotalFatGrams = items.Sum(i => i.FatGrams),
             TotalFiberGrams = items.Sum(i => i.FiberGrams),
+            TotalSugarGrams = items.Sum(i => i.SugarGrams),
             TotalSodiumMg = items.Sum(i => i.SodiumMg),
             DietitianAdvice = "Parsed meal logged per ICMR-NIN guidelines."
         };
@@ -1077,6 +1080,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             CarbsGrams = estimate.CarbsGrams,
             FatGrams = estimate.FatGrams,
             FiberGrams = estimate.FiberGrams,
+            SugarGrams = estimate.SugarGrams,
             SodiumMg = estimate.SodiumMg,
             CookingMediumEstimate = estimate.CookingMediumEstimate,
             ConfidenceScore = 0.95

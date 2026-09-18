@@ -24,6 +24,9 @@ public class DailyCalorieLedger
     public double TargetFiberGrams { get; set; } = 30.0;
     public double ConsumedFiberGrams { get; set; } = 0.0;
 
+    public double TargetSugarGrams { get; set; } = 25.0; // ICMR-NIN Max 25g free sugar limit
+    public double ConsumedSugarGrams { get; set; } = 0.0;
+
     public double SodiumLimitMg { get; set; } = 2000.0;
     public double ConsumedSodiumMg { get; set; } = 0.0;
 
@@ -46,6 +49,7 @@ public class DailyCalorieLedger
         ConsumedCarbsGrams = Math.Round(dayMeals.Sum(m => m.TotalCarbsGrams), 1);
         ConsumedFatGrams = Math.Round(dayMeals.Sum(m => m.TotalFatGrams), 1);
         ConsumedFiberGrams = Math.Round(dayMeals.Sum(m => m.TotalFiberGrams), 1);
+        ConsumedSugarGrams = Math.Round(dayMeals.Sum(m => m.TotalSugarGrams), 1);
         ConsumedSodiumMg = Math.Round(dayMeals.Sum(m => m.TotalSodiumMg), 1);
 
         // Approximate visible cooking oil from fat and added ghee/tadka

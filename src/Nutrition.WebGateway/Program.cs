@@ -108,6 +108,20 @@ using (var scope = app.Services.CreateScope())
                 await connection.OpenAsync();
             }
 
+            // Verify table exists before attempting column inspection/alteration
+            var tableExists = false;
+            using (var checkTableCmd = connection.CreateCommand())
+            {
+                checkTableCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+                var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
+                tableExists = count > 0;
+            }
+
+            if (!tableExists)
+            {
+                return;
+            }
+
             var columnExists = false;
             using (var cmd = connection.CreateCommand())
             {
@@ -136,10 +150,15 @@ using (var scope = app.Services.CreateScope())
         await EnsureColumnExistsAsync("Meals", "TotalCarbsGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Meals", "TotalFatGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Meals", "TotalFiberGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync("Meals", "TotalSugarGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Meals", "TotalSodiumMg", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Meals", "AiFeedbackRating", "TEXT NULL");
         await EnsureColumnExistsAsync("Meals", "AiFeedbackRemarks", "TEXT NULL");
         await EnsureColumnExistsAsync("FoodItems", "OriginalDetection", "TEXT NOT NULL DEFAULT ''");
+        await EnsureColumnExistsAsync("FoodItems", "FiberGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync("FoodItems", "SugarGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync("Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
+        await EnsureColumnExistsAsync("Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
 
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""ProgressPhotos"" (

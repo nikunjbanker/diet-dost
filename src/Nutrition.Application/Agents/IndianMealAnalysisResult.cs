@@ -32,6 +32,9 @@ public class IndianMealItemDto
     [JsonPropertyName("fiberGrams")]
     public double FiberGrams { get; set; }
 
+    [JsonPropertyName("sugarGrams")]
+    public double SugarGrams { get; set; }
+
     [JsonPropertyName("sodiumMg")]
     public double SodiumMg { get; set; }
 
@@ -70,6 +73,9 @@ public class IndianMealAnalysisResult
 
     [JsonPropertyName("totalFiberGrams")]
     public double TotalFiberGrams { get; set; }
+
+    [JsonPropertyName("totalSugarGrams")]
+    public double TotalSugarGrams { get; set; }
 
     [JsonPropertyName("totalSodiumMg")]
     public double TotalSodiumMg { get; set; }

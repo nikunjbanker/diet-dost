@@ -852,3 +852,105 @@
      - WebP recording artifact generated: `ai_feedback_flow_1789719817711.webp`.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
+
+## [2026-09-18 16:15] - Dynamic Portion Quantity Detection Updates & Live Top Aggregated Macro Summary
+
+- **Initiating Context**:
+  - User requested the ability to update quantity / portion detections in the Meal Review modal (such as "1.5 Cup", "1 Katori", "5-6 Slices", "200g", etc.), automatically updating the item's nutrition details (kcal, protein, carbs, fat, fiber).
+  - On top of the review modal, add an aggregated nutrition summary bar (Calories, Protein, Carbs, Fat, Fiber) and dynamically recalculate it on any update in any food item or nutrition metric.
+- **Architectural Implementation**:
+  1. **Domain Portion Scaling Engine (`IndianFoodEstimator.cs`)**:
+     - Implemented `ApplyPortionScaling(FoodItemNutritionEstimate baseline, string portion)`:
+       - Direct weight / volume regex extraction: `"150g"`, `"200 gm"`, `"250 ml"` $\to$ computes exact weight ratio $\frac{W_{\text{target}}}{W_{\text{baseline}}}$.
+       - Range averaging regex: `"5-6 Slices"` $\to$ parsed into midpoint $\frac{5 + 6}{2} = 5.5$.
+       - Fractions and decimals: `"1/2"`, `"1.5"`, `"0.75"`.
+       - Standard Indian culinary units: Cup (200g standard Indian cup), Bowl (220g), Slice (20g vegetable / 30g bread), Tbsp (15g), Tsp (5g), Katori (direct baseline multiplier).
+       - Scales Calories, Protein, Carbs, Fat, Fiber, and Sodium with `MidpointRounding.AwayFromZero`.
+  2. **Client-Side Zero-Latency Scaling Engine (`nutrition-estimator.js`)**:
+     - Exported `scaleNutritionByPortion(baseline, portionText)` matching domain rules with zero network latency.
+     - Asynchronous AI refinement fallback via `POST /api/meals/estimate-item` when complex compound queries are entered.
+  3. **Linear.app Obsidian Dark Top Aggregated Nutrition Summary Bar**:
+     - Added `#review-macro-summary-bar` in `review-modal.html` with 5 luminous macro chips:
+       - 🔥 Calories (`#review-total-kcal`)
+       - 💪 Protein (`#review-total-protein`)
+       - 🌾 Carbs (`#review-total-carbs`)
+       - 🥑 Fat (`#review-total-fat`)
+       - 🥗 Fiber (`#review-total-fiber`)
+     - Styled in `styles.css` with `@keyframes macroPulse` glowing highlights upon live value recalculation.
+  4. **Review Modal Dynamic Controller (`review-modal.js`)**:
+     - Rendered editable portion input `.item-portion-input` alongside `.item-name-input` with ruler icon `📏`.
+     - Wired `change`, `blur`, and Enter key triggers to invoke `updateItemPortion(idx, newPortion)`.
+     - Connected all meal modification operations (dish rename, portion update, quantity stepper, cooking fat toggle, delete, quick-add) through `recalculateTotals()`, ensuring the top aggregated bar, total calories, macro badges, and clinical dietitian advice stay permanently in sync.
+  5. **Automated Unit & Evaluation Tests**:
+     - Added 4 test fixtures in `tests/Nutrition.Domain.Tests/IndianFoodEstimatorTests.cs`:
+       - `Estimate_WithCupPortion_ScalesNutritionProportionally` ("1.5 Cup" Yellow Moong Dal Tadka $\to$ 250 kcal, 14g protein).
+       - `Estimate_WithSliceRangePortion_AveragesAndScalesAccurately` ("5-6 Slices" Green Salad $\to$ 41 kcal, 1.4g protein).
+       - `Estimate_WithExplicitGrams_ScalesDirectlyFromWeight` ("200g" Bhindi Masala $\to$ 220 kcal, 4.8g protein).
+       - `Estimate_WithKatoriMultiplier_ScalesByQuantity` ("2 Katori" Palak Paneer $\to$ 440 kcal, 24g protein).
+     - Full solution test suite passed: **27 passed, 0 failed, 0 skipped** (19 Domain + 8 EvalHarness).
+     - Build status: **0 Warning(s), 0 Error(s)**.
+  6. **End-to-End Browser Subagent Validation**:
+     - Verified in Chrome on `http://localhost:5240`:
+       - Initial Lunch Thali scan loaded with ~481 kcal aggregated total.
+       - Updated Dal to `Yellow Moong Dal Tadka 1.5 Cup` $\to$ item recalculated to 125 kcal, 7g protein, aggregated bar updated to ~471 kcal.
+       - Updated Salad to `Green Salad 5-6 Slices` $\to$ item recalculated to 30 kcal, 1g protein, aggregated bar updated to ~438 kcal, clinical dietitian advice updated protein summary (15.7g Protein).
+       - Saved screenshot artifacts: `review_modal_initial_1789727079902.png`, `review_modal_updated_dal_1789727497956.png`, `review_modal_final_updated_1789727595485.png`.
+       - WebP video recording artifact: `portion_update_and_aggregated_macros_1789726860827.webp`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+## [2026-09-18 16:55] - Fiber & Sugar Nutrition Tracking & Real-Time Aggregated Macro Synchronization
+
+- **Initiating Context**:
+  - User identified missing Fiber and Sugar in nutrition values and requested adding them across the application.
+  - Required displaying Fiber and Sugar on individual food item breakdowns (e.g. `X kcal · Xg Protein · Xg Carbs · Xg Fat · Xg Fiber · Xg Sugar`) and in the top aggregated nutrition summary bar (`🍬 Sugar` chip alongside `🥗 Fiber`, `🔥 Calories`, `💪 Protein`, `🌾 Carbs`, `🥑 Fat`).
+  - Required real-time recalculation of Fiber and Sugar upon portion edits, quantity steppers, dish name renames, additions, and deletions.
+- **Architectural Implementation**:
+  1. **Domain Models & Knowledge Engine**:
+     - Updated [`IndianFoodEstimator.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Domain/Clinical/IndianFoodEstimator.cs):
+       - Added `double SugarGrams = 0.0` parameter to `FoodItemNutritionEstimate`.
+       - Updated `GetBaseline` with realistic homestyle Indian diet IFCT/ICMR-NIN 2024 baselines (e.g. Tomato Sauce 4.2g, Green Salad 2.4g, Bhindi Masala 2.0g, Palak Paneer 2.4g, Dal Tadka 1.5g, Phulka 0.4g).
+       - Updated `ApplyPortionScaling` to scale `SugarGrams` with `MidpointRounding.AwayFromZero`.
+     - Updated [`MealLog.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Domain/Model/Meal/MealLog.cs):
+       - Added `public double SugarGrams { get; set; }` to `FoodItemRecord`.
+       - Added `public double TotalSugarGrams` to `MealLog` with fallback getter `Items.Sum(i => i.SugarGrams * i.Quantity)`.
+       - Updated `MealLog.RecalculateTotals()` to compute `TotalSugarGrams = Math.Round(Items.Sum(i => i.SugarGrams * i.Quantity), 1)`.
+     - Updated [`DailyCalorieLedger.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Domain/Model/Ledger/DailyCalorieLedger.cs):
+       - Added `TargetSugarGrams` (25.0g ICMR-NIN daily ceiling) and `ConsumedSugarGrams`.
+       - Updated `RecalculateLedger()` to accumulate `ConsumedSugarGrams`.
+  2. **Application DTOs & Vision Agent**:
+     - Updated [`IndianMealAnalysisResult.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Application/Agents/IndianMealAnalysisResult.cs):
+       - Added `[JsonPropertyName("sugarGrams")] public double SugarGrams` to `IndianMealItemDto`.
+       - Added `[JsonPropertyName("totalSugarGrams")] public double TotalSugarGrams` to `IndianMealAnalysisResult`.
+     - Updated [`MicrosoftAgentFoodVisionService.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs):
+       - Added `sugarGrams` and `totalSugarGrams` to the system prompt JSON schema.
+       - Populated `TotalSugarGrams` in `GenerateIntelligentLocalAnalysis` and `ProcessFeedbackRetrainingAsync`.
+  3. **WebGateway API & Database Migration**:
+     - Updated [`MealsController.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/Controllers/MealsController.cs):
+       - Mapped `SugarGrams` in `/api/meals/estimate-item`.
+     - Updated [`Program.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/Program.cs):
+       - Added schema migration for `Meals.TotalSugarGrams`, `FoodItems.FiberGrams`, `FoodItems.SugarGrams`, `Ledgers.TargetSugarGrams`, and `Ledgers.ConsumedSugarGrams` with pre-flight table existence verification against `sqlite_master`.
+  4. **Frontend Services & UI**:
+     - Updated [`nutrition-estimator.js`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/wwwroot/js/services/nutrition-estimator.js):
+       - Added `sugarGrams` to fallback and `scaleNutritionByPortion`.
+     - Updated [`review-modal.html`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/wwwroot/partials/review-modal.html):
+       - Added `<div class="macro-stat-chip macro-stat-sugar" title="Total Free & Natural Sugars">` with `#review-total-sugar`.
+     - Updated [`styles.css`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/wwwroot/styles.css):
+       - Added `.macro-stat-chip.macro-stat-sugar` with `#f472b6` border and text glow.
+     - Updated [`review-modal.js`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js):
+       - Cached `totalSugar`.
+       - Rendered `totalItemFiber` and `totalItemSugar` in `renderItems()`.
+       - Computed and pulsed `totalSugar` in `recalculateTotals()`.
+       - Handled `sugarGrams` across all actions (portion edit, dish rename, quick add, etc.).
+  5. **Automated Unit Tests**:
+     - Added `Estimate_IncludesAccurateFiberAndSugarGrams` and `Estimate_PortionScaling_ScalesFiberAndSugarProportionally` in [`IndianFoodEstimatorTests.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/tests/Nutrition.Domain.Tests/IndianFoodEstimatorTests.cs).
+     - Full solution test suite passed: **29 passed, 0 failed, 0 skipped** (21 Domain + 8 EvalHarness).
+     - Build status: **0 Warning(s), 0 Error(s)**.
+  6. **End-to-End Browser Subagent Validation**:
+     - Navigated to `http://localhost:5240` and opened the Lunch Review modal.
+     - Verified top macro aggregated header displaying **Fiber (15.2g)** and **Sugar (8.7g)** alongside Calories, Protein, Carbs, and Fat.
+     - Verified per-item fiber and sugar rendering (e.g. Whole Wheat Roti: 4.4g Fiber / 0.5g Sugar; Toor Dal Tadka: 5.2g Fiber / 0.8g Sugar; Bhindi Masala: 4.8g Fiber / 1.5g Sugar).
+     - Captured screenshot artifact: `lunch_review_modal_1789730654338.png`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
