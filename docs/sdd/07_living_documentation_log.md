@@ -781,15 +781,74 @@
     - Captured screenshot artifact: `lunch_review_modal_1789651482451.png`.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
 
+## [2026-09-17 23:28] - Fix Erroneous Continuous Learning Overrides & Enforce Visual Ground Truth
 
+- **Initiating Context**:
+  - User reported erroneous AI identification advice: `"Applied trained memory: Visual Okra/Bhindi identified as 'Palak Paneer' per your household preference... consider adding a raw 'Cucumber Salad' (as per your trained memory)"`.
+  - The model incorrectly overrode visually distinct green ribbed okra pods into Palak Paneer because of a corrupt/stale high-frequency memory rule in SQLite `UserCorrections` table and an overly aggressive system prompt coercing model behavior.
+- **Root Causes**:
+  1. Stale contradictory entries in `UserCorrections` (`Bhindi -> Palak Paneer` count 3, `Palak Paneer -> Bhindi` count 1) created a cyclic override where the older high-frequency rule took precedence.
+  2. Manual user additions (items where `originalDetection` was `"Added by User"`) were mistakenly treated as misclassification corrections, generating bogus memory rules like `"Added by User" -> "Cucumber Salad"`.
+  3. `MicrosoftAgentFoodVisionService.cs` instructed Gemini that it *must* prioritize trained memory even if contradictory to visual reality.
+  4. Local fallback heuristic matched `CorrectedItemName.Contains("Paneer")` regardless of base dish compatibility.
+- **Architectural Fixes Implemented**:
+  1. **Visual Ground Truth First Principle**:
+     - System prompt updated with strict priority rules: Visual evidence ALWAYS trumps learned memory.
+     - Learned memory is restricted to resolving legitimate visual ambiguities (e.g. Toor vs Moong dal, generic "Indian Subzi" specialized to a homestyle recipe) and adjusting kitchen portions.
+     - Unambiguous visual ingredients (such as green ribbed okra pods) must never be overridden into conflicting dishes (e.g. Palak Paneer or Dal).
+  2. **Sanitized Memory Ingestion (`MealsController.cs`)**:
+     - Filter out any items with `originalDetection` starting with `"Added by"`.
+     - When saving a correction `A -> B`, automatically purge any contradictory/inverse rule `B -> A`.
+     - Added `DELETE /api/meals/corrections/reset` and `DELETE /api/meals/corrections/{id}` endpoints.
+  3. **Trained Memory Management UI**:
+     - Added a `Reset Memory` button in the review modal's Continuous Smart Training banner.
+     - Updated `review-modal.js` so manual additions are not labeled as trained corrections.
+  4. **Database Purge**:
+     - Purged the corrupt entries (`user-default` reset) to ensure a clean slate.
+- **Verification & Testing**:
+  - `dotnet build` succeeded with **0 Warnings, 0 Errors**.
+  - All 20 automated tests passed (15 Domain tests + 5 EvalHarness tests).
+  - Browser subagent verified meal photo analysis on `http://localhost:5240`:
+    - Subzi correctly identified as **Bhindi Masala (Okra Fry)** with 98% confidence.
+    - Dietitian advice provided accurate clinical insight without any hallucinated memory statements.
+    - Screenshot saved: `review_modal_verification_1789667860389.png`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
 
+## [2026-09-18 14:10] - AI Accuracy Feedback (👍/👎), Remarks Input & Live Model Retraining
 
-
-
-
-
-
-
+- **Initiating Context**:
+  - User requested feedback buttons (Thumbs Up 👍 and Thumbs Down 👎) with optional remarks in the AI detection review view, and continuous model retraining driven by feedback and remarks.
+- **Architectural Implementation**:
+  1. **Domain Entities & Contracts**:
+     - Created [`AiDetectionFeedbackRecord.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Domain/Model/Meal/AiDetectionFeedbackRecord.cs) capturing `UserId`, `MealLogId`, `DishName`, `DetectedByModel`, `ConfidenceScore`, `Rating` (`thumbs_up` / `thumbs_down`), `Remarks`, `IdentifiedItemsSummary`, `RetrainingTriggered`, `RetrainingOutcome`, and `CreatedAtUtc`.
+     - Added `AiFeedbackRating` and `AiFeedbackRemarks` fields to [`MealLog.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Domain/Model/Meal/MealLog.cs).
+     - Defined `FeedbackRetrainingResult` record and updated `IFoodVisionAgent` with `ProcessFeedbackRetrainingAsync(...)`.
+  2. **Infrastructure & Clinical Retraining Engine**:
+     - Registered `DbSet<AiDetectionFeedbackRecord> AiFeedbacks` in `DietTrackerDbContext.cs` with compound indices on `(UserId, CreatedAtUtc)` and `Rating`.
+     - Implemented `ProcessFeedbackRetrainingAsync` in `MicrosoftAgentFoodVisionService.cs`:
+       - Positive feedback (`thumbs_up`) reinforces accuracy metrics in telemetry.
+       - Negative feedback (`thumbs_down`) extracts user dish corrections from remarks using clinical NLP and regex heuristics.
+       - Enforces visual ground truth guardrails (e.g. obvious okra/bhindi cannot be reclassified into paneer).
+       - Recalculates exact macros using domain knowledge engine `IndianFoodEstimator.Estimate(...)`.
+       - Returns `FeedbackRetrainingResult` containing the updated item estimate and original/corrected dish mappings.
+  3. **REST API Endpoints**:
+     - `POST /api/meals/ai-feedback`: Persists `AiDetectionFeedbackRecord`, triggers retraining, updates `UserCorrectionRecord` for persistent continuous memory, and emits `diet.ai_feedback` OpenTelemetry activity with rating/model tags.
+     - `GET /api/meals/ai-feedback`: Returns historical feedback records for user evaluations.
+     - Updated `POST /api/meals/confirm` to store feedback rating and remarks alongside the confirmed `MealLog`.
+  4. **Linear.app Obsidian Dark UI**:
+     - Updated `review-modal.html`: Integrated `#review-ai-feedback-bar` containing Thumbs Up (`#btn-feedback-up`), Thumbs Down (`#btn-feedback-down`), expandable remarks field (`#feedback-remarks-input`), `⚡ Retrain AI` trigger (`#btn-submit-feedback`), and status outcome container (`#feedback-retrain-status`).
+     - Enhanced `styles.css`: Added responsive styles with emerald (`#27c380`) and red (`#f87171`) active glowing thumb borders, smooth disclosure animations, and status outcome alerts.
+     - Updated `review-modal.js`: Wire up interactive clicks, submit feedback, auto-update identified item list in place upon retraining, live-sync dietitian advice, and attach feedback to confirmed meals.
+  5. **Automated Evaluations & Tests**:
+     - Added `Fixture6_AiFeedback_ThumbsDownWithRemarks_RetrainsModel`, `Fixture7_AiFeedback_GroundTruthGuardrail_BlocksOkraToPaneerOverride`, and `Fixture8_AiFeedback_ThumbsUp_AffirmsAccuracy` in `tests/Nutrition.EvalHarness.Tests/VisionAiEvalTests.cs`.
+     - Extended `IndianFoodEstimator` to support Toor / Tuvar / Arhar Dal specifically with IFCT macronutrient ratios.
+     - All 23 test fixtures pass (15 Domain + 8 EvalHarness).
+  6. **End-to-End Browser Validation**:
+     - Verified with browser agent on `http://localhost:5240`: Thumbs down with `"Dal was Toor Dal"` immediately retrained Yellow Moong Dal into Toor Dal Tadka, updated nutrition macros and badges, allowed thumbs up affirmation, and confirmed meal cleanly.
+     - WebP recording artifact generated: `ai_feedback_flow_1789719817711.webp`.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 

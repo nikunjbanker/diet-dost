@@ -95,6 +95,14 @@ public class IndianMealAnalysisResult
     public bool IsConfidenceGatedPassed => OverallConfidenceScore >= 0.70;
 }
 
+public record FeedbackRetrainingResult(
+    bool Retrained,
+    string Message,
+    string? OriginalDetectedDish = null,
+    string? CorrectedDish = null,
+    IndianMealItemDto? UpdatedItemEstimate = null
+);
+
 public interface IFoodVisionAgent
 {
     Task<IndianMealAnalysisResult> AnalyzeMealPhotoAsync(
@@ -110,5 +118,13 @@ public interface IFoodVisionAgent
         string? mealType = null,
         UserProfile? userContext = null,
         List<Nutrition.Domain.Model.Meal.UserCorrectionRecord>? userLearnedCorrections = null,
+        CancellationToken ct = default);
+
+    Task<FeedbackRetrainingResult> ProcessFeedbackRetrainingAsync(
+        string userId,
+        string dishName,
+        string rating,
+        string? remarks,
+        List<IndianMealItemDto>? currentItems = null,
         CancellationToken ct = default);
 }

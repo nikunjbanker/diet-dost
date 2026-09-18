@@ -97,6 +97,8 @@ public class MealLog
     public string? DietitianAdvice { get; set; }
 
     public bool IsVerifiedByUser { get; set; } = false;
+    public string? AiFeedbackRating { get; set; }
+    public string? AiFeedbackRemarks { get; set; }
 
     public void RecalculateTotals()
     {

@@ -18,6 +18,7 @@ public class MealsController : ControllerBase
     private readonly IFoodVisionAgent _visionAgent;
     private readonly ClinicalDietitianService _dietitianService;
     private readonly IRepository<UserCorrectionRecord> _correctionsRepo;
+    private readonly IRepository<AiDetectionFeedbackRecord> _feedbackRepo;
     private readonly IUnitOfWork _uow;
     private readonly IWebHostEnvironment _env;
 
@@ -25,12 +26,14 @@ public class MealsController : ControllerBase
         IFoodVisionAgent visionAgent,
         ClinicalDietitianService dietitianService,
         IRepository<UserCorrectionRecord> correctionsRepo,
+        IRepository<AiDetectionFeedbackRecord> feedbackRepo,
         IUnitOfWork uow,
         IWebHostEnvironment env)
     {
         _visionAgent = visionAgent;
         _dietitianService = dietitianService;
         _correctionsRepo = correctionsRepo;
+        _feedbackRepo = feedbackRepo;
         _uow = uow;
         _env = env;
     }
@@ -159,7 +162,7 @@ public class MealsController : ControllerBase
         meal.LoggedAt = DateTime.UtcNow;
 
         // Continuous Model Re-Training & Adaptive Learning
-        // Check if the user corrected any detected items
+        // Check if the user corrected any genuinely detected items
         var learnedNotes = new List<string>();
         foreach (var item in meal.Items)
         {
@@ -168,6 +171,26 @@ public class MealsController : ControllerBase
             {
                 var origKey = item.OriginalDetection.Trim();
                 var correctedKey = item.Name.Trim();
+
+                // Skip manual additions by user (e.g. "Added by User", "+ Add Dish") - these are additions, not detection corrections
+                if (origKey.StartsWith("Added by", StringComparison.OrdinalIgnoreCase) ||
+                    origKey.Contains("Added by", StringComparison.OrdinalIgnoreCase) ||
+                    correctedKey.StartsWith("Added by", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                // If user is correcting A -> B, purge any existing contradictory/cyclic rules (e.g. B -> A)
+                var contradictory = await _correctionsRepo.FindAsync(
+                    c => c.UserId == meal.UserId && 
+                         ((c.OriginalDetectedItem.ToLower() == correctedKey.ToLower() && c.CorrectedItemName.ToLower() == origKey.ToLower()) ||
+                          (c.OriginalDetectedItem.ToLower().Contains(correctedKey.ToLower()) && c.CorrectedItemName.ToLower().Contains(origKey.ToLower()))), 
+                    ct);
+
+                foreach (var contra in contradictory)
+                {
+                    await _correctionsRepo.DeleteAsync(contra.Id, ct);
+                }
 
                 var existing = (await _correctionsRepo.FindAsync(
                     c => c.UserId == meal.UserId && c.OriginalDetectedItem.ToLower() == origKey.ToLower(), ct))
@@ -240,6 +263,152 @@ public class MealsController : ControllerBase
         return Ok(corrections.OrderByDescending(c => c.CreatedAtUtc));
     }
 
+    [HttpDelete("corrections/reset")]
+    public async Task<IActionResult> ResetUserCorrections([FromQuery] string userId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return BadRequest(new { error = "UserId is required." });
+
+        var corrections = await _correctionsRepo.FindAsync(c => c.UserId == userId, ct);
+        foreach (var c in corrections)
+        {
+            await _correctionsRepo.DeleteAsync(c.Id, ct);
+        }
+        await _uow.SaveChangesAsync(ct);
+        return Ok(new { message = $"Cleared {corrections.Count} trained memory corrections for user {userId}." });
+    }
+
+    [HttpDelete("corrections/{id}")]
+    public async Task<IActionResult> DeleteCorrection(string id, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+            return BadRequest(new { error = "Id is required." });
+
+        await _correctionsRepo.DeleteAsync(id, ct);
+        await _uow.SaveChangesAsync(ct);
+        return Ok(new { message = "Correction deleted successfully." });
+    }
+
+    [HttpPost("ai-feedback")]
+    public async Task<IActionResult> SubmitAiFeedback([FromBody] AiFeedbackRequest request, CancellationToken ct)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.UserId))
+            return BadRequest(new { error = "UserId and feedback details are required." });
+
+        using var activity = NutritionTelemetry.ActivitySource.StartActivity("diet.ai_feedback", System.Diagnostics.ActivityKind.Server);
+        activity?.SetTag("diet.feedback.rating", request.Rating);
+        activity?.SetTag("diet.feedback.model", request.DetectedByModel);
+        activity?.SetTag("diet.feedback.dish", request.DishName);
+
+        var feedbackRecord = new AiDetectionFeedbackRecord
+        {
+            UserId = request.UserId,
+            MealLogId = request.MealLogId,
+            DishName = request.DishName,
+            DetectedByModel = request.DetectedByModel,
+            ConfidenceScore = request.ConfidenceScore,
+            Rating = request.Rating,
+            Remarks = request.Remarks,
+            IdentifiedItemsSummary = request.Items != null ? string.Join("; ", request.Items.Select(i => $"{i.Name} ({i.EstimatedPortion})")) : null,
+            CreatedAtUtc = DateTime.UtcNow
+        };
+
+        var retrainingResult = await _visionAgent.ProcessFeedbackRetrainingAsync(
+            request.UserId,
+            request.DishName,
+            request.Rating,
+            request.Remarks,
+            request.Items,
+            ct);
+
+        feedbackRecord.RetrainingTriggered = retrainingResult.Retrained;
+        feedbackRecord.RetrainingOutcome = retrainingResult.Message;
+
+        // If retraining identified a genuine dish correction, persist it to UserCorrectionRecord as well
+        if (retrainingResult.Retrained &&
+            !string.IsNullOrWhiteSpace(retrainingResult.OriginalDetectedDish) &&
+            !string.IsNullOrWhiteSpace(retrainingResult.CorrectedDish) &&
+            !retrainingResult.OriginalDetectedDish.Equals(retrainingResult.CorrectedDish, StringComparison.OrdinalIgnoreCase))
+        {
+            var origKey = retrainingResult.OriginalDetectedDish.Trim();
+            var correctedKey = retrainingResult.CorrectedDish.Trim();
+
+            // Purge contradictory mappings
+            var contradictory = await _correctionsRepo.FindAsync(
+                c => c.UserId == request.UserId &&
+                     ((c.OriginalDetectedItem.ToLower() == correctedKey.ToLower() && c.CorrectedItemName.ToLower() == origKey.ToLower()) ||
+                      (c.OriginalDetectedItem.ToLower().Contains(correctedKey.ToLower()) && c.CorrectedItemName.ToLower().Contains(origKey.ToLower()))),
+                ct);
+
+            foreach (var contra in contradictory)
+            {
+                await _correctionsRepo.DeleteAsync(contra.Id, ct);
+            }
+
+            var existing = (await _correctionsRepo.FindAsync(
+                c => c.UserId == request.UserId && c.OriginalDetectedItem.ToLower() == origKey.ToLower(), ct))
+                .FirstOrDefault();
+
+            var updatedEstimate = retrainingResult.UpdatedItemEstimate;
+
+            if (existing != null)
+            {
+                existing.CorrectedItemName = correctedKey;
+                existing.HindiOrRegionalName = updatedEstimate?.HindiOrRegionalName ?? correctedKey;
+                existing.EstimatedPortion = updatedEstimate?.EstimatedPortion ?? "1 Katori";
+                existing.Calories = updatedEstimate?.Calories ?? 120;
+                existing.ProteinGrams = updatedEstimate?.ProteinGrams ?? 3;
+                existing.CarbsGrams = updatedEstimate?.CarbsGrams ?? 10;
+                existing.FatGrams = updatedEstimate?.FatGrams ?? 6;
+                existing.CreatedAtUtc = DateTime.UtcNow;
+                existing.FrequencyCount++;
+                await _correctionsRepo.UpdateAsync(existing, ct);
+            }
+            else
+            {
+                var newCorrection = new UserCorrectionRecord
+                {
+                    UserId = request.UserId,
+                    OriginalDetectedItem = origKey,
+                    CorrectedItemName = correctedKey,
+                    HindiOrRegionalName = updatedEstimate?.HindiOrRegionalName ?? correctedKey,
+                    EstimatedPortion = updatedEstimate?.EstimatedPortion ?? "1 Katori",
+                    Calories = updatedEstimate?.Calories ?? 120,
+                    ProteinGrams = updatedEstimate?.ProteinGrams ?? 3,
+                    CarbsGrams = updatedEstimate?.CarbsGrams ?? 10,
+                    FatGrams = updatedEstimate?.FatGrams ?? 6,
+                    MealType = "Lunch",
+                    CreatedAtUtc = DateTime.UtcNow,
+                    FrequencyCount = 1
+                };
+                await _correctionsRepo.AddAsync(newCorrection, ct);
+            }
+        }
+
+        await _feedbackRepo.AddAsync(feedbackRecord, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        return Ok(new
+        {
+            success = true,
+            retrained = retrainingResult.Retrained,
+            message = retrainingResult.Message,
+            originalDetectedDish = retrainingResult.OriginalDetectedDish,
+            correctedDish = retrainingResult.CorrectedDish,
+            updatedItemEstimate = retrainingResult.UpdatedItemEstimate
+        });
+    }
+
+    [HttpGet("ai-feedback")]
+    public async Task<IActionResult> GetAiFeedbacks([FromQuery] string userId, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return BadRequest(new { error = "UserId is required." });
+
+        var feedbacks = await _feedbackRepo.FindAsync(f => f.UserId == userId, ct);
+        return Ok(feedbacks.OrderByDescending(f => f.CreatedAtUtc));
+    }
+
     [HttpPost("estimate-item")]
     public async Task<IActionResult> EstimateFoodItem([FromBody] FoodItemEstimateRequest request, CancellationToken ct)
     {
@@ -291,3 +460,14 @@ public class MealsController : ControllerBase
 }
 
 public record FoodItemEstimateRequest(string Name, string? Portion, bool UseAi = true);
+
+public record AiFeedbackRequest(
+    string UserId,
+    string? MealLogId,
+    string DishName,
+    string DetectedByModel,
+    double ConfidenceScore,
+    string Rating,
+    string? Remarks,
+    List<IndianMealItemDto>? Items = null
+);

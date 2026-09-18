@@ -678,6 +678,132 @@ body {
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
+/* AI Detection Feedback & Model Retraining Bar */
+.ai-feedback-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.65rem 0.85rem;
+  background: rgba(99, 102, 241, 0.05);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.ai-feedback-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ai-feedback-label {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ai-feedback-buttons {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.btn-feedback-thumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 3px 9px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-feedback-thumb:hover {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-feedback-thumb.active-up {
+  background: rgba(39, 195, 128, 0.15);
+  border-color: rgba(39, 195, 128, 0.5);
+  color: var(--status-emerald);
+  box-shadow: 0 0 10px rgba(39, 195, 128, 0.25);
+}
+
+.btn-feedback-thumb.active-down {
+  background: rgba(235, 87, 87, 0.15);
+  border-color: rgba(235, 87, 87, 0.5);
+  color: var(--status-rose);
+  box-shadow: 0 0 10px rgba(235, 87, 87, 0.25);
+}
+
+.ai-feedback-remarks-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+}
+
+.feedback-remarks-field {
+  flex: 1;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-base);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.feedback-remarks-field:focus {
+  border-color: var(--accent-brand);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+.feedback-remarks-field::placeholder {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.btn-feedback-submit {
+  font-size: 0.72rem;
+  padding: 5px 10px;
+  background: rgba(99, 102, 241, 0.2);
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  color: #a5b4fc;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  white-space: nowrap;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-feedback-submit:hover {
+  background: rgba(99, 102, 241, 0.35);
+  color: #e0e7ff;
+}
+
+.feedback-retrain-status {
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  background: rgba(39, 195, 128, 0.1);
+  border: 1px solid rgba(39, 195, 128, 0.3);
+  color: var(--status-emerald);
+  animation: fadeIn 0.3s ease;
+}
+
 /* Sleek Dark Scrollbars across app & modals */
 * {
   scrollbar-width: thin;

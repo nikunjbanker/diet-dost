@@ -16,6 +16,7 @@ public class DietTrackerDbContext : DbContext
     public DbSet<DailyCalorieLedger> Ledgers => Set<DailyCalorieLedger>();
     public DbSet<UserCorrectionRecord> Corrections => Set<UserCorrectionRecord>();
     public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
+    public DbSet<AiDetectionFeedbackRecord> AiFeedbacks => Set<AiDetectionFeedbackRecord>();
 
     public DietTrackerDbContext(DbContextOptions<DietTrackerDbContext> options) : base(options)
     {
@@ -107,6 +108,14 @@ public class DietTrackerDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.CapturedAtUtc });
             entity.HasIndex(e => new { e.UserId, e.PhotoType });
+        });
+
+        // AiDetectionFeedbackRecord entity configuration
+        modelBuilder.Entity<AiDetectionFeedbackRecord>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.CreatedAtUtc });
+            entity.HasIndex(e => e.Rating);
         });
     }
 }

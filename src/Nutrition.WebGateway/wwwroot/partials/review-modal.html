@@ -64,12 +64,48 @@
 
       <!-- Details Column: Items List, Portions, Quick Subzis, Cooking Fats, Flags -->
       <div class="review-details-column" id="review-details-column">
-        <!-- Model Training & Memory Notice -->
-        <div class="training-banner" id="training-banner">
-          <span style="font-size: 0.95rem;">🧠</span>
-          <div>
-            <strong>Continuous Smart Training Active:</strong> If AI detected salad instead of your vegetable, correct the item name below (e.g. <em>Bhindi Masala, Palak Paneer, Aloo Gobi</em>). Diet Dost will memorize this and re-train detection for future scans!
+        <!-- AI Detection Feedback & Continuous Retraining Bar -->
+        <div class="ai-feedback-bar" id="review-ai-feedback-bar">
+          <div class="ai-feedback-header">
+            <div class="ai-feedback-label">
+              <span>🎯</span>
+              <span><strong>AI Accuracy Feedback:</strong> Was this identification accurate?</span>
+            </div>
+            <div class="ai-feedback-buttons">
+              <button type="button" class="btn-feedback-thumb" id="btn-feedback-up" title="Accurate AI detection (Thumbs Up)">
+                👍 <span class="feedback-thumb-label">Accurate</span>
+              </button>
+              <button type="button" class="btn-feedback-thumb" id="btn-feedback-down" title="Needs correction (Thumbs Down)">
+                👎 <span class="feedback-thumb-label">Needs Fix</span>
+              </button>
+            </div>
           </div>
+
+          <!-- Expandable Remarks Row -->
+          <div class="ai-feedback-remarks-row" id="feedback-remarks-row" style="display: none;">
+            <input type="text" id="feedback-remarks-input" class="feedback-remarks-field" 
+                   placeholder="Add remarks to retrain model (e.g. 'Dal was Toor Dal', 'Subzi was Lauki', 'Portion was 3 rotis')..." 
+                   maxlength="200" />
+            <button type="button" class="btn btn-sm btn-feedback-submit" id="btn-submit-feedback" title="Submit feedback & retrain model">
+              ⚡ Retrain AI
+            </button>
+          </div>
+
+          <!-- Live Retrain Outcome Status Message -->
+          <div class="feedback-retrain-status" id="feedback-retrain-status" style="display: none;"></div>
+        </div>
+
+        <!-- Model Training & Memory Notice -->
+        <div class="training-banner" id="training-banner" style="display: flex; align-items: center; gap: 0.5rem; justify-content: space-between;">
+          <div style="display: flex; align-items: flex-start; gap: 0.4rem; flex: 1;">
+            <span style="font-size: 0.95rem;">🧠</span>
+            <div>
+              <strong>Continuous Smart Training Active:</strong> If AI misidentified your homestyle preparation, correct the item name below. Visual evidence takes precedence.
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm" id="btn-reset-training-memory" title="Reset all trained dish memory for this profile" style="font-size: 0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); white-space: nowrap; cursor: pointer;">
+            Reset Memory
+          </button>
         </div>
 
         <!-- Items List with Inline Edit & Steppers -->

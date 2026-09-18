@@ -67,5 +67,13 @@ export class MealsService {
   async estimateFoodItem(name, portion = null, useAi = true) {
     return this._api.postJson('/api/meals/estimate-item', { name, portion, useAi });
   }
+
+  /**
+   * Submit AI detection feedback (thumbs up / thumbs down + remarks) for model evaluation and continuous retraining.
+   * @param {Object} feedbackData
+   */
+  async submitAiFeedback(feedbackData) {
+    return this._api.postJson('/api/meals/ai-feedback', feedbackData);
+  }
 }
 

@@ -146,4 +146,62 @@ public class VisionAiEvalTests
         Assert.True(isValidJpeg);
         Assert.Equal("image/jpeg", mimeType);
     }
+
+    [Fact]
+    public async Task Fixture6_AiFeedback_ThumbsDownWithRemarks_RetrainsModel()
+    {
+        var currentItems = new List<IndianMealItemDto>
+        {
+            new() { Name = "Yellow Dal", EstimatedPortion = "1 Katori", Calories = 140, ProteinGrams = 7 },
+            new() { Name = "Mix Veg Subzi", EstimatedPortion = "1 Katori", Calories = 120, ProteinGrams = 3 },
+            new() { Name = "Phulka", EstimatedPortion = "2 Phulkas", Calories = 160, ProteinGrams = 6 }
+        };
+
+        var result = await _visionService.ProcessFeedbackRetrainingAsync(
+            userId: "user-eval-1",
+            dishName: "North Indian Lunch Thali",
+            rating: "thumbs_down",
+            remarks: "Dal was Toor Dal",
+            currentItems: currentItems);
+
+        Assert.True(result.Retrained);
+        Assert.NotNull(result.UpdatedItemEstimate);
+        Assert.Contains("Toor Dal", result.CorrectedDish);
+        Assert.True(result.UpdatedItemEstimate.Calories > 0);
+        Assert.True(result.UpdatedItemEstimate.ProteinGrams > 0);
+        Assert.Contains("learned", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Fixture7_AiFeedback_GroundTruthGuardrail_BlocksOkraToPaneerOverride()
+    {
+        var currentItems = new List<IndianMealItemDto>
+        {
+            new() { Name = "Bhindi Masala", EstimatedPortion = "1 Katori", Calories = 120, ProteinGrams = 3 }
+        };
+
+        var result = await _visionService.ProcessFeedbackRetrainingAsync(
+            userId: "user-eval-1",
+            dishName: "Bhindi Lunch",
+            rating: "thumbs_down",
+            remarks: "This was Palak Paneer",
+            currentItems: currentItems);
+
+        // Guardrail must block overriding obvious Bhindi with Paneer
+        Assert.False(result.Retrained);
+        Assert.Contains("guardrail", result.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Fixture8_AiFeedback_ThumbsUp_AffirmsAccuracy()
+    {
+        var result = await _visionService.ProcessFeedbackRetrainingAsync(
+            userId: "user-eval-1",
+            dishName: "North Indian Thali",
+            rating: "thumbs_up",
+            remarks: "Spot on! Perfect detection.");
+
+        Assert.True(result.Retrained);
+        Assert.Contains("Positive feedback recorded", result.Message);
+    }
 }

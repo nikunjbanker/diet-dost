@@ -21,6 +21,9 @@ export class ReviewModalController {
     this._state = appState;
     this._bus = eventBus;
 
+    this._feedbackRating = null;
+    this._feedbackSubmitted = false;
+
     this._bindEvents();
 
     // Listen for meal analyzed event from MealLogger
@@ -53,7 +56,15 @@ export class ReviewModalController {
       chipGhee: document.getElementById('chip-ghee'),
       chipTadka: document.getElementById('chip-tadka'),
       chipOilfree: document.getElementById('chip-oilfree'),
-      btnAddItem: document.getElementById('btn-add-review-item')
+      btnAddItem: document.getElementById('btn-add-review-item'),
+      btnResetMemory: document.getElementById('btn-reset-training-memory'),
+      // AI Feedback & Continuous Retraining Elements
+      btnFeedbackUp: document.getElementById('btn-feedback-up'),
+      btnFeedbackDown: document.getElementById('btn-feedback-down'),
+      feedbackRemarksRow: document.getElementById('feedback-remarks-row'),
+      feedbackRemarksInput: document.getElementById('feedback-remarks-input'),
+      btnSubmitFeedback: document.getElementById('btn-submit-feedback'),
+      feedbackRetrainStatus: document.getElementById('feedback-retrain-status')
     };
   }
 
@@ -178,6 +189,98 @@ export class ReviewModalController {
       });
     }
 
+    if (el.btnResetMemory) {
+      el.btnResetMemory.addEventListener('click', async () => {
+        if (!confirm('Reset all trained dish memory for this profile? AI will revert to clean visual identification.')) return;
+        try {
+          const userId = this._state.userId || 'user-default';
+          const res = await fetch(`/api/meals/corrections/reset?userId=${encodeURIComponent(userId)}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            window.showToast?.('🧠 Trained memory cleared. Ready for clean scans!', 'success');
+            if (this._state.currentMeal?.identifiedItems) {
+              this._state.currentMeal.identifiedItems.forEach(item => {
+                item.originalDetection = item.name;
+              });
+              this.renderItems();
+            }
+          } else {
+            window.showToast?.('Failed to reset trained memory.', 'error');
+          }
+        } catch (e) {
+          console.error(e);
+          window.showToast?.('Network error while resetting memory.', 'error');
+        }
+      });
+    }
+
+    // AI Accuracy Feedback & Continuous Retraining
+    if (el.btnFeedbackUp) {
+      el.btnFeedbackUp.addEventListener('click', () => {
+        this._feedbackRating = 'thumbs_up';
+        el.btnFeedbackUp.classList.add('active-up');
+        if (el.btnFeedbackDown) el.btnFeedbackDown.classList.remove('active-down');
+
+        // Reveal remarks row for optional positive remarks
+        if (el.feedbackRemarksRow) {
+          el.feedbackRemarksRow.style.display = 'flex';
+          if (el.feedbackRemarksInput) {
+            el.feedbackRemarksInput.placeholder = "Optional remarks (e.g. 'Crispy bhindi, perfectly balanced')...";
+          }
+          if (el.btnSubmitFeedback) {
+            el.btnSubmitFeedback.textContent = '👍 Save Feedback';
+          }
+        }
+
+        // Auto-submit positive signal
+        this.submitAiFeedback('thumbs_up', false);
+      });
+    }
+
+    if (el.btnFeedbackDown) {
+      el.btnFeedbackDown.addEventListener('click', () => {
+        this._feedbackRating = 'thumbs_down';
+        el.btnFeedbackDown.classList.add('active-down');
+        if (el.btnFeedbackUp) el.btnFeedbackUp.classList.remove('active-up');
+
+        // Reveal remarks row for correction input
+        if (el.feedbackRemarksRow) {
+          el.feedbackRemarksRow.style.display = 'flex';
+          if (el.feedbackRemarksInput) {
+            el.feedbackRemarksInput.placeholder = "Add remarks to retrain model (e.g. 'Dal was Toor Dal', 'Subzi was Lauki')...";
+            el.feedbackRemarksInput.focus();
+          }
+          if (el.btnSubmitFeedback) {
+            el.btnSubmitFeedback.textContent = '⚡ Retrain AI';
+          }
+        }
+
+        if (el.feedbackRetrainStatus && !this._feedbackSubmitted) {
+          el.feedbackRetrainStatus.style.display = 'block';
+          el.feedbackRetrainStatus.className = 'feedback-retrain-status retrain-info';
+          el.feedbackRetrainStatus.innerHTML = '<span>ℹ️</span> <span>Type your correction above and click <strong>⚡ Retrain AI</strong> to update the model.</span>';
+        }
+      });
+    }
+
+    if (el.btnSubmitFeedback) {
+      el.btnSubmitFeedback.addEventListener('click', () => {
+        const rating = this._feedbackRating || 'thumbs_down';
+        this.submitAiFeedback(rating, true);
+      });
+    }
+
+    if (el.feedbackRemarksInput) {
+      el.feedbackRemarksInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          const rating = this._feedbackRating || 'thumbs_down';
+          this.submitAiFeedback(rating, true);
+        }
+      });
+    }
+
     // Modal background click
     if (el.modal) {
       el.modal.addEventListener('click', (e) => {
@@ -271,6 +374,19 @@ export class ReviewModalController {
       }
     }
 
+    // Reset AI feedback UI state
+    this._feedbackRating = null;
+    this._feedbackSubmitted = false;
+    if (el.btnFeedbackUp) el.btnFeedbackUp.classList.remove('active-up');
+    if (el.btnFeedbackDown) el.btnFeedbackDown.classList.remove('active-down');
+    if (el.feedbackRemarksRow) el.feedbackRemarksRow.style.display = 'none';
+    if (el.feedbackRemarksInput) el.feedbackRemarksInput.value = '';
+    if (el.feedbackRetrainStatus) {
+      el.feedbackRetrainStatus.style.display = 'none';
+      el.feedbackRetrainStatus.innerHTML = '';
+      el.feedbackRetrainStatus.className = 'feedback-retrain-status';
+    }
+
     this.renderItems();
     this.renderFlags();
 
@@ -285,8 +401,146 @@ export class ReviewModalController {
     const el = this.elements;
     if (el.lightbox) el.lightbox.style.display = 'none';
     if (el.lightboxImg) el.lightboxImg.src = '';
+    if (el.btnFeedbackUp) el.btnFeedbackUp.classList.remove('active-up');
+    if (el.btnFeedbackDown) el.btnFeedbackDown.classList.remove('active-down');
+    if (el.feedbackRemarksRow) el.feedbackRemarksRow.style.display = 'none';
+    if (el.feedbackRetrainStatus) el.feedbackRetrainStatus.style.display = 'none';
+    this._feedbackRating = null;
+    this._feedbackSubmitted = false;
     if (el.modal) el.modal.style.display = 'none';
     this._state.currentMeal = null;
+  }
+
+  /**
+   * Submit AI detection feedback (thumbs up / thumbs down + remarks) for model evaluation and continuous retraining.
+   * @param {string} rating - 'thumbs_up' or 'thumbs_down'
+   * @param {boolean} explicitSubmit - true if triggered by Retrain/Submit button
+   */
+  async submitAiFeedback(rating, explicitSubmit = false) {
+    const el = this.elements;
+    if (!this._state.currentMeal) return;
+
+    const remarks = el.feedbackRemarksInput ? el.feedbackRemarksInput.value.trim() : '';
+    const mealLogId = this._state.currentMeal.id || null;
+    const dishName = this._state.currentMeal.dishName || 'Indian Meal';
+    const detectedByModel = this._state.currentMeal.detectedByModel || 'gemini-2.5-flash';
+    const confidenceScore = this._state.currentMeal.overallConfidenceScore || 0.88;
+    const items = (this._state.currentMeal.identifiedItems || []).map(i => ({
+      name: i.name,
+      hindiOrRegionalName: i.hindiOrRegionalName || i.name,
+      estimatedPortion: i.estimatedPortion || '1 Katori',
+      grams: i.grams || 100,
+      calories: i.calories || 100,
+      proteinGrams: i.proteinGrams || 5,
+      carbsGrams: i.carbsGrams || 15,
+      fatGrams: i.fatGrams || 3,
+      fiberGrams: i.fiberGrams || 2,
+      sodiumMg: i.sodiumMg || 100,
+      cookingMediumEstimate: i.cookingMediumEstimate || 'Home cooking',
+      confidenceScore: i.confidenceScore || 0.85
+    }));
+
+    if (el.btnSubmitFeedback && explicitSubmit) {
+      el.btnSubmitFeedback.disabled = true;
+      el.btnSubmitFeedback.textContent = '⚡ Retraining...';
+    }
+
+    try {
+      const payload = {
+        userId: this._state.userId || 'user-default',
+        mealLogId,
+        dishName,
+        detectedByModel,
+        confidenceScore,
+        rating,
+        remarks: remarks || null,
+        items
+      };
+
+      const data = await this._meals.submitAiFeedback(payload);
+      this._feedbackSubmitted = true;
+
+      // Update feedback retrain status banner
+      if (el.feedbackRetrainStatus) {
+        el.feedbackRetrainStatus.style.display = 'block';
+        el.feedbackRetrainStatus.className = data.retrained
+          ? 'feedback-retrain-status retrain-success'
+          : 'feedback-retrain-status retrain-info';
+        el.feedbackRetrainStatus.innerHTML = `
+          <span>${data.retrained ? '🧠' : 'ℹ️'}</span>
+          <span>${data.message || (rating === 'thumbs_up' ? 'Thank you! AI accuracy affirmed.' : 'Feedback recorded.')}</span>
+        `;
+      }
+
+      // If model retrained an item live, update the item list!
+      if (data.retrained && data.updatedItemEstimate && this._state.currentMeal.identifiedItems) {
+        const origTarget = (data.originalDetectedDish || '').toLowerCase();
+        let targetItem = null;
+        if (origTarget) {
+          targetItem = this._state.currentMeal.identifiedItems.find(i =>
+            i.name.toLowerCase().includes(origTarget) ||
+            (i.originalDetection && i.originalDetection.toLowerCase().includes(origTarget))
+          );
+        }
+        if (!targetItem && this._state.currentMeal.identifiedItems.length > 0) {
+          // If no specific item matched by name, check if any item is not roti/rice
+          targetItem = this._state.currentMeal.identifiedItems.find(i => 
+            !i.name.toLowerCase().includes('roti') && 
+            !i.name.toLowerCase().includes('chapati') && 
+            !i.name.toLowerCase().includes('phulka') &&
+            !i.name.toLowerCase().includes('rice')
+          ) || this._state.currentMeal.identifiedItems[0];
+        }
+
+        if (targetItem) {
+          const est = data.updatedItemEstimate;
+          const oldItemName = targetItem.name;
+          targetItem.name = est.name || data.correctedDish;
+          targetItem.hindiOrRegionalName = est.hindiOrRegionalName || est.name;
+          targetItem.estimatedPortion = est.estimatedPortion || targetItem.estimatedPortion;
+          targetItem.calories = est.calories;
+          targetItem.proteinGrams = est.proteinGrams;
+          targetItem.carbsGrams = est.carbsGrams;
+          targetItem.fatGrams = est.fatGrams;
+          targetItem.fiberGrams = est.fiberGrams;
+          targetItem.sodiumMg = est.sodiumMg;
+          targetItem.isAiEstimated = true;
+
+          // Update dish title if matching
+          if (this._state.currentMeal.dishName && oldItemName && targetItem.name) {
+            let cleanDish = this._state.currentMeal.dishName.replace(/\s*\([~≈]?\d+\s*kcal\)/gi, '').trim();
+            const escapedOld = oldItemName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(escapedOld, 'i');
+            if (regex.test(cleanDish)) {
+              cleanDish = cleanDish.replace(regex, targetItem.name);
+            }
+            this._state.currentMeal.dishName = cleanDish;
+          }
+
+          this.renderItems();
+          this.recalculateTotals();
+        }
+      }
+
+      this._toast.show({
+        title: data.retrained ? '🧠 Model Retrained!' : (rating === 'thumbs_up' ? '👍 Feedback Saved' : 'Feedback Received'),
+        message: data.message || 'Continuous learning record updated.'
+      });
+
+    } catch (err) {
+      console.error('Error submitting AI feedback:', err);
+      if (explicitSubmit) {
+        this._toast.show({
+          title: 'Feedback Notice',
+          message: 'Could not record feedback right now.'
+        });
+      }
+    } finally {
+      if (el.btnSubmitFeedback && explicitSubmit) {
+        el.btnSubmitFeedback.disabled = false;
+        el.btnSubmitFeedback.textContent = rating === 'thumbs_up' ? '👍 Save Feedback' : '⚡ Retrain AI';
+      }
+    }
   }
 
   renderItems() {
@@ -295,6 +549,7 @@ export class ReviewModalController {
 
     el.itemsList.innerHTML = this._state.currentMeal.identifiedItems.map((item, idx) => {
       const isCorrected = item.originalDetection &&
+        !item.originalDetection.toLowerCase().includes('added by') &&
         item.originalDetection.trim().toLowerCase() !== item.name.trim().toLowerCase();
 
       const qty = item.quantity || 1;
@@ -586,7 +841,9 @@ export class ReviewModalController {
         })),
         whoComplianceFlags: this._state.currentMeal.whoComplianceFlags || [],
         medicationWarnings: this._state.currentMeal.medicationWarnings || [],
-        dietitianAdvice: this._state.currentMeal.dietitianAdvice
+        dietitianAdvice: this._state.currentMeal.dietitianAdvice,
+        aiFeedbackRating: this._feedbackRating || null,
+        aiFeedbackRemarks: el.feedbackRemarksInput ? (el.feedbackRemarksInput.value.trim() || null) : null
       };
 
       const data = await this._meals.confirmMeal(payload);

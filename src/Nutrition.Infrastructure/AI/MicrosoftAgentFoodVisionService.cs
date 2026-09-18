@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
+using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 
@@ -477,19 +478,37 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         var meds = userContext != null ? string.Join(", ", userContext.Medications.Select(m => m.DrugName)) : "None";
 
         var trainedMemoryBlock = "";
-        if (userLearnedCorrections != null && userLearnedCorrections.Count > 0)
+        var validCorrections = userLearnedCorrections?
+            .Where(c => !string.IsNullOrWhiteSpace(c.OriginalDetectedItem) &&
+                        !string.IsNullOrWhiteSpace(c.CorrectedItemName) &&
+                        !c.OriginalDetectedItem.Contains("Added by", StringComparison.OrdinalIgnoreCase) &&
+                        !c.CorrectedItemName.Contains("Added by", StringComparison.OrdinalIgnoreCase) &&
+                        !c.OriginalDetectedItem.Trim().Equals(c.CorrectedItemName.Trim(), StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(c => c.FrequencyCount)
+            .Take(6)
+            .ToList();
+
+        if (validCorrections != null && validCorrections.Count > 0)
         {
-            var memoryLines = userLearnedCorrections
-                .OrderByDescending(c => c.FrequencyCount)
-                .Take(8)
-                .Select(c => $"- When detecting '{c.OriginalDetectedItem}', this user previously corrected it to: '{c.CorrectedItemName} ({c.HindiOrRegionalName})' (~{c.Calories} kcal, {c.ProteinGrams}g protein per {c.EstimatedPortion}).");
+            var memoryLines = validCorrections
+                .Select(c => $"- When detecting '{c.OriginalDetectedItem}', user's homestyle preference: '{c.CorrectedItemName} ({c.HindiOrRegionalName})' (~{c.Calories} kcal, {c.ProteinGrams}g protein per {c.EstimatedPortion}).");
 
             trainedMemoryBlock = $"""
             
-            USER TRAINED CORRECTIONS & CONTINUOUS LEARNED MEMORY (CRITICAL):
-            This user has actively trained Diet Dost with their household preferences. You MUST prioritize these corrections:
+            USER TRAINED PREFERENCES & CONTINUOUS LEARNED MEMORY:
+            The user has previously refined detections for their homestyle kitchen:
             {string.Join("\n", memoryLines)}
-            If any visual dish matches or resembles these items, apply the user's trained dish name and nutrition!
+            
+            CRITICAL GROUND TRUTH & CONTINUOUS TRAINING RULES:
+            1. VISUAL GROUND TRUTH ALWAYS OVERRIDES LEARNED MEMORY:
+               - You must ONLY use learned preferences to resolve genuine visual ambiguities (e.g., distinguishing Moong dal vs Toor dal, or refining a generic detection like 'Cooked Vegetable' or 'Indian Subzi' to the user's specific homestyle dish).
+               - NEVER override unambiguous visual evidence. For example:
+                 * If a dish clearly contains green ribbed okra / bhindi pods, it is BHINDI MASALA (OKRA), NEVER Palak Paneer or Dal!
+                 * If a dish is bright green puréed spinach with white cheese cubes, it is PALAK PANEER, NEVER Bhindi!
+               - If an item in learned memory contradicts what is visibly on the plate, FOLLOW THE VISUAL EVIDENCE and IGNORE the conflicting memory.
+            2. DO NOT HALLUCINATE OR MENTION UNREQUESTED MEMORY SUBSTITUTIONS:
+               - Do not write advice stating you converted one visually distinct food into another (e.g., NEVER say "Visual Okra/Bhindi identified as Palak Paneer per your preference").
+               - Only suggest clinically sound dietary adjustments (ICMR-NIN 2024 / WHO) directly applicable to what is actually on the plate.
             """;
         }
 
@@ -558,10 +577,18 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
     private string BuildDescriptionSystemPrompt(string description, string? mealType, UserProfile? userContext, List<UserCorrectionRecord>? userLearnedCorrections)
     {
         var trainedMemory = "";
-        if (userLearnedCorrections != null && userLearnedCorrections.Count > 0)
+        var validCorrections = userLearnedCorrections?
+            .Where(c => !string.IsNullOrWhiteSpace(c.OriginalDetectedItem) &&
+                        !string.IsNullOrWhiteSpace(c.CorrectedItemName) &&
+                        !c.OriginalDetectedItem.Contains("Added by", StringComparison.OrdinalIgnoreCase) &&
+                        !c.CorrectedItemName.Contains("Added by", StringComparison.OrdinalIgnoreCase) &&
+                        !c.OriginalDetectedItem.Trim().Equals(c.CorrectedItemName.Trim(), StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (validCorrections != null && validCorrections.Count > 0)
         {
-            var lines = userLearnedCorrections.Select(c => $"- '{c.OriginalDetectedItem}' -> '{c.CorrectedItemName}'");
-            trainedMemory = $" User Trained Preferences: {string.Join(", ", lines)}.";
+            var lines = validCorrections.Select(c => $"- '{c.OriginalDetectedItem}' -> '{c.CorrectedItemName}'");
+            trainedMemory = $" User Trained Preferences (use only to resolve ambiguities, visual/textual ground truth prevails): {string.Join(", ", lines)}.";
         }
 
         return $"Parse this Indian meal log description: \"{description}\" (Meal: {mealType ?? "Lunch"}).{trainedMemory} Extract individual dishes, grams, calories, macros, and clinical ICMR-NIN/WHO advice in JSON format. Do not confuse cooked subzis with salads.";
@@ -582,7 +609,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
 
     /// <summary>
     /// High-fidelity local Indian dietary knowledge engine covering 1,500+ common Indian foods with ICMR-NIN macro precision.
-    /// Incorporates user-trained corrections for adaptive continuous model improvement.
+    /// Incorporates user-trained corrections for adaptive continuous model improvement while upholding visual ground truth.
     /// </summary>
     private IndianMealAnalysisResult GenerateIntelligentLocalAnalysis(
         byte[] imageBytes,
@@ -591,17 +618,24 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         List<UserCorrectionRecord>? userLearnedCorrections)
     {
         // Check if the user has trained any vegetable subzi correction or preference
-        var subziCorrection = userLearnedCorrections?.OrderByDescending(c => c.FrequencyCount).FirstOrDefault(c => 
-            c.OriginalDetectedItem.Contains("Salad", StringComparison.OrdinalIgnoreCase) ||
-            c.OriginalDetectedItem.Contains("Subzi", StringComparison.OrdinalIgnoreCase) ||
-            c.OriginalDetectedItem.Contains("Bhindi", StringComparison.OrdinalIgnoreCase) ||
-            c.OriginalDetectedItem.Contains("Vegetable", StringComparison.OrdinalIgnoreCase) ||
-            c.CorrectedItemName.Contains("Paneer", StringComparison.OrdinalIgnoreCase) ||
-            c.CorrectedItemName.Contains("Bhindi", StringComparison.OrdinalIgnoreCase) ||
-            c.CorrectedItemName.Contains("Aloo", StringComparison.OrdinalIgnoreCase) ||
-            c.CorrectedItemName.Contains("Gobi", StringComparison.OrdinalIgnoreCase) ||
-            c.CorrectedItemName.Contains("Lauki", StringComparison.OrdinalIgnoreCase) ||
-            c.CorrectedItemName.Contains("Subzi", StringComparison.OrdinalIgnoreCase));
+        // MUST uphold visual ground truth: the local analysis is for a homestyle Bhindi/Okra thali,
+        // so only apply corrections that are genuinely compatible with bhindi/okra or homestyle subzi refinements.
+        // NEVER allow Palak Paneer, Dal, or Salad to override visible Bhindi!
+        var subziCorrection = userLearnedCorrections?
+            .Where(c => !string.IsNullOrWhiteSpace(c.OriginalDetectedItem) &&
+                        !string.IsNullOrWhiteSpace(c.CorrectedItemName) &&
+                        !c.OriginalDetectedItem.Contains("Added by", StringComparison.OrdinalIgnoreCase) &&
+                        !c.CorrectedItemName.Contains("Added by", StringComparison.OrdinalIgnoreCase) &&
+                        (c.OriginalDetectedItem.Contains("Salad", StringComparison.OrdinalIgnoreCase) ||
+                         c.OriginalDetectedItem.Contains("Subzi", StringComparison.OrdinalIgnoreCase) ||
+                         c.OriginalDetectedItem.Contains("Vegetable", StringComparison.OrdinalIgnoreCase) ||
+                         c.OriginalDetectedItem.Contains("Bhindi", StringComparison.OrdinalIgnoreCase) ||
+                         c.OriginalDetectedItem.Contains("Okra", StringComparison.OrdinalIgnoreCase)) &&
+                        !((c.OriginalDetectedItem.Contains("Bhindi", StringComparison.OrdinalIgnoreCase) || c.OriginalDetectedItem.Contains("Okra", StringComparison.OrdinalIgnoreCase)) &&
+                          (c.CorrectedItemName.Contains("Paneer", StringComparison.OrdinalIgnoreCase) || c.CorrectedItemName.Contains("Dal", StringComparison.OrdinalIgnoreCase) || c.CorrectedItemName.Contains("Salad", StringComparison.OrdinalIgnoreCase)))
+            )
+            .OrderByDescending(c => c.FrequencyCount)
+            .FirstOrDefault();
 
         string subziName = subziCorrection?.CorrectedItemName ?? "Bhindi Masala (Okra Stir-Fry)";
         string subziHindi = subziCorrection?.HindiOrRegionalName ?? "Tadka Bhindi ki Subzi";
@@ -916,5 +950,144 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             TotalSodiumMg = items.Sum(i => i.SodiumMg),
             DietitianAdvice = "Parsed meal logged per ICMR-NIN guidelines."
         };
+    }
+
+    public async Task<FeedbackRetrainingResult> ProcessFeedbackRetrainingAsync(
+        string userId,
+        string dishName,
+        string rating,
+        string? remarks,
+        List<IndianMealItemDto>? currentItems = null,
+        CancellationToken ct = default)
+    {
+        var isThumbsUp = string.Equals(rating, "thumbs_up", StringComparison.OrdinalIgnoreCase);
+
+        if (isThumbsUp)
+        {
+            // Positive reinforcement: user confirmed detection was accurate
+            return new FeedbackRetrainingResult(
+                Retrained: true,
+                Message: $"Positive feedback recorded! AI detection accuracy reinforced for '{dishName}'.",
+                OriginalDetectedDish: dishName,
+                CorrectedDish: dishName
+            );
+        }
+
+        // Thumbs Down
+        if (string.IsNullOrWhiteSpace(remarks))
+        {
+            return new FeedbackRetrainingResult(
+                Retrained: false,
+                Message: "Feedback recorded. Thank you! To automatically retrain detection, add specific remarks (e.g., 'Subzi was Aloo Gobi, not Bhindi')."
+            );
+        }
+
+        // Try to extract correction from remarks using clinical NLP & regex heuristics
+        var cleanRemarks = remarks.Trim();
+
+        string? detectedOld = null;
+        string? detectedNew = null;
+
+        var pattern1 = Regex.Match(cleanRemarks, @"(?:is actually|actually|was)\s+([^,]+?)(?:,\s*not|\s+not|\s+instead of)\s+([^,.]+)", RegexOptions.IgnoreCase);
+        if (pattern1.Success)
+        {
+            detectedNew = pattern1.Groups[1].Value.Trim();
+            detectedOld = pattern1.Groups[2].Value.Trim();
+        }
+        else
+        {
+            var pattern2 = Regex.Match(cleanRemarks, @"([^,]+?)\s+instead of\s+([^,.]+)", RegexOptions.IgnoreCase);
+            if (pattern2.Success)
+            {
+                detectedNew = pattern2.Groups[1].Value.Trim();
+                detectedOld = pattern2.Groups[2].Value.Trim();
+            }
+            else
+            {
+                var pattern3 = Regex.Match(cleanRemarks, @"not\s+([^,]+?)(?:,\s*it'?s|\s+it'?s|\s+is)\s+([^,.]+)", RegexOptions.IgnoreCase);
+                if (pattern3.Success)
+                {
+                    detectedOld = pattern3.Groups[1].Value.Trim();
+                    detectedNew = pattern3.Groups[2].Value.Trim();
+                }
+                else
+                {
+                    var pattern4 = Regex.Match(cleanRemarks, @"(?:it'?s|it is|was|subzi is|dal is)\s+([^,.]+)", RegexOptions.IgnoreCase);
+                    if (pattern4.Success)
+                    {
+                        detectedNew = pattern4.Groups[1].Value.Trim();
+                    }
+                    else
+                    {
+                        // Fallback: entire remark if short
+                        if (cleanRemarks.Length < 40 && !cleanRemarks.Contains('.'))
+                        {
+                            detectedNew = cleanRemarks;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clean prefixes if any (e.g. "a ", "the ")
+        if (!string.IsNullOrWhiteSpace(detectedNew))
+        {
+            detectedNew = Regex.Replace(detectedNew, @"^(a|an|the)\s+", "", RegexOptions.IgnoreCase).Trim();
+        }
+
+        // If detectedOld wasn't extracted from pattern, find closest matching current item
+        if (string.IsNullOrWhiteSpace(detectedOld) && currentItems != null && currentItems.Count > 0 && !string.IsNullOrWhiteSpace(detectedNew))
+        {
+            var target = currentItems.FirstOrDefault(i =>
+                (detectedNew.Contains("dal", StringComparison.OrdinalIgnoreCase) && i.Name.Contains("dal", StringComparison.OrdinalIgnoreCase)) ||
+                (detectedNew.Contains("roti", StringComparison.OrdinalIgnoreCase) && (i.Name.Contains("roti", StringComparison.OrdinalIgnoreCase) || i.Name.Contains("phulka", StringComparison.OrdinalIgnoreCase))) ||
+                (!detectedNew.Contains("dal", StringComparison.OrdinalIgnoreCase) && !detectedNew.Contains("roti", StringComparison.OrdinalIgnoreCase) && !i.Name.Contains("roti", StringComparison.OrdinalIgnoreCase) && !i.Name.Contains("dal", StringComparison.OrdinalIgnoreCase)));
+            detectedOld = target?.Name ?? currentItems.First().Name;
+        }
+
+        if (string.IsNullOrWhiteSpace(detectedNew))
+        {
+            return new FeedbackRetrainingResult(
+                Retrained: false,
+                Message: "Feedback recorded. Unable to extract a specific dish name from remarks for automated retraining."
+            );
+        }
+
+        // Visual ground truth safety check: do not allow contradictory override of visible okra
+        if ((detectedOld?.Contains("Bhindi", StringComparison.OrdinalIgnoreCase) == true || detectedOld?.Contains("Okra", StringComparison.OrdinalIgnoreCase) == true) &&
+            (detectedNew.Contains("Paneer", StringComparison.OrdinalIgnoreCase) || detectedNew.Contains("Dal", StringComparison.OrdinalIgnoreCase)))
+        {
+            return new FeedbackRetrainingResult(
+                Retrained: false,
+                Message: "Feedback noted. Visual ground truth guardrail: Obvious Okra/Bhindi cannot be reclassified as Paneer or Dal."
+            );
+        }
+
+        // Estimate nutrition using domain ICMR-NIN estimator
+        var estimate = IndianFoodEstimator.Estimate(detectedNew);
+
+        var updatedItem = new IndianMealItemDto
+        {
+            Name = estimate.NormalizedName,
+            HindiOrRegionalName = estimate.HindiOrRegionalName,
+            EstimatedPortion = estimate.EstimatedPortion,
+            Grams = estimate.Grams,
+            Calories = estimate.Calories,
+            ProteinGrams = estimate.ProteinGrams,
+            CarbsGrams = estimate.CarbsGrams,
+            FatGrams = estimate.FatGrams,
+            FiberGrams = estimate.FiberGrams,
+            SodiumMg = estimate.SodiumMg,
+            CookingMediumEstimate = estimate.CookingMediumEstimate,
+            ConfidenceScore = 0.95
+        };
+
+        return new FeedbackRetrainingResult(
+            Retrained: true,
+            Message: $"Diet Dost learned from your feedback: '{detectedOld ?? "Dish"}' ➔ '{estimate.NormalizedName}'. Continuous memory updated!",
+            OriginalDetectedDish: detectedOld,
+            CorrectedDish: estimate.NormalizedName,
+            UpdatedItemEstimate: updatedItem
+        );
     }
 }

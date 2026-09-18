@@ -137,6 +137,8 @@ using (var scope = app.Services.CreateScope())
         await EnsureColumnExistsAsync("Meals", "TotalFatGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Meals", "TotalFiberGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync("Meals", "TotalSodiumMg", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync("Meals", "AiFeedbackRating", "TEXT NULL");
+        await EnsureColumnExistsAsync("Meals", "AiFeedbackRemarks", "TEXT NULL");
         await EnsureColumnExistsAsync("FoodItems", "OriginalDetection", "TEXT NOT NULL DEFAULT ''");
 
         await db.Database.ExecuteSqlRawAsync(@"
@@ -152,6 +154,23 @@ using (var scope = app.Services.CreateScope())
             );
             CREATE INDEX IF NOT EXISTS ""IX_ProgressPhotos_UserId_CapturedAtUtc"" ON ""ProgressPhotos"" (""UserId"", ""CapturedAtUtc"");
             CREATE INDEX IF NOT EXISTS ""IX_ProgressPhotos_UserId_PhotoType"" ON ""ProgressPhotos"" (""UserId"", ""PhotoType"");
+
+            CREATE TABLE IF NOT EXISTS ""AiFeedbacks"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_AiFeedbacks"" PRIMARY KEY,
+                ""UserId"" TEXT NOT NULL,
+                ""MealLogId"" TEXT NULL,
+                ""DishName"" TEXT NOT NULL,
+                ""DetectedByModel"" TEXT NOT NULL,
+                ""ConfidenceScore"" REAL NOT NULL,
+                ""Rating"" TEXT NOT NULL,
+                ""Remarks"" TEXT NULL,
+                ""IdentifiedItemsSummary"" TEXT NULL,
+                ""RetrainingTriggered"" INTEGER NOT NULL,
+                ""RetrainingOutcome"" TEXT NULL,
+                ""CreatedAtUtc"" TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_AiFeedbacks_UserId_CreatedAtUtc"" ON ""AiFeedbacks"" (""UserId"", ""CreatedAtUtc"");
+            CREATE INDEX IF NOT EXISTS ""IX_AiFeedbacks_Rating"" ON ""AiFeedbacks"" (""Rating"");
         ");
 
         initLogger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");

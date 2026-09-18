@@ -140,6 +140,9 @@ public static class IndianFoodEstimator
             if (clean.Contains("chana dal"))
                 return new FoodItemNutritionEstimate("Chana Dal Tadka", "Chana Dal", portion ?? "1 Katori (~150ml)", 150, 140, 7.5, 20.0, 4.0, 5.0, 310, "Bengal Gram Dal with Garlic Tadka");
 
+            if (clean.Contains("toor") || clean.Contains("tuvar") || clean.Contains("arhar"))
+                return new FoodItemNutritionEstimate("Toor Dal Tadka", "Tuvar / Arhar Dal Fry", portion ?? "1 Katori (~150ml)", 150, 135, 7.2, 19.0, 3.5, 4.0, 310, "Split Pigeon Pea Tempered with Ghee & Hing");
+
             return new FoodItemNutritionEstimate("Yellow Moong Dal Tadka", "Pili Moong Dal", portion ?? "1 Katori (~150ml)", 150, 125, 7.0, 18.0, 3.5, 4.5, 300, "Jeera & Mustard Seed Tempered Moong Dal");
         }
 
