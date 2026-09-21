@@ -27,6 +27,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, Aspire test harness, AI vision benchmarks, clinical unit tests | `APPROVED` |
 | [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Log** | Continuous chronological audit trail of features, defect fixes, and RCAs | `SYNCHRONIZED` |
 | [`ICMR_NIN_2024_FEATURE_ROADMAP.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/ICMR_NIN_2024_FEATURE_ROADMAP.md) | **ICMR-NIN 2024 Feature Roadmap** | Comprehensive 17-guideline feature recommendations, prioritization matrix, and roadmap | `PROPOSED & AUDITED` |
+| [`LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md) | **Local Indian Food Text/Vision SLM Training Guide** | Dataset, local fine-tuning, Agent Framework integration, and evaluation gates | `PROPOSED` |
 
 
 ---
@@ -86,4 +87,3 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **GenAI Semantic Spans & Logging Scopes** | `Nutrition.Application.Common` | `NutritionTelemetry.ActivitySource`, GenAI semantic conventions | Aspire Traces & Structured Logs |
 | **Schema-Safe DB Migration & Comparers** | `Nutrition.Infrastructure.Data` | `NutritionDbContext`, `EfRepository<T>`, `EfUnitOfWork` | Database Startup Verification (0 Errors) |
 | **Non-PII Diagnostic Logging** | `Nutrition.Infrastructure.Data` | `EfRepository<T>`, `EfUnitOfWork` sanitized diagnostics | Log Inspection Verification |
-
