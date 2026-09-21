@@ -1,5 +1,5 @@
 # Living Documentation Log
-> **Specification Version**: `v1.1.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.3.1 (Production & Living SDD)`
 > **Rule**: Append-only chronological ledger of every feature implementation, architectural change, and defect fix.  
 > **Mandate**: Zero Documentation Drift Mandate (Skill §9.1)  
 

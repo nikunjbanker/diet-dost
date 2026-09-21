@@ -100,7 +100,6 @@ graph TD
 diet-dost/
 ├── src/
 │   ├── Nutrition.AppHost/           # .NET Aspire orchestration host & typed resource topology
-│   ├── Nutrition.ServiceDefaults/   # Resilience, OpenTelemetry, health checks
 │   ├── Nutrition.Domain/            # DDD entities, clinical calculators, aggregates
 │   ├── Nutrition.Application/       # NutritionTelemetry ActivitySource & application services
 │   ├── Nutrition.Infrastructure/    # AI Vision agent, EF Core DbContext, repositories, ValueComparers
@@ -113,7 +112,7 @@ diet-dost/
 │           └── index.html           # Single Page App shell
 ├── tests/
 │   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & safeguards
-│   └── Nutrition.Vision.Evals/      # AI food vision evaluation harness & benchmark tests
+│   └── Nutrition.EvalHarness.Tests/ # AI food vision evaluation harness & benchmark tests
 ├── docs/
 │   ├── architecture/diagrams/       # Standalone synchronized Mermaid architecture diagrams
 │   └── sdd/                         # Comprehensive Software Design Documents (SDD v1.3.1)
@@ -135,7 +134,7 @@ diet-dost/
 
 ### Prerequisites
 
-- [.NET 11 SDK (or .NET 9+)](https://dotnet.microsoft.com/download)
+- [.NET 11 SDK](https://dotnet.microsoft.com/download)
 - Visual Studio 2024 / 2026 or VS Code with C# Dev Kit
 - Google Gemini API Key (for AI Multimodal Food Vision)
 
@@ -152,12 +151,11 @@ Add your Gemini API Key in `src/Nutrition.WebGateway/appsettings.json` or use .N
 
 ```json
 {
-  "Gemini": {
-    "ApiKey": "YOUR_GEMINI_API_KEY",
-    "Model": "gemini-3-flash-preview",
-    "FallbackModels": ["gemini-2.5-flash", "gemini-2.5-pro"]
-  },
   "AI": {
+    "Provider": "GoogleAI",
+    "ApiKey": "YOUR_GEMINI_API_KEY",
+    "ModelId": "gemini-3-flash-preview",
+    "FallbackModelId": "gemini-3.6-flash",
     "ShowModelDetails": true
   }
 }
@@ -167,7 +165,7 @@ Or via .NET Secret Manager (recommended for local development):
 
 ```bash
 cd src/Nutrition.WebGateway
-dotnet user-secrets set "Gemini:ApiKey" "YOUR_API_KEY"
+dotnet user-secrets set "AI:ApiKey" "YOUR_API_KEY"
 ```
 
 ### 3. Build and Run
@@ -210,17 +208,17 @@ Test coverage includes:
 
 ---
 
-## 📚 Living Documentation (SDD)
+## 📚 Living Documentation (SDD v1.3.1)
 
 Diet Dost strictly adheres to living documentation practices. Every architectural decision, clinical dietetic formula, and security standard is documented in detail:
 
-- **[00: Master Index & Traceability (v1.2.0)](docs/sdd/00_sdd_index.md)**
-- **[01: Clinical Dietetics Specification (v1.2.0)](docs/sdd/01_clinical_dietetics_spec.md)**
-- **[02: Solution Architecture Blueprint (v1.2.0)](docs/sdd/02_solution_architecture.md)**
-- **[03: Data Models & Contracts (v1.2.0)](docs/sdd/03_data_models_and_contracts.md)**
-- **[04: Security & Compliance / OWASP (v1.2.0)](docs/sdd/04_security_and_compliance.md)**
-- **[05: DevOps & Infrastructure (v1.2.0)](docs/sdd/05_devops_and_infrastructure.md)**
-- **[06: Test Harness & AI Vision Evals (v1.2.0)](docs/sdd/06_test_harness_and_evals.md)**
+- **[00: Master Index & Traceability (v1.3.1)](docs/sdd/00_sdd_index.md)**
+- **[01: Clinical Dietetics Specification (v1.3.1)](docs/sdd/01_clinical_dietetics_spec.md)**
+- **[02: Solution Architecture Blueprint (v1.3.1)](docs/sdd/02_solution_architecture.md)**
+- **[03: Data Models & Contracts (v1.3.1)](docs/sdd/03_data_models_and_contracts.md)**
+- **[04: Security & Compliance / OWASP (v1.3.1)](docs/sdd/04_security_and_compliance.md)**
+- **[05: DevOps & Infrastructure (v1.3.1)](docs/sdd/05_devops_and_infrastructure.md)**
+- **[06: Test Harness & AI Vision Evals (v1.3.1)](docs/sdd/06_test_harness_and_evals.md)**
 - **[07: Living Documentation & Audit Log (Synchronized)](docs/sdd/07_living_documentation_log.md)**
 
 ---

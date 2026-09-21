@@ -924,6 +924,7 @@ export function scaleNutritionByPortion(baseline, portionText) {
       const n1 = parseFloat(rangeMatch[1]);
       const n2 = parseFloat(rangeMatch[2]);
       if (!isNaN(n1) && !isNaN(n2)) {
+        // A range represents an approximate serving count, so scale by its midpoint.
         quantity = (n1 + n2) / 2.0;
         hasQty = true;
       }
