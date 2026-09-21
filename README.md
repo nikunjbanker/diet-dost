@@ -222,6 +222,7 @@ Diet Dost strictly adheres to living documentation practices. Every architectura
 - **[05: DevOps & Infrastructure (v1.2.0)](docs/sdd/05_devops_and_infrastructure.md)**
 - **[06: Test Harness & AI Vision Evals (v1.2.0)](docs/sdd/06_test_harness_and_evals.md)**
 - **[07: Living Documentation & Audit Log (Synchronized)](docs/sdd/07_living_documentation_log.md)**
+- **[Local Indian Food Text/Vision SLM Training Guide](docs/LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md)** — dataset design, local QLoRA training, Microsoft Agent Framework + Ollama integration, and evaluation gates
 
 ---
 
