@@ -17,6 +17,7 @@ export class MealLoggerController {
     this._bus = eventBus;
 
     this._bindEvents();
+    this._initClockTracker();
   }
 
   get elements() {
@@ -29,7 +30,10 @@ export class MealLoggerController {
       textLoggerBox: document.getElementById('text-logger-box'),
       textInput: document.getElementById('text-input'),
       btnSubmitText: document.getElementById('btn-submit-text'),
-      btnSampleThali: document.getElementById('btn-sample-thali')
+      btnSampleThali: document.getElementById('btn-sample-thali'),
+      clockBadge: document.getElementById('logger-clock-badge'),
+      clockIcon: document.getElementById('logger-clock-icon'),
+      clockText: document.getElementById('logger-clock-text')
     };
   }
 
@@ -115,18 +119,83 @@ export class MealLoggerController {
   }
 
   /**
-   * Determine meal category based on current local clock time.
+   * Initializes the live clock badge tracking and periodic update interval.
+   */
+  _initClockTracker() {
+    this.updateClockBadge();
+    // Update badge every 30 seconds
+    this._clockInterval = setInterval(() => this.updateClockBadge(), 30000);
+    // Re-evaluate on user profile/timezone updates
+    this._bus.on('profile:updated', () => this.updateClockBadge());
+  }
+
+  /**
+   * Determine meal category based on current local clock time in user's configured timezone.
+   * - 05:00 - 11:30: Breakfast
+   * - 11:30 - 16:00: Lunch
+   * - 16:00 - 19:30: Snack
+   * - 19:30 - 05:00: Dinner
+   * @param {string} [tz] Timezone identifier, e.g. 'Asia/Kolkata'
    * @returns {'Breakfast'|'Lunch'|'Snack'|'Dinner'}
    */
-  detectMealTypeByTime() {
-    const hr = new Date().getHours();
-    const min = new Date().getMinutes();
-    const decimalTime = hr + min / 60;
+  detectMealTypeByTime(tz = this._state.userTimezone || 'Asia/Kolkata') {
+    let hour, minute;
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(new Date());
+      hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+      minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+      if (hour === 24) hour = 0;
+    } catch {
+      const now = new Date();
+      hour = now.getHours();
+      minute = now.getMinutes();
+    }
 
+    const decimalTime = hour + (minute / 60.0);
     if (decimalTime >= 5.0 && decimalTime < 11.5) return 'Breakfast';
     if (decimalTime >= 11.5 && decimalTime < 16.0) return 'Lunch';
     if (decimalTime >= 16.0 && decimalTime < 19.5) return 'Snack';
     return 'Dinner';
+  }
+
+  /**
+   * Format clock time for badge & review hints.
+   * @param {string} [tz] Timezone identifier
+   * @returns {string} e.g. "01:15 PM"
+   */
+  getClockTimeString(tz = this._state.userTimezone || 'Asia/Kolkata') {
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).format(new Date());
+    } catch {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+
+  /**
+   * Updates the live clock badge in the instant logger header.
+   */
+  updateClockBadge() {
+    const el = this.elements;
+    if (!el.clockBadge || !el.clockText) return;
+
+    const mealType = this.detectMealTypeByTime();
+    const timeStr = this.getClockTimeString();
+    const typeIcons = { 'Breakfast': '🌅', 'Lunch': '☀️', 'Snack': '☕', 'Dinner': '🌙' };
+
+    if (el.clockIcon) el.clockIcon.textContent = typeIcons[mealType] || '☀️';
+    el.clockText.textContent = `Auto: ${mealType} (${timeStr})`;
+    el.clockBadge.title = `Auto-detected ${mealType} based on current clock (${timeStr}, ${this._state.userTimezone || 'Asia/Kolkata'})`;
   }
 
   /**
@@ -141,6 +210,7 @@ export class MealLoggerController {
     try {
       const localPhotoUrl = URL.createObjectURL(file);
       const detectedMealType = this.detectMealTypeByTime();
+      const clockTimeStr = this.getClockTimeString();
       const data = await this._meals.uploadMealImage(file, this._state.userId, detectedMealType, 'North Indian');
 
       if (el.scanning) el.scanning.style.display = 'none';
@@ -151,15 +221,18 @@ export class MealLoggerController {
         return;
       }
 
-      if (!data.analysis.mealType) {
-        data.analysis.mealType = detectedMealType;
+      if (data.analysis) {
+        if (!data.analysis.mealType) {
+          data.analysis.mealType = detectedMealType;
+        }
+        data.analysis.clockTimeStr = clockTimeStr;
+        data.analysis.isClockAutoDetected = true;
+        // Attach photo URL (server URL if available, otherwise local object URL)
+        data.analysis.photoUrl = data.photoUrl || data.analysis.photoUri || localPhotoUrl;
+
+        // Notify ReviewModal to open
+        this._bus.emit('meal:analyzed', data.analysis);
       }
-
-      // Attach photo URL (server URL if available, otherwise local object URL)
-      data.analysis.photoUrl = data.photoUrl || data.analysis.photoUri || localPhotoUrl;
-
-      // Notify ReviewModal to open
-      this._bus.emit('meal:analyzed', data.analysis);
     } catch (err) {
       if (el.scanning) el.scanning.style.display = 'none';
       if (el.dropzone) el.dropzone.style.display = 'block';
@@ -179,6 +252,7 @@ export class MealLoggerController {
     if (!query) return;
 
     const detectedMealType = this.detectMealTypeByTime();
+    const clockTimeStr = this.getClockTimeString();
     if (el.btnSubmitText) {
       el.btnSubmitText.disabled = true;
       el.btnSubmitText.textContent = 'Parsing...';
@@ -193,7 +267,11 @@ export class MealLoggerController {
       }
 
       if (data && data.analysis) {
-        if (!data.analysis.mealType) data.analysis.mealType = detectedMealType;
+        if (!data.analysis.mealType) {
+          data.analysis.mealType = detectedMealType;
+        }
+        data.analysis.clockTimeStr = clockTimeStr;
+        data.analysis.isClockAutoDetected = true;
         this._bus.emit('meal:analyzed', data.analysis);
       }
     } catch (err) {

@@ -1,7 +1,13 @@
 <!-- Instant Meal Logger Component -->
 <section class="card logging-card">
   <div class="logging-header">
-    <div class="hud-title">Instant Meal Logger</div>
+    <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
+      <div class="hud-title">Instant Meal Logger</div>
+      <span class="badge" id="logger-clock-badge" style="font-size: 0.72rem; padding: 2px 9px; border-radius: 9999px; background: rgba(94, 106, 210, 0.12); border: 1px solid rgba(94, 106, 210, 0.28); color: var(--brand-indigo); display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500;" title="Auto-detected meal type based on your current time">
+        <span id="logger-clock-icon">☀️</span>
+        <span id="logger-clock-text">Auto: Lunch</span>
+      </span>
+    </div>
     <div class="mode-switcher">
       <button class="mode-btn active" id="btn-mode-camera">📸 AI Camera</button>
       <button class="mode-btn" id="btn-mode-text">🎙️ Voice & Smart Search</button>

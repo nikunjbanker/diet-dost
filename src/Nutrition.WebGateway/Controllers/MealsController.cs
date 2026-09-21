@@ -66,6 +66,16 @@ public class MealsController : ControllerBase
         stream.Position = 0;
         var analysis = await _visionAgent.AnalyzeMealPhotoAsync(stream, mimeType!, regionalContext, userProfile, userCorrections, ct);
 
+        // Auto-select Meal Type: If passed explicitly from client, use it; otherwise compute from user clock/timezone
+        if (!string.IsNullOrWhiteSpace(mealType))
+        {
+            analysis.MealType = mealType;
+        }
+        else if (string.IsNullOrWhiteSpace(analysis.MealType))
+        {
+            analysis.MealType = GetClockMealType(userProfile?.Timezone);
+        }
+
         // Persist photo to wwwroot/uploads/meals for visual review & diary history
         string? photoUrl = null;
         try
@@ -145,7 +155,38 @@ public class MealsController : ControllerBase
             userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == request.UserId, ct);
         }
 
-        var analysis = await _visionAgent.AnalyzeMealDescriptionAsync(request.Description, request.MealType, userProfile, userCorrections, ct);
+        // Auto-select Meal Type: If text explicitly specifies, honor it; otherwise auto-detect from clock/timezone
+        var clockMealType = GetClockMealType(userProfile?.Timezone);
+        var effectiveMealType = !string.IsNullOrWhiteSpace(request.MealType) ? request.MealType : clockMealType;
+
+        var descLower = request.Description.ToLowerInvariant();
+        if (descLower.Contains("breakfast") || descLower.Contains("nashta") || descLower.Contains("nasta"))
+        {
+            effectiveMealType = "Breakfast";
+        }
+        else if (descLower.Contains("lunch") || descLower.Contains("dopahar"))
+        {
+            effectiveMealType = "Lunch";
+        }
+        else if (descLower.Contains("snack") || descLower.Contains("chai") || descLower.Contains("tea"))
+        {
+            effectiveMealType = "Snack";
+        }
+        else if (descLower.Contains("dinner") || descLower.Contains("raat"))
+        {
+            effectiveMealType = "Dinner";
+        }
+
+        var analysis = await _visionAgent.AnalyzeMealDescriptionAsync(request.Description, effectiveMealType, userProfile, userCorrections, ct);
+
+        // Ensure analysis.MealType reflects the effectiveMealType if AI didn't explicitly override from text keywords
+        if (string.IsNullOrWhiteSpace(analysis.MealType) ||
+            (!descLower.Contains("breakfast") && !descLower.Contains("lunch") && !descLower.Contains("snack") && !descLower.Contains("dinner") &&
+             !descLower.Contains("nashta") && !descLower.Contains("dopahar") && !descLower.Contains("raat") && !descLower.Contains("chai")))
+        {
+            analysis.MealType = effectiveMealType;
+        }
+
         return Ok(new
         {
             confidenceGated = true,
@@ -153,6 +194,26 @@ public class MealsController : ControllerBase
             detectedByModel = analysis.DetectedByModel,
             analysis
         });
+    }
+
+    /// <summary>
+    /// Computes the auto-detected meal type based on local time in the user's timezone.
+    /// Follows Indian dining habits and ICMR-NIN 2024 circadian rhythm distribution:
+    /// - 05:00 to 11:30: Breakfast
+    /// - 11:30 to 16:00: Lunch
+    /// - 16:00 to 19:30: Snack
+    /// - 19:30 to 05:00: Dinner
+    /// </summary>
+    private static string GetClockMealType(string? timezoneId)
+    {
+        var tz = ClinicalDietitianService.GetUserTimeZoneInfo(timezoneId);
+        var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+        var hour = localTime.Hour + (localTime.Minute / 60.0);
+
+        if (hour >= 5.0 && hour < 11.5) return "Breakfast";
+        if (hour >= 11.5 && hour < 16.0) return "Lunch";
+        if (hour >= 16.0 && hour < 19.5) return "Snack";
+        return "Dinner";
     }
 
     [HttpPost("confirm")]

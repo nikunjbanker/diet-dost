@@ -185,6 +185,10 @@ export class ReviewModalController {
           if (el.mealType) {
             el.mealType.textContent = `${typeIcons[pill.dataset.type] || ''} ${pill.dataset.type} Review & Correction`;
           }
+          const autoHint = document.getElementById('meal-time-auto-hint');
+          if (autoHint) {
+            autoHint.textContent = 'Manually selected';
+          }
           this.recalculateTotals();
         }
       });
@@ -315,6 +319,55 @@ export class ReviewModalController {
   }
 
   /**
+   * Determine meal category based on current local clock time in user's configured timezone.
+   * @param {string} [tz] Timezone identifier, e.g. 'Asia/Kolkata'
+   * @returns {'Breakfast'|'Lunch'|'Snack'|'Dinner'}
+   */
+  detectMealTypeByTime(tz = this._state.userTimezone || 'Asia/Kolkata') {
+    let hour, minute;
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(new Date());
+      hour = parseInt(parts.find(p => p.type === 'hour')?.value || '0', 10);
+      minute = parseInt(parts.find(p => p.type === 'minute')?.value || '0', 10);
+      if (hour === 24) hour = 0;
+    } catch {
+      const now = new Date();
+      hour = now.getHours();
+      minute = now.getMinutes();
+    }
+
+    const decimalTime = hour + (minute / 60.0);
+    if (decimalTime >= 5.0 && decimalTime < 11.5) return 'Breakfast';
+    if (decimalTime >= 11.5 && decimalTime < 16.0) return 'Lunch';
+    if (decimalTime >= 16.0 && decimalTime < 19.5) return 'Snack';
+    return 'Dinner';
+  }
+
+  /**
+   * Format clock time for auto hint.
+   * @param {string} [tz]
+   * @returns {string} e.g. "01:15 PM"
+   */
+  getClockTimeString(tz = this._state.userTimezone || 'Asia/Kolkata') {
+    try {
+      return new Intl.DateTimeFormat('en-US', {
+        timeZone: tz,
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      }).format(new Date());
+    } catch {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+  }
+
+  /**
    * Open review modal with analysis payload.
    * @param {Object} analysis
    */
@@ -328,7 +381,7 @@ export class ReviewModalController {
     if (el.chipTadka) el.chipTadka.classList.remove('active');
     if (el.chipOilfree) el.chipOilfree.classList.remove('active');
 
-    const currentMealType = analysis.mealType || 'Lunch';
+    const currentMealType = analysis.mealType || this.detectMealTypeByTime();
     this._state.currentMeal.mealType = currentMealType;
 
     const typeIcons = { 'Breakfast': '🌅', 'Lunch': '☀️', 'Snack': '☕', 'Dinner': '🌙' };
@@ -350,7 +403,8 @@ export class ReviewModalController {
 
     const autoHint = document.getElementById('meal-time-auto-hint');
     if (autoHint) {
-      autoHint.textContent = `Auto-detected from clock (${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`;
+      const timeStr = analysis.clockTimeStr || this.getClockTimeString();
+      autoHint.textContent = `Auto-detected (${timeStr})`;
     }
 
     // Retain original detection name on each item to track user training, and ensure fiber/sugar exist

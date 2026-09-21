@@ -48,7 +48,7 @@ public class IndianMealItemDto
 public class IndianMealAnalysisResult
 {
     [JsonPropertyName("mealType")]
-    public string MealType { get; set; } = "Lunch";
+    public string MealType { get; set; } = string.Empty;
 
     [JsonPropertyName("dishName")]
     public string DishName { get; set; } = string.Empty;
