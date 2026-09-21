@@ -204,4 +204,92 @@ public class VisionAiEvalTests
         Assert.True(result.Retrained);
         Assert.Contains("Positive feedback recorded", result.Message);
     }
+
+    [Fact]
+    public async Task Fixture9_TextAnalysis_MultiItemMealDescription_ParsesAllItemsAccurately()
+    {
+        var result = await _visionService.AnalyzeMealDescriptionAsync(
+            "2 rotis with 1 bowl dal and mix veg sabzi",
+            "Lunch");
+
+        Assert.NotNull(result);
+        Assert.True(result.IdentifiedItems.Count >= 3);
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Roti") || i.Name.Contains("Phulka"));
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Dal"));
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Subzi") || i.Name.Contains("Vegetable") || i.Name.Contains("Mix Veg"));
+        Assert.True(result.TotalCalories > 200);
+        Assert.False(string.IsNullOrWhiteSpace(result.DishName));
+    }
+
+    [Fact]
+    public async Task Fixture10_TextAnalysis_BreakfastItems_IdentifiesDosaAndSambar()
+    {
+        var result = await _visionService.AnalyzeMealDescriptionAsync(
+            "Masala Dosa with Sambar and Coconut Chutney",
+            "Breakfast");
+
+        Assert.NotNull(result);
+        Assert.Equal("Breakfast", result.MealType);
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Dosa"));
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Sambar"));
+        Assert.True(result.TotalCalories > 150);
+    }
+
+    [Fact]
+    public async Task Fixture11_TextAnalysis_PohaAndChai_ParsesItemsAndMacroTotals()
+    {
+        var result = await _visionService.AnalyzeMealDescriptionAsync(
+            "Kanda Poha and 1 cup Masala Chai",
+            "Breakfast");
+
+        Assert.NotNull(result);
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Poha"));
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Chai") || i.Name.Contains("Tea"));
+        Assert.True(result.TotalCalories > 100);
+        Assert.True(result.TotalProteinGrams > 0);
+    }
+
+    [Fact]
+    public async Task Fixture12_TextAnalysis_NutsAndDriedAnjeer_ParsesIndependentlyAndSynthesizesCompositeDish()
+    {
+        var result = await _visionService.AnalyzeMealDescriptionAsync(
+            "10 gm nuts + 2 Pieces of Dried Anjeer",
+            "Breakfast");
+
+        Assert.NotNull(result);
+        Assert.Equal(2, result.IdentifiedItems.Count);
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Nuts"));
+        Assert.Contains(result.IdentifiedItems, i => i.Name.Contains("Anjeer") || i.Name.Contains("Figs"));
+        Assert.Contains("Nuts with Dried Anjeer", result.DishName);
+        Assert.InRange(result.TotalCalories, 95, 125);
+        Assert.True(result.TotalProteinGrams > 2.0);
+        Assert.True(result.TotalFatGrams > 4.0);
+        Assert.True(result.TotalFiberGrams > 2.0);
+    }
+
+    [Fact]
+    public void Fixture13_ImageOptimization_ReducesFileSize_WhileMaintainingAspectRatioAndClarity()
+    {
+        var samplePath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "Nutrition.WebGateway", "wwwroot", "uploads", "meals", "sample_lunch_thali.jpg");
+        if (!File.Exists(samplePath))
+        {
+            var fallback = Path.GetFullPath(@"src\Nutrition.WebGateway\wwwroot\uploads\meals\sample_lunch_thali.jpg");
+            if (File.Exists(fallback)) samplePath = fallback;
+        }
+
+        if (File.Exists(samplePath))
+        {
+            var rawBytes = File.ReadAllBytes(samplePath);
+            var (optimizedBytes, mimeType, width, height) = ImageOptimizationHelper.OptimizeForVision(rawBytes, "image/jpeg", 1280, 82);
+
+            Assert.Equal("image/jpeg", mimeType);
+            Assert.True(optimizedBytes.Length < 350_000, $"Optimized size {optimizedBytes.Length} bytes should be well under 350KB");
+            Assert.True(optimizedBytes.Length < rawBytes.Length, "Optimized image should be smaller than raw image");
+            Assert.Equal(1200, width);
+            Assert.Equal(896, height);
+
+            // Write optimized bytes back to disk to permanently optimize sample photo
+            File.WriteAllBytes(samplePath, optimizedBytes);
+        }
+    }
 }

@@ -2,9 +2,19 @@
 <div class="review-modal-overlay" id="review-modal">
   <div class="review-card">
     <div class="review-header">
-      <div>
-        <div class="hud-title" id="review-meal-type">Meal Review & Correction</div>
-        <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.2rem;" id="review-dish-name">Homestyle Indian Thali</h2>
+      <div style="flex: 1; min-width: 0;">
+        <div class="hud-title">
+          <span id="review-meal-type">Meal Review & Correction</span>
+        </div>
+        <div class="review-dish-title-row">
+          <div class="review-dish-heading-wrap">
+            <input type="text" id="review-dish-name-input" class="review-dish-heading-input" placeholder="Enter meal name..." title="Click to rename meal" spellcheck="false" autocomplete="off" />
+            <span class="review-dish-heading-pencil" title="Editable meal title">✏️</span>
+          </div>
+          <!-- Hidden fallback for backwards compatibility -->
+          <h2 style="display: none;" id="review-dish-name">Meal</h2>
+          <span id="review-dish-kcal-badge" class="review-dish-kcal-badge tabular">~0 kcal</span>
+        </div>
       </div>
       <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <div id="review-model-badge" class="model-badge" style="display: none; font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); color: #818cf8; font-weight: 600; align-items: center; gap: 4px;">
@@ -64,17 +74,26 @@
           </div>
         </div>
 
-        <!-- Meal Type Timing Selector -->
+        <!-- Meal Type Timing Selector & Log Time -->
         <div class="meal-timing-bar">
-          <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 0.25rem;">
-            <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Meal Type:</span>
-            <span id="meal-time-auto-hint" style="font-size: 0.65rem; color: var(--accent-brand-hover);">Auto-detected</span>
+          <div class="meal-timing-header-row">
+            <span class="meal-timing-label">Meal Type:</span>
+            <span id="meal-time-auto-hint" class="meal-timing-hint">Auto-detected</span>
           </div>
           <div class="meal-type-pills" id="review-meal-type-pills">
             <button type="button" class="meal-pill" data-type="Breakfast">🌅 Breakfast</button>
             <button type="button" class="meal-pill" data-type="Lunch">☀️ Lunch</button>
             <button type="button" class="meal-pill" data-type="Snack">☕ Snack</button>
             <button type="button" class="meal-pill" data-type="Dinner">🌙 Dinner</button>
+          </div>
+          <!-- Meal Consumption Date & Time -->
+          <div class="review-log-time-row">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <label for="review-log-time-input" style="font-size: 0.74rem; color: var(--text-secondary); font-weight: 600; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <span>🕒</span> <span>Consumption Date & Time:</span>
+              </label>
+            </div>
+            <input type="datetime-local" id="review-log-time-input" class="review-log-time-input" title="Customize meal date and consumption time" />
           </div>
         </div>
 

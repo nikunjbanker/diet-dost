@@ -1,6 +1,6 @@
 <!-- Clinical Onboarding & Profile Modal Component -->
 <div class="review-modal-overlay" id="profile-modal">
-  <div class="review-card" style="max-width: 650px;">
+  <div class="review-card profile-modal-card" style="max-width: min(95vw, 840px);">
     <div class="review-header">
       <div>
         <div class="hud-title">Zero Assumption Clinical Intake</div>
@@ -25,7 +25,7 @@
       </button>
     </div>
 
-    <form id="profile-form" style="display: flex; flex-direction: column; gap: 1rem;">
+    <form id="profile-form" class="profile-form-scrollable" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px;">
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
         <div>
           <label style="font-size: 0.75rem; color: var(--text-secondary); display: block; margin-bottom: 4px;">Full Name *</label>
@@ -173,9 +173,16 @@
         </div>
       </div>
 
-      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem;">
-        <button type="submit" class="btn btn-primary">Save & Recalculate Clinical Targets</button>
-      </div>
+      <!-- spacer so last field not hidden under footer -->
+      <div style="height: 0.5rem;"></div>
     </form>
+
+    <!-- Sticky Save / Cancel footer — always visible -->
+    <div class="profile-modal-footer">
+      <button type="button" id="btn-profile-cancel" class="btn btn-outline" onclick="closeProfileModal()">Cancel</button>
+      <button type="submit" form="profile-form" id="btn-profile-save" class="btn btn-primary">
+        <span id="btn-profile-save-text">💾 Save &amp; Recalculate</span>
+      </button>
+    </div>
   </div>
 </div>

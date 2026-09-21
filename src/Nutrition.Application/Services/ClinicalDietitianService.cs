@@ -222,6 +222,10 @@ public class ClinicalDietitianService
         // Update core scalar properties
         existing.DishName = updatedMeal.DishName;
         existing.MealType = updatedMeal.MealType;
+        if (updatedMeal.LoggedAt != default)
+        {
+            existing.LoggedAt = updatedMeal.LoggedAt.ToUniversalTime();
+        }
         existing.AddedGheeKcal = updatedMeal.AddedGheeKcal;
         existing.AddedTadkaKcal = updatedMeal.AddedTadkaKcal;
         if (!string.IsNullOrWhiteSpace(updatedMeal.DietitianAdvice))

@@ -142,11 +142,12 @@ public class MealsController : ControllerBase
     }
 
     [HttpPost("analyze-text")]
-    public async Task<IActionResult> AnalyzeTextMeal([FromBody] TextAnalysisRequest request, CancellationToken ct)
+    public async Task<IActionResult> AnalyzeTextMeal([FromBody] TextAnalysisRequest? request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Description))
+        if (request == null || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest(new { error = "Description cannot be empty." });
 
+        var descTrimmed = request.Description.Trim();
         UserProfile? userProfile = null;
         List<UserCorrectionRecord>? userCorrections = null;
         if (!string.IsNullOrWhiteSpace(request.UserId))
@@ -159,7 +160,7 @@ public class MealsController : ControllerBase
         var clockMealType = GetClockMealType(userProfile?.Timezone);
         var effectiveMealType = !string.IsNullOrWhiteSpace(request.MealType) ? request.MealType : clockMealType;
 
-        var descLower = request.Description.ToLowerInvariant();
+        var descLower = descTrimmed.ToLowerInvariant();
         if (descLower.Contains("breakfast") || descLower.Contains("nashta") || descLower.Contains("nasta"))
         {
             effectiveMealType = "Breakfast";
@@ -177,7 +178,7 @@ public class MealsController : ControllerBase
             effectiveMealType = "Dinner";
         }
 
-        var analysis = await _visionAgent.AnalyzeMealDescriptionAsync(request.Description, effectiveMealType, userProfile, userCorrections, ct);
+        var analysis = await _visionAgent.AnalyzeMealDescriptionAsync(descTrimmed, effectiveMealType, userProfile, userCorrections, ct);
 
         // Ensure analysis.MealType reflects the effectiveMealType if AI didn't explicitly override from text keywords
         if (string.IsNullOrWhiteSpace(analysis.MealType) ||
@@ -220,7 +221,7 @@ public class MealsController : ControllerBase
     public async Task<IActionResult> ConfirmMeal([FromBody] MealLog meal, CancellationToken ct)
     {
         meal.IsVerifiedByUser = true;
-        meal.LoggedAt = DateTime.UtcNow;
+        meal.LoggedAt = meal.LoggedAt != default ? meal.LoggedAt.ToUniversalTime() : DateTime.UtcNow;
 
         // Continuous Model Re-Training & Adaptive Learning
         // Check if the user corrected any genuinely detected items

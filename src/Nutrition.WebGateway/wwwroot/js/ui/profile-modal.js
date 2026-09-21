@@ -322,12 +322,13 @@ export class ProfileModalController {
   async handleSubmit(e) {
     e.preventDefault();
     const el = this.elements;
-    const submitBtn = el.form ? el.form.querySelector('button[type="submit"]') : null;
-    const origText = submitBtn ? submitBtn.textContent : '';
+    const saveBtn = document.getElementById('btn-profile-save');
+    const saveBtnText = document.getElementById('btn-profile-save-text');
+    const origText = saveBtnText ? saveBtnText.innerHTML : '';
 
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Recalculating Clinical Targets...';
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      if (saveBtnText) saveBtnText.innerHTML = '⏳ Recalculating...';
     }
 
     const selectedConditions = Array.from(document.querySelectorAll('#conditions-list input:checked')).map(c => c.value);
@@ -357,9 +358,9 @@ export class ProfileModalController {
       const data = await this._profile.saveProfile(profile);
       this._state.userTimezone = profile.timezone;
 
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = origText;
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        if (saveBtnText) saveBtnText.innerHTML = origText;
       }
 
       this.close();
@@ -375,9 +376,9 @@ export class ProfileModalController {
         onAction: () => this._bus.emit('transparency:open')
       });
     } catch (err) {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = origText;
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        if (saveBtnText) saveBtnText.innerHTML = origText;
       }
       this._toast.show({
         title: 'Validation Error',

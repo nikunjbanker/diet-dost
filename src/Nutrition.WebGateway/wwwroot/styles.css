@@ -3030,3 +3030,198 @@ body {
   transform: none;
 }
 
+/* ==========================================================================
+   Review Modal Header & Meal Timing Enhancements (Linear.app Aesthetic)
+   ========================================================================== */
+.review-header-select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: var(--accent-brand-hover);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.review-header-select:hover,
+.review-header-select:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent-brand);
+  box-shadow: 0 0 0 2px var(--accent-brand-glow);
+}
+
+.review-header-select option {
+  background: var(--surface-modal);
+  color: var(--text-primary);
+}
+
+.review-dish-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.review-dish-heading-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
+.review-dish-heading-input {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1.5px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  padding: 4px 28px 4px 10px;
+  font-family: inherit;
+  min-width: 240px;
+  max-width: 560px;
+  outline: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-dish-heading-input:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.26);
+  border-bottom-color: rgba(99, 102, 241, 0.6);
+}
+
+.review-dish-heading-input:focus {
+  background: #0f172a;
+  border-color: #6366f1;
+  border-bottom-style: solid;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+  color: #ffffff;
+}
+
+.review-dish-heading-pencil {
+  position: absolute;
+  right: 8px;
+  font-size: 0.85rem;
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.review-dish-heading-wrap:hover .review-dish-heading-pencil {
+  opacity: 0.9;
+}
+
+.review-dish-kcal-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  background: rgba(245, 166, 35, 0.12);
+  border: 1px solid rgba(245, 166, 35, 0.32);
+  color: var(--status-amber);
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
+.review-log-time-row {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.review-log-time-input {
+  width: 100%;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f1f5f9;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  color-scheme: dark;
+  outline: none;
+  box-sizing: border-box;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.review-log-time-input:hover {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.review-log-time-input:focus {
+  background: #0f172a;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+/* ============================================================
+   Profile Modal – Sticky Save/Cancel Footer
+   ============================================================ */
+
+/* Card uses flex-column so footer can stick to bottom */
+.profile-modal-card {
+  display: flex !important;
+  flex-direction: column !important;
+  max-height: min(94vh, 900px) !important;
+}
+
+/* The form area scrolls; footer does not */
+.profile-form-scrollable {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+}
+
+.profile-form-scrollable::-webkit-scrollbar { width: 5px; }
+.profile-form-scrollable::-webkit-scrollbar-track { background: transparent; }
+.profile-form-scrollable::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.35);
+  border-radius: 4px;
+}
+
+/* Sticky footer – always visible below the scrollable form */
+.profile-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding-top: 0.85rem;
+  margin-top: 0.25rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.profile-modal-footer .btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: var(--text-secondary);
+  padding: 0.55rem 1.25rem;
+  font-size: 0.875rem;
+  transition: all 0.18s ease;
+}
+
+.profile-modal-footer .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-primary);
+}
+
+.profile-modal-footer .btn-primary {
+  min-width: 190px;
+  padding: 0.6rem 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.profile-modal-footer .btn-primary:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

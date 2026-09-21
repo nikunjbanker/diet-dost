@@ -59,7 +59,12 @@ builder.Services.AddStorageInfrastructure(builder.Configuration);
 builder.Services.AddScoped<ClinicalDietitianService>();
 
 // AI Agent Infrastructure (Microsoft Agent Framework + Google AI Gemini)
-builder.Services.AddHttpClient<MicrosoftAgentFoodVisionService>();
+builder.Services.AddHttpClient<MicrosoftAgentFoodVisionService>(client =>
+{
+    // Vision analysis with large images over Gemini can take 30-90s.
+    // We allow 120s total so all model fallbacks can complete before timeout.
+    client.Timeout = TimeSpan.FromSeconds(120);
+});
 builder.Services.AddScoped<IFoodVisionAgent, MicrosoftAgentFoodVisionService>();
 
 // CORS for local development & PWA

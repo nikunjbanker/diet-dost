@@ -1,4 +1,4 @@
-const CACHE_NAME = 'diet-dost-v10';
+const CACHE_NAME = 'diet-dost-v14';
 const ASSETS = [
   '/',
   '/index.html',
@@ -32,8 +32,8 @@ self.addEventListener('fetch', event => {
         });
       })
     );
-  } else if (event.request.url.includes('/js/') || event.request.url.includes('partials/')) {
-    // Network-first for JavaScript modules and partials to guarantee latest code
+  } else if (event.request.url.includes('/js/') || event.request.url.includes('partials/') || event.request.url.includes('.css')) {
+    // Network-first for JavaScript modules, partials, and CSS stylesheets to guarantee latest styles
     event.respondWith(
       fetch(event.request).catch(() => caches.match(event.request))
     );

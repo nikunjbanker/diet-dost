@@ -1126,6 +1126,176 @@
   - `docs/sdd/07_living_documentation_log.md`
 - **Sign-Off Status**: `DOCUMENTED & ROADMAP ESTABLISHED`
 
+---
 
+### [LOG-20260921-016] Meal Review Editable Header, Consumption Timestamp Logging & AI Text Detection Hardening
+- **Date / Timestamp**: 2026-09-21 14:25:00 UTC
+- **Change Type**: `[FEATURE]` & `[BUGFIX]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure` (AI Vision/Text Engine), `Nutrition.Application` (ClinicalDietitianService), `Nutrition.WebGateway` (MealsController, Review Modal, Meal Logger, styles.css)
+- **Summary of Change**:
+  1. **Editable Header Values in Meal Review Window**:
+     - Converted static `<h2>` into an interactive `.review-dish-title-row` with `<input type="text" id="review-dish-name-input">`, edit icon indicator `✏️`, and separated live calorie badge `#review-dish-kcal-badge`.
+     - Prevented `recalculateTotals()` from overwriting or appending `(~XX kcal)` into the user's custom title.
+     - Added `<select id="review-meal-type-select">` to the modal header with bidirectional two-way synchronization with the meal pills.
+  2. **Meal Consumption Log Time Support**:
+     - Added `<input type="datetime-local" id="review-log-time-input">` with quick offset preset chips (`Now`, `-15m`, `-30m`, `-1h`).
+     - Added `_toLocalIsoString()` helper for date/time formatting.
+     - Updated `MealsController.ConfirmMeal` and `ClinicalDietitianService.UpdateMealAsync` to honor and persist client-provided `meal.LoggedAt` (normalized to UTC) instead of unconditionally forcing `DateTime.UtcNow`.
+  3. **AI Text Detection Fix & Hardening**:
+     - Updated `MicrosoftAgentFoodVisionService.AnalyzeMealDescriptionAsync` to extract JSON between outermost curly braces (`{...}`) to prevent markdown formatting or preamble parsing failures.
+     - Added `IsValidApiKey` check so dummy keys skip remote requests and immediately use the comprehensive local clinical NLP engine.
+     - Increased remote LLM generation timeout to 10s and added error logging for HTTP response failure bodies.
+     - Added multi-item delimiter parsing (`+`, `,`, `with`, `and`), portion extraction, and 16+ Indian staple/dish recognizers in local fallback parser.
+     - Attached `loggedAt` and trimmed user description input in `meal-logger.js` and guarded `TextAnalysisRequest` against nulls in `MealsController.cs`.
+- **Modified Code Files**:
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs`
+  - `src/Nutrition.Application/Services/ClinicalDietitianService.cs`
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/meal-logger.js`
+  - `src/Nutrition.WebGateway/wwwroot/styles.css`
+  - `tests/Nutrition.EvalHarness.Tests/VisionAiEvalTests.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj`: 21 passed, 0 failed.
+  - `dotnet test tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj`: 11 passed (including 3 new text analysis eval fixtures Fixture 9, 10, 11), 0 failed.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
 
+---
 
+### [LOG-20260921-017] Meal Review Modal UI Polish, Obsidian Dark Heading Styling, DateTime Default Auto-Fill, Preset Removal & Nuts/Dry Fruit NLP Recognition
+- **Date / Timestamp**: 2026-09-21 15:35:00 UTC
+- **Change Type**: `[FEATURE]` & `[BUGFIX]` & `[UI/UX]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure` (MicrosoftAgentFoodVisionService), `Nutrition.WebGateway` (Review Modal, PWA Service Worker, styles.css, index.html), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Existing Meal Title Persistence on Edit**:
+     - Fixed `openForEdit(meal)` in `review-modal.js` to preserve the existing meal title (e.g. `"Custom Indian Meal"`) in `dishNameInput.value` and `dishName.textContent` without reverting to generic placeholder or unpopulated state.
+     - Preserved custom title in `recalculateTotals()` so live calorie recalculation updates `#review-dish-kcal-badge` without altering or appending suffixes to the editable input.
+  2. **Obsidian Dark Header & Editable Area Styling**:
+     - Removed redundant `<select id="review-meal-type-select">` from the header bar, avoiding UI clutter since meal type pills are already available in the left column.
+     - Redesigned `.review-dish-heading-input` to match the Linear.app Obsidian Dark design system: transparent background, 1.25rem bold typography matching `<h2>`, subtle dashed bottom accent line, smooth hover highlight, and high-contrast focused glow.
+     - Styled separated `.review-dish-kcal-badge` in amber pill badge and `.review-dish-heading-pencil` indicator.
+  3. **Consumption Date & Time Default Auto-Fill & Preset Removal**:
+     - Removed `-now, -15, -30m, -1h` quick preset option buttons per user specification.
+     - Replaced with a dark-mode styled native `<input type="datetime-local" id="review-log-time-input">` (`color-scheme: dark`, sleek `#0f172a` container background, rounded borders).
+     - Auto-populated by default with the current date & time on new meal creation (`open`) and with the logged meal's actual consumption timestamp on edit (`openForEdit`), while allowing intuitive interactive updates for both date and time.
+  4. **Nuts & Dried Fruits Natural Language Parsing in Fallback AI Engine**:
+     - Added comprehensive recognition rules in `MicrosoftAgentFoodVisionService.ParseDescriptionLocally` for nuts & dry fruits: mixed nuts, almonds/badam, walnuts/akhrot, cashews/kaju, pistachios/pista, peanuts/mungfali (with gram weight extraction e.g. "10 gm nuts") and dried anjeer/figs (with piece count extraction e.g. "2 Pieces of Dried Anjeer").
+     - Excluded `"coconut"` from generic nut matching to prevent false positives with coconut chutney.
+     - Added composite dish title synthesis (e.g. `"Mixed Nuts with Dried Anjeer"`).
+     - Corrected default model fallback strings in `AnalyzeMealDescriptionAsync` and `AnalyzeMealPhotoAsync` to valid Google Gemini endpoints (`gemini-2.5-flash`, `gemini-1.5-flash`).
+  5. **Service Worker & Cache-Busting Hardening**:
+     - Bumped PWA service worker cache to `diet-dost-v12` in `sw.js`.
+     - Updated fetch handler in `sw.js` to route `.css` files network-first so CSS changes take effect immediately without stale browser cache locks.
+     - Bumped asset query strings to `v=1.3.3` in `index.html`.
+- **Modified Code Files**:
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/styles.css`
+  - `src/Nutrition.WebGateway/wwwroot/sw.js`
+  - `src/Nutrition.WebGateway/wwwroot/index.html`
+  - `tests/Nutrition.EvalHarness.Tests/VisionAiEvalTests.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj`: 21 passed, 0 failed.
+  - `dotnet test tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj`: 12 passed (including new `Fixture12_TextAnalysis_NutsAndDriedAnjeer_ParsesIndependentlyAndSynthesizesCompositeDish`), 0 failed.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260921-018] Screen & Modal Width Expansion and Meal Type Tag Uncropping Fix
+- **Date / Timestamp**: 2026-09-21 10:41:00 UTC
+- **Change Type**: `[UI_ENHANCEMENT]` & `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (PWA Modals & Stylesheets)
+- **Summary of Change**:
+  1. **Expanded Screen & Modal Dimensions for Modern Displays**:
+     - Increased main application container `.container` `max-width` from `1200px` to `1400px` to take advantage of desktop screen real estate.
+     - Expanded `.review-card` `max-width` from `min(94vw, 1160px)` to `min(96vw, 1360px)`, `max-height` from `min(92vh, 840px)` to `min(94vh, 900px)`, and padding to `1.75rem`.
+     - Expanded `.modal-card` (`.progress-detail-modal`) `max-width` from `820px` to `min(95vw, 1100px)`.
+     - Expanded `transparency-modal.html` from `850px` to `min(96vw, 1120px)`.
+     - Expanded `profile-modal.html` from `650px` to `min(95vw, 840px)`.
+  2. **Resolved Meal Type Pill Cropping**:
+     - Root Cause: Left media column `.review-media-column` was constrained to 360px (and previously 240px when `.no-photo` was triggered). 4 side-by-side pills required 373px minimum width, causing `"🌙 Dinner"` to be clipped to `"🌙 Dini..."`. Furthermore, lengthy auto-hint strings alongside `"Meal Type:"` wrapped text awkwardly into multiple lines.
+     - Expanded `.review-body-layout` desktop grid columns from `360px 1fr` to `440px 1fr`, and `.review-body-layout.no-photo` from `360px 1fr` to `440px 1fr`.
+     - Introduced `.meal-timing-header-row` with flex baseline distribution, non-wrapping `"Meal Type:"` label (`white-space: nowrap; flex-shrink: 0;`), and streamlined auto-hint format (`Editing · {dateFormatted}`).
+     - Updated `.meal-type-pills` to `display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.45rem; width: 100%;` with centered, evenly distributed `.meal-pill` buttons.
+     - Added responsive `@media (max-width: 440px)` fallback gracefully wrapping pills into a 2x2 grid on ultra-narrow viewports.
+  3. **PWA Versioning & Cache Busting**:
+     - Bumped Service Worker cache to `diet-dost-v13`.
+     - Bumped stylesheet and script cache-busting queries to `v=1.3.4` in `index.html`.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/wwwroot/styles.css`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/partials/transparency-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/partials/profile-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/index.html`
+  - `src/Nutrition.WebGateway/wwwroot/sw.js`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test`: **33 passed, 0 failed, 0 skipped** across all test suites.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260921-019] AI Vision Analysis & Textual Meal Analysis LLM Restoration
+- **Date / Timestamp**: 2026-09-21 10:58:00 UTC
+- **Change Type**: `[DEFECT_FIX]` & `[AI_AGENT]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure` (`MicrosoftAgentFoodVisionService`), `Nutrition.WebGateway` (`MealsController`, `appsettings.json`), `Nutrition.AppHost` (`Program.cs`)
+- **Summary of Change**:
+  1. **Root Cause Analysis for LLM Offline Fallback**:
+     - *Root Cause 1 (Timeout premature cancellation)*: In `MicrosoftAgentFoodVisionService.cs`, `cts.CancelAfter(TimeSpan.FromSeconds(8))` was hardcoded for vision calls. Real-world plate images (such as `sample_lunch_thali.jpg`, 1.1MB) require ~10-18 seconds over the network for base64 transmission, multimodal processing, and nutritional synthesis. The 8-second ceiling fired prematurely, throwing `OperationCanceledException` and triggering fallback.
+     - *Root Cause 2 (API Key masking & resolution)*: `appsettings.json` had `"ApiKey": "*******"`. Because it was non-null, the null-coalescing operator `_config["AI:ApiKey"] ?? Environment...` returned `"*******"`, failing `IsValidApiKey` and bypassing remote LLM inference entirely.
+     - *Root Cause 3 (Deprecated model endpoints)*: Fallbacks to `gemini-2.5-flash` and `gemini-1.5-flash` resulted in HTTP 404 (Google API message: *"models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.6-flash"*). Meanwhile, `gemini-flash-latest` experienced high demand spikes returning HTTP 503.
+     - *Root Cause 4 (JSON brace boundaries in vision)*: `CallGoogleAiVisionAsync` lacked brace boundary extraction (`firstBrace`/`lastBrace`), causing deserialization errors when models output auxiliary thinking artifacts or text outside the JSON boundaries.
+  2. **Architectural Fixes Implemented**:
+     - **Timeout Expansion**: Increased vision analysis timeout to 30 seconds (`TimeSpan.FromSeconds(30)`) and textual analysis timeout to 20 seconds (`TimeSpan.FromSeconds(20)`).
+     - **Robust Key Resolver (`ResolveApiKey`)**: Checks `_config["AI:ApiKey"]`, `_config["Gemini:ApiKey"]`, `_config["GoogleAI:ApiKey"]`, `AI__ApiKey`, `GEMINI_API_KEY`, and `GOOGLE_AI_KEY`, discarding dummy/masked values (`*******`). Configured valid working key in `appsettings.json`.
+     - **Model Cascade**: Standardized on Google's active, verified endpoints: `gemini-3.6-flash` (primary recommended) and `gemini-3-flash-preview` (high-speed vision), with automated cascade fallback to `gemini-3.7-flash`.
+     - **Resilient JSON Parsing**: Added `firstBrace`/`lastBrace` boundary extraction and alternative key extraction (`items`, `dishes`, `foodItems`) to `CallGoogleAiVisionAsync`.
+     - **AppHost Environment Forwarding**: Updated `src/Nutrition.AppHost/Program.cs` to pass `AI__ApiKey`, `AI__ModelId`, and `AI__FallbackModelId` explicitly to `web-gateway`.
+  3. **Verification**:
+     - Multimodal Vision API (`/api/meals/upload`): Successfully identified all 5 items on the sample plate: *Whole Wheat Phulka / Roti*, *Yellow Dal Tadka*, *Bhindi Masala*, *Plain Curd / Fresh Yogurt (Dahi)*, and *Sliced Cucumber Salad* using `gemini-3.6-flash` with 0.95 confidence score.
+     - Text Analysis API (`/api/meals/analyze-text`): Successfully parsed `"2 Rotis with Yellow Moong Dal and Bhindi"` into *Whole Wheat Roti / Phulka*, *Yellow Moong Dal (Tadka)*, and *Bhindi Subzi (Okra Fry)* using `gemini-3.6-flash`.
+- **Modified Code Files**:
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs`
+  - `src/Nutrition.WebGateway/appsettings.json`
+  - `src/Nutrition.AppHost/Program.cs`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test`: **33 passed, 0 failed, 0 skipped** across all test suites.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260921-020] Dynamic Food-Based Dish Name Synthesis & Inline Title Editing
+- **Date / Timestamp**: 2026-09-21 11:22:00 UTC
+- **Change Type**: `[FEATURE]` & `[UI_ENHANCEMENT]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure` (`MicrosoftAgentFoodVisionService`), `Nutrition.WebGateway` (`review-modal.html`, `review-modal.js`, `styles.css`)
+- **Summary of Change**:
+  1. **Replaced Generic Titles with Dynamic Food Synthesis**:
+     - Previously, the meal modal header displayed a hardcoded `"Custom Indian Meal"` or generic placeholder.
+     - Updated LLM Vision & Text prompts with strict instructions: *"DISH NAME SYNTHESIS (NEVER USE GENERIC TITLES): In 'dishName', generate a natural, descriptive name reflecting the exact foods on the plate (e.g. 'Whole Wheat Phulkas with Yellow Dal & Bhindi Masala', 'Refreshing Green Tea'). NEVER return generic titles like 'Custom Indian Meal' or 'Plate Photo'!"*
+     - Added robust C# server-side synthesis helper `MicrosoftAgentFoodVisionService.SynthesizeMealDishName(items)`:
+       - Cleans item names (stripping portion tokens like "1 Cup", "2", "(150g)").
+       - Detects specific Indian combinations (e.g., *Dosa & Sambar*, *Idli Sambar*, *Kanda Poha & Masala Chai*, *North Indian Thali with Phulkas & Subzi*, *Assorted Mixed Nuts & Dry Fruits*).
+       - Automatically synthesizes concise composite titles (e.g., *"Whole Wheat Phulka with Yellow Moong Dal Tadka & Bhindi Masala"* or *"Refreshing Green Tea"*).
+     - Applied automatic post-processing in both `AnalyzeMealPhotoAsync` and `AnalyzeMealDescriptionAsync` to ensure any missing or generic dish name is replaced with the synthesized name.
+  2. **Client-Side Synthesis & Seamless Inline Editing**:
+     - Implemented `ReviewModalController.synthesizeMealDishName(items)` in `review-modal.js` ensuring dynamic recalculation if items change or if meals are edited offline.
+     - Populated the editable `#review-dish-name-input` with the AI-detected/synthesized title upon opening the modal.
+     - Added `_hasUserRenamedTitle` tracking: if the user edits or customizes the title, their custom title is strictly preserved and logged to the database. If the user clears the title, it gracefully falls back to the synthesized title.
+     - Updated `#review-dish-name-input` placeholder to `"Enter meal name..."`.
+     - Added clean CSS styling in `styles.css` with subtle pencil icon, glowing hover/focus states, and expanded width (`min-width: 240px; max-width: 560px;`) supporting long, descriptive Indian meal titles.
+- **Modified Code Files**:
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs`
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html`
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
+  - `src/Nutrition.WebGateway/wwwroot/styles.css`
+  - `docs/sdd/07_living_documentation_log.md`
+- **Harness Verification Result**:
+  - `dotnet test`: **33 passed, 0 failed, 0 skipped** across all test suites.
+  - Text Analysis API (`/api/meals/analyze-text`): Verified returning `"Refreshing Green Tea"` via `gemini-3.6-flash`, and `"North Indian Thali (Phulkas & Yellow Moong Dal Tadka)"` via offline engine fallback.
+- **Sign-Off Status**: `VERIFIED & OPERATIONAL`

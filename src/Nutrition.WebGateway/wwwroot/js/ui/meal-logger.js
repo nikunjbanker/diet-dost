@@ -199,6 +199,87 @@ export class MealLoggerController {
   }
 
   /**
+   * Resizes and compresses an image in the browser before network transmission.
+   * Preserves exact aspect ratio, downscales if dimensions exceed maxDimension (1280px),
+   * and balances visual quality (0.82) to keep food details crisp while reducing payload by 70-85%.
+   * @param {File} file
+   * @param {number} maxDimension
+   * @param {number} quality
+   * @returns {Promise<File>}
+   */
+  async optimizeImageForUpload(file, maxDimension = 1280, quality = 0.82) {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      return file;
+    }
+
+    return new Promise((resolve) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let { width, height } = img;
+
+        // If file is already lightweight (< 250KB) and dimensions <= maxDimension, don't recompress
+        if (file.size <= 250 * 1024 && width <= maxDimension && height <= maxDimension) {
+          resolve(file);
+          return;
+        }
+
+        // Maintain exact aspect ratio
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.max(1, Math.round(width * ratio));
+          height = Math.max(1, Math.round(height * ratio));
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+
+        // High-quality downsampling
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const outputFormat = 'image/jpeg';
+        canvas.toBlob(
+          (blob) => {
+            if (!blob || blob.size >= file.size) {
+              resolve(file);
+              return;
+            }
+
+            const optimizedFile = new File(
+              [blob],
+              file.name.replace(/\.[^/.]+$/, "") + ".jpg",
+              { type: outputFormat, lastModified: Date.now() }
+            );
+
+            console.log(`[ImageOptimizer] Reduced ${(file.size / 1024).toFixed(1)} KB -> ${(optimizedFile.size / 1024).toFixed(1)} KB (${width}x${height}, Q: ${quality})`);
+            resolve(optimizedFile);
+          },
+          outputFormat,
+          quality
+        );
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(file);
+      };
+
+      img.src = objectUrl;
+    });
+  }
+
+  /**
    * Handle image upload and AI analysis.
    * @param {File} file
    */
@@ -211,7 +292,11 @@ export class MealLoggerController {
       const localPhotoUrl = URL.createObjectURL(file);
       const detectedMealType = this.detectMealTypeByTime();
       const clockTimeStr = this.getClockTimeString();
-      const data = await this._meals.uploadMealImage(file, this._state.userId, detectedMealType, 'North Indian');
+
+      // Optimize image before sending over the wire (preserves aspect ratio, balanced quality)
+      const uploadFile = await this.optimizeImageForUpload(file, 1280, 0.82);
+
+      const data = await this._meals.uploadMealImage(uploadFile, this._state.userId, detectedMealType, 'North Indian');
 
       if (el.scanning) el.scanning.style.display = 'none';
       if (el.dropzone) el.dropzone.style.display = 'block';
@@ -272,6 +357,7 @@ export class MealLoggerController {
         }
         data.analysis.clockTimeStr = clockTimeStr;
         data.analysis.isClockAutoDetected = true;
+        data.analysis.loggedAt = new Date().toISOString();
         this._bus.emit('meal:analyzed', data.analysis);
       }
     } catch (err) {

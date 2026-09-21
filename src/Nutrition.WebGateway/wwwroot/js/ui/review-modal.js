@@ -38,6 +38,9 @@ export class ReviewModalController {
       modal: document.getElementById('review-modal'),
       mealType: document.getElementById('review-meal-type'),
       dishName: document.getElementById('review-dish-name'),
+      dishNameInput: document.getElementById('review-dish-name-input'),
+      dishKcalBadge: document.getElementById('review-dish-kcal-badge'),
+      logTimeInput: document.getElementById('review-log-time-input'),
       confidenceBadge: document.getElementById('review-confidence-badge'),
       modelBadge: document.getElementById('review-model-badge'),
       modelName: document.getElementById('review-model-name'),
@@ -193,6 +196,31 @@ export class ReviewModalController {
         }
       });
     });
+
+    // Editable Dish Name Input Handler
+    if (el.dishNameInput) {
+      el.dishNameInput.addEventListener('input', () => {
+        const val = el.dishNameInput.value.trim();
+        this._hasUserRenamedTitle = !!val;
+        const fallbackTitle = this.synthesizeMealDishName(this._state.currentMeal?.identifiedItems) || 'Homestyle Indian Meal';
+        const finalTitle = val || fallbackTitle;
+        if (this._state.currentMeal) {
+          this._state.currentMeal.dishName = finalTitle;
+        }
+        if (el.dishName) {
+          el.dishName.textContent = finalTitle;
+        }
+      });
+    }
+
+    // Meal Consumption Date & Time Input Handler
+    if (el.logTimeInput) {
+      el.logTimeInput.addEventListener('change', () => {
+        if (this._state.currentMeal && el.logTimeInput.value) {
+          this._state.currentMeal.loggedAt = new Date(el.logTimeInput.value).toISOString();
+        }
+      });
+    }
 
     if (el.btnAddItem) {
       el.btnAddItem.addEventListener('click', () => {
@@ -368,6 +396,22 @@ export class ReviewModalController {
   }
 
   /**
+   * Converts Date to local YYYY-MM-DDTHH:mm string for datetime-local input.
+   * @param {Date} date
+   * @returns {string}
+   */
+  _toLocalIsoString(date) {
+    if (!date || isNaN(date.getTime())) date = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  /**
    * Open review modal with analysis payload.
    * @param {Object} analysis
    */
@@ -388,9 +432,29 @@ export class ReviewModalController {
     if (el.mealType) {
       el.mealType.textContent = `${typeIcons[currentMealType] || '☀️'} ${currentMealType} Review & Correction`;
     }
-    if (el.dishName) {
-      el.dishName.textContent = analysis.dishName;
+    
+    // Fill title from AI detection, or synthesize from food items if missing/generic
+    let initialTitle = (analysis.dishName || '').trim();
+    if (!initialTitle || initialTitle.toLowerCase() === 'custom indian meal' || initialTitle.toLowerCase() === 'indian meal') {
+      initialTitle = this.synthesizeMealDishName(analysis.identifiedItems) || 'Homestyle Indian Meal';
     }
+    
+    this._state.currentMeal.dishName = initialTitle;
+    this._hasUserRenamedTitle = false;
+
+    if (el.dishNameInput) {
+      el.dishNameInput.value = initialTitle;
+    }
+    if (el.dishName) {
+      el.dishName.textContent = initialTitle;
+    }
+
+    // Set meal consumption date & time (defaults to current date & time)
+    const initialLogDate = analysis.loggedAt ? new Date(analysis.loggedAt) : new Date();
+    if (el.logTimeInput) {
+      el.logTimeInput.value = this._toLocalIsoString(initialLogDate);
+    }
+    this._state.currentMeal.loggedAt = initialLogDate.toISOString();
 
     // Update active pill
     document.querySelectorAll('#review-meal-type-pills .meal-pill').forEach(pill => {
@@ -546,12 +610,17 @@ export class ReviewModalController {
       cookingMediumEstimate: i.cookingMediumEstimate || i.CookingMediumEstimate || 'Standard Home Cooking'
     }));
 
+    let existingTitle = meal.dishName || meal.DishName || '';
+    if (!existingTitle || existingTitle.toLowerCase() === 'custom indian meal' || existingTitle.toLowerCase() === 'indian meal') {
+      existingTitle = this.synthesizeMealDishName(identifiedItems) || 'Homestyle Indian Meal';
+    }
+    this._hasUserRenamedTitle = true;
     this._state.currentMeal = {
       id: meal.id,
       userId: meal.userId || this._state.userId,
-      dishName: meal.dishName || meal.DishName || 'Logged Meal',
+      dishName: existingTitle,
       mealType: currentMealType,
-      loggedAt: meal.loggedAt || meal.LoggedAt,
+      loggedAt: meal.loggedAt || meal.LoggedAt || new Date().toISOString(),
       photoUrl: meal.photoUri || meal.PhotoUri || null,
       overallConfidenceScore: meal.overallConfidenceScore || meal.OverallConfidenceScore || 0.88,
       identifiedItems,
@@ -568,8 +637,17 @@ export class ReviewModalController {
     if (el.mealType) {
       el.mealType.textContent = `✏️ Edit ${currentMealType} (${dateFormatted})`;
     }
+    if (el.dishNameInput) {
+      el.dishNameInput.value = existingTitle;
+    }
     if (el.dishName) {
-      el.dishName.textContent = this._state.currentMeal.dishName;
+      el.dishName.textContent = existingTitle;
+    }
+
+    // Set meal consumption time for edit (populated by default from existing loggedAt)
+    const editMealDate = this._state.currentMeal.loggedAt ? new Date(this._state.currentMeal.loggedAt) : new Date();
+    if (el.logTimeInput) {
+      el.logTimeInput.value = this._toLocalIsoString(editMealDate);
     }
 
     // Update active pill
@@ -583,7 +661,7 @@ export class ReviewModalController {
 
     const autoHint = document.getElementById('meal-time-auto-hint');
     if (autoHint) {
-      autoHint.textContent = `Editing logged entry from ${dateFormatted}`;
+      autoHint.textContent = `Editing · ${dateFormatted}`;
     }
 
     const confPct = Math.round((this._state.currentMeal.overallConfidenceScore || 0.88) * 100);
@@ -1100,11 +1178,17 @@ export class ReviewModalController {
     const totalFiber = baseFiber;
     const totalSugar = baseSugar;
 
+    if (el.dishKcalBadge) {
+      el.dishKcalBadge.textContent = `~${Math.round(totalKcal)} kcal`;
+    }
+
+    const fallbackTitle = this.synthesizeMealDishName(this._state.currentMeal?.identifiedItems) || 'Homestyle Indian Meal';
+    const currentTitle = (el.dishNameInput && el.dishNameInput.value.trim()) || this._state.currentMeal.dishName || fallbackTitle;
+    if (el.dishNameInput && !el.dishNameInput.value.trim()) {
+      el.dishNameInput.value = currentTitle;
+    }
     if (el.dishName) {
-      const cleanDish = (this._state.currentMeal.dishName || 'Meal')
-        .replace(/\s*\([~≈]?\d+\s*kcal\)/gi, '')
-        .trim();
-      el.dishName.textContent = `${cleanDish} (~${Math.round(totalKcal)} kcal)`;
+      el.dishName.textContent = `${currentTitle} (~${Math.round(totalKcal)} kcal)`;
     }
 
     // Update Top Aggregated Nutrition Values Summary Bar
@@ -1181,6 +1265,14 @@ export class ReviewModalController {
     if (!this._state.currentMeal) return;
     const el = this.elements;
 
+    // Capture latest header and timing inputs
+    if (el.dishNameInput && el.dishNameInput.value.trim()) {
+      this._state.currentMeal.dishName = el.dishNameInput.value.trim();
+    }
+    if (el.logTimeInput && el.logTimeInput.value) {
+      this._state.currentMeal.loggedAt = new Date(el.logTimeInput.value).toISOString();
+    }
+
     if (this._isEditing) {
       if (el.btnConfirm) {
         el.btnConfirm.disabled = true;
@@ -1198,7 +1290,7 @@ export class ReviewModalController {
           userId: this._state.userId,
           mealType: numericMealType,
           dishName: this._state.currentMeal.dishName,
-          loggedAt: this._state.currentMeal.loggedAt,
+          loggedAt: this._state.currentMeal.loggedAt || new Date().toISOString(),
           photoUri: this._state.currentMeal.photoUrl || null,
           overallConfidenceScore: this._state.currentMeal.overallConfidenceScore || 0.88,
           addedGheeKcal: this._state.addedGhee || 0,
@@ -1273,6 +1365,7 @@ export class ReviewModalController {
         userId: this._state.userId,
         mealType: numericMealType,
         dishName: this._state.currentMeal.dishName,
+        loggedAt: this._state.currentMeal.loggedAt || new Date().toISOString(),
         photoUri: this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri || null,
         overallConfidenceScore: this._state.currentMeal.overallConfidenceScore || 0.88,
         addedGheeKcal: this._state.addedGhee,
@@ -1339,5 +1432,73 @@ export class ReviewModalController {
         message: err.message || 'Failed to save meal.'
       });
     }
+  }
+
+  /**
+   * Synthesizes a natural, descriptive meal title from the identified food items.
+   * @param {Array<Object>} items
+   * @returns {string}
+   */
+  synthesizeMealDishName(items) {
+    if (!items || items.length === 0) return 'Homestyle Indian Meal';
+
+    const cleanName = (raw) => {
+      if (!raw) return 'Meal';
+      let c = raw.replace(/^\d+(?:\.\d+)?\s*(?:Cups?|Portions?|Pieces?|Plates?|Bowls?|Katoris?|Rotis?|Phulkas?|Tbsp|Tsp|g|gms|ml)?\s*/i, '');
+      c = c.replace(/\s*\([^)]*\)/g, '').trim();
+      return c || raw.trim();
+    };
+
+    if (items.length === 1) {
+      return cleanName(items[0].name);
+    }
+
+    const hasItem = (query) => items.some(i => i.name && i.name.toLowerCase().includes(query.toLowerCase()));
+
+    if (hasItem('tea') || hasItem('chai')) {
+      if (items.length === 1) return cleanName(items[0].name);
+    }
+
+    if ((hasItem('nuts') || hasItem('almond') || hasItem('walnut') || hasItem('cashew')) &&
+        (hasItem('anjeer') || hasItem('fig') || hasItem('date') || hasItem('raisin'))) {
+      const nut = cleanName(items.find(i => i.name && /nuts|almond|walnut|cashew/i.test(i.name))?.name);
+      const fruit = cleanName(items.find(i => i.name && /anjeer|fig|date|raisin/i.test(i.name))?.name);
+      return `${nut} with ${fruit}`;
+    }
+
+    if (hasItem('dosa') && hasItem('sambar')) {
+      return 'Masala Dosa with Sambar & Chutney';
+    }
+    if (hasItem('idli') && hasItem('sambar')) {
+      return 'Steamed Idlis with Sambar & Chutney';
+    }
+    if (hasItem('khichdi') && (hasItem('curd') || hasItem('dahi'))) {
+      return 'Moong Dal Khichdi with Fresh Curd';
+    }
+    if (hasItem('poha') && (hasItem('chai') || hasItem('tea'))) {
+      return 'Kanda Poha with Masala Chai';
+    }
+    if (hasItem('rajma') && (hasItem('rice') || hasItem('chawal'))) {
+      return 'Rajma Chawal Feast';
+    }
+    if (hasItem('phulka') || hasItem('roti') || hasItem('chapati')) {
+      const subziOrDal = items.find(i => !/phulka|roti|chapati|salad/i.test(i.name));
+      if (subziOrDal) {
+        return `North Indian Thali (Phulkas & ${cleanName(subziOrDal.name)})`;
+      }
+      return 'North Indian Phulka Meal';
+    }
+
+    const primaryDishes = items.filter(i => !/salad|chutney/i.test(i.name));
+    const targetList = primaryDishes.length > 0 ? primaryDishes : items;
+
+    if (targetList.length === 1) {
+      return cleanName(targetList[0].name);
+    }
+
+    const names = targetList.slice(0, 2).map(i => cleanName(i.name));
+    let composite = names.join(' with ');
+    if (targetList.length > 2) composite += ' & sides';
+    return composite;
   }
 }
