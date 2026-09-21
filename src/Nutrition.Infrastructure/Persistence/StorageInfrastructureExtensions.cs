@@ -7,6 +7,16 @@ namespace Nutrition.Infrastructure.Persistence;
 
 public static class StorageInfrastructureExtensions
 {
+    /// <summary>
+    /// Registers the configured persistence provider and generic repository services.
+    /// </summary>
+    /// <remarks>
+    /// SQLite is currently the supported provider. PostgreSQL and SQL Server selections
+    /// remain compatibility placeholders and intentionally use the SQLite implementation.
+    /// </remarks>
+    /// <param name="services">The application's dependency-injection service collection.</param>
+    /// <param name="configuration">Configuration containing provider and connection settings.</param>
+    /// <returns>The same service collection for fluent registration.</returns>
     public static IServiceCollection AddStorageInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var provider = configuration["Database:Provider"] ?? "Sqlite";

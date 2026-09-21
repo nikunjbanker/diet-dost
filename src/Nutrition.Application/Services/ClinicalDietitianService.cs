@@ -27,6 +27,9 @@ public record DailyTrendPoint(
     int HealthScore
 );
 
+/// <summary>
+/// Coordinates profile, meal, ledger, and analytics operations for the WebGateway.
+/// </summary>
 public class ClinicalDietitianService
 {
     private readonly IRepository<UserProfile> _profileRepo;
@@ -94,11 +97,21 @@ public class ClinicalDietitianService
         return await _profileRepo.GetByIdAsync(userId, ct);
     }
 
+    /// <summary>
+    /// Calculates the clinically constrained calorie budget for a complete profile.
+    /// </summary>
+    /// <param name="profile">The validated user profile.</param>
+    /// <returns>BMR, TDEE, target calories, clinical adjustments, and warnings.</returns>
     public BmrTdeeResult CalculateTargetBudget(UserProfile profile)
     {
         return ClinicalCalculators.CalculateCaloricBudget(profile);
     }
 
+    /// <summary>
+    /// Calculates macro and safety-nutrient targets from the user's clinical budget.
+    /// </summary>
+    /// <param name="profile">The validated user profile.</param>
+    /// <returns>Protein, carbohydrate, fat, fiber, sodium, oil, and sugar targets.</returns>
     public MacroDistribution CalculateMacros(UserProfile profile)
     {
         var budget = ClinicalCalculators.CalculateCaloricBudget(profile);

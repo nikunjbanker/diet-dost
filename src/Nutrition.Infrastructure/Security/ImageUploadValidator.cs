@@ -9,6 +9,12 @@ public static class ImageUploadValidator
     private static readonly byte[] RiffHeader = new byte[] { 0x52, 0x49, 0x46, 0x46 }; // "RIFF"
     private static readonly byte[] WebpHeader = new byte[] { 0x57, 0x45, 0x42, 0x50 }; // "WEBP"
 
+    /// <summary>
+    /// Validates an uploaded image using its size and file signature.
+    /// </summary>
+    /// <param name="stream">Readable stream positioned at the beginning of the image.</param>
+    /// <param name="length">Uploaded file length in bytes.</param>
+    /// <returns>A validation result containing an error message or detected MIME type.</returns>
     public static (bool IsValid, string? ErrorMessage, string? MimeType) ValidateImage(Stream stream, long length)
     {
         if (length <= 0)

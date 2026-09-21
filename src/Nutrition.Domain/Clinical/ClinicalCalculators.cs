@@ -103,6 +103,11 @@ public static class ClinicalCalculators
         };
     }
 
+    /// <summary>
+    /// Returns the activity multiplier used to convert BMR into estimated TDEE.
+    /// </summary>
+    /// <param name="level">The user's typical activity level.</param>
+    /// <returns>The multiplier for the Mifflin-St Jeor estimate.</returns>
     public static double GetActivityMultiplier(ActivityLevel level)
     {
         return level switch
