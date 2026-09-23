@@ -82,8 +82,8 @@ graph TB
         FUNC_Safety["Clinical Safety Floor Checks<br/>(Floor: 1200 kcal F / 1500 kcal M | Max Deficit: 1000 kcal/day)"]
     end
 
-    subgraph LAYER_AI ["6. EXTERNAL AI FOUNDATION"]
-        CLOUD_AI["Google AI Pro Cascade<br/>(Gemini 3 Flash Preview [8192 Max Tokens + Thinking] -> 2.5 Flash -> 2.5 Pro)<br/>Tag: detectedByModel"]
+    subgraph LAYER_AI ["6. EXTERNAL AI FOUNDATION (EXTENSIBLE MULTI-PROVIDER)"]
+        CLOUD_AI["AI Provider Factory (Strategy Pattern)<br/>• Google AI Cascade: gemini-3-flash-preview -> gemini-3.6-flash<br/>• Azure OpenAI: gpt-5.6-luna (OpenAI.Responses)<br/>• Single-family active toggle via config, extensible to future providers"]
     end
 
     subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11 RC)"]

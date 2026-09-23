@@ -88,9 +88,11 @@ export class MealsService {
    * @param {string} name
    * @param {string} [portion]
    * @param {boolean} [useAi=true]
+   * @param {string} [userId=null]
+   * @param {string} [mealType=null]
    */
-  async estimateFoodItem(name, portion = null, useAi = true) {
-    return this._api.postJson('/api/meals/estimate-item', { name, portion, useAi });
+  async estimateFoodItem(name, portion = null, useAi = true, userId = null, mealType = null) {
+    return this._api.postJson('/api/meals/estimate-item', { name, portion, useAi, userId, mealType });
   }
 
   /**

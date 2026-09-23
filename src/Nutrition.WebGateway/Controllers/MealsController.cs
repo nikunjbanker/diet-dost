@@ -531,6 +531,16 @@ public class MealsController : ControllerBase
         if (string.IsNullOrWhiteSpace(request?.Name))
             return BadRequest(new { error = "Food item name is required." });
 
+        UserProfile? userProfile = null;
+        List<UserCorrectionRecord>? userCorrections = null;
+        if (!string.IsNullOrWhiteSpace(request.UserId))
+        {
+            userProfile = await _dietitianService.GetProfileAsync(request.UserId, ct);
+            userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == request.UserId, ct);
+        }
+
+        var effectiveMealType = !string.IsNullOrWhiteSpace(request.MealType) ? request.MealType : GetClockMealType(userProfile?.Timezone);
+
         // 1. Get baseline ICMR-NIN estimate
         var baseline = IndianFoodEstimator.Estimate(request.Name, request.Portion);
 
@@ -543,14 +553,14 @@ public class MealsController : ControllerBase
                     ? request.Name
                     : $"{request.Portion} of {request.Name}";
 
-                var aiResult = await _visionAgent.AnalyzeMealDescriptionAsync(queryText, ct: ct);
+                var aiResult = await _visionAgent.AnalyzeMealDescriptionAsync(queryText, effectiveMealType, userProfile, userCorrections, ct);
                 var matched = aiResult?.IdentifiedItems?.FirstOrDefault();
                 if (matched != null && matched.Calories > 0)
                 {
                     var aiEstimate = new FoodItemNutritionEstimate(
                         NormalizedName: !string.IsNullOrWhiteSpace(matched.Name) ? matched.Name : baseline.NormalizedName,
                         HindiOrRegionalName: !string.IsNullOrWhiteSpace(matched.HindiOrRegionalName) ? matched.HindiOrRegionalName : baseline.HindiOrRegionalName,
-                        EstimatedPortion: !string.IsNullOrWhiteSpace(matched.EstimatedPortion) ? matched.EstimatedPortion : baseline.EstimatedPortion,
+                        EstimatedPortion: !string.IsNullOrWhiteSpace(matched.EstimatedPortion) ? matched.EstimatedPortion : (string.IsNullOrWhiteSpace(request.Portion) ? baseline.EstimatedPortion : request.Portion),
                         Grams: matched.Grams > 0 ? matched.Grams : baseline.Grams,
                         Calories: Math.Round(matched.Calories),
                         ProteinGrams: Math.Round(matched.ProteinGrams, 1),
@@ -559,7 +569,7 @@ public class MealsController : ControllerBase
                         FiberGrams: matched.FiberGrams > 0 ? Math.Round(matched.FiberGrams, 1) : baseline.FiberGrams,
                         SodiumMg: matched.SodiumMg > 0 ? Math.Round(matched.SodiumMg, 1) : baseline.SodiumMg,
                         CookingMediumEstimate: !string.IsNullOrWhiteSpace(matched.CookingMediumEstimate) ? matched.CookingMediumEstimate : baseline.CookingMediumEstimate,
-                        Source: "AI (Gemini 3.8 / Clinical NLP)",
+                        Source: !string.IsNullOrWhiteSpace(aiResult?.DetectedByModel) ? $"AI ({aiResult.DetectedByModel} / Clinical NLP)" : "AI (Gemini 3.8 / Clinical NLP)",
                         ConfidenceScore: matched.ConfidenceScore > 0 ? matched.ConfidenceScore : (aiResult?.OverallConfidenceScore > 0 ? aiResult.OverallConfidenceScore : 0.90),
                         SugarGrams: matched.SugarGrams > 0 ? Math.Round(matched.SugarGrams, 1) : baseline.SugarGrams
                     );
@@ -711,7 +721,7 @@ public class MealsController : ControllerBase
     }
 }
 
-public record FoodItemEstimateRequest(string Name, string? Portion, bool UseAi = true);
+public record FoodItemEstimateRequest(string Name, string? Portion, bool UseAi = true, string? UserId = null, string? MealType = null);
 
 public record AiFeedbackRequest(
     string UserId,

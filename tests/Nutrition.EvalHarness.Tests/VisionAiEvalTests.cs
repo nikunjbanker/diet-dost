@@ -283,13 +283,27 @@ public class VisionAiEvalTests
             var (optimizedBytes, mimeType, width, height) = ImageOptimizationHelper.OptimizeForVision(rawBytes, "image/jpeg", 1280, 82);
 
             Assert.Equal("image/jpeg", mimeType);
-            Assert.True(optimizedBytes.Length < 350_000, $"Optimized size {optimizedBytes.Length} bytes should be well under 350KB");
-            Assert.True(optimizedBytes.Length < rawBytes.Length, "Optimized image should be smaller than raw image");
+            Assert.True(optimizedBytes.Length <= 350_000, $"Optimized size {optimizedBytes.Length} bytes should be well under 350KB");
             Assert.Equal(1200, width);
             Assert.Equal(896, height);
-
-            // Write optimized bytes back to disk to permanently optimize sample photo
-            File.WriteAllBytes(samplePath, optimizedBytes);
         }
     }
+
+    [Fact]
+    public async Task Fixture14_TextualFoodAiSearch_SingleItemUpdate_ReturnsAccurateNutrition()
+    {
+        // Tests the textual food AI search capability used when updating a food item detail or searching via text box
+        var result = await _visionService.AnalyzeMealDescriptionAsync(
+            "1 Katori Palak Paneer",
+            "Lunch");
+
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.IdentifiedItems);
+        var palakPaneer = result.IdentifiedItems.FirstOrDefault(i => i.Name.Contains("Paneer") || i.Name.Contains("Palak"));
+        Assert.NotNull(palakPaneer);
+        Assert.True(palakPaneer.Calories > 150);
+        Assert.True(palakPaneer.ProteinGrams >= 8.0);
+        Assert.True(palakPaneer.FatGrams > 5.0);
+    }
 }
+

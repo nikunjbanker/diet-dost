@@ -155,6 +155,27 @@
           </button>
         </div>
 
+        <!-- Dedicated Textual Food AI Search Box (Same as Meal Logger Smart Search) -->
+        <div class="review-search-bar" id="review-search-bar">
+          <div class="review-search-input-wrap">
+            <span class="review-search-icon">🔍</span>
+            <input type="text" id="review-search-input" class="review-search-input" 
+                   placeholder="Search or describe food item (e.g. 2 Phulkas with ghee, 1 Cup Dal Makhani, Paneer Bhurji)..."
+                   title="Type any food item with portion to perform instant textual food AI search"
+                   autocomplete="off" spellcheck="false" />
+            <button type="button" id="btn-review-search-ai" class="btn btn-primary btn-sm btn-review-search-submit">
+              ⚡ AI Search
+            </button>
+          </div>
+          <div class="review-search-chips">
+            <span class="suggest-chip review-search-chip" data-query="2 Phulkas with Ghee">🫓 2 Phulkas + Ghee</span>
+            <span class="suggest-chip review-search-chip" data-query="1 Bowl Moong Dal Tadka">🥣 1 Bowl Dal Tadka</span>
+            <span class="suggest-chip review-search-chip" data-query="1 Katori Palak Paneer">🥬 Palak Paneer</span>
+            <span class="suggest-chip review-search-chip" data-query="1 Cup Dahi / Curd">🥛 1 Cup Curd</span>
+            <span class="suggest-chip review-search-chip" data-query="Fresh Cucumber Salad">🥒 Cucumber Salad</span>
+          </div>
+        </div>
+
         <!-- Items List with Inline Edit & Steppers -->
         <div class="dish-items-list" id="review-items-list">
           <!-- Dynamically rendered with edit controls -->

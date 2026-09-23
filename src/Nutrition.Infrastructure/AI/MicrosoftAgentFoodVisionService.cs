@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
 using Nutrition.Domain.Clinical;
@@ -17,25 +18,38 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
 {
     private readonly IConfiguration _config;
     private readonly ILogger<MicrosoftAgentFoodVisionService> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly HttpClient _httpClient;
 
     public MicrosoftAgentFoodVisionService(
         IConfiguration config,
         ILogger<MicrosoftAgentFoodVisionService> logger,
-        HttpClient httpClient)
+        ILoggerFactory loggerFactory,
+        HttpClient? httpClient = null)
     {
         _config = config;
         _logger = logger;
-        _httpClient = httpClient;
+        _loggerFactory = loggerFactory;
+        _httpClient = httpClient ?? new HttpClient();
+    }
+
+    public MicrosoftAgentFoodVisionService(
+        IConfiguration config,
+        ILogger<MicrosoftAgentFoodVisionService> logger,
+        HttpClient httpClient)
+        : this(config, logger, NullLoggerFactory.Instance, httpClient)
+    {
     }
 
     private string? ResolveApiKey()
     {
         var candidates = new[]
         {
+            _config["AI:GoogleAI:ApiKey"],
             _config["AI:ApiKey"],
             _config["Gemini:ApiKey"],
             _config["GoogleAI:ApiKey"],
+            Environment.GetEnvironmentVariable("AI__GoogleAI__ApiKey"),
             Environment.GetEnvironmentVariable("AI__ApiKey"),
             Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
             Environment.GetEnvironmentVariable("GOOGLE_AI_KEY"),
@@ -70,10 +84,10 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
     {
         using var activity = NutritionTelemetry.ActivitySource.StartActivity(NutritionTelemetry.SpanAiVisionAnalysis, ActivityKind.Internal);
 
-        var apiKey = ResolveApiKey();
-        var primaryModel = _config["AI:ModelId"] ?? "gemini-3-flash-preview";
-        var fallbackModel = _config["AI:FallbackModelId"] ?? "gemini-3.6-flash";
-        var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
+        var providerOptions = AiProviderOptions.FromConfiguration(_config);
+        var provider = AiFoodProviderFactory.Create(_config, _httpClient, _loggerFactory);
+        var primaryModel = providerOptions.GetModels().FirstOrDefault() ?? "gemini-3-flash-preview";
+        var maxTokens = providerOptions.MaxTokens;
 
         byte[] imageBytes;
         using (var ms = new MemoryStream())
@@ -99,7 +113,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
 
         var systemPrompt = BuildVisionSystemPrompt(regionalContext, userContext, userLearnedCorrections);
 
-        activity?.SetTag(NutritionTelemetry.TagGenAiSystem, "google_gemini");
+        activity?.SetTag(NutritionTelemetry.TagGenAiSystem, provider.ProviderName);
         activity?.SetTag(NutritionTelemetry.TagGenAiOperation, "vision_meal_analysis");
         activity?.SetTag(NutritionTelemetry.TagGenAiRequestModel, primaryModel);
         activity?.SetTag(NutritionTelemetry.TagGenAiSystemPrompt, systemPrompt);
@@ -136,18 +150,9 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             return lowConfidence;
         }
 
-        if (!string.IsNullOrWhiteSpace(apiKey))
+        if (provider.SupportsVision)
         {
-            var modelsToTry = new List<string>();
-            if (!string.IsNullOrWhiteSpace(primaryModel)) modelsToTry.Add(primaryModel);
-            if (!string.IsNullOrWhiteSpace(fallbackModel) && !modelsToTry.Contains(fallbackModel)) modelsToTry.Add(fallbackModel);
-
-            foreach (var candidate in new[] { "gemini-3-flash-preview", "gemini-3.7-flash", "gemini-3.6-flash" })
-            {
-                if (!modelsToTry.Contains(candidate)) modelsToTry.Add(candidate);
-            }
-
-            foreach (var model in modelsToTry)
+            foreach (var model in providerOptions.GetModels())
             {
                 // Stop if the outer HTTP request was cancelled by ASP.NET pipeline
                 if (ct.IsCancellationRequested) break;
@@ -157,7 +162,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     cts.CancelAfter(TimeSpan.FromSeconds(22)); // 22s per model; 5 models = 110s max
 
-                    var result = await CallGoogleAiVisionAsync(imageBytes, mimeType, model, apiKey!, systemPrompt, maxTokens, cts.Token);
+                    var result = await provider.AnalyzePhotoAsync(imageBytes, mimeType, systemPrompt, model, cts.Token);
                     if (result != null && result.IdentifiedItems != null && result.IdentifiedItems.Count > 0)
                     {
                         if (bool.TryParse(_config["AI:ShowModelDetails"], out var showModel) ? showModel : true)
@@ -221,14 +226,14 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
     {
         using var activity = NutritionTelemetry.ActivitySource.StartActivity(NutritionTelemetry.SpanAiTextAnalysis, ActivityKind.Internal);
 
-        var apiKey = ResolveApiKey();
-        var primaryModel = _config["AI:ModelId"] ?? "gemini-3-flash-preview";
-        var fallbackModel = _config["AI:FallbackModelId"] ?? "gemini-3.6-flash";
-        var maxTokens = int.TryParse(_config["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192;
+        var providerOptions = AiProviderOptions.FromConfiguration(_config);
+        var provider = AiFoodProviderFactory.Create(_config, _httpClient, _loggerFactory);
+        var primaryModel = providerOptions.GetModels().FirstOrDefault() ?? "gemini-3-flash-preview";
+        var maxTokens = providerOptions.MaxTokens;
 
         var systemPrompt = BuildDescriptionSystemPrompt(description, mealType, userContext, userLearnedCorrections);
 
-        activity?.SetTag(NutritionTelemetry.TagGenAiSystem, "google_gemini");
+        activity?.SetTag(NutritionTelemetry.TagGenAiSystem, provider.ProviderName);
         activity?.SetTag(NutritionTelemetry.TagGenAiOperation, "text_meal_analysis");
         activity?.SetTag(NutritionTelemetry.TagGenAiRequestModel, primaryModel);
         activity?.SetTag(NutritionTelemetry.TagGenAiSystemPrompt, systemPrompt);
@@ -256,18 +261,9 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
             primaryModel,
             systemPrompt);
 
-        if (!string.IsNullOrWhiteSpace(apiKey))
+        if (providerOptions.GetModels().Count > 0)
         {
-            var modelsToTry = new List<string>();
-            if (!string.IsNullOrWhiteSpace(primaryModel)) modelsToTry.Add(primaryModel);
-            if (!string.IsNullOrWhiteSpace(fallbackModel) && !modelsToTry.Contains(fallbackModel)) modelsToTry.Add(fallbackModel);
-
-            foreach (var candidate in new[] { "gemini-3.6-flash", "gemini-3-flash-preview", "gemini-3.7-flash" })
-            {
-                if (!modelsToTry.Contains(candidate)) modelsToTry.Add(candidate);
-            }
-
-            foreach (var model in modelsToTry)
+            foreach (var model in providerOptions.GetModels())
             {
                 // Stop if the outer HTTP request was cancelled by ASP.NET pipeline
                 if (ct.IsCancellationRequested) break;
@@ -277,101 +273,9 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                     using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                     cts.CancelAfter(TimeSpan.FromSeconds(20));
 
-                    var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
-                    var payload = new
+                    var parsed = await provider.AnalyzeTextAsync(systemPrompt, model, cts.Token);
+                    if (parsed != null && parsed.IdentifiedItems != null && parsed.IdentifiedItems.Count > 0)
                     {
-                        contents = new object[]
-                        {
-                            new
-                            {
-                                parts = new object[]
-                                {
-                                    new { text = systemPrompt }
-                                }
-                            }
-                        },
-                        generationConfig = new
-                        {
-                            response_mime_type = "application/json",
-                            temperature = 0.15,
-                            max_output_tokens = maxTokens
-                        }
-                    };
-
-                    using var request = new HttpRequestMessage(HttpMethod.Post, url)
-                    {
-                        Content = JsonContent.Create(payload)
-                    };
-
-                    var response = await _httpClient.SendAsync(request, cts.Token);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        var jsonStr = await response.Content.ReadAsStringAsync(cts.Token);
-                        using var doc = JsonDocument.Parse(jsonStr);
-                        if (doc.RootElement.TryGetProperty("candidates", out var candidates) && candidates.GetArrayLength() > 0)
-                        {
-                            var candidate = candidates[0];
-                            if (candidate.TryGetProperty("content", out var content) && content.TryGetProperty("parts", out var parts))
-                            {
-                                string? text = null;
-                                foreach (var part in parts.EnumerateArray())
-                                {
-                                    if (part.TryGetProperty("text", out var textProp))
-                                    {
-                                        var partText = textProp.GetString();
-                                        if (!string.IsNullOrWhiteSpace(partText) && (partText.Contains("{") || text == null))
-                                        {
-                                            text = partText;
-                                        }
-                                    }
-                                }
-
-                                if (!string.IsNullOrWhiteSpace(text))
-                                {
-                                    var cleanedJson = text.Trim();
-                                    if (cleanedJson.StartsWith("```json", StringComparison.OrdinalIgnoreCase))
-                                        cleanedJson = cleanedJson.Substring(7);
-                                    if (cleanedJson.StartsWith("```"))
-                                        cleanedJson = cleanedJson.Substring(3);
-                                    if (cleanedJson.EndsWith("```"))
-                                        cleanedJson = cleanedJson.Substring(0, cleanedJson.Length - 3);
-                                    cleanedJson = cleanedJson.Trim();
-
-                                    var firstBrace = cleanedJson.IndexOf('{');
-                                    var lastBrace = cleanedJson.LastIndexOf('}');
-                                    if (firstBrace >= 0 && lastBrace > firstBrace)
-                                    {
-                                        cleanedJson = cleanedJson.Substring(firstBrace, lastBrace - firstBrace + 1);
-                                    }
-
-                                    var parsed = JsonSerializer.Deserialize<IndianMealAnalysisResult>(cleanedJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                                    
-                                    // Resilient key fallback if Gemini used 'items', 'dishes', or 'foodItems'
-                                    if (parsed != null && (parsed.IdentifiedItems == null || parsed.IdentifiedItems.Count == 0))
-                                    {
-                                        try
-                                        {
-                                            using var parsedDoc = JsonDocument.Parse(cleanedJson);
-                                            var root = parsedDoc.RootElement;
-                                            if (root.TryGetProperty("items", out var itm) ||
-                                                root.TryGetProperty("dishes", out itm) ||
-                                                root.TryGetProperty("foodItems", out itm))
-                                            {
-                                                var altItems = JsonSerializer.Deserialize<List<IndianMealItemDto>>(itm.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                                                if (altItems != null && altItems.Count > 0)
-                                                {
-                                                    parsed.IdentifiedItems = altItems;
-                                                }
-                                            }
-                                        }
-                                        catch
-                                        {
-                                            // Non-blocking fallback
-                                        }
-                                    }
-
-                                    if (parsed != null && parsed.IdentifiedItems != null && parsed.IdentifiedItems.Count > 0)
-                                    {
                                         if (string.IsNullOrWhiteSpace(parsed.MealType))
                                         {
                                             parsed.MealType = mealType ?? "Lunch";
@@ -405,16 +309,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                                             parsed.OverallConfidenceScore,
                                             string.Join(", ", parsed.IdentifiedItems.Select(i => $"{i.EstimatedPortion} {i.Name} ({i.Calories} kcal)")));
 
-                                        return parsed;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        var errContent = await response.Content.ReadAsStringAsync(cts.Token);
-                        _logger.LogWarning("Google AI text generateContent returned {Status} for model {Model}: {Body}", response.StatusCode, model, errContent);
+                        return parsed;
                     }
                 }
                 catch (Exception ex)

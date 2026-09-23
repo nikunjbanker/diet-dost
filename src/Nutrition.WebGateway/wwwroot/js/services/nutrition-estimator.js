@@ -704,7 +704,7 @@ export async function estimateFoodNutritionWithAi(rawName, portion = null, optio
   const baseline = estimateIndianFoodNutrition(trimmed, portion);
 
   // 2. Attempt remote AI estimation via WebGateway endpoint
-  const timeoutMs = options.timeoutMs || 4000;
+  const timeoutMs = options.timeoutMs || 20000;
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
 
@@ -715,7 +715,9 @@ export async function estimateFoodNutritionWithAi(rawName, portion = null, optio
       body: JSON.stringify({
         name: trimmed,
         portion: portion || baseline.portion || '1 Portion',
-        useAi: true
+        useAi: true,
+        userId: options.userId || null,
+        mealType: options.mealType || null
       }),
       signal: controller ? controller.signal : undefined
     });
@@ -728,7 +730,7 @@ export async function estimateFoodNutritionWithAi(rawName, portion = null, optio
         const aiResult = {
           name: data.normalizedName || baseline.name,
           hindiName: data.hindiOrRegionalName || baseline.hindiName,
-          portion: data.estimatedPortion || baseline.portion,
+          portion: data.estimatedPortion || portion || baseline.portion,
           grams: data.grams || baseline.grams,
           calories: Math.round(data.calories),
           proteinGrams: Number((data.proteinGrams ?? baseline.proteinGrams).toFixed(1)),

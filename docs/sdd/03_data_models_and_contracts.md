@@ -209,3 +209,46 @@ Configured in `Nutrition.Infrastructure.Persistence.DietTrackerDbContext`:
   - Adds `Ledgers.TargetSugarGrams` (`REAL NOT NULL DEFAULT 25.0`) and `Ledgers.ConsumedSugarGrams` (`REAL NOT NULL DEFAULT 0.0`).
   - `CREATE INDEX IF NOT EXISTS "IX_ProgressPhotos_UserId_CapturedAtUtc"` on `ProgressPhotos(UserId, CapturedAtUtc)`.
   - `CREATE INDEX IF NOT EXISTS "IX_ProgressPhotos_UserId_PhotoType"` on `ProgressPhotos(UserId, PhotoType)`.
+
+---
+
+## 4. Textual Food AI Search & Item Estimation Contracts
+
+### 4.1 `FoodItemEstimateRequest` & `FoodItemNutritionEstimate`
+Endpoint: `POST /api/meals/estimate-item`
+
+```csharp
+public record FoodItemEstimateRequest(
+    string Name, 
+    string? Portion, 
+    bool UseAi = true, 
+    string? UserId = null, 
+    string? MealType = null
+);
+
+public record FoodItemNutritionEstimate(
+    string NormalizedName,
+    string HindiOrRegionalName,
+    string EstimatedPortion,
+    double Grams,
+    double Calories,
+    double ProteinGrams,
+    double CarbsGrams,
+    double FatGrams,
+    double FiberGrams,
+    double SodiumMg,
+    string CookingMediumEstimate,
+    string Source,
+    double ConfidenceScore,
+    double SugarGrams
+);
+```
+
+- When `UseAi = true` and `UserId` is supplied:
+  - Clinical profile (`UserProfile`) and continuous memory (`UserCorrectionRecord`) are injected into the agent prompt.
+  - Returns complete clinical macronutrient breakdown (`Calories`, `ProteinGrams`, `CarbsGrams`, `FatGrams`, `FiberGrams`, `SugarGrams`, `SodiumMg`).
+- Real-time client-side synchronization:
+  - Top Aggregated Nutrition Summary Bar (`#review-macro-summary-bar`) pulses and recalculates live.
+  - Clinical Dietitian Advice is dynamically regenerated.
+  - WHO compliance flags (Sodium > 800mg, Free Sugar > 15g, High Fat > 35g) evaluate and alert dynamically.
+

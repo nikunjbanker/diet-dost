@@ -1,4 +1,4 @@
-import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi, generateDietitianAdvice, scaleNutritionByPortion } from '../services/nutrition-estimator.js?v=1.2.7';
+import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi, generateDietitianAdvice, scaleNutritionByPortion } from '../services/nutrition-estimator.js?v=1.3.6';
 
 /**
  * ReviewModalController
@@ -64,6 +64,9 @@ export class ReviewModalController {
       chipOilfree: document.getElementById('chip-oilfree'),
       btnAddItem: document.getElementById('btn-add-review-item'),
       btnResetMemory: document.getElementById('btn-reset-training-memory'),
+      // Review Modal Food Search by Text Box
+      reviewSearchInput: document.getElementById('review-search-input'),
+      btnReviewSearchAi: document.getElementById('btn-review-search-ai'),
       // AI Feedback & Continuous Retraining Elements
       btnFeedbackUp: document.getElementById('btn-feedback-up'),
       btnFeedbackDown: document.getElementById('btn-feedback-down'),
@@ -337,6 +340,29 @@ export class ReviewModalController {
         }
       });
     }
+
+    // Review Modal Food Search by Text Box (same as Instant Logger Smart Search)
+    if (el.btnReviewSearchAi) {
+      el.btnReviewSearchAi.addEventListener('click', () => this.handleReviewTextSearch());
+    }
+    if (el.reviewSearchInput) {
+      el.reviewSearchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleReviewTextSearch();
+        }
+      });
+    }
+
+    document.querySelectorAll('.review-search-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const query = chip.dataset.query;
+        if (query) {
+          if (el.reviewSearchInput) el.reviewSearchInput.value = query;
+          this.handleReviewTextSearch(query);
+        }
+      });
+    });
 
     // Modal background click
     if (el.modal) {
@@ -844,6 +870,168 @@ export class ReviewModalController {
     }
   }
 
+  /**
+   * Performs textual food AI search via the review modal text box.
+   * Leverages the same AI text analysis agent as the instant meal logger text box.
+   * @param {string|null} [customQuery=null]
+   */
+  async handleReviewTextSearch(customQuery = null) {
+    const el = this.elements;
+    const query = (customQuery !== null ? customQuery : (el.reviewSearchInput ? el.reviewSearchInput.value : '')).trim();
+    if (!query) return;
+
+    if (el.btnReviewSearchAi) {
+      el.btnReviewSearchAi.disabled = true;
+      el.btnReviewSearchAi.textContent = '⚡ Searching...';
+    }
+
+    try {
+      const mealType = this._state.currentMeal?.mealType || this.detectMealTypeByTime();
+      const userId = this._state.userId || 'user-default';
+
+      // Call textual meal AI search (same as meal search by text box option)
+      const data = await this._meals.analyzeMealText(query, userId, mealType);
+      const analysis = data?.analysis;
+
+      if (analysis && analysis.identifiedItems && analysis.identifiedItems.length > 0) {
+        if (!this._state.currentMeal) {
+          this._state.currentMeal = { identifiedItems: [] };
+        }
+        if (!this._state.currentMeal.identifiedItems) {
+          this._state.currentMeal.identifiedItems = [];
+        }
+
+        analysis.identifiedItems.forEach(item => {
+          this._state.currentMeal.identifiedItems.push({
+            name: item.name,
+            originalDetection: item.originalDetection || item.name,
+            hindiOrRegionalName: item.hindiOrRegionalName || item.name,
+            estimatedPortion: item.estimatedPortion || '1 Portion',
+            quantity: item.quantity || 1,
+            grams: item.grams || 100,
+            calories: Math.round(item.calories || 0),
+            proteinGrams: Number((item.proteinGrams || 0).toFixed(1)),
+            carbsGrams: Number((item.carbsGrams || 0).toFixed(1)),
+            fatGrams: Number((item.fatGrams || 0).toFixed(1)),
+            fiberGrams: Number((item.fiberGrams ?? 2.0).toFixed(1)),
+            sugarGrams: Number((item.sugarGrams ?? 1.5).toFixed(1)),
+            sodiumMg: Math.round(item.sodiumMg || 0),
+            cookingMediumEstimate: item.cookingMediumEstimate || 'Standard Home Cooking',
+            isAiEstimated: true
+          });
+        });
+
+        if (el.reviewSearchInput) el.reviewSearchInput.value = '';
+
+        this.renderItems();
+        this.recalculateTotals();
+
+        const names = analysis.identifiedItems.map(i => i.name).join(', ');
+        this._toast.show({
+          title: '🤖 AI Food Added!',
+          message: `Added ${names} with verified clinical nutrition.`
+        });
+      } else {
+        // Fallback to single item estimation
+        const fallback = await estimateFoodNutritionWithAi(query, null, {
+          forceRefresh: true,
+          userId,
+          mealType
+        });
+        if (fallback) {
+          if (!this._state.currentMeal) this._state.currentMeal = { identifiedItems: [] };
+          if (!this._state.currentMeal.identifiedItems) this._state.currentMeal.identifiedItems = [];
+
+          this._state.currentMeal.identifiedItems.push({
+            name: fallback.name || query,
+            originalDetection: query,
+            hindiOrRegionalName: fallback.hindiName || query,
+            estimatedPortion: fallback.portion || '1 Portion',
+            quantity: 1,
+            grams: fallback.grams || 100,
+            calories: Math.round(fallback.calories || 100),
+            proteinGrams: fallback.proteinGrams || 3,
+            carbsGrams: fallback.carbsGrams || 15,
+            fatGrams: fallback.fatGrams || 4,
+            fiberGrams: fallback.fiberGrams || 2,
+            sugarGrams: fallback.sugarGrams || 1.5,
+            sodiumMg: fallback.sodiumMg || 120,
+            cookingMediumEstimate: fallback.cookingMedium || 'Home cooking',
+            isAiEstimated: true
+          });
+
+          if (el.reviewSearchInput) el.reviewSearchInput.value = '';
+          this.renderItems();
+          this.recalculateTotals();
+
+          this._toast.show({
+            title: '🤖 Food Item Added!',
+            message: `Added '${fallback.name || query}' (${Math.round(fallback.calories)} kcal).`
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error searching food item with AI:', err);
+      this._toast.show({
+        title: 'Search Error',
+        message: err.message || 'Could not perform AI food search.'
+      });
+    } finally {
+      if (el.btnReviewSearchAi) {
+        el.btnReviewSearchAi.disabled = false;
+        el.btnReviewSearchAi.textContent = '⚡ AI Search';
+      }
+    }
+  }
+
+  /**
+   * Explicitly triggers textual food AI search for a single food item row.
+   * @param {number} idx
+   */
+  async searchItemWithAi(idx) {
+    if (!this._state.currentMeal || !this._state.currentMeal.identifiedItems[idx]) return;
+    const item = this._state.currentMeal.identifiedItems[idx];
+    const name = (item.name || '').trim();
+    if (!name) return;
+
+    item.isAiSearching = true;
+    this.renderItems();
+
+    try {
+      const aiResult = await estimateFoodNutritionWithAi(name, item.estimatedPortion, {
+        forceRefresh: true,
+        userId: this._state.userId || 'user-default',
+        mealType: this._state.currentMeal?.mealType
+      });
+
+      if (aiResult) {
+        item.calories = aiResult.calories;
+        item.proteinGrams = aiResult.proteinGrams;
+        item.carbsGrams = aiResult.carbsGrams;
+        item.fatGrams = aiResult.fatGrams;
+        item.fiberGrams = aiResult.fiberGrams;
+        item.sugarGrams = aiResult.sugarGrams;
+        item.sodiumMg = aiResult.sodiumMg;
+        if (aiResult.grams) item.grams = aiResult.grams;
+        if (aiResult.portion) item.estimatedPortion = aiResult.portion;
+        if (aiResult.hindiName) item.hindiOrRegionalName = aiResult.hindiName;
+        if (aiResult.cookingMedium) item.cookingMediumEstimate = aiResult.cookingMedium;
+        item.isAiEstimated = true;
+
+        this._toast.show({
+          title: '🤖 AI Nutrition Updated!',
+          message: `${aiResult.name}: ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
+        });
+      }
+    } catch (e) {
+      console.error('Error in searchItemWithAi:', e);
+    } finally {
+      item.isAiSearching = false;
+      this.renderItems();
+      this.recalculateTotals();
+    }
+  }
+
   renderItems() {
     const el = this.elements;
     if (!this._state.currentMeal || !this._state.currentMeal.identifiedItems || !el.itemsList) return;
@@ -867,15 +1055,18 @@ export class ReviewModalController {
             <div class="item-inputs-row">
               <input type="text" class="item-name-input" value="${item.name}" 
                      placeholder="e.g. Bhindi Masala, Palak Paneer, Moong Dal"
-                     title="Click to edit or rename this dish. Nutrition will auto-update."
+                     title="Click to edit or rename this dish. Nutrition will auto-update with AI."
                      data-idx="${idx}" />
               <div class="portion-input-wrap">
                 <span class="portion-icon" title="Quantity / Portion">📏</span>
                 <input type="text" class="item-portion-input" value="${item.estimatedPortion || '1 Katori'}" 
                        placeholder="Portion (e.g. 1.5 Cup, 1 Katori, 5-6 Slices)"
-                       title="Update quantity detection (e.g. 1.5 Cup, 1 Katori, 5-6 Slices, 200g). Nutrition details will auto-update."
+                       title="Update quantity detection. Nutrition will auto-update with AI."
                        data-idx="${idx}" />
               </div>
+              <button type="button" class="btn-item-ai-search" data-idx="${idx}" title="⚡ Search AI for updated nutrition of this dish">
+                ⚡ AI
+              </button>
             </div>
             <div style="display: flex; gap: 8px; align-items: center; font-size: 0.72rem; color: var(--text-muted); flex-wrap: wrap; margin-top: 3px;">
               <span class="tabular" style="font-weight: 600; color: var(--text-primary);">${totalItemKcal} kcal</span>
@@ -889,6 +1080,15 @@ export class ReviewModalController {
               <span class="tabular" style="color: #34d399;">${totalItemFiber}g Fiber</span>
               <span>·</span>
               <span class="tabular" style="color: #f472b6;">${totalItemSugar}g Sugar</span>
+              ${item.isAiSearching ? `
+                <span class="item-ai-searching-badge">
+                  <span class="spinner-mini">⏳</span> 🤖 AI Searching...
+                </span>
+              ` : (item.isAiEstimated ? `
+                <span class="item-ai-verified-badge" title="Nutrition computed and verified via Google AI Gemini">
+                  ✓ AI-Verified
+                </span>
+              ` : '')}
             </div>
             ${isCorrected ? `
               <div class="item-correction-indicator" style="color: var(--status-emerald); font-size: 0.72rem; margin-top: 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
@@ -956,6 +1156,14 @@ export class ReviewModalController {
       });
     });
 
+    // Attach listeners to per-item AI Search buttons
+    el.itemsList.querySelectorAll('.btn-item-ai-search').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.dataset.idx);
+        this.searchItemWithAi(idx);
+      });
+    });
+
     el.itemsList.querySelectorAll('.step-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const idx = parseInt(e.target.dataset.idx);
@@ -992,7 +1200,7 @@ export class ReviewModalController {
       item.sugarGrams = baseline.sugarGrams;
       item.sodiumMg = baseline.sodiumMg;
       item.isAiEstimated = false;
-      if (baseline.portion) item.estimatedPortion = baseline.portion;
+      if (!item.estimatedPortion && baseline.portion) item.estimatedPortion = baseline.portion;
       if (baseline.hindiName) item.hindiOrRegionalName = baseline.hindiName;
     }
 
@@ -1007,19 +1215,19 @@ export class ReviewModalController {
       this._state.currentMeal.dishName = cleanDish;
     }
 
+    // 3. Mark loading & recalculate baseline
+    item.isAiSearching = true;
     this.renderItems();
     this.recalculateTotals();
 
-    // 3. User feedback for instant baseline
-    this._toast.show({
-      title: '⚡ Nutrition Recalculated!',
-      message: `Updated to ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein for '${trimmed}'. Refining with AI...`
-    });
-
-    // 4. Asynchronously query AI agent (Gemini 3.8 / Clinical NLP) to refine estimation
+    // 4. Asynchronously query AI agent (Google Gemini / Clinical NLP) with textual meal search
     try {
-      const aiResult = await estimateFoodNutritionWithAi(trimmed, item.estimatedPortion);
-      if (aiResult && (aiResult.isAiEstimated || aiResult.source?.includes('AI'))) {
+      const aiResult = await estimateFoodNutritionWithAi(trimmed, item.estimatedPortion, {
+        forceRefresh: true,
+        userId: this._state.userId || 'user-default',
+        mealType: this._state.currentMeal?.mealType
+      });
+      if (aiResult) {
         item.calories = aiResult.calories;
         item.proteinGrams = aiResult.proteinGrams;
         item.carbsGrams = aiResult.carbsGrams;
@@ -1027,12 +1235,10 @@ export class ReviewModalController {
         item.fiberGrams = aiResult.fiberGrams;
         item.sugarGrams = aiResult.sugarGrams;
         item.sodiumMg = aiResult.sodiumMg;
-        item.isAiEstimated = true;
-        if (aiResult.portion) item.estimatedPortion = aiResult.portion;
+        if (aiResult.grams) item.grams = aiResult.grams;
         if (aiResult.hindiName) item.hindiOrRegionalName = aiResult.hindiName;
-
-        this.renderItems();
-        this.recalculateTotals();
+        if (aiResult.cookingMedium) item.cookingMediumEstimate = aiResult.cookingMedium;
+        item.isAiEstimated = true;
 
         this._toast.show({
           title: '🤖 AI Nutrition Refined!',
@@ -1041,6 +1247,10 @@ export class ReviewModalController {
       }
     } catch (_) {
       // Hardcoded ICMR-NIN baseline already applied
+    } finally {
+      item.isAiSearching = false;
+      this.renderItems();
+      this.recalculateTotals();
     }
   }
 
@@ -1063,19 +1273,18 @@ export class ReviewModalController {
     item.sugarGrams = scaled.sugarGrams;
     item.sodiumMg = scaled.sodiumMg;
 
+    item.isAiSearching = true;
     this.renderItems();
     this.recalculateTotals();
 
-    // 2. User toast notice
-    this._toast.show({
-      title: '📏 Portion Quantity Updated!',
-      message: `${item.name} (${trimmed}): ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
-    });
-
-    // 3. Asynchronously query AI agent to refine exact nutrition metrics if needed
+    // 2. Query AI agent to refine exact nutrition metrics for the updated portion
     try {
-      const aiResult = await estimateFoodNutritionWithAi(item.name, trimmed);
-      if (aiResult && (aiResult.isAiEstimated || aiResult.source?.includes('AI'))) {
+      const aiResult = await estimateFoodNutritionWithAi(item.name, trimmed, {
+        forceRefresh: true,
+        userId: this._state.userId || 'user-default',
+        mealType: this._state.currentMeal?.mealType
+      });
+      if (aiResult) {
         item.calories = aiResult.calories;
         item.proteinGrams = aiResult.proteinGrams;
         item.carbsGrams = aiResult.carbsGrams;
@@ -1085,12 +1294,13 @@ export class ReviewModalController {
         item.sodiumMg = aiResult.sodiumMg;
         if (aiResult.grams) item.grams = aiResult.grams;
         item.isAiEstimated = true;
-
-        this.renderItems();
-        this.recalculateTotals();
       }
     } catch (_) {
       // Local scaled ICMR-NIN baseline already active
+    } finally {
+      item.isAiSearching = false;
+      this.renderItems();
+      this.recalculateTotals();
     }
   }
 
@@ -1158,6 +1368,7 @@ export class ReviewModalController {
     let baseFat = 0;
     let baseFiber = 0;
     let baseSugar = 0;
+    let baseSodium = 0;
 
     items.forEach(i => {
       const qty = i.quantity || 1;
@@ -1167,6 +1378,7 @@ export class ReviewModalController {
       baseFat += (i.fatGrams || 0) * qty;
       baseFiber += (i.fiberGrams || 0) * qty;
       baseSugar += (i.sugarGrams || 0) * qty;
+      baseSodium += (i.sodiumMg || 0) * qty;
     });
 
     const addedGheeKcal = this._state.addedGhee || 0;
@@ -1177,6 +1389,7 @@ export class ReviewModalController {
     const totalCarbs = baseCarbs;
     const totalFiber = baseFiber;
     const totalSugar = baseSugar;
+    const totalSodium = Math.round(baseSodium);
 
     if (el.dishKcalBadge) {
       el.dishKcalBadge.textContent = `~${Math.round(totalKcal)} kcal`;
@@ -1224,6 +1437,28 @@ export class ReviewModalController {
     this._state.currentMeal.totalFatGrams = Math.round(totalFat * 10) / 10;
     this._state.currentMeal.totalFiberGrams = Math.round(totalFiber * 10) / 10;
     this._state.currentMeal.totalSugarGrams = Math.round(totalSugar * 10) / 10;
+    this._state.currentMeal.totalSodiumMg = totalSodium;
+
+    // Dynamically evaluate WHO Compliance Flags based on updated nutrition totals
+    const dynamicFlags = [];
+    if (totalSodium > 800) {
+      dynamicFlags.push(`High sodium alert (>800mg in meal: ${totalSodium}mg). ICMR recommends <2,000mg/day.`);
+    }
+    if (totalSugar > 15) {
+      dynamicFlags.push(`Elevated free sugar (>15g in meal: ${totalSugar.toFixed(1)}g). Limit sweet items to manage insulin.`);
+    }
+    if (totalFat > 35) {
+      dynamicFlags.push(`High fat content (${totalFat.toFixed(1)}g). Ensure visible cooking fats are moderated.`);
+    }
+
+    // Preserve existing non-metric clinical flags while updating dynamic thresholds
+    const existingFlags = (this._state.currentMeal.whoComplianceFlags || []).filter(f =>
+      !f.toLowerCase().includes('sodium') &&
+      !f.toLowerCase().includes('sugar') &&
+      !f.toLowerCase().includes('high fat')
+    );
+    this._state.currentMeal.whoComplianceFlags = [...existingFlags, ...dynamicFlags];
+    this.renderFlags();
 
     // Dynamically update clinical dietitian advice in real-time
     this.updateDietitianAdvice();

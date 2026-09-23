@@ -1295,7 +1295,94 @@
   - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js`
   - `src/Nutrition.WebGateway/wwwroot/styles.css`
   - `docs/sdd/07_living_documentation_log.md`
-- **Harness Verification Result**:
-  - `dotnet test`: **33 passed, 0 failed, 0 skipped** across all test suites.
-  - Text Analysis API (`/api/meals/analyze-text`): Verified returning `"Refreshing Green Tea"` via `gemini-3.6-flash`, and `"North Indian Thali (Phulkas & Yellow Moong Dal Tadka)"` via offline engine fallback.
 - **Sign-Off Status**: `VERIFIED & OPERATIONAL`
+
+---
+
+### [LOG-20260923-021] Extensible Multi-Provider AI Architecture & Azure OpenAI (gpt-5.6-luna) Support
+- **Date / Timestamp**: 2026-09-23 13:10:00 UTC
+- **Change Type**: `[FEATURE]` & `[ARCHITECTURE]`
+- **Affected Microservices / Components**: `Nutrition.Infrastructure` (`AI` subsystem), `Nutrition.AppHost`, `Nutrition.WebGateway` (`appsettings.json`), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Strategy + Factory Multi-Provider AI Design**:
+     - Refactored monolithic AI integration in `MicrosoftAgentFoodVisionService` into a clean, decoupled Strategy + Factory pattern.
+     - Extracted `IAiFoodAnalysisProvider` interface exposing `AnalyzePhotoAsync(...)` and `AnalyzeTextAsync(...)`.
+     - Built `GoogleGeminiProvider` implementing the existing Gemini Vision & Text execution logic, multi-model fallback chain, and rate-limit retry handlers.
+     - Built `AzureOpenAiProvider` implementing support for Azure OpenAI with `gpt-5.6-luna` using the official `OpenAI.Responses.ResponsesClient` and multimodal user message items.
+     - Implemented `AiFoodProviderFactory` to dynamically resolve the active provider at runtime based on `AI:Provider`.
+     - Created `AiJsonParser` for resilient, shared JSON response parsing, markdown stripping, and automatic aggregate nutrition calculation.
+     - Created `AiProviderOptions` for strongly typed configuration binding supporting both nested `AI:GoogleAI` and `AI:AzureOpenAI` sections.
+  2. **Configurable Single-Family AI Activation**:
+     - Updated `appsettings.json` and `Nutrition.AppHost/Program.cs` to support isolated configuration subsections (`GoogleAI` and `AzureOpenAI`) and seamless environment variable propagation.
+  3. **Automated Evaluation & Unit Test Suite**:
+     - Created `AiProviderFactoryTests.cs` covering default fallback, nested configuration parsing, Azure OpenAI provider selection, Google Gemini provider selection, and resilient markdown JSON parsing.
+     - Total passing tests: 40 tests (21 Domain tests + 19 EvalHarness tests).
+- **Modified / Created Code Files**:
+  - `src/Nutrition.Infrastructure/AI/IAiFoodAnalysisProvider.cs` [NEW]
+  - `src/Nutrition.Infrastructure/AI/AiProviderOptions.cs` [NEW]
+  - `src/Nutrition.Infrastructure/AI/AiFoodProviderFactory.cs` [NEW]
+  - `src/Nutrition.Infrastructure/AI/AiJsonParser.cs` [NEW]
+  - `src/Nutrition.Infrastructure/AI/Providers/GoogleGeminiProvider.cs` [NEW]
+  - `src/Nutrition.Infrastructure/AI/Providers/AzureOpenAiProvider.cs` [NEW]
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj` [MODIFIED]
+  - `src/Nutrition.AppHost/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiProviderFactoryTests.cs` [NEW]
+  - `tests/Nutrition.EvalHarness.Tests/VisionAiEvalTests.cs` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test tests/Nutrition.Domain.Tests`: **21 passed, 0 failed, 0 skipped**.
+  - `dotnet test tests/Nutrition.EvalHarness.Tests`: **19 passed, 0 failed, 0 skipped**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260923-022] Textual Food AI Search & Live Screen-Wide Recalculation on Item Updates
+- **Date / Timestamp**: 2026-09-23 17:35:00 UTC
+- **Change Type**: `[FEATURE]` & `[AI_ENHANCEMENT]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`MealsController`, `review-modal.html`, `review-modal.js`, `meals-service.js`, `nutrition-estimator.js`, `styles.css`), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Backend Integration (`MealsController.cs`)**:
+     - Extended `FoodItemEstimateRequest` to accept `UserId` and `MealType`.
+     - In `EstimateFoodItem` (`POST /api/meals/estimate-item`), retrieved the user's clinical profile (`UserProfile`) and continuous learned memory (`UserCorrectionRecord`) when `UserId` is provided.
+     - Forwarded full clinical context to `_visionAgent.AnalyzeMealDescriptionAsync(queryText, effectiveMealType, userProfile, userCorrections, ct)`.
+     - Returned complete clinical macronutrient breakdown (`Calories`, `ProteinGrams`, `CarbsGrams`, `FatGrams`, `FiberGrams`, `SugarGrams`, `SodiumMg`, `CookingMediumEstimate`, `ConfidenceScore`, and `Source`).
+  2. **Frontend Service Resiliency (`nutrition-estimator.js` & `meals-service.js`)**:
+     - Extended `MealsService.estimateFoodItem` to forward `userId` and `mealType`.
+     - Updated `estimateFoodNutritionWithAi` timeout from 4s to 20s to prevent premature abortion of Google Gemini API requests.
+     - Added `forceRefresh: true` support to bypass in-memory caching when a user explicitly edits dish details.
+  3. **Review Modal In-Screen Meal Search by Text Box (`review-modal.html` & `review-modal.js`)**:
+     - Added dedicated **Meal Search by Text Box** right above the items list with `⚡ AI Search` button and instant suggest chips (`🫓 2 Phulkas + Ghee`, `🥣 1 Bowl Dal Tadka`, `🥬 Palak Paneer`, `🥛 1 Cup Curd`, `🥒 Cucumber Salad`).
+     - Searching or describing any food item leverages the full AI text analysis agent (`analyzeMealText`), parses identified items, adds them to the meal list, and triggers live screen-wide recalculation.
+  4. **Per-Item Textual AI Search & Real-Time Macro Recalculation**:
+     - Added inline `⚡ AI` search button on each item row for on-demand AI refinement.
+     - Editing item name or portion triggers automatic textual food AI search with visual loading indicator (`🤖 AI Searching...`).
+     - Avoids overwriting custom user portion strings with generic dictionary defaults.
+     - Displays `✓ AI-Verified` badge upon successful AI refinement.
+  5. **Screen-Wide Live Recalculation (`recalculateTotals`)**:
+     - Recalculates total calories, protein, carbs, fat, fiber, sugar, and sodium.
+     - Pulses all 6 metrics in the Top Aggregated Nutrition Summary Bar (`#review-macro-summary-bar`).
+     - Dynamically regenerates ICMR-NIN 2024 Clinical Dietitian Insight (`#review-dietitian-advice`).
+     - Dynamically evaluates WHO compliance flags (Sodium > 800mg, Sugar > 15g, High Fat > 35g).
+     - Synchronizes Daily HUD and analytics charts upon confirming or saving edits.
+  6. **Automated Evaluation Harness Test**:
+     - Added `Fixture14_TextualFoodAiSearch_SingleItemUpdate_ReturnsAccurateNutrition` to `VisionAiEvalTests.cs`.
+     - Total passing tests: 41 tests (21 Domain + 20 EvalHarness).
+- **Modified / Created Code Files**:
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/meals-service.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/nutrition-estimator.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/review-modal.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/VisionAiEvalTests.cs` [MODIFIED]
+  - `docs/sdd/03_data_models_and_contracts.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test tests/Nutrition.Domain.Tests`: **21 passed, 0 failed, 0 skipped**.
+  - `dotnet test tests/Nutrition.EvalHarness.Tests`: **20 passed, 0 failed, 0 skipped**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
