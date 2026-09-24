@@ -1629,6 +1629,31 @@
   - Result: `Passed: 74, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-008] User Management: Section 4 - SuperAdmin & User Management API
+- **Date / Timestamp**: 2026-09-24 16:20:00 UTC
+- **Change Type**: `[FEATURE]` | `[ADMIN_PORTAL]` | `[SECURITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. **SuperAdmin & Admin Management API (`AdminController`)**:
+     - Created `AdminController` protected strictly by `[Authorize(Roles = "Admin,SuperAdmin")]`.
+     - `GET /api/admin/users`: Comprehensive user listing with real-time rollups of today's AI detections count, legal consent verification timestamps, and mobile verification status.
+     - `PUT /api/admin/users/{id}/tier`: Tier modifications (`Free`, `Basic`, `Premium`, `SuperAdmin`) with SuperAdmin demotion protection.
+     - `PUT /api/admin/users/{id}/role`: Role modifications (`User`, `Admin`, `SuperAdmin`) ensuring only SuperAdmin can promote/demote SuperAdmin, with anti-lockout safeguards.
+     - `PUT /api/admin/users/{id}/status`: Toggle active / locked status with SuperAdmin deactivation protection.
+     - `GET /api/admin/tier-configs`: View all dynamic tier limits and feature toggles.
+     - `PUT /api/admin/tier-configs/{tier}`: Runtime customization of daily AI limits, photo compare, and data export toggles.
+     - `GET /api/admin/ai-logs`: System-wide audit querying of `AiUsageLogs`.
+- **Modified & Created Files**:
+  - `src/Nutrition.WebGateway/Controllers/AdminController.cs` [CREATED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - CLI: `dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj /t:Compile`
+  - Result: `Build succeeded. 0 Warning(s), 0 Error(s).`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 
