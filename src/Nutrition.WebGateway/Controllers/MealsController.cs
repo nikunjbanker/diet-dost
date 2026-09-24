@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
@@ -6,11 +7,13 @@ using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Infrastructure.Security;
+using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
 
-public record TextAnalysisRequest(string UserId, string Description, string? MealType);
+public record TextAnalysisRequest(string? UserId, string Description, string? MealType);
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class MealsController : ControllerBase
@@ -42,11 +45,17 @@ public class MealsController : ControllerBase
     [RequestSizeLimit(ImageUploadValidator.MaxSizeBytes)]
     public async Task<IActionResult> UploadAndAnalyzeMeal(
         [FromForm] IFormFile? image,
-        [FromForm] string userId,
+        [FromForm] string? userId,
         [FromForm] string? regionalContext,
         [FromForm] string? mealType,
         CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        userId = currentUserId;
+
         if (image == null || image.Length == 0)
             return BadRequest(new { error = "Please provide a valid meal photo." });
 
@@ -144,17 +153,17 @@ public class MealsController : ControllerBase
     [HttpPost("analyze-text")]
     public async Task<IActionResult> AnalyzeTextMeal([FromBody] TextAnalysisRequest? request, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         if (request == null || string.IsNullOrWhiteSpace(request.Description))
             return BadRequest(new { error = "Description cannot be empty." });
 
+        var effectiveUserId = currentUserId;
         var descTrimmed = request.Description.Trim();
-        UserProfile? userProfile = null;
-        List<UserCorrectionRecord>? userCorrections = null;
-        if (!string.IsNullOrWhiteSpace(request.UserId))
-        {
-            userProfile = await _dietitianService.GetProfileAsync(request.UserId, ct);
-            userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == request.UserId, ct);
-        }
+        UserProfile? userProfile = await _dietitianService.GetProfileAsync(effectiveUserId, ct);
+        List<UserCorrectionRecord>? userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
 
         // Auto-select Meal Type: If text explicitly specifies, honor it; otherwise auto-detect from clock/timezone
         var clockMealType = GetClockMealType(userProfile?.Timezone);
@@ -220,6 +229,20 @@ public class MealsController : ControllerBase
     [HttpPost("confirm")]
     public async Task<IActionResult> ConfirmMeal([FromBody] MealLog meal, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        // Enforce tenant isolation: meal belongs to authenticated user unless admin explicitly overrides
+        if (!User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+        {
+            meal.UserId = currentUserId;
+        }
+        else if (string.IsNullOrWhiteSpace(meal.UserId))
+        {
+            meal.UserId = currentUserId;
+        }
+
         meal.IsVerifiedByUser = true;
         meal.LoggedAt = meal.LoggedAt != default ? meal.LoggedAt.ToUniversalTime() : DateTime.UtcNow;
 
@@ -318,6 +341,10 @@ public class MealsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetMealById([FromRoute] string id, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         if (string.IsNullOrWhiteSpace(id))
             return BadRequest(new { error = "Meal id is required." });
 
@@ -325,19 +352,34 @@ public class MealsController : ControllerBase
         if (meal is null)
             return NotFound(new { error = $"Meal with ID '{id}' was not found." });
 
+        if (meal.UserId != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+            return Forbid();
+
         return Ok(meal);
     }
 
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateMeal([FromRoute] string id, [FromBody] MealLog meal, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         if (string.IsNullOrWhiteSpace(id))
             return BadRequest(new { error = "Meal id is required." });
 
         if (meal is null)
             return BadRequest(new { error = "Meal payload cannot be null." });
 
+        var existing = await _dietitianService.GetMealByIdAsync(id, ct);
+        if (existing is null)
+            return NotFound(new { error = $"Meal with ID '{id}' was not found." });
+
+        if (existing.UserId != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+            return Forbid();
+
         meal.Id = id;
+        meal.UserId = existing.UserId;
         var updated = await _dietitianService.UpdateMealAsync(meal, ct);
         if (updated is null)
             return NotFound(new { error = $"Meal with ID '{id}' was not found." });
@@ -355,8 +397,19 @@ public class MealsController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMeal([FromRoute] string id, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         if (string.IsNullOrWhiteSpace(id))
             return BadRequest(new { error = "Meal id is required." });
+
+        var existing = await _dietitianService.GetMealByIdAsync(id, ct);
+        if (existing is null)
+            return NotFound(new { error = $"Meal with ID '{id}' was not found." });
+
+        if (existing.UserId != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+            return Forbid();
 
         var success = await _dietitianService.DeleteMealAsync(id, ct);
         if (!success)
@@ -370,35 +423,56 @@ public class MealsController : ControllerBase
     }
 
     [HttpGet("corrections")]
-    public async Task<IActionResult> GetUserCorrections([FromQuery] string userId, CancellationToken ct)
+    public async Task<IActionResult> GetUserCorrections([FromQuery] string? userId, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "UserId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
 
-        var corrections = await _correctionsRepo.FindAsync(c => c.UserId == userId, ct);
+        var effectiveUserId = (!string.IsNullOrWhiteSpace(userId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+            ? userId
+            : currentUserId;
+
+        var corrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
         return Ok(corrections.OrderByDescending(c => c.CreatedAtUtc));
     }
 
     [HttpDelete("corrections/reset")]
-    public async Task<IActionResult> ResetUserCorrections([FromQuery] string userId, CancellationToken ct)
+    public async Task<IActionResult> ResetUserCorrections([FromQuery] string? userId, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "UserId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
 
-        var corrections = await _correctionsRepo.FindAsync(c => c.UserId == userId, ct);
+        var effectiveUserId = (!string.IsNullOrWhiteSpace(userId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+            ? userId
+            : currentUserId;
+
+        var corrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
         foreach (var c in corrections)
         {
             await _correctionsRepo.DeleteAsync(c.Id, ct);
         }
         await _uow.SaveChangesAsync(ct);
-        return Ok(new { message = $"Cleared {corrections.Count} trained memory corrections for user {userId}." });
+        return Ok(new { message = $"Cleared {corrections.Count} trained memory corrections for user {effectiveUserId}." });
     }
 
     [HttpDelete("corrections/{id}")]
     public async Task<IActionResult> DeleteCorrection(string id, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         if (string.IsNullOrWhiteSpace(id))
             return BadRequest(new { error = "Id is required." });
+
+        var existing = (await _correctionsRepo.FindAsync(c => c.Id == id, ct)).FirstOrDefault();
+        if (existing == null)
+            return NotFound(new { error = "Correction not found." });
+
+        if (existing.UserId != currentUserId && !User.IsInRole("Admin") && !User.IsInRole("SuperAdmin"))
+            return Forbid();
 
         await _correctionsRepo.DeleteAsync(id, ct);
         await _uow.SaveChangesAsync(ct);
@@ -408,8 +482,16 @@ public class MealsController : ControllerBase
     [HttpPost("ai-feedback")]
     public async Task<IActionResult> SubmitAiFeedback([FromBody] AiFeedbackRequest request, CancellationToken ct)
     {
-        if (request == null || string.IsNullOrWhiteSpace(request.UserId))
-            return BadRequest(new { error = "UserId and feedback details are required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        if (request == null)
+            return BadRequest(new { error = "Feedback details are required." });
+
+        var effectiveUserId = (!string.IsNullOrWhiteSpace(request.UserId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+            ? request.UserId
+            : currentUserId;
 
         using var activity = NutritionTelemetry.ActivitySource.StartActivity("diet.ai_feedback", System.Diagnostics.ActivityKind.Server);
         activity?.SetTag("diet.feedback.rating", request.Rating);
@@ -418,7 +500,7 @@ public class MealsController : ControllerBase
 
         var feedbackRecord = new AiDetectionFeedbackRecord
         {
-            UserId = request.UserId,
+            UserId = effectiveUserId,
             MealLogId = request.MealLogId,
             DishName = request.DishName,
             DetectedByModel = request.DetectedByModel,
@@ -430,7 +512,7 @@ public class MealsController : ControllerBase
         };
 
         var retrainingResult = await _visionAgent.ProcessFeedbackRetrainingAsync(
-            request.UserId,
+            effectiveUserId,
             request.DishName,
             request.Rating,
             request.Remarks,
@@ -451,7 +533,7 @@ public class MealsController : ControllerBase
 
             // Purge contradictory mappings
             var contradictory = await _correctionsRepo.FindAsync(
-                c => c.UserId == request.UserId &&
+                c => c.UserId == effectiveUserId &&
                      ((c.OriginalDetectedItem.ToLower() == correctedKey.ToLower() && c.CorrectedItemName.ToLower() == origKey.ToLower()) ||
                       (c.OriginalDetectedItem.ToLower().Contains(correctedKey.ToLower()) && c.CorrectedItemName.ToLower().Contains(origKey.ToLower()))),
                 ct);
@@ -462,7 +544,7 @@ public class MealsController : ControllerBase
             }
 
             var existing = (await _correctionsRepo.FindAsync(
-                c => c.UserId == request.UserId && c.OriginalDetectedItem.ToLower() == origKey.ToLower(), ct))
+                c => c.UserId == effectiveUserId && c.OriginalDetectedItem.ToLower() == origKey.ToLower(), ct))
                 .FirstOrDefault();
 
             var updatedEstimate = retrainingResult.UpdatedItemEstimate;
@@ -484,7 +566,7 @@ public class MealsController : ControllerBase
             {
                 var newCorrection = new UserCorrectionRecord
                 {
-                    UserId = request.UserId,
+                    UserId = effectiveUserId,
                     OriginalDetectedItem = origKey,
                     CorrectedItemName = correctedKey,
                     HindiOrRegionalName = updatedEstimate?.HindiOrRegionalName ?? correctedKey,
@@ -516,28 +598,33 @@ public class MealsController : ControllerBase
     }
 
     [HttpGet("ai-feedback")]
-    public async Task<IActionResult> GetAiFeedbacks([FromQuery] string userId, CancellationToken ct)
+    public async Task<IActionResult> GetAiFeedbacks([FromQuery] string? userId, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "UserId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
 
-        var feedbacks = await _feedbackRepo.FindAsync(f => f.UserId == userId, ct);
+        var effectiveUserId = (!string.IsNullOrWhiteSpace(userId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+            ? userId
+            : currentUserId;
+
+        var feedbacks = await _feedbackRepo.FindAsync(f => f.UserId == effectiveUserId, ct);
         return Ok(feedbacks.OrderByDescending(f => f.CreatedAtUtc));
     }
 
     [HttpPost("estimate-item")]
     public async Task<IActionResult> EstimateFoodItem([FromBody] FoodItemEstimateRequest request, CancellationToken ct)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         if (string.IsNullOrWhiteSpace(request?.Name))
             return BadRequest(new { error = "Food item name is required." });
 
-        UserProfile? userProfile = null;
-        List<UserCorrectionRecord>? userCorrections = null;
-        if (!string.IsNullOrWhiteSpace(request.UserId))
-        {
-            userProfile = await _dietitianService.GetProfileAsync(request.UserId, ct);
-            userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == request.UserId, ct);
-        }
+        var effectiveUserId = currentUserId;
+        UserProfile? userProfile = await _dietitianService.GetProfileAsync(effectiveUserId, ct);
+        List<UserCorrectionRecord>? userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
 
         var effectiveMealType = !string.IsNullOrWhiteSpace(request.MealType) ? request.MealType : GetClockMealType(userProfile?.Timezone);
 
@@ -587,14 +674,19 @@ public class MealsController : ControllerBase
 
     [HttpGet("history")]
     public async Task<IActionResult> GetMealHistory(
-        [FromQuery] string userId,
+        [FromQuery] string? userId,
         [FromQuery] string period = "7D",
         [FromQuery] string? date = null,
         [FromQuery] string? mealType = null,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "UserId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        var effectiveUserId = (!string.IsNullOrWhiteSpace(userId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+            ? userId
+            : currentUserId;
 
         DateOnly? parsedDate = null;
         if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
@@ -608,7 +700,7 @@ public class MealsController : ControllerBase
             parsedMealType = mt;
         }
 
-        var meals = await _dietitianService.GetMealHistoryAsync(userId, period, parsedDate, parsedMealType, ct);
+        var meals = await _dietitianService.GetMealHistoryAsync(effectiveUserId, period, parsedDate, parsedMealType, ct);
 
         // Aggregate summary metrics
         double totalCalories = Math.Round(meals.Sum(m => m.TotalCalories), 1);
@@ -621,7 +713,7 @@ public class MealsController : ControllerBase
 
         return Ok(new
         {
-            userId,
+            userId = effectiveUserId,
             period,
             selectedDate = parsedDate?.ToString("yyyy-MM-dd"),
             mealType = parsedMealType?.ToString(),
@@ -642,15 +734,20 @@ public class MealsController : ControllerBase
 
     [HttpGet("export")]
     public async Task<IActionResult> ExportMealHistory(
-        [FromQuery] string userId,
+        [FromQuery] string? userId,
         [FromQuery] string period = "7D",
         [FromQuery] string? date = null,
         [FromQuery] string? mealType = null,
         [FromQuery] string format = "csv",
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "UserId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        var effectiveUserId = (!string.IsNullOrWhiteSpace(userId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
+            ? userId
+            : currentUserId;
 
         DateOnly? parsedDate = null;
         if (!string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var d))
@@ -664,7 +761,7 @@ public class MealsController : ControllerBase
             parsedMealType = mt;
         }
 
-        var meals = await _dietitianService.GetMealHistoryAsync(userId, period, parsedDate, parsedMealType, ct);
+        var meals = await _dietitianService.GetMealHistoryAsync(effectiveUserId, period, parsedDate, parsedMealType, ct);
 
         // Build RFC 4180 compliant CSV with UTF-8 BOM (\uFEFF) for immediate native Microsoft Excel compatibility
         var sb = new System.Text.StringBuilder();

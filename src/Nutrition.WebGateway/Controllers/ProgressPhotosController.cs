@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common;
 using Nutrition.Domain.Model.Progress;
 using Nutrition.Infrastructure.Security;
+using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/progress-photos")]
 public class ProgressPhotosController : ControllerBase
@@ -30,7 +33,7 @@ public class ProgressPhotosController : ControllerBase
     [RequestSizeLimit(ImageUploadValidator.MaxSizeBytes)]
     public async Task<IActionResult> UploadProgressPhoto(
         [FromForm] IFormFile? image,
-        [FromForm] string userId,
+        [FromForm] string? userId,
         [FromForm] double? weightKg,
         [FromForm] ProgressPhotoType photoType = ProgressPhotoType.Face,
         [FromForm] bool isBaseline = false,
@@ -38,8 +41,12 @@ public class ProgressPhotosController : ControllerBase
         [FromForm] string? capturedDate = null,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "userId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        // Enforce claim-based user identity
+        var targetUserId = currentUserId;
 
         if (image == null || image.Length == 0)
             return BadRequest(new { error = "Please provide an image file." });
@@ -62,7 +69,7 @@ public class ProgressPhotosController : ControllerBase
             _ => ".jpg"
         };
 
-        var fileName = $"{userId}_{photoType}_{Guid.NewGuid():N}{extension}";
+        var fileName = $"{targetUserId}_{photoType}_{Guid.NewGuid():N}{extension}";
         var filePath = Path.Combine(uploadsFolder, fileName);
 
         stream.Position = 0;
@@ -81,7 +88,7 @@ public class ProgressPhotosController : ControllerBase
 
         var photo = new ProgressPhoto
         {
-            UserId = userId,
+            UserId = targetUserId,
             CapturedAtUtc = capturedAt,
             WeightKg = weightKg ?? 80.0,
             PhotoType = photoType,
@@ -93,7 +100,7 @@ public class ProgressPhotosController : ControllerBase
         await _photoRepo.AddAsync(photo, ct);
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Saved new progress photo {Id} for user {UserId}, type: {Type}", photo.Id, userId, photoType);
+        _logger.LogInformation("Saved new progress photo {Id} for user {UserId}, type: {Type}", photo.Id, targetUserId, photoType);
 
         return Ok(new
         {
@@ -106,15 +113,22 @@ public class ProgressPhotosController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetPhotos(
-        [FromQuery] string userId,
+        [FromQuery] string? userId,
         [FromQuery] ProgressPhotoType? photoType = null,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "userId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        var targetUserId = string.IsNullOrWhiteSpace(userId) ? currentUserId : userId;
+        if (targetUserId != currentUserId && !User.IsAdminOrSuper())
+        {
+            return Forbid();
+        }
 
         var photos = await _photoRepo.FindAsync(
-            p => p.UserId == userId && (!photoType.HasValue || p.PhotoType == photoType.Value),
+            p => p.UserId == targetUserId && (!photoType.HasValue || p.PhotoType == photoType.Value),
             ct);
 
         var ordered = photos.OrderBy(p => p.CapturedAtUtc).ToList();
@@ -123,13 +137,20 @@ public class ProgressPhotosController : ControllerBase
 
     [HttpGet("comparison")]
     public async Task<IActionResult> GetComparison(
-        [FromQuery] string userId,
+        [FromQuery] string? userId,
         CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-            return BadRequest(new { error = "userId is required." });
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
 
-        var allPhotos = (await _photoRepo.FindAsync(p => p.UserId == userId, ct))
+        var targetUserId = string.IsNullOrWhiteSpace(userId) ? currentUserId : userId;
+        if (targetUserId != currentUserId && !User.IsAdminOrSuper())
+        {
+            return Forbid();
+        }
+
+        var allPhotos = (await _photoRepo.FindAsync(p => p.UserId == targetUserId, ct))
             .OrderBy(p => p.CapturedAtUtc)
             .ToList();
 
@@ -174,9 +195,18 @@ public class ProgressPhotosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeletePhoto(string id, CancellationToken ct = default)
     {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
         var photo = await _photoRepo.GetByIdAsync(id, ct);
         if (photo == null)
             return NotFound(new { error = "Photo not found." });
+
+        if (photo.UserId != currentUserId && !User.IsAdminOrSuper())
+        {
+            return Forbid();
+        }
 
         // Try delete physical file
         try

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
@@ -10,6 +11,10 @@ using Nutrition.Domain.Model.Progress;
 using Nutrition.Infrastructure.AI;
 using Nutrition.Infrastructure.Persistence;
 using Nutrition.Infrastructure.Security;
+
+using Polly;
+using Polly.RateLimiting;
+using System.Threading.RateLimiting;
 
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -70,16 +75,44 @@ builder.Services.AddHttpClient<MicrosoftAgentFoodVisionService>(client =>
 });
 builder.Services.AddScoped<IFoodVisionAgent, MicrosoftAgentFoodVisionService>();
 
-// CORS for local development & PWA
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+// Authentication & Cookie Session Security (OWASP A02, A07)
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        options.Cookie.Name = "DietDost.Session";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+
+        // Return 401/403 for API endpoints rather than redirecting to HTML login
+        options.Events.OnRedirectToLogin = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return Task.CompletedTask;
+        };
+        options.Events.OnRedirectToAccessDenied = context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            return Task.CompletedTask;
+        };
     });
-});
+
+builder.Services.AddAuthorization();
+
+// Polly Resilience Pipeline for Rate Limiting & Brute-Force Defense (OWASP A04)
+var authRateLimitPipeline = new ResiliencePipelineBuilder()
+    .AddRateLimiter(new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
+    {
+        PermitLimit = 15,
+        Window = TimeSpan.FromMinutes(1),
+        SegmentsPerWindow = 4,
+        QueueLimit = 0
+    }))
+    .Build();
+
+builder.Services.AddSingleton(authRateLimitPipeline);
 
 var app = builder.Build();
 
@@ -535,7 +568,38 @@ app.UseCors("AllowAll");
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+// Polly Rate Limiter Middleware for Auth & Sensitive Endpoints (OWASP A04)
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
+        context.Request.Path.StartsWithSegments("/api/auth/register") ||
+        context.Request.Path.StartsWithSegments("/api/auth/verify-otp") ||
+        context.Request.Path.StartsWithSegments("/api/auth/resend-otp"))
+    {
+        var pipeline = context.RequestServices.GetRequiredService<ResiliencePipeline>();
+        try
+        {
+            await pipeline.ExecuteAsync(async _ =>
+            {
+                await next();
+            });
+            return;
+        }
+        catch (RateLimiterRejectedException)
+        {
+            context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsync("{\"error\":\"TooManyRequests\",\"message\":\"Rate limit exceeded. Please wait 1 minute before retrying.\"}");
+            return;
+        }
+    }
+
+    await next();
+});
+
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 

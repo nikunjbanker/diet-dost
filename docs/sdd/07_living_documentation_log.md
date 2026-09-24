@@ -1545,10 +1545,52 @@
   - `docs/sdd/03_data_models_and_contracts.md` [MODIFIED]
   - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
   - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+### [LOG-20260924-006] User Management: Section 2 - OWASP Auth Gateway, Gating Middleware & Polly Rate Limiter
+- **Date / Timestamp**: 2026-09-24 16:00:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[RATE_LIMITING]` | `[POLICIES]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`, `docs`
+- **Summary of Change**:
+  1. **User Management & Security Architecture Plan Stored in Repository**:
+     - Preserved approved architecture plan under [`docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md).
+     - Strictly enforced Zero-PII policy (`SUPER_ADMIN_EMAIL` / `admin@dietdost.app`).
+  2. **OWASP Authentication Gateway (`AuthController`)**:
+     - Implemented `/api/auth/register` with unbundled dual-consent validation (Terms/AI Training license + Sensitive Health Data processing), extracting client IP and User-Agent for legal audit trail.
+     - Implemented `/api/auth/verify-otp` with constant-time verification activating user upon email OTP validation.
+     - Implemented `/api/auth/resend-otp` with rate limit checks.
+     - Implemented `/api/auth/login` enforcing email verification requirement.
+     - Implemented `/api/auth/logout` terminating session cookies.
+     - Implemented `/api/auth/me` returning authenticated user profile, tier, and entitlements.
+     - Implemented `/api/auth/delete-account` for self-service DPDPA-compliant data purge.
+  3. **Polly Resilience Pipeline for Rate Limiting (OWASP A04)**:
+     - Replaced raw rate limiting with `Polly.RateLimiting` (v8.5.2) and `Polly.Core`.
+     - Configured `SlidingWindowRateLimiter` resilience pipeline (15 permits/min, 4 segments, 0 queue).
+     - Implemented ASP.NET Core middleware executing auth requests through Polly's `ResiliencePipeline`, catching `RateLimiterRejectedException` and returning HTTP 429 Too Many Requests with JSON message.
+  4. **Strict Claim-Based Tenant Isolation (OWASP A01)**:
+     - Implemented `UserClaimsExtensions` to extract `UserId`, `Role`, `Tier` strictly from cryptographically verified Claims.
+     - Protected all endpoints across `MealsController`, `ProfileController`, `AnalyticsController`, and `ProgressPhotosController` with `[Authorize]`.
+     - Eliminated insecure client-supplied `userId` parameters to prevent IDOR attacks. Non-admin users are strictly quarantined to their own records.
+  5. **Automated Unit Tests**:
+     - Added `PollyRateLimitingTests` in `Nutrition.EvalHarness.Tests` verifying permitted executions, limit ceiling rejections (`RateLimiterRejectedException`), and fixed window behavior.
+     - All 68 tests passing across solution (0 warnings, 0 errors).
+- **Modified & Created Files**:
+  - `docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md` [CREATED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [CREATED]
+  - `src/Nutrition.WebGateway/Extensions/UserClaimsExtensions.cs` [CREATED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProfileController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProgressPhotosController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Nutrition.WebGateway.csproj` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/PollyRateLimitingTests.cs` [CREATED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
 - **Verification Result**:
   - CLI: `dotnet test`
-  - Result: `Passed: 65, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
+  - Result: `Passed: 68, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
 
 
 
