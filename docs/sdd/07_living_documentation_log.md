@@ -1653,6 +1653,50 @@
   - Result: `Build succeeded. 0 Warning(s), 0 Error(s).`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-009] User Management: Section 5 - Obsidian UI Auth Gate, Quota HUD & Admin Console
+- **Date / Timestamp**: 2026-09-24 16:30:00 UTC
+- **Change Type**: `[FEATURE]` | `[UI/UX]` | `[SECURITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (PWA Frontend)
+- **Summary of Change**:
+  1. **Obsidian Dark Auth & Verification Gate (`auth-gate.html`, `auth-gate.js`)**:
+     - Strict dashboard gating preventing any unauthenticated or unverified users from viewing dashboard data or UI.
+     - Dual-consent legal agreements complying with India DPDPA 2023 §6:
+       - Terms & Conditions (data processing, platform usage, partner sharing).
+       - Health & Nutrition Data Sharing Consent (dietary analysis, AI model optimization).
+     - 6-digit Email OTP verification screen with countdown timer (60s cooldown) and dev OTP autofill in local environments.
+  2. **Account Menu & Tier Badge (`header.html`, `styles.css`)**:
+     - Modern Obsidian header dropdown displaying user profile, glowing tier badge (`Free`, `Basic`, `Premium`, `SuperAdmin`), and dynamic Admin Portal menu item visible exclusively to `Admin` and `SuperAdmin` users.
+  3. **AI Quota HUD Modal (`quota-modal.html`, `quota-modal.js`)**:
+     - Interactive gauge displaying today's consumed vs. remaining AI detections, color-coded threshold progress bar, localized midnight reset countdown, 7d/30d usage summaries, and recent operations history table.
+  4. **SuperAdmin & Admin Console Modal (`admin-modal.html`, `admin-modal.js`)**:
+     - User Directory with search, tier filters, real-time tier promotion/demotion, role modification, and account status toggles.
+     - Dynamic Tier Configuration cards allowing runtime updates to daily limits, photo compare toggles, and data export toggles.
+     - Telemetry Audit log viewer tracking system-wide AI calls, token usage, and latency.
+  5. **Client Resilience & Error Handling (`api-client.js`, `main.js`)**:
+     - Fixed syntax closure in `api-client.js` and wired centralized dispatch of `auth:unauthorized` (401), `quota:exceeded` (403), and `tier:upgrade_required` (403) custom events.
+     - Integrated all controllers into `di-container.js` and application bootstrap lifecycle.
+- **Modified & Created Files**:
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/header.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/auth-gate.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/admin-modal.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/quota-modal.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/auth-service.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/admin-service.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/auth-gate.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/admin-modal.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/quota-modal.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/api-client.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Validated zero errors, zero warnings.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

@@ -105,7 +105,21 @@ export class ApiClient {
   }
 
   /**
-   * Unified response handler with typed error parsing.
+   * Perform HTTP POST request (convenience alias for JSON).
+   */
+  async post(url, body) {
+    return this.postJson(url, body);
+  }
+
+  /**
+   * Perform HTTP PUT request (convenience alias for JSON).
+   */
+  async put(url, body) {
+    return this.putJson(url, body);
+  }
+
+  /**
+   * Unified response handler with typed error parsing and auth/quota event dispatching.
    * @param {Response} res
    */
   async _handleResponse(res) {
@@ -122,6 +136,18 @@ export class ApiClient {
       const error = new Error(errorMsg);
       error.status = res.status;
       error.data = data;
+
+      // Handle session expiry or unauthorized request
+      if (res.status === 401) {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+      } else if (res.status === 403) {
+        if (data?.error === 'AiQuotaExceeded') {
+          window.dispatchEvent(new CustomEvent('quota:exceeded', { detail: data }));
+        } else if (data?.error === 'FeatureTierUpgradeRequired') {
+          window.dispatchEvent(new CustomEvent('tier:upgrade_required', { detail: data }));
+        }
+      }
+
       throw error;
     }
 

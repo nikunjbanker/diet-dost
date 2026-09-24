@@ -8,6 +8,8 @@ import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
 import { ApiClient, apiClient } from './services/api-client.js?v=1.3.6';
+import { AuthService } from './services/auth-service.js?v=1.3.6';
+import { AdminService } from './services/admin-service.js?v=1.3.6';
 import { MealsService } from './services/meals-service.js?v=1.3.6';
 import { ProfileService } from './services/profile-service.js?v=1.3.6';
 import { AnalyticsService } from './services/analytics-service.js?v=1.3.6';
@@ -23,6 +25,9 @@ import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.6';
 import { ProfileModalController } from './ui/profile-modal.js?v=1.3.6';
 import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.6';
 import { ProgressModalController } from './ui/progress-modal.js?v=1.3.6';
+import { AuthGateController } from './ui/auth-gate.js?v=1.3.6';
+import { AdminModalController } from './ui/admin-modal.js?v=1.3.6';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.3.6';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -49,6 +54,9 @@ container.register('apiClient', apiClient);
 
 container.register('toastService', toastService);
 container.register('confettiService', confettiService);
+
+container.register('authService', (c) => new AuthService(c.resolve('apiClient')));
+container.register('adminService', (c) => new AdminService(c.resolve('apiClient')));
 
 container.register('mealsService', (c) => new MealsService(c.resolve('apiClient')));
 container.register('profileService', (c) => new ProfileService(c.resolve('apiClient')));
@@ -108,6 +116,24 @@ container.register('progressModal', (c) => new ProgressModalController({
   eventBus: c.resolve('eventBus')
 }));
 
+container.register('authGate', (c) => new AuthGateController({
+  authService: c.resolve('authService'),
+  toastService: c.resolve('toastService'),
+  eventBus: c.resolve('eventBus')
+}));
+
+container.register('adminModal', (c) => new AdminModalController({
+  adminService: c.resolve('adminService'),
+  toastService: c.resolve('toastService'),
+  eventBus: c.resolve('eventBus')
+}));
+
+container.register('quotaModal', (c) => new QuotaModalController({
+  apiClient: c.resolve('apiClient'),
+  toastService: c.resolve('toastService'),
+  eventBus: c.resolve('eventBus')
+}));
+
 /**
  * Asynchronously loads modular HTML partials defined by [data-include="path/to/file.html"]
  * Enables zero-bundler modular architecture while keeping index.html clean and minimal.
@@ -135,6 +161,11 @@ async function initApp() {
   await loadPartials();
 
   // Resolve and initialize all controllers (DOM is now guaranteed to be populated)
+  const authService = container.resolve('authService');
+  const authGate = container.resolve('authGate');
+  const adminModal = container.resolve('adminModal');
+  const quotaModal = container.resolve('quotaModal');
+
   const dailyHud = container.resolve('dailyHud');
   const mealLogger = container.resolve('mealLogger');
   const reviewModal = container.resolve('reviewModal');
@@ -143,9 +174,128 @@ async function initApp() {
   const transparencyModal = container.resolve('transparencyModal');
   const progressModal = container.resolve('progressModal');
 
+  // Helper: Synchronize user header badges and visibility
+  function updateUserUI(user) {
+    const avatarEl = document.getElementById('header-user-avatar');
+    const nameEl = document.getElementById('header-user-name');
+    const tierPillEl = document.getElementById('header-tier-pill');
+    const dropdownNameEl = document.getElementById('dropdown-user-fullname');
+    const dropdownEmailEl = document.getElementById('dropdown-user-email');
+    const adminMenuItem = document.getElementById('menu-open-admin');
+    const quotaPreviewEl = document.getElementById('menu-quota-preview');
+    const mainContainer = document.querySelector('main.container');
+
+    if (!user) {
+      if (nameEl) nameEl.textContent = 'Sign In';
+      if (tierPillEl) {
+        tierPillEl.textContent = 'Guest';
+        tierPillEl.className = 'tier-badge-pill';
+      }
+      if (dropdownNameEl) dropdownNameEl.textContent = 'Guest';
+      if (dropdownEmailEl) dropdownEmailEl.textContent = 'Not signed in';
+      if (adminMenuItem) adminMenuItem.style.display = 'none';
+      if (mainContainer) mainContainer.style.display = 'none';
+      return;
+    }
+
+    if (mainContainer) mainContainer.style.display = 'block';
+
+    const displayName = user.name || (user.email ? user.email.split('@')[0] : 'User');
+    if (nameEl) nameEl.textContent = displayName;
+    if (dropdownNameEl) dropdownNameEl.textContent = user.name || displayName;
+    if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || '';
+
+    const tierName = typeof user.tier === 'number'
+      ? (user.tier === 3 ? 'SuperAdmin' : user.tier === 2 ? 'Premium' : user.tier === 1 ? 'Basic' : 'Free')
+      : (user.tier || 'Free');
+
+    if (tierPillEl) {
+      tierPillEl.textContent = tierName === 'SuperAdmin' ? '👑 Super' : tierName === 'Premium' ? '⚡ Premium' : tierName === 'Basic' ? '⭐ Basic' : '🆓 Free';
+      tierPillEl.className = `tier-badge-pill tier-${tierName.toLowerCase()}`;
+    }
+
+    if (quotaPreviewEl) {
+      quotaPreviewEl.textContent = tierName;
+    }
+
+    const isAdmin = user.role === 'Admin' || user.role === 'SuperAdmin' || user.role === 1 || user.role === 2;
+    if (adminMenuItem) {
+      adminMenuItem.style.display = isAdmin ? 'flex' : 'none';
+    }
+  }
+
+  // User menu dropdown toggle
+  const userMenuBtn = document.getElementById('btn-user-menu');
+  const userMenuDropdown = document.getElementById('user-menu-dropdown');
+  userMenuBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!authService.currentUser) {
+      authGate.show('signin');
+      return;
+    }
+    if (userMenuDropdown) {
+      const isVisible = userMenuDropdown.style.display === 'block';
+      userMenuDropdown.style.display = isVisible ? 'none' : 'block';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (userMenuDropdown && !userMenuDropdown.contains(e.target) && e.target !== userMenuBtn) {
+      userMenuDropdown.style.display = 'none';
+    }
+  });
+
+  document.getElementById('menu-open-quota')?.addEventListener('click', () => {
+    if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+    quotaModal.open();
+  });
+
+  document.getElementById('menu-open-admin')?.addEventListener('click', () => {
+    if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+    adminModal.open();
+  });
+
+  document.getElementById('menu-btn-signout')?.addEventListener('click', async () => {
+    if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+    await authService.logout();
+    updateUserUI(null);
+    authGate.show('signin');
+  });
+
+  // Global window event listeners for auth/quota lifecycle
+  window.addEventListener('auth:unauthorized', () => {
+    updateUserUI(null);
+    authGate.show('signin');
+  });
+
+  window.addEventListener('quota:exceeded', (e) => {
+    container.resolve('toastService')?.error(e.detail?.message || 'Daily AI detection limit reached for your tier.');
+    quotaModal.open();
+  });
+
+  window.addEventListener('tier:upgrade_required', (e) => {
+    container.resolve('toastService')?.warning(e.detail?.message || 'This feature requires a tier upgrade.');
+    quotaModal.open();
+  });
+
+  eventBus.on('auth:success', async (user) => {
+    updateUserUI(user);
+    await Promise.all([
+      dailyHud.refresh(),
+      analyticsChart.refresh(),
+      progressModal.refresh()
+    ]);
+  });
+
   // ============================================================================
   // 3. Global Window Facades (for HTML onclick & inline attribute compatibility)
   // ============================================================================
+  window.openAuthGate = (tab) => authGate.show(tab);
+  window.closeAuthGate = () => authGate.hide();
+  window.openAdminModal = () => adminModal.open();
+  window.closeAdminModal = () => adminModal.close();
+  window.openQuotaModal = () => quotaModal.open();
+  window.closeQuotaModal = () => quotaModal.close();
   window.openProgressModal = (tab) => progressModal.open(tab);
   window.closeProgressModal = () => progressModal.close();
   window.openTransparencyModal = () => transparencyModal.open();
@@ -160,12 +310,19 @@ async function initApp() {
   window.appendMedication = (med) => profileModal.appendMedication(med);
   window.clearMedications = () => profileModal.clearMedications();
 
-  // Initial Data Load
-  await Promise.all([
-    dailyHud.refresh(),
-    analyticsChart.refresh(),
-    progressModal.refresh()
-  ]);
+  // Initial Auth Check & Data Load
+  const currentUser = await authService.getCurrentUser();
+  if (!currentUser || !currentUser.isEmailVerified) {
+    updateUserUI(null);
+    authGate.show('signin');
+  } else {
+    updateUserUI(currentUser);
+    await Promise.all([
+      dailyHud.refresh(),
+      analyticsChart.refresh(),
+      progressModal.refresh()
+    ]);
+  }
 }
 
 if (document.readyState === 'loading') {
