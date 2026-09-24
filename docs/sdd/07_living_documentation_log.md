@@ -1835,6 +1835,34 @@
   - `dotnet test`: 90 passed, 0 failed, 0 warnings.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-014] Obsidian-Dark Linear Design System Alignment for Newly Added Pages & UI Components
+- **Date / Timestamp**: 2026-09-25 01:25:00 UTC
+- **Change Type**: `[UI]` | `[REFACTOR]` | `[COMPLIANCE]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`styles.css`, `terms.html`, `clinical-health-consent.html`)
+- **Summary of Change**:
+  1. **Design System Token Synchronization**:
+     - Added `--accent: var(--accent-brand);` and `--accent-hover: var(--accent-brand-hover);` aliases to `:root` in `styles.css` to prevent unstyled text in quota progress bars, admin verification badges, and header status elements.
+     - Added utility button and badge classes (`.btn-outline`, `.btn-xs`, `.badge`, `.badge-success`, `.badge-warning`, `.badge-danger`, `.badge-primary`, `.progress-delta-pill`, `.table-responsive`) matching Linear aesthetic.
+     - Enhanced `.admin-table` with sticky `th`, bordered `td`, hover background highlights, and `.tier-admin-card` transitions.
+  2. **Elevated Standalone Legal Pages (`terms.html` & `clinical-health-consent.html`)**:
+     - Replaced custom hardcoded styles with the global Obsidian design tokens (`var(--canvas-bg)`, `var(--surface-card)`, `var(--border-subtle)`, `var(--radius-lg)`).
+     - Standardized `<header class="app-header">` featuring brand badge (`DD`), brand name, governance tag (`ICMR-NIN & WHO South Asian`), and a return button.
+     - Styled clinical consent page with emerald green branding (`var(--status-emerald)`) under statutory DPDPA 2023 §6.
+     - Styled Terms of Service with brand indigo theme (`var(--accent-brand)`).
+     - Added responsive footers with reciprocal links between Terms and Clinical Health Consent.
+  3. **Verification**:
+     - Automated headless browser subagent validated visual aesthetics, typography, cards, badges, and navigation across `/terms.html`, `/clinical-health-consent.html`, and `/`.
+     - `dotnet test`: 90 passed, 0 failed, 0 warnings.
+- **Modified Files**:
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/terms.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 
