@@ -1404,4 +1404,36 @@
   - Confirmed Podman machine status: `podman-machine-default` running, socket forwarding active, `podman ps` operational.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-002] Solution-Level Skill Migration & Mandatory Git Branching / PR-Only Merge Governance
+- **Date / Timestamp**: 2026-09-24 07:44:00 UTC
+- **Change Type**: `[GOVERNANCE]` | `[DEVOPS]` | `[SKILL_SYNC]`
+- **Affected Microservices / Components**: `Skills`, `Workspace Customizations`, `DevOps Governance`, `Docs`
+- **Summary of Change**:
+  1. **Mandatory Git Branching & PR-Only Merge Governance**:
+     - Formulated and enforced strict repository policy prohibiting direct commits/pushes to the `main` branch.
+     - Added mandatory Step 0: Always create and isolate changes on a dedicated feature/fix branch (`git checkout -b feature/<name>` or `fix/<name>`).
+     - Added mandatory Step 8 / PR merge gate: All changes must be integrated into `main` exclusively through a Pull Request (PR) after passing local tests, zero-warning .NET 11 build verification, and living documentation updates.
+  2. **Solution-Level Skill Migration**:
+     - Migrated and synchronized the `indian-diet-calorie-tracker` skill directly into the repository under `.gemini/config/skills/indian-diet-calorie-tracker/SKILL.md` (and `.agents/skills/indian-diet-calorie-tracker/SKILL.md` for workspace auto-discovery).
+     - Bumped skill specification version to `v1.3.0`.
+  3. **Workspace Instruction Artifacts**:
+     - Created root-level solution instruction files [`AGENTS.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/AGENTS.md) and [`GEMINI.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/GEMINI.md) defining mandatory branch and PR rules.
+     - Added `.agents/rules/git-workflow.md` for rule enforcement.
+     - Updated [`docs/sdd/05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) with the Git branching strategy and PR-only merge requirements.
+- **Modified / Created Files**:
+  - `.gemini/config/skills/indian-diet-calorie-tracker/SKILL.md` [CREATED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [CREATED]
+  - `.agents/rules/git-workflow.md` [CREATED]
+  - `AGENTS.md` [CREATED]
+  - `GEMINI.md` [CREATED]
+  - `docs/sdd/05_devops_and_infrastructure.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - `git status` verifies isolated branch `feature/move-skill-to-solution-repo`.
+  - Directory structure and skill markdown integrity confirmed.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
