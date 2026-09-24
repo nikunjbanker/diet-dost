@@ -54,11 +54,36 @@ export class AuthGateController {
     document.getElementById('link-goto-register')?.addEventListener('click', () => this.switchTab('register'));
     document.getElementById('link-goto-signin')?.addEventListener('click', () => this.switchTab('signin'));
 
-    // Legal modal openers
-    document.getElementById('link-open-terms')?.addEventListener('click', () => this.openLegalModal('terms'));
-    document.getElementById('link-open-health-consent')?.addEventListener('click', () => this.openLegalModal('health'));
+    // Legal modal openers (stop propagation to prevent label toggling the checkbox)
+    document.getElementById('link-open-terms')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.openLegalModal('terms');
+    });
+    document.getElementById('link-open-health-consent')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.openLegalModal('health');
+    });
     document.getElementById('btn-close-terms-modal')?.addEventListener('click', () => this.closeLegalModal('terms'));
     document.getElementById('btn-close-health-modal')?.addEventListener('click', () => this.closeLegalModal('health'));
+    
+    // Backdrop clicks to close legal modals
+    this.legalTermsModal?.addEventListener('click', (e) => {
+      if (e.target === this.legalTermsModal) this.closeLegalModal('terms');
+    });
+    this.legalHealthModal?.addEventListener('click', (e) => {
+      if (e.target === this.legalHealthModal) this.closeLegalModal('health');
+    });
+
+    // Escape key closes open legal modals
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (this.legalTermsModal && this.legalTermsModal.style.display === 'flex') this.closeLegalModal('terms');
+        if (this.legalHealthModal && this.legalHealthModal.style.display === 'flex') this.closeLegalModal('health');
+      }
+    });
+
     document.getElementById('btn-accept-terms-modal')?.addEventListener('click', () => {
       const cb = document.getElementById('reg-consent-terms');
       if (cb) cb.checked = true;

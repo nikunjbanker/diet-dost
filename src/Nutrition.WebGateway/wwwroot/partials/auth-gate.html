@@ -71,7 +71,7 @@
         <label class="legal-checkbox-label">
           <input type="checkbox" id="reg-consent-terms" required>
           <span>
-            I agree to the <a href="javascript:void(0)" id="link-open-terms">Terms of Service</a> and grant Diet Dost a worldwide, royalty-free license to use de-identified meal logs, photos, and nutritional feedback for AI model training and trusted clinical partner research.
+            I agree to the <a href="/terms.html" id="link-open-terms" target="_blank">Terms of Service</a> and grant Diet Dost a worldwide, royalty-free license to use de-identified meal logs, photos, and nutritional feedback for AI model training and trusted clinical partner research.
           </span>
         </label>
 
@@ -79,7 +79,7 @@
         <label class="legal-checkbox-label">
           <input type="checkbox" id="reg-consent-health" required>
           <span>
-            I provide explicit consent for <a href="javascript:void(0)" id="link-open-health-consent">Clinical Health & Nutrition Processing</a> of my biometrics, medical conditions, and medications under the Digital Personal Data Protection Act (DPDPA 2023).
+            I provide explicit consent for <a href="/clinical-health-consent.html" id="link-open-health-consent" target="_blank">Clinical Health & Nutrition Processing</a> of my biometrics, medical conditions, and medications under the Digital Personal Data Protection Act (DPDPA 2023).
           </span>
         </label>
       </div>
@@ -133,13 +133,13 @@
 
 <!-- Legal Agreement Sub-Modal: Terms of Service & AI Training License -->
 <div id="legal-terms-modal" class="review-modal-overlay" style="display: none;">
-  <div class="review-card legal-modal-card">
-    <div class="review-header">
+  <div class="legal-modal-card">
+    <div class="legal-modal-header">
       <div>
         <div class="hud-title">Legal Governance (Version v1.0-202609)</div>
-        <h2 style="font-size: 1.15rem; font-weight: 700;">Terms of Service & AI Training License</h2>
+        <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0.25rem 0 0 0;">Terms of Service & AI Training License</h2>
       </div>
-      <button type="button" id="btn-close-terms-modal" class="btn btn-sm">✕</button>
+      <button type="button" id="btn-close-terms-modal" class="btn btn-sm btn-outline">✕</button>
     </div>
     <div class="legal-modal-body">
       <h3>1. Wellness Companion & Non-Medical Scope</h3>
@@ -150,8 +150,12 @@
 
       <h3>3. Partner Sharing & Research</h3>
       <p>Diet Dost may share de-identified and aggregated nutritional cohorts with certified clinical dietitians, academic research institutions, and technology partners to improve Indian and South Asian dietary intelligence.</p>
+
+      <h3>4. Statutory DPDPA 2023 Compliance</h3>
+      <p>All personal data is processed under the Digital Personal Data Protection Act (DPDPA 2023). You retain the right to erase your account and all associated health records at any time.</p>
     </div>
-    <div style="margin-top: 1rem; text-align: right;">
+    <div class="legal-modal-footer">
+      <a href="/terms.html" target="_blank" class="legal-full-link">Open Full Page ↗</a>
       <button type="button" id="btn-accept-terms-modal" class="btn btn-primary btn-sm">I Understand & Accept</button>
     </div>
   </div>
@@ -159,13 +163,13 @@
 
 <!-- Legal Agreement Sub-Modal: Sensitive Health Data Processing -->
 <div id="legal-health-modal" class="review-modal-overlay" style="display: none;">
-  <div class="review-card legal-modal-card">
-    <div class="review-header">
+  <div class="legal-modal-card">
+    <div class="legal-modal-header">
       <div>
         <div class="hud-title">DPDPA 2023 §6 Compliance</div>
-        <h2 style="font-size: 1.15rem; font-weight: 700;">Sensitive Clinical Health Processing Consent</h2>
+        <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0.25rem 0 0 0;">Sensitive Clinical Health Processing Consent</h2>
       </div>
-      <button type="button" id="btn-close-health-modal" class="btn btn-sm">✕</button>
+      <button type="button" id="btn-close-health-modal" class="btn btn-sm btn-outline">✕</button>
     </div>
     <div class="legal-modal-body">
       <h3>1. Processing of Sensitive Health Data</h3>
@@ -176,8 +180,12 @@
 
       <h3>3. Right to Erasure</h3>
       <p>In accordance with DPDPA 2023 §12, you retain the right to erase your account and all associated health records at any time via the self-service Account Deletion tool.</p>
+
+      <h3>4. Security & Isolation Standard</h3>
+      <p>Your records are secured using AES-256 / PBKDF2 encryption and isolated at the tenant claim level. Third-party advertisers and data brokers have zero access to your health metrics.</p>
     </div>
-    <div style="margin-top: 1rem; text-align: right;">
+    <div class="legal-modal-footer">
+      <a href="/clinical-health-consent.html" target="_blank" class="legal-full-link">Open Full Page ↗</a>
       <button type="button" id="btn-accept-health-modal" class="btn btn-primary btn-sm">I Understand & Accept</button>
     </div>
   </div>

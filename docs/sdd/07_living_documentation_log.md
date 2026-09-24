@@ -1797,6 +1797,45 @@
   - `dotnet test`: 90 passed, 0 failed, 0 warnings across all test suites.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-013] Standalone Legal Detail Pages & Auth Gate Modal Layering Fix
+- **Date / Timestamp**: 2026-09-25 00:48:00 UTC
+- **Change Type**: `[FEATURE]` | `[UI]` | `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`auth-gate.html`, `auth-gate.js`, `styles.css`, `terms.html`, `clinical-health-consent.html`)
+- **Summary of Change**:
+  1. **Legal Modals Stacking Context Fix**:
+     - *Symptom*: Clicking "Terms of Service" or "Clinical Health & Nutrition Processing" in the Create Account tab failed to display the legal modal.
+     - *Root Cause*: `.auth-gate-overlay` had `z-index: 99999`, while `.review-modal-overlay` had `z-index: 100`, rendering the legal agreement sub-modals behind the dark authentication gate overlay. Additionally, nested `<a>` tags inside `<label class="legal-checkbox-label">` propagated click events to the checkbox input.
+     - *Remediation*:
+       - Assigned `z-index: 100005 !important` to `#legal-terms-modal` and `#legal-health-modal` with high-contrast Obsidian-dark styling and animations.
+       - Added `e.preventDefault()` and `e.stopPropagation()` in `auth-gate.js` to prevent label/checkbox collision.
+       - Added backdrop click and Escape key dismissal listeners.
+       - Wired "I Understand & Accept" buttons to automatically check the corresponding registration consent checkboxes and close the modal.
+  2. **Standalone Legal Detail Pages (`terms.html` & `clinical-health-consent.html`)**:
+     - Created `src/Nutrition.WebGateway/wwwroot/terms.html` containing full Terms of Service, Medical Non-Liability disclaimer, and AI Model Training / IP license adhering to ICMR-NIN 2024.
+     - Created `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` providing statutory DPDPA 2023 §6 explicit consent disclosures, biometric processing rules, purpose limitation, and Data Principal rights.
+     - Linked "Open Full Page ↗" from in-app sub-modals directly to these standalone pages.
+  3. **Verification**:
+     - Executed automated browser subagent session verifying:
+       - Terms of Service link opens layered modal over Auth Gate.
+       - "I Understand & Accept" auto-checks `#reg-consent-terms` and dismisses modal.
+       - Clinical Health Processing link opens layered modal over Auth Gate.
+       - "I Understand & Accept" auto-checks `#reg-consent-health` and dismisses modal.
+       - Direct URL navigation to `/terms.html` and `/clinical-health-consent.html` loads standalone detail pages successfully.
+- **Modified & Created Files**:
+  - `src/Nutrition.WebGateway/wwwroot/terms.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/auth-gate.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/auth-gate.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: 90 passed, 0 failed, 0 warnings.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 
