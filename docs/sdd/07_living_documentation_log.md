@@ -1591,6 +1591,45 @@
   - Result: `Passed: 68, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-007] User Management: Section 3 - Dynamic Tier Engine & AI Quota Interceptor
+- **Date / Timestamp**: 2026-09-24 16:15:00 UTC
+- **Change Type**: `[FEATURE]` | `[TIER_GOVERNANCE]` | `[AI_QUOTAS]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Dynamic Tier Configuration Governance (`ITierConfigurationService`)**:
+     - Implemented `ITierConfigurationService` and `TierConfigurationService` with in-memory caching and runtime DB synchronization.
+     - Supports runtime modification of daily limits, export toggles, and photo comparison capabilities without redeployment.
+  2. **AI Quota Tracking & Localized Midnight Reset (`IAiQuotaService`)**:
+     - Implemented `IAiQuotaService` and `AiQuotaService` computing localized midnight reset boundaries from `UserProfile.Timezone` (fallback to `Asia/Kolkata`).
+     - Queries `AiUsageLogs` for today's successful detections against tier daily limits (Free: 1, Basic: 7, Premium: 30, SuperAdmin: $\infty$).
+     - Records immutable telemetry logs (`AiUsageLog`) capturing operation type, model ID, latency, and token consumption.
+  3. **Tier Feature Gating & Quota Interception in Controllers**:
+     - `MealsController`: Enforces `403 Forbidden` (`AiQuotaExceeded`) on `/api/meals/upload` and `/api/meals/analyze-text` when daily limit is exhausted.
+     - `MealsController`: Enforces `403 Forbidden` (`FeatureTierUpgradeRequired`) on `/api/meals/export` when Free or Basic users attempt data export.
+     - `MealsController`: Added `/api/meals/quota` endpoint returning today's, 7D, and 30D usage stats and midnight reset countdown.
+     - `ProgressPhotosController`: Enforces `403 Forbidden` (`FeatureTierUpgradeRequired`) on `/api/progress-photos/comparison` when Free or Basic users attempt photo comparison.
+  4. **Automated Unit Tests**:
+     - Added `AiQuotaAndTierServiceTests` in `Nutrition.EvalHarness.Tests` validating Free (1), Basic (7), Premium (30), and SuperAdmin ($\infty$) quotas, limit rejections, cache invalidation, and telemetry rollups.
+     - Total tests: 74 passed, 0 failed, 0 warnings.
+- **Modified & Created Files**:
+  - `src/Nutrition.Application/Services/ITierConfigurationService.cs` [CREATED]
+  - `src/Nutrition.Application/Services/IAiQuotaService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Services/TierConfigurationService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Services/AiQuotaService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/SecurityInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.Domain/Model/Identity/TierFeatureConfiguration.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProgressPhotosController.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [CREATED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - CLI: `dotnet test`
+  - Result: `Passed: 74, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

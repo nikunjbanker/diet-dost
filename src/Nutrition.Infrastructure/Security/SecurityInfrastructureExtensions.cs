@@ -1,5 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Nutrition.Application.Common;
+using Nutrition.Application.Services;
+using Nutrition.Infrastructure.Services;
 
 namespace Nutrition.Infrastructure.Security;
 
@@ -12,6 +14,8 @@ public static class SecurityInfrastructureExtensions
     {
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IOtpService, OtpService>();
+        services.AddScoped<ITierConfigurationService, TierConfigurationService>();
+        services.AddScoped<IAiQuotaService, AiQuotaService>();
         return services;
     }
 }

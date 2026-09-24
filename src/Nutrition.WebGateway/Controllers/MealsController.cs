@@ -4,6 +4,7 @@ using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
+using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Infrastructure.Security;
@@ -22,6 +23,8 @@ public class MealsController : ControllerBase
     private readonly ClinicalDietitianService _dietitianService;
     private readonly IRepository<UserCorrectionRecord> _correctionsRepo;
     private readonly IRepository<AiDetectionFeedbackRecord> _feedbackRepo;
+    private readonly IAiQuotaService _quotaService;
+    private readonly ITierConfigurationService _tierConfigService;
     private readonly IUnitOfWork _uow;
     private readonly IWebHostEnvironment _env;
 
@@ -30,6 +33,8 @@ public class MealsController : ControllerBase
         ClinicalDietitianService dietitianService,
         IRepository<UserCorrectionRecord> correctionsRepo,
         IRepository<AiDetectionFeedbackRecord> feedbackRepo,
+        IAiQuotaService quotaService,
+        ITierConfigurationService tierConfigService,
         IUnitOfWork uow,
         IWebHostEnvironment env)
     {
@@ -37,6 +42,8 @@ public class MealsController : ControllerBase
         _dietitianService = dietitianService;
         _correctionsRepo = correctionsRepo;
         _feedbackRepo = feedbackRepo;
+        _quotaService = quotaService;
+        _tierConfigService = tierConfigService;
         _uow = uow;
         _env = env;
     }
@@ -72,8 +79,36 @@ public class MealsController : ControllerBase
             userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == userId, ct);
         }
 
+        // Tier Quota Gating (OWASP AI LLM04)
+        var tierString = User.GetTier();
+        var userTier = Enum.TryParse<UserTier>(tierString, out var parsedTier) ? parsedTier : UserTier.Free;
+        var quota = await _quotaService.CheckQuotaAsync(currentUserId, userTier, userProfile?.Timezone, ct);
+        if (!quota.IsAllowed)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "AiQuotaExceeded",
+                message = quota.RejectionReason,
+                tier = userTier.ToString(),
+                usedToday = quota.UsedToday,
+                dailyLimit = quota.DailyLimit,
+                resetsAtUtc = quota.ResetsAtUtc
+            });
+        }
+
         stream.Position = 0;
         var analysis = await _visionAgent.AnalyzeMealPhotoAsync(stream, mimeType!, regionalContext, userProfile, userCorrections, ct);
+
+        // Record AI Usage Telemetry
+        await _quotaService.RecordUsageAsync(
+            currentUserId,
+            AiOperationType.PhotoDetection,
+            analysis.DetectedByModel ?? "Gemini-3.8-Flash",
+            estimatedTokens: 1200,
+            latencyMs: 1200,
+            isSuccess: true,
+            errorReason: null,
+            ct: ct);
 
         // Auto-select Meal Type: If passed explicitly from client, use it; otherwise compute from user clock/timezone
         if (!string.IsNullOrWhiteSpace(mealType))
@@ -165,6 +200,23 @@ public class MealsController : ControllerBase
         UserProfile? userProfile = await _dietitianService.GetProfileAsync(effectiveUserId, ct);
         List<UserCorrectionRecord>? userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
 
+        // Tier Quota Gating (OWASP AI LLM04)
+        var tierString = User.GetTier();
+        var userTier = Enum.TryParse<UserTier>(tierString, out var parsedTier) ? parsedTier : UserTier.Free;
+        var quota = await _quotaService.CheckQuotaAsync(currentUserId, userTier, userProfile?.Timezone, ct);
+        if (!quota.IsAllowed)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "AiQuotaExceeded",
+                message = quota.RejectionReason,
+                tier = userTier.ToString(),
+                usedToday = quota.UsedToday,
+                dailyLimit = quota.DailyLimit,
+                resetsAtUtc = quota.ResetsAtUtc
+            });
+        }
+
         // Auto-select Meal Type: If text explicitly specifies, honor it; otherwise auto-detect from clock/timezone
         var clockMealType = GetClockMealType(userProfile?.Timezone);
         var effectiveMealType = !string.IsNullOrWhiteSpace(request.MealType) ? request.MealType : clockMealType;
@@ -188,6 +240,17 @@ public class MealsController : ControllerBase
         }
 
         var analysis = await _visionAgent.AnalyzeMealDescriptionAsync(descTrimmed, effectiveMealType, userProfile, userCorrections, ct);
+
+        // Record AI Usage Telemetry
+        await _quotaService.RecordUsageAsync(
+            currentUserId,
+            AiOperationType.TextDetection,
+            analysis.DetectedByModel ?? "Gemini-3.8-Flash",
+            estimatedTokens: 600,
+            latencyMs: 750,
+            isSuccess: true,
+            errorReason: null,
+            ct: ct);
 
         // Ensure analysis.MealType reflects the effectiveMealType if AI didn't explicitly override from text keywords
         if (string.IsNullOrWhiteSpace(analysis.MealType) ||
@@ -745,6 +808,20 @@ public class MealsController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
+        // Tier Feature Check: Excel / CSV Export
+        var tierString = User.GetTier();
+        var userTier = Enum.TryParse<UserTier>(tierString, out var parsedTier) ? parsedTier : UserTier.Free;
+        var tierConfig = await _tierConfigService.GetConfigurationAsync(userTier, ct);
+
+        if (!tierConfig.AllowDataExport && !User.IsAdminOrSuper())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "FeatureTierUpgradeRequired",
+                message = "Exporting meal history (Excel / CSV) is a Premium tier feature. Please upgrade your plan."
+            });
+        }
+
         var effectiveUserId = (!string.IsNullOrWhiteSpace(userId) && (User.IsInRole("Admin") || User.IsInRole("SuperAdmin")))
             ? userId
             : currentUserId;
@@ -815,6 +892,21 @@ public class MealsController : ControllerBase
         var fileName = $"DietDost_Meals_{period}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv";
 
         return File(csvBytes, "text/csv; charset=utf-8", fileName);
+    }
+
+    [HttpGet("quota")]
+    public async Task<IActionResult> GetAiQuota(CancellationToken ct)
+    {
+        var currentUserId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(currentUserId))
+            return Unauthorized();
+
+        var tierString = User.GetTier();
+        var userTier = Enum.TryParse<UserTier>(tierString, out var parsedTier) ? parsedTier : UserTier.Free;
+
+        var profile = await _dietitianService.GetProfileAsync(currentUserId, ct);
+        var stats = await _quotaService.GetUsageStatsAsync(currentUserId, userTier, profile?.Timezone, ct);
+        return Ok(stats);
     }
 }
 

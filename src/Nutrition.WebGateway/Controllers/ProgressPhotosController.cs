@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common;
+using Nutrition.Application.Services;
+using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Progress;
 using Nutrition.Infrastructure.Security;
 using Nutrition.WebGateway.Extensions;
@@ -13,17 +15,20 @@ namespace Nutrition.WebGateway.Controllers;
 public class ProgressPhotosController : ControllerBase
 {
     private readonly IRepository<ProgressPhoto> _photoRepo;
+    private readonly ITierConfigurationService _tierConfigService;
     private readonly IUnitOfWork _uow;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<ProgressPhotosController> _logger;
 
     public ProgressPhotosController(
         IRepository<ProgressPhoto> photoRepo,
+        ITierConfigurationService tierConfigService,
         IUnitOfWork uow,
         IWebHostEnvironment env,
         ILogger<ProgressPhotosController> logger)
     {
         _photoRepo = photoRepo;
+        _tierConfigService = tierConfigService;
         _uow = uow;
         _env = env;
         _logger = logger;
@@ -143,6 +148,19 @@ public class ProgressPhotosController : ControllerBase
         var currentUserId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
+
+        var tierString = User.GetTier();
+        var userTier = Enum.TryParse<UserTier>(tierString, out var parsedTier) ? parsedTier : UserTier.Free;
+        var config = await _tierConfigService.GetConfigurationAsync(userTier, ct);
+
+        if (!config.AllowPhotoCompare && !User.IsAdminOrSuper())
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "FeatureTierUpgradeRequired",
+                message = "Visual Photo Comparison is a Premium tier feature. Please upgrade your plan."
+            });
+        }
 
         var targetUserId = string.IsNullOrWhiteSpace(userId) ? currentUserId : userId;
         if (targetUserId != currentUserId && !User.IsAdminOrSuper())

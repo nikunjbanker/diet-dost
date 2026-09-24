@@ -96,4 +96,21 @@ public class TierFeatureConfiguration
             }
         };
     }
+
+    /// <summary>
+    /// Returns the default tier configuration for a specific tier.
+    /// </summary>
+    public static TierFeatureConfiguration CreateDefault(UserTier tier)
+    {
+        return GetDefaultConfigurations().FirstOrDefault(c => c.Tier == tier) ?? new TierFeatureConfiguration
+        {
+            Id = $"tier-{tier.ToString().ToLowerInvariant()}",
+            Tier = tier,
+            DailyAiDetectionLimit = tier == UserTier.SuperAdmin ? -1 : 1,
+            AllowPhotoCompare = tier is UserTier.Premium or UserTier.SuperAdmin,
+            AllowDataExport = tier is UserTier.Premium or UserTier.SuperAdmin,
+            AnalyticsHistoryDays = tier is UserTier.Premium or UserTier.SuperAdmin ? 365 : 7,
+            Description = $"{tier} Tier Configuration"
+        };
+    }
 }
