@@ -28,6 +28,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Log** | Continuous chronological audit trail of features, defect fixes, and RCAs | `SYNCHRONIZED` |
 | [`ICMR_NIN_2024_FEATURE_ROADMAP.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/ICMR_NIN_2024_FEATURE_ROADMAP.md) | **ICMR-NIN 2024 Feature Roadmap** | Comprehensive 17-guideline feature recommendations, prioritization matrix, and roadmap | `PROPOSED & AUDITED` |
 | [`LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md) | **Local Indian Food Text/Vision SLM Training Guide** | Dataset, local fine-tuning, Agent Framework integration, and evaluation gates | `PROPOSED` |
+| [`AZURE_DEVOPS_DEPLOYMENT_TODO.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md) | **Azure DevOps & Deployment Feature TODO** | Podman 5.7.0, Azure Container Apps, ACR push, custom domain & free managed TLS | `APPROVED & ACTIONABLE` |
 
 
 ---
