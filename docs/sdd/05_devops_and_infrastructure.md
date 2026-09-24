@@ -172,3 +172,24 @@ Stop-Process -Name dcp, Nutrition.AppHost, Nutrition.WebGateway -Force -ErrorAct
 ### 4.2 Service Access URLs
 - **Web Application**: `http://localhost:5240/?v=1.3.1`
 - **Aspire Dashboard (Traces, Logs, Metrics)**: `http://localhost:18888/`
+
+---
+
+## 5. Git Branching & Pull Request Governance
+
+To maintain production stability and adherence to the Zero Documentation Drift Mandate, the following source control policy is enforced:
+
+### 5.1 Branching Strategy
+- **Protected Trunk (`main`)**: Direct commits and direct pushes to `main` are strictly prohibited.
+- **Dedicated Branching**: Every feature, bug fix, refactor, or documentation update must originate on an isolated branch:
+  - Features: `feature/<feature-name>`
+  - Bug fixes: `fix/<defect-name>`
+  - Documentation: `docs/<topic-name>`
+
+### 5.2 Pull Request (PR) Merge Mandate
+- **PR-Only Integration**: All code and documentation changes must be integrated into `main` exclusively through Pull Requests.
+- **Verification Gates Before PR Merge**:
+  1. Build compiles with **0 warnings and 0 errors** on `.NET 11`.
+  2. All automated tests in `tests/` pass with 100% success rate.
+  3. Living documentation in `docs/sdd/*.md` is updated, including an entry in `docs/sdd/07_living_documentation_log.md`.
+
