@@ -1,6 +1,6 @@
 ---
 name: indian-diet-calorie-tracker
-version: 1.3.0
+version: 1.4.0
 status: Final Approved Production Specification & SDD Development Rulebook
 description: >-
   Software Design Document (SDD) and implementation specification for building an AI-powered
@@ -10,12 +10,12 @@ description: >-
 ---
 
 # Indian Diet Calorie & Weight Loss Tracker - Architecture & Implementation Skill
-> **Specification Version**: `v1.3.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.4.0 (Production & Living SDD)`  
 > **Classification**: Production Software Design Document (SDD), Architecture Blueprint & Clinical Rulebook  
 > **Approved Domain Focus**: Indian Population, ICMR-NIN & WHO Medical Standards, Zero-Assumption Clinical Logic  
-> **Tech Architecture**: .NET 11 RC (Exclusive, Zero Warnings, Pre-release Packages Enabled), Standalone Aspire.AppHost.Sdk 13.5.4+, Swappable SQLite V1 (PWA Offline-First), Microsoft Agent Framework + Google AI Pro, OWASP ASVS, Linear.app Design System  
+> **Tech Architecture**: .NET 11 RC (Exclusive, Zero Warnings, Pre-release Packages Enabled), Standalone Aspire.AppHost.Sdk 13.5.4+, Swappable SQLite V1 (PWA Offline-First), Multi-Provider AI Engine (Google Gemini 3.6-Flash / 3-Flash-Preview & Azure OpenAI gpt-5.6-luna), Podman 5.7.0 & Azure Container Apps, OWASP ASVS, Linear.app Design System (11 Modular UI Partials)  
 > **Documentation Governance**: Mandatory `docs/sdd/*.md` deliverables, Multi-Dimensional Solution Architecture Mermaid Diagrams, Living Documentation Protocol for All Features & Bug Fixes  
-> **Development Methodology**: Harness Engineering (`Aspire.Hosting.Testing`, Eval Harnesses) & Closed-Loop Feedback Cycles  
+> **Development Methodology**: Harness Engineering (`Aspire.Hosting.Testing`, Eval Harnesses), Git Branching & PR-Only Merge Mandate, Closed-Loop Feedback Cycles  
 
 This skill guides the design, architecture, documentation, and development of a full-stack, enterprise-grade AI calorie tracking application tailored specifically for Indian dietary habits and sustainable weight loss. All implementations under this skill require creating and continuously synchronizing structured SDD markdown files.
 
@@ -127,59 +127,125 @@ The engine applies automated clinical adjustments to caloric targets, macronutri
 
 ---
 
-## 2. AI Engine: Microsoft Agent Framework & Google AI Integration
+## 2. AI Engine: Multi-Provider Architecture (Google Gemini & Azure OpenAI)
 
-### 2.1 Microsoft Agent Framework Architecture
-The AI Vision & Dietitian agent is implemented using the **Microsoft Agent Framework** (`Microsoft.Agents.Core` / Semantic Kernel / Microsoft Agent AI SDK for .NET).
+### 2.1 Strategy + Factory Multi-Provider Architecture
+The AI Vision & Dietitian subsystem implements a decoupled Strategy + Factory pattern allowing seamless swapping and cascading between AI model families without altering application logic or API contracts:
 
-- **Decoupled Model Provider**: The model provider is dynamically configurable via `appsettings.json` or environment variables without code recompilation.
-- **Free-Tier Zero-Cost Setup**: Configured by default to connect to **Google AI Pro (Gemini 2.5 Pro / Flash)** using existing Antigravity free tier credits through the Google GenAI SDK or OpenAI-compatible endpoint bridge.
-- **Multi-Model Fallback**:
+- **Analysis Provider Abstraction (`IAiFoodAnalysisProvider`)**:
+  ```csharp
+  public interface IAiFoodAnalysisProvider
+  {
+      Task<IndianMealAnalysisResult> AnalyzePhotoAsync(
+          Stream imageStream, 
+          string mimeType, 
+          string? mealType, 
+          UserProfile? profile, 
+          IReadOnlyList<UserCorrectionRecord>? corrections, 
+          CancellationToken ct = default);
+
+      Task<IndianMealAnalysisResult> AnalyzeTextAsync(
+          string description, 
+          string? mealType, 
+          UserProfile? profile, 
+          IReadOnlyList<UserCorrectionRecord>? corrections, 
+          CancellationToken ct = default);
+  }
+  ```
+
+- **Runtime Dynamic Factory (`AiFoodProviderFactory`)**:
+  Resolves the active provider at runtime based on configuration (`AI:Provider`):
+  - `"GoogleAI"` or `"Gemini"` $\rightarrow$ `GoogleGeminiProvider`
+  - `"AzureOpenAI"` $\rightarrow$ `AzureOpenAiProvider`
+  - Fallback / Mock provider for offline development.
+
+- **Unified Configuration Schema (`AiProviderOptions`)**:
+  Supports isolated configuration blocks for each model family, model transparency toggle, and fallback chain:
   ```json
   {
     "AI": {
       "Provider": "GoogleAI",
-      "ModelId": "gemini-2.5-pro",
-      "Endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/",
-      "ApiKey": "${GOOGLE_AI_KEY}",
-      "FallbackModelId": "gemini-2.5-flash",
-      "MaxTokens": 2048,
-      "Temperature": 0.2
+      "ShowModelDetails": true,
+      "GoogleAI": {
+        "ModelId": "gemini-3.6-flash",
+        "FallbackModelId": "gemini-3.7-flash",
+        "ApiKey": "${GOOGLE_AI_KEY}",
+        "MaxOutputTokens": 8192,
+        "Temperature": 0.2
+      },
+      "AzureOpenAI": {
+        "Endpoint": "https://my-resource.openai.azure.com/",
+        "ApiKey": "${AZURE_OPENAI_KEY}",
+        "DeploymentName": "gpt-5.6-luna",
+        "MaxTokens": 4096,
+        "Temperature": 0.2
+      }
     }
   }
   ```
 
-### 2.2 Microsoft Agent Food Vision Agent Implementation
-```csharp
-public interface IFoodVisionAgent
-{
-    Task<IndianMealAnalysisResult> AnalyzeMealPhotoAsync(Stream imageStream, string mimeType, string? regionalContext, CancellationToken ct = default);
-}
+### 2.2 Google Gemini Provider & Cascade Fallback Chain
+1. **Active Production Endpoints**:
+   - **Primary Model**: `gemini-3.6-flash` (balanced reasoning, high throughput, low latency).
+   - **High-Speed Vision Alternative**: `gemini-3-flash-preview`.
+   - **Automated Fallback**: `gemini-3.7-flash`.
+2. **Resilience & Key Resolution**:
+   - `ResolveApiKey` traverses `AI:GoogleAI:ApiKey`, `AI:ApiKey`, `Gemini:ApiKey`, `AI__ApiKey`, `GEMINI_API_KEY`, and `GOOGLE_AI_KEY`, discarding masked values (`*******`).
+   - Generous timeout parameters: 30s for multimodal image analysis, 20s for textual meal analysis.
+   - Sets `max_output_tokens: 8192` to avoid truncation caused by reasoning/thought tokens.
+   - Thought-parts traversal handles modern thinking-model response objects seamlessly.
 
-// Implemented using Microsoft Agent Framework
-public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
-{
-    private readonly AIAgent _agent;
-    private readonly IConfiguration _config;
+### 2.3 Azure OpenAI Provider (gpt-5.6-luna)
+1. **Client Integration**:
+   - Uses the official `OpenAI.Responses.ResponsesClient` / `OpenAI.Chat.ChatClient` with direct Azure endpoint binding.
+   - Utilizes multimodal input items (`ChatMessageContentItem.CreateImageContentItem`) with base64 data URIs.
+2. **Structured Outputs**:
+   - Enforces strict JSON Schema response formats (`ChatResponseFormat.CreateJsonSchemaFormat`).
 
-    public MicrosoftAgentFoodVisionService(IConfiguration config)
-    {
-        _config = config;
-        var modelId = config["AI:ModelId"] ?? "gemini-2.5-pro";
-        var apiKey = config["AI:ApiKey"];
-        var endpoint = config["AI:Endpoint"];
+### 2.4 Resilient JSON Parsing & Boundary Extraction (`AiJsonParser`)
+1. **Fence & Boundary Extraction**:
+   - Automatically cleans raw LLM output by locating the first `{` and last `}` braces, safely ignoring auxiliary thinking chatter or markdown backticks (` ```json ... ``` `).
+2. **Flexible Key Traversal**:
+   - Tolerates schema variations from different SLMs/LLMs, reading dish items from `identifiedItems`, `items`, `dishes`, or `foodItems`.
+3. **Automatic Mathematical Aggregation**:
+   - If the AI model omits top-level macro totals, `AiJsonParser` computes the exact mathematical sum across all identified items:
+     - `totalCalories = sum(item.calories)`
+     - `totalProteinGrams = sum(item.proteinGrams)`
+     - `totalCarbsGrams = sum(item.carbsGrams)`
+     - `totalFatGrams = sum(item.fatGrams)`
+     - `totalFiberGrams = sum(item.fiberGrams)`
+     - `totalSugarGrams = sum(item.sugarGrams)`
+     - `totalSodiumMg = sum(item.sodiumMg)`
 
-        // Agent configured with Microsoft Agent Framework and Google AI
-        _agent = new AgentBuilder()
-            .WithChatClient(new OpenAICompatibleClient(endpoint, apiKey).AsChatClient(modelId))
-            .WithSystemPrompt(IndianDietitianPrompts.SystemPrompt)
-            .Build();
-    }
-    // Execution with structured output schema enforcement...
-}
-```
+### 2.5 Dynamic Food-Based Dish Name Synthesis & Inline Title Editing
+1. **Never Return Generic Titles**:
+   - Prompt directive strictly mandates: *"DISH NAME SYNTHESIS (NEVER USE GENERIC TITLES): In 'dishName', generate a natural, descriptive name reflecting the exact foods on the plate... NEVER return generic titles like 'Custom Indian Meal' or 'Plate Photo'!"*
+2. **Server-Side & Client-Side Synthesis (`SynthesizeMealDishName`)**:
+   - Detects canonical Indian food pairings (e.g. *Phulkas & Dal Tadka*, *Masala Dosa & Sambar*, *Idli Sambar*, *Kanda Poha & Masala Chai*, *North Indian Thali*).
+   - Cleans item names (removing portion numbers like "2" or "(150g)").
+   - Generates elegant composite titles (e.g., *"Whole Wheat Phulkas with Yellow Moong Dal Tadka & Bhindi Masala"*).
+3. **Editable Title with Custom Title Persistence**:
+   - Editable `#review-dish-name-input` on the review modal.
+   - If the user renames the meal, their custom title is strictly preserved (`_hasUserRenamedTitle = true`). If cleared, it gracefully reverts to the synthesized title.
 
-### 2.3 Indian Meal Extraction JSON Contract
+### 2.6 Textual Food AI Search & Single Item Updates
+1. **Dual Ingestion Endpoints**:
+   - `POST /api/meals/upload`: Multimodal vision photo analysis.
+   - `POST /api/meals/analyze-text`: Full natural language meal parsing (e.g. *"2 rotis with yellow dal and cucumber salad"*).
+   - `POST /api/meals/estimate-item`: Per-item single dish estimation with user clinical profile and learned memory context.
+2. **In-Screen Meal Search by Text Box**:
+   - Dedicated search bar above the item list in `review-modal.html` with instant suggest chips (`🫓 2 Phulkas + Ghee`, `🥣 1 Bowl Dal Tadka`, `🥬 Palak Paneer`, `🥛 1 Cup Curd`, `🥒 Cucumber Salad`).
+   - Searching or describing dishes triggers `analyzeMealText` and merges items directly into the current meal.
+3. **Inline Per-Item AI Refinement & Live Recalculation**:
+   - Inline `⚡ AI` button on each item row for targeted nutrition re-estimation.
+   - Editing an item's title or portion auto-triggers textual AI re-estimation with loading indicator (`🤖 AI Searching...`).
+   - Live recalculation updates all 6 macros, pulses the Top Aggregated Nutrition Summary Bar, re-evaluates WHO flags (Sodium > 800mg, Sugar > 15g), and regenerates ICMR-NIN dietitian advice.
+
+### 2.7 Model Detection Transparency Badge
+- Whenever `"AI:ShowModelDetails": true` is enabled in configuration, the analysis result includes `detectedByModel` (e.g. `"Google Gemini (gemini-3.6-flash)"` or `"Azure OpenAI (gpt-5.6-luna)"`).
+- The review modal displays a sleek, Obsidian violet badge (`🤖 Analyzed by gemini-3.6-flash • 95% confidence`) providing total AI transparency to the user.
+
+### 2.8 Indian Meal Extraction JSON Contract
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -188,6 +254,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
   "properties": {
     "mealType": { "type": "string", "enum": ["Breakfast", "Lunch", "Snack", "Dinner"] },
     "dishName": { "type": "string" },
+    "detectedByModel": { "type": "string", "description": "Active model identifier e.g. gemini-3.6-flash" },
     "identifiedItems": {
       "type": "array",
       "items": {
@@ -195,6 +262,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         "properties": {
           "name": { "type": "string" },
           "hindiOrRegionalName": { "type": "string" },
+          "quantity": { "type": "number", "description": "Portion multiplier, default 1.0" },
           "estimatedPortion": { "type": "string" },
           "grams": { "type": "number" },
           "calories": { "type": "number" },
@@ -202,6 +270,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
           "carbsGrams": { "type": "number" },
           "fatGrams": { "type": "number" },
           "fiberGrams": { "type": "number" },
+          "sugarGrams": { "type": "number" },
           "sodiumMg": { "type": "number" },
           "cookingMediumEstimate": { "type": "string", "description": "e.g., Ghee on roti, mustard oil tadka" },
           "confidenceScore": { "type": "number" }
@@ -213,22 +282,21 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
     "totalProteinGrams": { "type": "number" },
     "totalCarbsGrams": { "type": "number" },
     "totalFatGrams": { "type": "number" },
+    "totalFiberGrams": { "type": "number" },
+    "totalSugarGrams": { "type": "number" },
     "totalSodiumMg": { "type": "number" },
     "whoComplianceFlags": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "e.g. High sodium alert (>800mg in meal), High saturated fat, Sugar > 10g"
+      "description": "e.g. High sodium alert (>800mg in meal), High saturated fat, Sugar > 15g"
     },
     "medicationWarnings": {
       "type": "array",
       "items": { "type": "string" },
-      "description": "Warnings related to active medications, e.g., 'Do not consume potassium salt with Telmisartan', 'High carb load risk on Metformin'"
+      "description": "e.g. 'Do not consume potassium salt with Telmisartan', 'High carb load risk on Metformin'"
     },
-    "conditionSpecificAdvice": {
-      "type": "string",
-      "description": "Tailored guidance based on user's active conditions (e.g., Diabetic blood sugar impact or BP sodium alert)"
-    },
-    "dietitianAdvice": { "type": "string", "description": "Actionable Indian dietitian advice aligned with ICMR-NIN" }
+    "conditionSpecificAdvice": { "type": "string" },
+    "dietitianAdvice": { "type": "string" }
   },
   "required": ["mealType", "dishName", "identifiedItems", "totalCalories", "totalProteinGrams", "totalCarbsGrams", "totalFatGrams"]
 }
@@ -439,19 +507,19 @@ graph TB
         FUNC_Safety["Clinical Safety Floor Checks<br/>(Floor: 1200 kcal F / 1500 kcal M | Max Deficit: 1000 kcal/day)"]
     end
 
-    subgraph LAYER_AI ["6. EXTERNAL AI FOUNDATION"]
-        CLOUD_AI["Google AI Pro (Gemini 2.5 Pro / Flash)<br/>(Vision Ingestion & Structured Indian Meal Reasoning)"]
+    subgraph LAYER_AI ["6. MULTI-PROVIDER AI FOUNDATION"]
+        CLOUD_AI["Multi-Provider AI Foundation<br/>(Google Gemini 3.6-Flash / 3-Flash-Preview / 3.7-Flash,<br/>Azure OpenAI gpt-5.6-luna,<br/>Local SLM Fine-Tuning Roadmap)"]
     end
 
     subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11 RC)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (NET 11 RC)<br/>(Distributed Orchestration & Lifecycle Controller)"]
-        ASPIRE_Dash["Aspire Developer Dashboard<br/>(Real-Time Health, Distributed Traces, Console Logs)"]
-        OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(Distributed Traces, Meters, ActivitySources, Structured Logs)"]
+        ASPIRE_Host[".NET Aspire AppHost (NET 11 RC & Aspire.AppHost.Sdk 13.5.4)<br/>(Standalone Orchestration & Environment Injector)"]
+        ASPIRE_Dash["Aspire Developer Dashboard<br/>(Real-Time Health, Distributed Traces, Console Logs, OTLP 18888)"]
+        OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(HttpPayloadTelemetryMiddleware, NutritionTelemetry GenAI Spans)"]
         STORE_Cache[("Redis Cache Cluster<br/>(Session Store, Token Bucket, Query Acceleration)")]
-        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Encrypted Local Storage / Cloud Relational Database)")]
-        STORE_Blob[("Encrypted Meal Photo Storage<br/>(Local AppData / Cloud Blob Storage)")]
-        CONTAINERS["Containerization & CI/CD<br/>(Docker / Podman, GitHub Actions Pipeline, Health Watchdogs)"]
+        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Schema-Safe PRAGMA Migrations & UTC ValueConverters)")]
+        STORE_Blob[("Encrypted Meal Photo Storage<br/>(Local AppData / Azure Blob Storage)")]
+        CONTAINERS["Containerization & Serverless Cloud<br/>(Podman 5.7.0 WSL2, Azure Container Apps / ACR, Custom Domain Managed TLS 1.3)"]
     end
 
     %% Flow Relationships
@@ -472,7 +540,7 @@ graph TB
 
     SVC_VISION --> SEC_AIGuard
     SEC_AIGuard --> AGENT_Food
-    AGENT_Food <-->|Multimodal Analysis Request / Response| CLOUD_AI
+    AGENT_Food <-->|Multimodal & Text Analysis| CLOUD_AI
     AGENT_Food --> GATE_Confidence
     GATE_Confidence -->|Confidence >= 70% Verified| AGG_Meal
     GATE_Confidence -->|< 70% Retake Prompt / Manual Fallback| UI_PWA
@@ -492,7 +560,7 @@ graph TB
     YARP <--> STORE_Cache
 
     %% DevOps & Telemetry Wiring
-    ASPIRE_Host -->|Orchestrates| YARP
+    ASPIRE_Host -->|Orchestrates Port 5240| YARP
     ASPIRE_Host -->|Orchestrates| SVC_PROFILE
     ASPIRE_Host -->|Orchestrates| SVC_VISION
     ASPIRE_Host -->|Orchestrates| SVC_ANALYTICS
@@ -506,37 +574,80 @@ graph TB
     OTEL_Collector --> ASPIRE_Dash
 ```
 
-### Aspire `AppHost.cs` (.NET 11 RC)
+### Aspire `AppHost` Orchestration Topology (`src/Nutrition.AppHost/Program.cs`)
 ```csharp
 var builder = DistributedApplication.CreateBuilder(args);
 
-// V1 uses SQLite file store / Aspire local resource, swappable for Postgres in cloud
-var sqliteDb = builder.AddParameter("SqliteConnection", "Data Source=diettracker.db");
+// Resolve AI Provider Keys & Configuration
+var geminiKey = builder.Configuration["AI:GoogleAI:ApiKey"]
+    ?? builder.Configuration["AI:ApiKey"] 
+    ?? builder.Configuration["Gemini:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("AI__GoogleAI__ApiKey")
+    ?? Environment.GetEnvironmentVariable("AI__ApiKey")
+    ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
 
-var redis = builder.AddRedis("cache");
+var aiProvider = builder.Configuration["AI:Provider"] 
+    ?? Environment.GetEnvironmentVariable("AI__Provider") 
+    ?? "GoogleAI";
 
-var profileService = builder.AddProject<Projects.Nutrition_ProfileService>("profile-service")
-                            .WithEnvironment("Database__Provider", "Sqlite")
-                            .WithEnvironment("ConnectionStrings__DefaultConnection", sqliteDb);
+var azureKey = builder.Configuration["AI:AzureOpenAI:ApiKey"]
+    ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__ApiKey");
+var azureEndpoint = builder.Configuration["AI:AzureOpenAI:Endpoint"]
+    ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__Endpoint");
+var azureDeployment = builder.Configuration["AI:AzureOpenAI:DeploymentName"]
+    ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__DeploymentName")
+    ?? "gpt-5.6-luna";
 
-var visionService = builder.AddProject<Projects.Nutrition_VisionService>("vision-service")
-                           .WithReference(redis);
+// Web Gateway hosting the Linear.app PWA and microservice endpoints
+var webGateway = builder.AddProject<Projects.Nutrition_WebGateway>("web-gateway")
+       .WithHttpEndpoint(port: 5240, isProxied: false)
+       .WithExternalHttpEndpoints()
+       .WithEnvironment("Database__Provider", "Sqlite")
+       .WithEnvironment("ConnectionStrings__DefaultConnection", "Data Source=diettracker.db")
+       .WithEnvironment("AI__Provider", aiProvider)
+       .WithEnvironment("AI__GoogleAI__ApiKey", geminiKey ?? "")
+       .WithEnvironment("AI__ApiKey", geminiKey ?? "")
+       .WithEnvironment("AI__GoogleAI__ModelId", builder.Configuration["AI:GoogleAI:ModelId"] ?? builder.Configuration["AI:ModelId"] ?? "gemini-3-flash-preview")
+       .WithEnvironment("AI__GoogleAI__FallbackModelId", builder.Configuration["AI:GoogleAI:FallbackModelId"] ?? builder.Configuration["AI:FallbackModelId"] ?? "gemini-3.6-flash");
 
-var analyticsService = builder.AddProject<Projects.Nutrition_AnalyticsService>("analytics-service")
-                              .WithEnvironment("Database__Provider", "Sqlite")
-                              .WithEnvironment("ConnectionStrings__DefaultConnection", sqliteDb)
-                              .WithReference(redis);
-
-builder.AddProject<Projects.Nutrition_WebGateway>("web-gateway")
-       .WithReference(profileService)
-       .WithReference(visionService)
-       .WithReference(analyticsService)
-       .WithReference(redis);
+if (!string.IsNullOrWhiteSpace(azureKey))
+{
+    webGateway.WithEnvironment("AI__AzureOpenAI__ApiKey", azureKey);
+}
+if (!string.IsNullOrWhiteSpace(azureEndpoint))
+{
+    webGateway.WithEnvironment("AI__AzureOpenAI__Endpoint", azureEndpoint);
+}
+if (!string.IsNullOrWhiteSpace(azureDeployment))
+{
+    webGateway.WithEnvironment("AI__AzureOpenAI__DeploymentName", azureDeployment);
+}
 
 builder.Build().Run();
 ```
 
-### 4.2 Domain-Driven Design (DDD) Bounded Contexts with Clinical Logic
+### 4.2 Telemetry, Tracing & Non-PII Diagnostic Logging
+1. **HTTP Payload Telemetry Middleware (`HttpPayloadTelemetryMiddleware`)**:
+   - Inspects and records inbound request bodies and outbound responses to OpenTelemetry spans (`http.request.body`, `http.response.body`).
+   - Automatically sanitizes PII, password hashes, and large image byte blobs.
+2. **GenAI Semantic Spans (`NutritionTelemetry.ActivitySource`)**:
+   - Standardized semantic tags: `gen_ai.system` (`"google.gemini"` or `"azure.openai"`), `gen_ai.request.model`, `gen_ai.response.model`, `gen_ai.usage.prompt_tokens`, `gen_ai.usage.completion_tokens`.
+3. **Database Schema-Safe Migrations & Continuous Memory**:
+   - `PRAGMA table_info` checks verify column existence dynamically before issuing `ALTER TABLE` commands.
+   - EF Core collection `ValueComparer`s prevent false dirty-tracking exceptions on mutable lists.
+   - `UserCorrectionRecord` entity stores manual user item corrections, building user-specific adaptive memory.
+
+### 4.3 Production DevOps & Cloud Deployment (Podman & Azure Container Apps)
+1. **Container Engine: Podman 5.7.0 (WSL2 Backend)**:
+   - Rootless, daemonless OCI container management.
+   - Multi-stage Dockerfile targeting `mcr.microsoft.com/dotnet/sdk:11.0` and `mcr.microsoft.com/dotnet/aspnet:11.0`.
+2. **Azure Container Apps (ACA) & Azure Container Registry (ACR)**:
+   - Serverless container execution with automated scaling, ingress routing, and health probes.
+   - Native ACR image push via Podman credentials.
+3. **Custom Domain & Managed TLS 1.3**:
+   - Custom domain binding with free DigiCert managed TLS 1.3 certificates and automatic renewal.
+
+### 4.4 Domain-Driven Design (DDD) Bounded Contexts with Clinical Logic
 
 1. **User Profile & Clinical Assessment Context (`Nutrition.ProfileService`)**:
    - **Aggregate Root**: `UserProfile`
@@ -546,7 +657,7 @@ builder.Build().Run();
 
 2. **AI Food Vision & Meal Ingestion Context (`Nutrition.VisionService`)**:
    - **Aggregate Root**: `MealLog` (MealType, PhotoUri, Status: Uploaded -> Analyzing -> Verified).
-   - **Entities**: `FoodItemRecord` (Grams, Calories, Macros, Sodium, PreparationMedium).
+   - **Entities**: `FoodItemRecord` (Grams, Calories, Macros, Sodium, PreparationMedium, Quantity).
    - **Value Objects**: `PortionMetric`, `MedicationInteractionFlag`, `GlycemicIndexCategory`.
    - **Domain Events**: `MealPhotoUploadedEvent`, `MealAnalyzedWithClinicalAlertsEvent`, `MealConfirmedEvent`.
 
@@ -610,6 +721,40 @@ To prevent tracking fatigue and make daily calorie logging delightful and reward
 4. **Daily Health Score (0–100) & Evening Snapshot**:
    - A single composite metric combining caloric deficit, protein goal adherence, and WHO sodium/sugar compliance.
    - 15-Second Evening Snapshot: *"Today: 1,480 / 1,600 kcal consumed. Deficit achieved: -420 kcal! 1 step closer to your 70 kg goal. Sleep well! 🌙"*
+
+### 5.4 Modular Component Architecture & 11 UI Partials
+The frontend is cleanly structured into 11 independent HTML partials dynamically mounted by the DI container (`di-container.js`) and EventBus:
+1. `header.html`: Global branding, active profile pill, and navigation.
+2. `hero-hud.html`: Calorie budget HUD, tabular counters, and 6-macro pill gauges.
+3. `meal-logger.html`: Camera snap trigger, drag-and-drop zone, and offline status badge.
+4. `review-modal.html`: In-screen meal search by text box, inline editable title, per-item `⚡ AI` search, quantity steppers, and model transparency badge.
+5. `analytics-card.html`: Food diary with multi-period filters (1D/7D/30D/90D/365D), Card/Grid views, and XLSX/CSV export.
+6. `companion-card.html`: "Dietitian Dost" culturally resonant feedback and streak rewards.
+7. `face-progress-card.html`: Check-in visual HUD with thumbnail timeline.
+8. `progress-modal.html`: Baseline vs latest photo comparison for Face, Full Body, and Check-In captures.
+9. `profile-modal.html`: Zero-assumption clinical intake form with conditions, medications, and timezone selector.
+10. `delete-meal-modal.html`: Obsidian danger confirmation modal with 6-macro impact pills and deficit reversal warning.
+11. `transparency-modal.html`: Deep-dive AI explainability modal (prompt details, tokens, confidence breakdown).
+
+### 5.5 Visual Transformation & Progress Tracking (Face & Body)
+1. **Side-by-Side Visual Comparison**:
+   - Tracks visual changes over time across two primary categories: Face and Full Body.
+   - Features side-by-side comparison between **Baseline** (initial registration) and **Latest Check-In**.
+2. **Universal Obsidian SVG Image Fallbacks**:
+   - Zero broken image policy: `/assets/placeholder-progress.svg` and `/assets/placeholder-meal.svg` prevent empty alt texts on offline mode or network errors.
+
+### 5.6 Food Diary & Excel (.xlsx) / CSV Export Engine
+1. **Circadian Meal Journaling**:
+   - Groups logged meals into the user's circadian day using their configured `Timezone` (`Asia/Kolkata` default).
+   - Supports 1D, 7D, 30D, 90D, and 365D range filtering.
+2. **Multi-Format Data Export**:
+   - Generates formatted Excel (.xlsx) spreadsheets via SheetJS and standard CSV files containing all meal timestamps, items, portion sizes, calories, and complete 6-macro nutrition breakdowns.
+
+### 5.7 Obsidian Dark Danger Delete Confirmation Modal
+1. **Deficit Impact Warning**:
+   - Deleting a meal warns the user of the exact impact on their daily deficit and streak.
+2. **6-Macro Reversal Pills**:
+   - Visual chips display the exact calories, protein, carbs, fats, fiber, and sodium being subtracted from the daily ledger.
 
 ---
 
