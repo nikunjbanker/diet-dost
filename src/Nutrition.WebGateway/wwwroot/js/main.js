@@ -89,6 +89,7 @@ container.register('analyticsChart', (c) => new AnalyticsChartController({
   analyticsService: c.resolve('analyticsService'),
   mealsService: c.resolve('mealsService'),
   toastService: c.resolve('toastService'),
+  authService: c.resolve('authService'),
   appState: c.resolve('appState'),
   eventBus: c.resolve('eventBus')
 }));
@@ -112,6 +113,7 @@ container.register('progressModal', (c) => new ProgressModalController({
   progressService: c.resolve('progressService'),
   toastService: c.resolve('toastService'),
   confettiService: c.resolve('confettiService'),
+  authService: c.resolve('authService'),
   appState: c.resolve('appState'),
   eventBus: c.resolve('eventBus')
 }));

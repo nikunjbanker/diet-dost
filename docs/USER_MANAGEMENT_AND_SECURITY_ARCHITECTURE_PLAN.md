@@ -29,9 +29,11 @@
 - [x] **Section 3: Dynamic Tier Engine & AI Quota Interceptor**
   - [x] Implement `ITierConfigurationService` with memory caching for dynamic tier thresholds
   - [x] Implement `IAiQuotaService` computing localized midnight resets based on user timezone
-  - [x] Enforce `403 Forbidden` (`AiQuotaExceeded`) on meal detection endpoints when daily quota is exhausted
+  - [x] Enforce `403 Forbidden` (`AiQuotaExceeded`) on photo & text meal detection endpoints when daily limit is exhausted
+  - [x] Record all AI operations (photo, text, retakes) and token telemetry in `AiUsageLogs`
   - [x] Enforce `403 Forbidden` (`FeatureTierUpgradeRequired`) on Photo Compare and Excel export for Free/Basic tiers
-  - [x] Log all AI operations and token telemetry to `AiUsageLogs`
+  - [x] Enforce client-side tier defense: block Excel client export and show upgrade prompt for Free/Basic tiers in `analytics-chart.js`
+  - [x] Enforce client-side tier defense: display Obsidian-dark locked state with upgrade CTA on `#face-progress-card` in `progress-modal.js`
 
 - [x] **Section 4: SuperAdmin & User Management API**
   - [x] Implement `AdminController` protected by `[Authorize(Roles = "Admin,SuperAdmin")]`
@@ -53,10 +55,10 @@
   - [x] Build automated test suite for JWT authentication (`JwtAuthenticationTests.cs`)
   - [x] Build automated test suite for cryptography, password hashing, and OTPs (`SecurityCryptographyTests.cs`)
   - [x] Build automated test suite for Polly rate limiting (`PollyRateLimitingTests.cs`)
-  - [x] Build automated test suite for AI quotas and tier gating (`AiQuotaAndTierServiceTests.cs`)
+  - [x] Build automated test suite for AI quotas, photo telemetry, and tier feature gating (`AiQuotaAndTierServiceTests.cs`)
   - [x] Synchronize Living SDD (`00_sdd_index.md`, `02_solution_architecture.md`, `04_security_and_compliance.md`)
-  - [x] Append comprehensive log entries in `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`)
-  - [x] Full solution test verification (`dotnet test`: 79/79 passing, 0 warnings, 0 errors)
+  - [x] Append comprehensive log entries in `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`)
+  - [x] Full solution test verification (`dotnet test`: 86/86 passing, 0 warnings, 0 errors)
 
 ---
 

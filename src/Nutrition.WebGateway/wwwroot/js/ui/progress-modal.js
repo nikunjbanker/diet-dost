@@ -9,13 +9,15 @@ export class ProgressModalController {
    * @param {import('../services/progress-service.js').ProgressPhotosService} options.progressService
    * @param {import('../ui/toast.js').ToastNotificationService} options.toastService
    * @param {import('../ui/confetti.js').ConfettiService} options.confettiService
+   * @param {import('../services/auth-service.js').AuthService} [options.authService]
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
    */
-  constructor({ progressService, toastService, confettiService, appState, eventBus }) {
+  constructor({ progressService, toastService, confettiService, authService, appState, eventBus }) {
     this._progress = progressService;
     this._toast = toastService;
     this._confetti = confettiService;
+    this._authService = authService;
     this._state = appState;
     this._bus = eventBus;
 
@@ -171,6 +173,34 @@ export class ProgressModalController {
   }
 
   async refresh() {
+    const user = this._authService?.currentUser;
+    const isCompareAllowed = user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true;
+    const faceCard = document.getElementById('face-progress-card');
+    const faceGrid = faceCard?.querySelector('.face-comparison-grid');
+    let lockedOverlay = document.getElementById('face-progress-locked-overlay');
+
+    if (!isCompareAllowed) {
+      if (faceGrid) faceGrid.style.display = 'none';
+      if (!lockedOverlay && faceCard) {
+        lockedOverlay = document.createElement('div');
+        lockedOverlay.id = 'face-progress-locked-overlay';
+        lockedOverlay.style.cssText = 'padding: 2.5rem 1rem; text-align: center; background: rgba(18, 22, 28, 0.7); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1); margin-top: 1rem;';
+        lockedOverlay.innerHTML = `
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔒</div>
+          <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem;">Visual Photo Comparison is a Premium Feature</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 420px; margin: 0 auto 1.25rem;">Track facial slimming, non-scale victories, and side-by-side milestone transformation with automated weight delta calculations.</div>
+          <button type="button" class="btn btn-sm btn-primary" onclick="openQuotaModal()">⚡ Upgrade to Premium</button>
+        `;
+        faceCard.appendChild(lockedOverlay);
+      } else if (lockedOverlay) {
+        lockedOverlay.style.display = 'block';
+      }
+      return;
+    }
+
+    if (faceGrid) faceGrid.style.display = 'grid';
+    if (lockedOverlay) lockedOverlay.style.display = 'none';
+
     try {
       const data = await this._progress.getComparison(this._state.userId);
       if (!data) return;

@@ -164,6 +164,16 @@ public class MealsController : ControllerBase
         // Check Confidence Gating Threshold (>= 70%)
         if (!analysis.IsConfidenceGatedPassed)
         {
+            await _quotaService.RecordUsageAsync(
+                currentUserId,
+                AiOperationType.PhotoDetection,
+                analysis.DetectedByModel ?? "Gemini-3.8-Flash",
+                estimatedTokens: 1200,
+                latencyMs: 1100,
+                isSuccess: false,
+                errorReason: "ConfidenceGatedRetakeRequired",
+                ct: ct);
+
             return Ok(new
             {
                 confidenceGated = false,
@@ -174,6 +184,17 @@ public class MealsController : ControllerBase
                 photoUrl
             });
         }
+
+        // Record successful AI Usage Telemetry
+        await _quotaService.RecordUsageAsync(
+            currentUserId,
+            AiOperationType.PhotoDetection,
+            analysis.DetectedByModel ?? "Gemini-3.8-Flash",
+            estimatedTokens: 1200,
+            latencyMs: 1100,
+            isSuccess: true,
+            errorReason: null,
+            ct: ct);
 
         return Ok(new
         {

@@ -1739,6 +1739,37 @@
   - Validated zero errors, zero warnings.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-011] Tier Feature Gating, Photo AI Telemetry & Client-Side Entitlement Defense
+- **Date / Timestamp**: 2026-09-24 17:15:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[UI]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (Controllers, UI Controllers), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Photo Detection AI Telemetry Integration (`MealsController.cs`)**:
+     - Connected `_quotaService.RecordUsageAsync` inside `UploadAndAnalyzeMeal` for `AiOperationType.PhotoDetection`.
+     - Ensures all meal photo uploads decrement the user's localized daily AI quota and trigger atomic `403 Forbidden` (`AiQuotaExceeded`) once exhausted.
+  2. **Client-Side Tier Gating on Excel Export (`analytics-chart.js`)**:
+     - Hardened `exportToExcel()` to evaluate `currentUser.entitlements.allowDataExport` and admin roles.
+     - Dispatches `tier:upgrade_required` event and displays localized upgrade advisory if attempted by Free/Basic users.
+  3. **Visual Progress Comparison Gating Overlay (`progress-modal.js`)**:
+     - Evaluates `allowPhotoCompare` before requesting comparison payloads.
+     - Automatically renders an Obsidian-dark locked state with Upgrade CTA on `#face-progress-card` for Free/Basic tiers.
+  4. **Eval Test Expansion (`AiQuotaAndTierServiceTests.cs`)**:
+     - Added test cases verifying default feature disables for Free/Basic and enables for Premium/SuperAdmin.
+     - Verified photo detection quota enforcement in memory SQLite harness.
+- **Modified Files**:
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/analytics-chart.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/progress-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: 86 passed, 0 failed, 0 warnings across all test suites.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

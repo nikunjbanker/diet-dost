@@ -204,4 +204,59 @@ public class AiQuotaAndTierServiceTests : IDisposable
         Assert.Equal(5, stats.RemainingCalls);
         Assert.Equal(2, stats.RecentOperations.Count);
     }
+
+    [Theory]
+    [InlineData(UserTier.Free)]
+    [InlineData(UserTier.Basic)]
+    public async Task FreeAndBasicTiers_MustHavePhotoCompareDisabledByDefault(UserTier tier)
+    {
+        var config = await _tierConfigService.GetConfigurationAsync(tier);
+        Assert.False(config.AllowPhotoCompare, $"PhotoCompare must be disabled for tier {tier}");
+    }
+
+    [Theory]
+    [InlineData(UserTier.Free)]
+    [InlineData(UserTier.Basic)]
+    public async Task FreeAndBasicTiers_MustHaveDataExportDisabledByDefault(UserTier tier)
+    {
+        var config = await _tierConfigService.GetConfigurationAsync(tier);
+        Assert.False(config.AllowDataExport, $"DataExport must be disabled for tier {tier}");
+    }
+
+    [Theory]
+    [InlineData(UserTier.Premium)]
+    [InlineData(UserTier.SuperAdmin)]
+    public async Task PremiumAndSuperAdminTiers_MustHavePhotoCompareAndDataExportEnabled(UserTier tier)
+    {
+        var config = await _tierConfigService.GetConfigurationAsync(tier);
+        Assert.True(config.AllowPhotoCompare, $"PhotoCompare must be enabled for tier {tier}");
+        Assert.True(config.AllowDataExport, $"DataExport must be enabled for tier {tier}");
+    }
+
+    [Fact]
+    public async Task PhotoDetectionUsage_IncrementsQuotaCountCorrectly()
+    {
+        var userId = "user-photo-quota";
+        var timezone = "Asia/Kolkata";
+
+        // Check quota initially
+        var initial = await _quotaService.CheckQuotaAsync(userId, UserTier.Free, timezone);
+        Assert.True(initial.IsAllowed);
+        Assert.Equal(0, initial.UsedToday);
+
+        // Record photo detection operation
+        await _quotaService.RecordUsageAsync(
+            userId,
+            AiOperationType.PhotoDetection,
+            "Gemini-3.8-Flash",
+            estimatedTokens: 1200,
+            latencyMs: 1100,
+            isSuccess: true);
+
+        // Check quota after photo operation
+        var after = await _quotaService.CheckQuotaAsync(userId, UserTier.Free, timezone);
+        Assert.False(after.IsAllowed);
+        Assert.Equal(1, after.UsedToday);
+        Assert.Equal(0, after.RemainingCalls);
+    }
 }
