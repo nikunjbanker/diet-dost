@@ -88,7 +88,7 @@ public class AnalyticsController : ControllerBase
             return Forbid();
         }
 
-        var projections = await _dietitianService.GetAnalyticsProjectionAsync(targetUserId, period, ct);
+        var projections = await _dietitianService.GetAnalyticsProjectionAsync(targetUserId, normPeriod, ct);
         return Ok(projections);
     }
 

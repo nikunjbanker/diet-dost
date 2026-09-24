@@ -1862,16 +1862,44 @@
   - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
 
-
-
-
-
-
-
-
-
-
-
-
-
+### [LOG-20260925-015] Security Audit Remediation: Polly Rate Limiter Wiring, JWT Key Length Validation, Token Expiry Eventing & Claims Test Suite
+- **Date / Timestamp**: 2026-09-25 01:40:00 UTC
+- **Change Type**: `[SECURITY]` | `[DEFECT_FIX]` | `[TESTING]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`AuthController`, `Program.cs`, `api-client.js`, `main.js`), `Nutrition.Infrastructure` (`JwtTokenService`), `Nutrition.Application` (`UserClaimsExtensions`), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Polly Rate Limiter Enforcement (S2-01 & S2-02)**:
+     - Injected `ResiliencePipeline` into `AuthController`.
+     - Wrapped `/register`, `/verify-otp`, `/resend-otp`, `/login`, and `/token` in `ExecuteWithRateLimitAsync` returning `HTTP 429 Too Many Requests` on brute-force exhaustion.
+     - Tuned sliding window rate limiter in `Program.cs` to strictly enforce specification limits: `PermitLimit = 5`, `Window = 15 minutes`, `SegmentsPerWindow = 3`, `QueueLimit = 0`.
+     - Added automated regression test `PollyRateLimiter_SlidingWindow_RejectsSixthAttemptIn15MinuteWindow` in `PollyRateLimitingTests.cs`.
+  2. **Cryptographic JWT Key Length Validation (S2-03)**:
+     - Enforced key byte length $\ge 32$ (256 bits) in `JwtTokenService` constructor, throwing `ArgumentException` on weak or truncated signing keys.
+     - Added automated regression test `JwtTokenService_KeyShorterThan32Bytes_ThrowsArgumentException` in `JwtAuthenticationTests.cs`.
+  3. **Client-Side `Token-Expired: true` Header Handling (S5-01)**:
+     - Enhanced `api-client.js` `_handleResponse` to inspect `res.headers.get('Token-Expired') === 'true'`.
+     - Dispatches dedicated `auth:token_expired` event when expired, separate from generic `auth:unauthorized`.
+     - Wired event listener in `main.js` notifying user to re-authenticate with a clear session expiration toast.
+  4. **UserClaimsExtensions Decoupling & Automated Tests (S6-01 & S6-02)**:
+     - Relocated `UserClaimsExtensions.cs` to `Nutrition.Application/Common/UserClaimsExtensions.cs` using standard BCL `FindFirst(type)?.Value` method for framework independence.
+     - Added automated regression tests `UserClaimsExtensions_ShouldMapBothStandardAndShortJwtClaimTypes` and `UserClaimsExtensions_IsAdminOrSuper_ValidatesRolesCorrectly` in `JwtAuthenticationTests.cs`.
+     - Fixed CS8604 nullability warning in `AnalyticsController.cs`.
+     - Updated living documentation and test benchmark to **95/95 passing tests, 0 warnings, 0 errors**.
+- **Modified & Created Files**:
+  - `src/Nutrition.Application/Common/UserClaimsExtensions.cs` [CREATED]
+  - `src/Nutrition.WebGateway/Extensions/UserClaimsExtensions.cs` [DELETED]
+  - `src/Nutrition.Infrastructure/Security/JwtTokenService.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/api-client.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/PollyRateLimitingTests.cs` [MODIFIED]
+  - `docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md` [MODIFIED]
+  - `docs/security_audit_report.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`

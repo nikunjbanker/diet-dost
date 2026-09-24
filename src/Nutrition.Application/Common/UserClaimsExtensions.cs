@@ -11,26 +11,26 @@ public static class UserClaimsExtensions
 {
     public static string? GetUserId(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue(ClaimTypes.NameIdentifier)
-            ?? principal.FindFirstValue("sub")
-            ?? principal.FindFirstValue("userId");
+        return principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? principal.FindFirst("sub")?.Value
+            ?? principal.FindFirst("userId")?.Value;
     }
 
     public static string? GetEmail(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue(ClaimTypes.Email)
-            ?? principal.FindFirstValue("email");
+        return principal.FindFirst(ClaimTypes.Email)?.Value
+            ?? principal.FindFirst("email")?.Value;
     }
 
     public static string? GetRole(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue(ClaimTypes.Role)
-            ?? principal.FindFirstValue("role");
+        return principal.FindFirst(ClaimTypes.Role)?.Value
+            ?? principal.FindFirst("role")?.Value;
     }
 
     public static string? GetTier(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue("tier");
+        return principal.FindFirst("tier")?.Value;
     }
 
     public static bool IsAdminOrSuper(this ClaimsPrincipal principal)

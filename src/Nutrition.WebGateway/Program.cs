@@ -160,12 +160,13 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Polly Resilience Pipeline for Rate Limiting & Brute-Force Defense (OWASP A04)
+// Enforces sliding window of max 5 attempts per 15 minutes on authentication endpoints
 var authRateLimitPipeline = new ResiliencePipelineBuilder()
     .AddRateLimiter(new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
     {
-        PermitLimit = 15,
-        Window = TimeSpan.FromMinutes(1),
-        SegmentsPerWindow = 4,
+        PermitLimit = 5,
+        Window = TimeSpan.FromMinutes(15),
+        SegmentsPerWindow = 3,
         QueueLimit = 0
     }))
     .Build();

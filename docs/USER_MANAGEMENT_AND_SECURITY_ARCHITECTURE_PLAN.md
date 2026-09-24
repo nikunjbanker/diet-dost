@@ -59,7 +59,7 @@
   - [x] Build automated test suite for AI quotas, photo telemetry, and tier feature gating (`AiQuotaAndTierServiceTests.cs`)
   - [x] Synchronize Living SDD (`00_sdd_index.md`, `02_solution_architecture.md`, `04_security_and_compliance.md`)
   - [x] Append comprehensive log entries in `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`, `[LOG-20260925-012]`)
-  - [x] Full solution test verification (`dotnet test`: 90/90 passing, 0 warnings, 0 errors)
+  - [x] Full solution test verification (`dotnet test`: 95/95 passing — 36 Domain + 59 EvalHarness, 0 warnings, 0 errors)
 
 ---
 

@@ -9,6 +9,8 @@ using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Infrastructure.Persistence;
+using Polly;
+using Polly.RateLimiting;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
@@ -56,6 +58,7 @@ public class AuthController : ControllerBase
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<AuthController> _logger;
+    private readonly ResiliencePipeline _rateLimiter;
 
     public AuthController(
         DietTrackerDbContext db,
@@ -64,7 +67,8 @@ public class AuthController : ControllerBase
         IJwtTokenService jwtTokenService,
         IConfiguration config,
         IWebHostEnvironment env,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        ResiliencePipeline rateLimiter)
     {
         _db = db;
         _passwordHasher = passwordHasher;
@@ -73,316 +77,346 @@ public class AuthController : ControllerBase
         _config = config;
         _env = env;
         _logger = logger;
+        _rateLimiter = rateLimiter;
+    }
+
+    private async Task<IActionResult> ExecuteWithRateLimitAsync(Func<Task<IActionResult>> action)
+    {
+        try
+        {
+            return await _rateLimiter.ExecuteAsync(async _ => await action());
+        }
+        catch (RateLimiterRejectedException)
+        {
+            _logger.LogWarning("Rate limit exceeded on auth endpoint for client IP: {RemoteIp}", HttpContext.Connection.RemoteIpAddress);
+            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                error = "TooManyRequests",
+                message = "Too many authentication attempts. In accordance with OWASP security guidelines, please wait before retrying."
+            });
+        }
     }
 
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Name) ||
-            string.IsNullOrWhiteSpace(request.Email) ||
-            string.IsNullOrWhiteSpace(request.MobileNumber) ||
-            string.IsNullOrWhiteSpace(request.Password))
+        return await ExecuteWithRateLimitAsync(async () =>
         {
-            return BadRequest(new { error = "MissingFields", message = "Name, email, mobile phone number, and password are all required." });
-        }
-
-        if (!request.AcceptTerms || !request.AcceptHealthConsent)
-        {
-            return BadRequest(new
+            if (string.IsNullOrWhiteSpace(request.Name) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.MobileNumber) ||
+                string.IsNullOrWhiteSpace(request.Password))
             {
-                error = "LegalConsentRequired",
-                message = "DPDPA 2023 Compliance Violation: Both the Terms & AI Model Training Agreement and the Sensitive Health Data Processing Consent must be affirmatively accepted."
+                return BadRequest(new { error = "MissingFields", message = "Name, email, mobile phone number, and password are all required." });
+            }
+
+            if (!request.AcceptTerms || !request.AcceptHealthConsent)
+            {
+                return BadRequest(new
+                {
+                    error = "LegalConsentRequired",
+                    message = "DPDPA 2023 Compliance Violation: Both the Terms & AI Model Training Agreement and the Sensitive Health Data Processing Consent must be affirmatively accepted."
+                });
+            }
+
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
+            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(request.MobileNumber);
+
+            var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
+            if (existingUser != null)
+            {
+                return Conflict(new { error = "EmailAlreadyRegistered", message = "An account with this email address already exists. Please log in or reset your password." });
+            }
+
+            var termsVersion = _config["Auth:TermsVersion"] ?? "v1.0-202609";
+            var healthConsentVersion = _config["Auth:HealthConsentVersion"] ?? "v1.0-202609";
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            var userAgent = Request.Headers.UserAgent.ToString();
+
+            var user = new ApplicationUser
+            {
+                Email = request.Email.Trim(),
+                NormalizedEmail = normalizedEmail,
+                MobileNumber = request.MobileNumber.Trim(),
+                NormalizedMobileNumber = normalizedPhone,
+                PasswordHash = _passwordHasher.HashPassword(request.Password),
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                Role = UserRole.User,
+                Tier = UserTier.Free,
+                IsEmailVerified = false,
+                IsMobileVerified = false,
+                IsActive = true,
+                TermsAcceptedAtUtc = DateTime.UtcNow,
+                TermsVersionAccepted = termsVersion,
+                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                HealthConsentVersionAccepted = healthConsentVersion,
+                ConsentIpAddress = ipAddress,
+                ConsentUserAgent = userAgent,
+                CreatedAtUtc = DateTime.UtcNow
+            };
+
+            try
+            {
+                user.ValidateRegistration();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { error = "ValidationFailed", message = ex.Message });
+            }
+
+            await _db.Users.AddAsync(user, ct);
+
+            // Pre-create clinical profile with standard default baseline
+            var profile = new UserProfile
+            {
+                Id = user.Id,
+                Name = request.Name.Trim(),
+                Sex = BiologicalSex.Male,
+                Age = 30,
+                HeightCm = 170,
+                CurrentWeightKg = 70,
+                TargetWeightKg = 65,
+                DesiredPaceKgPerWeek = 0.5,
+                ActivityLevel = ActivityLevel.Sedentary,
+                DietaryPreference = DietaryPreference.LactoVeg,
+                RegionalCuisine = "North Indian",
+                Timezone = "Asia/Kolkata"
+            };
+            await _db.Profiles.AddAsync(profile, ct);
+
+            // Generate 6-digit OTP code for Email verification
+            var rawCode = _otpService.GenerateCode();
+            var otp = _otpService.CreateOtp(user.Id, user.Email, OtpChannel.Email, rawCode);
+            await _db.VerificationOtps.AddAsync(otp, ct);
+
+            await _db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. OTP dispatched to: {Target}", user.Id, user.Email);
+
+            // In development mode, provide OTP in dev header & response for test harness automation
+            var isDev = _env.IsDevelopment();
+            if (isDev)
+            {
+                Response.Headers.Append("X-Dev-Otp-Code", rawCode);
+            }
+
+            return StatusCode(StatusCodes.Status201Created, new
+            {
+                userId = user.Id,
+                email = user.Email,
+                message = "Registration successful. Please enter the 6-digit verification code sent to your email to activate your account.",
+                devOtpCode = isDev ? rawCode : null
             });
-        }
-
-        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
-        var normalizedPhone = ApplicationUser.NormalizePhoneNumber(request.MobileNumber);
-
-        var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
-        if (existingUser != null)
-        {
-            return Conflict(new { error = "EmailAlreadyRegistered", message = "An account with this email address already exists. Please log in or reset your password." });
-        }
-
-        var termsVersion = _config["Auth:TermsVersion"] ?? "v1.0-202609";
-        var healthConsentVersion = _config["Auth:HealthConsentVersion"] ?? "v1.0-202609";
-        var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-        var userAgent = Request.Headers.UserAgent.ToString();
-
-        var user = new ApplicationUser
-        {
-            Email = request.Email.Trim(),
-            NormalizedEmail = normalizedEmail,
-            MobileNumber = request.MobileNumber.Trim(),
-            NormalizedMobileNumber = normalizedPhone,
-            PasswordHash = _passwordHasher.HashPassword(request.Password),
-            SecurityStamp = Guid.NewGuid().ToString("N"),
-            Role = UserRole.User,
-            Tier = UserTier.Free,
-            IsEmailVerified = false,
-            IsMobileVerified = false,
-            IsActive = true,
-            TermsAcceptedAtUtc = DateTime.UtcNow,
-            TermsVersionAccepted = termsVersion,
-            HealthConsentAcceptedAtUtc = DateTime.UtcNow,
-            HealthConsentVersionAccepted = healthConsentVersion,
-            ConsentIpAddress = ipAddress,
-            ConsentUserAgent = userAgent,
-            CreatedAtUtc = DateTime.UtcNow
-        };
-
-        try
-        {
-            user.ValidateRegistration();
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { error = "ValidationFailed", message = ex.Message });
-        }
-
-        await _db.Users.AddAsync(user, ct);
-
-        // Pre-create clinical profile with standard default baseline
-        var profile = new UserProfile
-        {
-            Id = user.Id,
-            Name = request.Name.Trim(),
-            Sex = BiologicalSex.Male,
-            Age = 30,
-            HeightCm = 170,
-            CurrentWeightKg = 70,
-            TargetWeightKg = 65,
-            DesiredPaceKgPerWeek = 0.5,
-            ActivityLevel = ActivityLevel.Sedentary,
-            DietaryPreference = DietaryPreference.LactoVeg,
-            RegionalCuisine = "North Indian",
-            Timezone = "Asia/Kolkata"
-        };
-        await _db.Profiles.AddAsync(profile, ct);
-
-        // Generate 6-digit OTP code for Email verification
-        var rawCode = _otpService.GenerateCode();
-        var otp = _otpService.CreateOtp(user.Id, user.Email, OtpChannel.Email, rawCode);
-        await _db.VerificationOtps.AddAsync(otp, ct);
-
-        await _db.SaveChangesAsync(ct);
-
-        _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. OTP dispatched to: {Target}", user.Id, user.Email);
-
-        // In development mode, provide OTP in dev header & response for test harness automation
-        var isDev = _env.IsDevelopment();
-        if (isDev)
-        {
-            Response.Headers.Append("X-Dev-Otp-Code", rawCode);
-        }
-
-        return StatusCode(StatusCodes.Status201Created, new
-        {
-            userId = user.Id,
-            email = user.Email,
-            message = "Registration successful. Please enter the 6-digit verification code sent to your email to activate your account.",
-            devOtpCode = isDev ? rawCode : null
         });
     }
 
     [HttpPost("verify-otp")]
     public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Target) || string.IsNullOrWhiteSpace(request.Code))
-            return BadRequest(new { error = "MissingFields", message = "Target and verification code are required." });
-
-        var targetTrimmed = request.Target.Trim();
-        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(targetTrimmed);
-        var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-        if (user == null)
-            return NotFound(new { error = "UserNotFound", message = "No user found associated with this email or mobile." });
-
-        var now = DateTime.UtcNow;
-        var activeOtp = await _db.VerificationOtps
-            .Where(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAtUtc > now)
-            .OrderByDescending(o => o.CreatedAtUtc)
-            .FirstOrDefaultAsync(ct);
-
-        if (activeOtp == null)
+        return await ExecuteWithRateLimitAsync(async () =>
         {
-            return BadRequest(new { error = "NoActiveOtp", message = "No active verification code found or code has expired. Please request a new code." });
-        }
+            if (string.IsNullOrWhiteSpace(request.Target) || string.IsNullOrWhiteSpace(request.Code))
+                return BadRequest(new { error = "MissingFields", message = "Target and verification code are required." });
 
-        var isValid = _otpService.ValidateCode(activeOtp, request.Code, out var failureReason);
-        if (!isValid)
-        {
+            var targetTrimmed = request.Target.Trim();
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(targetTrimmed);
+            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
+            if (user == null)
+                return NotFound(new { error = "UserNotFound", message = "No user found associated with this email or mobile." });
+
+            var now = DateTime.UtcNow;
+            var activeOtp = await _db.VerificationOtps
+                .Where(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAtUtc > now)
+                .OrderByDescending(o => o.CreatedAtUtc)
+                .FirstOrDefaultAsync(ct);
+
+            if (activeOtp == null)
+            {
+                return BadRequest(new { error = "NoActiveOtp", message = "No active verification code found or code has expired. Please request a new code." });
+            }
+
+            var isValid = _otpService.ValidateCode(activeOtp, request.Code, out var failureReason);
+            if (!isValid)
+            {
+                await _db.SaveChangesAsync(ct);
+                return BadRequest(new { error = "InvalidOtp", message = failureReason, attemptsRemaining = VerificationOtp.MaxAttemptsAllowed - activeOtp.AttemptCount });
+            }
+
+            if (request.Channel == OtpChannel.Email || activeOtp.Channel == OtpChannel.Email)
+            {
+                user.IsEmailVerified = true;
+            }
+            else
+            {
+                user.IsMobileVerified = true;
+            }
+
+            user.LastLoginAtUtc = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
-            return BadRequest(new { error = "InvalidOtp", message = failureReason, attemptsRemaining = VerificationOtp.MaxAttemptsAllowed - activeOtp.AttemptCount });
-        }
 
-        if (request.Channel == OtpChannel.Email || activeOtp.Channel == OtpChannel.Email)
-        {
-            user.IsEmailVerified = true;
-        }
-        else
-        {
-            user.IsMobileVerified = true;
-        }
+            var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
+            var displayName = profile?.Name ?? user.Email;
+            await SignInUserAsync(user, displayName);
 
-        user.LastLoginAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+            var token = _jwtTokenService.GenerateToken(user, displayName);
+            var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
-        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-        var displayName = profile?.Name ?? user.Email;
-        await SignInUserAsync(user, displayName);
+            _logger.LogInformation("[AUTH] Account verified and logged in: {UserId}", user.Id);
 
-        var token = _jwtTokenService.GenerateToken(user, displayName);
-        var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
-
-        _logger.LogInformation("[AUTH] Account verified and logged in: {UserId}", user.Id);
-
-        return Ok(new
-        {
-            message = "Account successfully verified and activated.",
-            token = token,
-            tokenType = "Bearer",
-            expiresInSeconds = 86400,
-            user = new CurrentUserResponse(
-                user.Id,
-                user.Email,
-                user.MobileNumber,
-                displayName,
-                user.Role,
-                user.Tier,
-                user.IsEmailVerified,
-                user.IsMobileVerified,
-                tierConfig)
+            return Ok(new
+            {
+                message = "Account successfully verified and activated.",
+                token = token,
+                tokenType = "Bearer",
+                expiresInSeconds = 86400,
+                user = new CurrentUserResponse(
+                    user.Id,
+                    user.Email,
+                    user.MobileNumber,
+                    displayName,
+                    user.Role,
+                    user.Tier,
+                    user.IsEmailVerified,
+                    user.IsMobileVerified,
+                    tierConfig)
+            });
         });
     }
 
     [HttpPost("resend-otp")]
     public async Task<IActionResult> ResendOtp([FromBody] ResendOtpRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Target))
-            return BadRequest(new { error = "MissingFields", message = "Target email or mobile number is required." });
-
-        var targetTrimmed = request.Target.Trim();
-        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(targetTrimmed);
-        var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-        if (user == null)
-            return NotFound(new { error = "UserNotFound", message = "No user found associated with this email or mobile." });
-
-        // Cooldown check: prevent generating more than 1 code per 60 seconds
-        var recentOtp = await _db.VerificationOtps
-            .Where(o => o.UserId == user.Id && o.CreatedAtUtc > DateTime.UtcNow.AddSeconds(-60))
-            .FirstOrDefaultAsync(ct);
-
-        if (recentOtp != null)
+        return await ExecuteWithRateLimitAsync(async () =>
         {
-            return StatusCode(StatusCodes.Status429TooManyRequests, new
+            if (string.IsNullOrWhiteSpace(request.Target))
+                return BadRequest(new { error = "MissingFields", message = "Target email or mobile number is required." });
+
+            var targetTrimmed = request.Target.Trim();
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(targetTrimmed);
+            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
+
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
+            if (user == null)
+                return NotFound(new { error = "UserNotFound", message = "No user found associated with this email or mobile." });
+
+            // Cooldown check: prevent generating more than 1 code per 60 seconds
+            var recentOtp = await _db.VerificationOtps
+                .Where(o => o.UserId == user.Id && o.CreatedAtUtc > DateTime.UtcNow.AddSeconds(-60))
+                .FirstOrDefaultAsync(ct);
+
+            if (recentOtp != null)
             {
-                error = "CooldownActive",
-                message = "Please wait at least 60 seconds before requesting another verification code."
+                return StatusCode(StatusCodes.Status429TooManyRequests, new
+                {
+                    error = "CooldownActive",
+                    message = "Please wait at least 60 seconds before requesting another verification code."
+                });
+            }
+
+            // Expire older active OTPs
+            var existingOtps = await _db.VerificationOtps
+                .Where(o => o.UserId == user.Id && !o.IsUsed)
+                .ToListAsync(ct);
+            foreach (var old in existingOtps)
+            {
+                old.IsUsed = true;
+            }
+
+            var rawCode = _otpService.GenerateCode();
+            var newOtp = _otpService.CreateOtp(user.Id, user.Email, request.Channel, rawCode);
+            await _db.VerificationOtps.AddAsync(newOtp, ct);
+            await _db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("[AUTH] Resent OTP for user: {UserId}. Target: {Target}", user.Id, user.Email);
+
+            var isDev = _env.IsDevelopment();
+            if (isDev)
+            {
+                Response.Headers.Append("X-Dev-Otp-Code", rawCode);
+            }
+
+            return Ok(new
+            {
+                message = "A fresh 6-digit verification code has been dispatched.",
+                devOtpCode = isDev ? rawCode : null
             });
-        }
-
-        // Expire older active OTPs
-        var existingOtps = await _db.VerificationOtps
-            .Where(o => o.UserId == user.Id && !o.IsUsed)
-            .ToListAsync(ct);
-        foreach (var old in existingOtps)
-        {
-            old.IsUsed = true;
-        }
-
-        var rawCode = _otpService.GenerateCode();
-        var newOtp = _otpService.CreateOtp(user.Id, user.Email, request.Channel, rawCode);
-        await _db.VerificationOtps.AddAsync(newOtp, ct);
-        await _db.SaveChangesAsync(ct);
-
-        _logger.LogInformation("[AUTH] Resent OTP for user: {UserId}. Target: {Target}", user.Id, user.Email);
-
-        var isDev = _env.IsDevelopment();
-        if (isDev)
-        {
-            Response.Headers.Append("X-Dev-Otp-Code", rawCode);
-        }
-
-        return Ok(new
-        {
-            message = "A fresh 6-digit verification code has been dispatched.",
-            devOtpCode = isDev ? rawCode : null
         });
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
-            return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
-
-        var identifier = request.EmailOrMobile.Trim();
-        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
-        var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-        if (user == null)
+        return await ExecuteWithRateLimitAsync(async () =>
         {
-            return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
-        }
+            if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
 
-        var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
-        if (!isPasswordValid)
-        {
-            return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
-        }
+            var identifier = request.EmailOrMobile.Trim();
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
+            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
 
-        if (!user.CanLogin(out var rejectionReason))
-        {
-            if (!user.IsEmailVerified)
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
+            if (user == null)
             {
+                return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
+            }
+
+            var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
+            if (!isPasswordValid)
+            {
+                return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
+            }
+
+            if (!user.CanLogin(out var rejectionReason))
+            {
+                if (!user.IsEmailVerified)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, new
+                    {
+                        error = "UnverifiedAccount",
+                        message = rejectionReason,
+                        email = user.Email
+                    });
+                }
+
                 return StatusCode(StatusCodes.Status403Forbidden, new
                 {
-                    error = "UnverifiedAccount",
-                    message = rejectionReason,
-                    email = user.Email
+                    error = "AccountDeactivated",
+                    message = rejectionReason
                 });
             }
 
-            return StatusCode(StatusCodes.Status403Forbidden, new
+            user.LastLoginAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
+            var displayName = profile?.Name ?? user.Email;
+            await SignInUserAsync(user, displayName);
+
+            var token = _jwtTokenService.GenerateToken(user, displayName);
+            var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
+
+            _logger.LogInformation("[AUTH] User logged in successfully: {UserId}, Tier: {Tier}", user.Id, user.Tier);
+
+            return Ok(new
             {
-                error = "AccountDeactivated",
-                message = rejectionReason
+                message = "Login successful.",
+                token = token,
+                tokenType = "Bearer",
+                expiresInSeconds = 86400,
+                user = new CurrentUserResponse(
+                    user.Id,
+                    user.Email,
+                    user.MobileNumber,
+                    displayName,
+                    user.Role,
+                    user.Tier,
+                    user.IsEmailVerified,
+                    user.IsMobileVerified,
+                    tierConfig)
             });
-        }
-
-        user.LastLoginAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
-
-        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-        var displayName = profile?.Name ?? user.Email;
-        await SignInUserAsync(user, displayName);
-
-        var token = _jwtTokenService.GenerateToken(user, displayName);
-        var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
-
-        _logger.LogInformation("[AUTH] User logged in successfully: {UserId}, Tier: {Tier}", user.Id, user.Tier);
-
-        return Ok(new
-        {
-            message = "Login successful.",
-            token = token,
-            tokenType = "Bearer",
-            expiresInSeconds = 86400,
-            user = new CurrentUserResponse(
-                user.Id,
-                user.Email,
-                user.MobileNumber,
-                displayName,
-                user.Role,
-                user.Tier,
-                user.IsEmailVerified,
-                user.IsMobileVerified,
-                tierConfig)
         });
     }
 
@@ -393,47 +427,50 @@ public class AuthController : ControllerBase
     [HttpPost("token")]
     public async Task<IActionResult> GenerateTokenDirect([FromBody] LoginRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
-            return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
-
-        var identifier = request.EmailOrMobile.Trim();
-        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
-        var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-        if (user == null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+        return await ExecuteWithRateLimitAsync(async () =>
         {
-            return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
-        }
+            if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
+                return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
 
-        if (!user.CanLogin(out var rejectionReason))
-        {
-            return StatusCode(StatusCodes.Status403Forbidden, new { error = "AccountIneligible", message = rejectionReason });
-        }
+            var identifier = request.EmailOrMobile.Trim();
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
+            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
 
-        user.LastLoginAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
+            if (user == null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+            {
+                return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
+            }
 
-        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-        var displayName = profile?.Name ?? user.Email;
-        var token = _jwtTokenService.GenerateToken(user, displayName);
-        var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
+            if (!user.CanLogin(out var rejectionReason))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new { error = "AccountIneligible", message = rejectionReason });
+            }
 
-        return Ok(new
-        {
-            token = token,
-            tokenType = "Bearer",
-            expiresInSeconds = 86400,
-            user = new CurrentUserResponse(
-                user.Id,
-                user.Email,
-                user.MobileNumber,
-                displayName,
-                user.Role,
-                user.Tier,
-                user.IsEmailVerified,
-                user.IsMobileVerified,
-                tierConfig)
+            user.LastLoginAtUtc = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+
+            var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
+            var displayName = profile?.Name ?? user.Email;
+            var token = _jwtTokenService.GenerateToken(user, displayName);
+            var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
+
+            return Ok(new
+            {
+                token = token,
+                tokenType = "Bearer",
+                expiresInSeconds = 86400,
+                user = new CurrentUserResponse(
+                    user.Id,
+                    user.Email,
+                    user.MobileNumber,
+                    displayName,
+                    user.Role,
+                    user.Tier,
+                    user.IsEmailVerified,
+                    user.IsMobileVerified,
+                    tierConfig)
+            });
         });
     }
 

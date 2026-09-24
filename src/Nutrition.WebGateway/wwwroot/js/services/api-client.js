@@ -158,10 +158,15 @@ export class ApiClient {
       error.status = res.status;
       error.data = data;
 
-      // Handle session expiry or unauthorized request
-      if (res.status === 401) {
+      // Handle session expiry or unauthorized request (OWASP token lifecycle)
+      const isTokenExpired = res.headers.get('Token-Expired') === 'true' || res.headers.get('token-expired') === 'true';
+      if (isTokenExpired) {
         localStorage.removeItem('dd_jwt_token');
-        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        window.dispatchEvent(new CustomEvent('auth:token_expired', { detail: { reason: 'TokenExpired', status: res.status } }));
+        window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { reason: 'TokenExpired' } }));
+      } else if (res.status === 401) {
+        localStorage.removeItem('dd_jwt_token');
+        window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { reason: 'Unauthorized' } }));
       } else if (res.status === 403) {
         if (data?.error === 'AiQuotaExceeded') {
           window.dispatchEvent(new CustomEvent('quota:exceeded', { detail: data }));

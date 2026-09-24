@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Security;
+using Nutrition.WebGateway.Extensions;
 using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
@@ -227,5 +228,89 @@ public class JwtAuthenticationTests
         Assert.True(userPrincipal.IsInRole(nameof(UserRole.User)));
         Assert.False(userPrincipal.IsInRole(nameof(UserRole.Admin)));
         Assert.False(userPrincipal.IsInRole(nameof(UserRole.SuperAdmin)));
+    }
+
+    [Theory]
+    [InlineData("short")]
+    [InlineData("1234567890123456789012345678901")] // 31 bytes
+    public void JwtTokenService_KeyShorterThan32Bytes_ThrowsArgumentException(string shortKey)
+    {
+        var settings = new Dictionary<string, string?>
+        {
+            ["Jwt:Issuer"] = "DietDostTestIssuer",
+            ["Jwt:Audience"] = "DietDostTestAudience",
+            ["Jwt:Key"] = shortKey
+        };
+
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(settings)
+            .Build();
+
+        var ex = Assert.Throws<ArgumentException>(() => new JwtTokenService(config));
+        Assert.Contains("32 bytes", ex.Message);
+    }
+
+    [Fact]
+    public void UserClaimsExtensions_ShouldMapBothStandardAndShortJwtClaimTypes()
+    {
+        // 1. Standard SOAP/URI claim types (emitted by ASP.NET Cookie auth)
+        var standardIdentity = new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.NameIdentifier, "user-standard-001"),
+            new Claim(ClaimTypes.Email, "standard@dietdost.app"),
+            new Claim(ClaimTypes.Role, nameof(UserRole.Admin)),
+            new Claim("tier", nameof(UserTier.Premium))
+        }, "Cookies");
+
+        var standardPrincipal = new ClaimsPrincipal(standardIdentity);
+
+        Assert.Equal("user-standard-001", standardPrincipal.GetUserId());
+        Assert.Equal("standard@dietdost.app", standardPrincipal.GetEmail());
+        Assert.Equal(nameof(UserRole.Admin), standardPrincipal.GetRole());
+        Assert.Equal(nameof(UserTier.Premium), standardPrincipal.GetTier());
+        Assert.True(standardPrincipal.IsAdminOrSuper());
+
+        // 2. Short JWT claim types (RFC 7519 / OIDC standards emitted in bearer tokens)
+        var jwtIdentity = new ClaimsIdentity(new[]
+        {
+            new Claim("sub", "user-jwt-short-002"),
+            new Claim("email", "jwt.short@dietdost.app"),
+            new Claim("role", nameof(UserRole.User)),
+            new Claim("tier", nameof(UserTier.Basic))
+        }, "Bearer");
+
+        var jwtPrincipal = new ClaimsPrincipal(jwtIdentity);
+
+        Assert.Equal("user-jwt-short-002", jwtPrincipal.GetUserId());
+        Assert.Equal("jwt.short@dietdost.app", jwtPrincipal.GetEmail());
+        Assert.Equal(nameof(UserRole.User), jwtPrincipal.GetRole());
+        Assert.Equal(nameof(UserTier.Basic), jwtPrincipal.GetTier());
+        Assert.False(jwtPrincipal.IsAdminOrSuper());
+    }
+
+    [Fact]
+    public void UserClaimsExtensions_IsAdminOrSuper_ValidatesRolesCorrectly()
+    {
+        var superPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, nameof(UserRole.SuperAdmin))
+        }));
+
+        var adminPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim("role", nameof(UserRole.Admin))
+        }));
+
+        var userPrincipal = new ClaimsPrincipal(new ClaimsIdentity(new[]
+        {
+            new Claim(ClaimTypes.Role, nameof(UserRole.User))
+        }));
+
+        var emptyPrincipal = new ClaimsPrincipal(new ClaimsIdentity());
+
+        Assert.True(superPrincipal.IsAdminOrSuper());
+        Assert.True(adminPrincipal.IsAdminOrSuper());
+        Assert.False(userPrincipal.IsAdminOrSuper());
+        Assert.False(emptyPrincipal.IsAdminOrSuper());
     }
 }

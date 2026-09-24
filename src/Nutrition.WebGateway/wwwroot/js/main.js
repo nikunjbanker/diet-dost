@@ -265,6 +265,10 @@ async function initApp() {
   });
 
   // Global window event listeners for auth/quota lifecycle
+  window.addEventListener('auth:token_expired', () => {
+    container.resolve('toastService')?.warning('Your session has expired. Please sign in again to continue.');
+  });
+
   window.addEventListener('auth:unauthorized', () => {
     updateUserUI(null);
     authGate.show('signin');

@@ -28,6 +28,12 @@ public class JwtTokenService : IJwtTokenService
         _audience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
         _key = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? DefaultDevKey;
 
+        var keyBytes = Encoding.UTF8.GetBytes(_key);
+        if (keyBytes.Length < 32)
+        {
+            throw new ArgumentException("JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256 security.", nameof(configuration));
+        }
+
         if (int.TryParse(configuration["Jwt:ExpiryMinutes"] ?? Environment.GetEnvironmentVariable("JWT_EXPIRY_MINUTES"), out var exp) && exp != 0)
         {
             _expiryMinutes = exp;
@@ -37,7 +43,7 @@ public class JwtTokenService : IJwtTokenService
             _expiryMinutes = 1440; // Default: 24 hours
         }
 
-        _signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
+        _signingKey = new SymmetricSecurityKey(keyBytes);
     }
 
     /// <summary>
