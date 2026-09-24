@@ -335,8 +335,10 @@ graph TD
     P5 --> P6["Section 6: Testing Harness, JWT Evals & Living SDD Sync"]
 ```
 
-### Section 1: Identity, Legal Consent & Verification Domain Engine
-- **Git Branch**: `feature/user-management-identity`
+### Section 1: Identity, Legal Consent & Verification Domain Engine `[COMPLETED & COMMITTED]`
+- **Status**: ✅ **Implemented, Verified & Committed**
+- **Git Branch**: `feature/jwt-authentication` (Merged from `feature/user-management-identity`)
+- **Key Commit**: `b2a974a` — `feat(auth): implement identity models, pbkdf2 hasher, otp service, and legal consent audit [LOG-20260924-005]`
 - **Deliverables**:
   1. Create domain entities: `ApplicationUser` (with legal dual-consent audit properties), `VerificationOtp`, `TierFeatureConfiguration`, `AiUsageLog`.
   2. Implement PBKDF2 password hasher (`PasswordHasher.cs`) with HMAC-SHA512.
@@ -346,8 +348,10 @@ graph TD
   6. Data migration: Migrate existing `"user-default"` records to the configured `SuperAdmin` account.
   7. Unit tests for password hashing, OTP verification, legal consent validation invariants, and domain constraints (0 warnings, 100% pass).
 
-### Section 2: OWASP Auth Gateway, JWT Engine & Gating Middleware
+### Section 2: OWASP Auth Gateway, JWT Engine & Gating Middleware `[COMPLETED & COMMITTED]`
+- **Status**: ✅ **Implemented, Verified & Committed**
 - **Git Branch**: `feature/jwt-authentication`
+- **Key Commit**: `406edbd` — `feat(auth): implement JWT authentication, dual SmartScheme, token API, and living SDD synchronization [LOG-20260924-010]`
 - **Deliverables**:
   1. **JWT Cryptographic Token Service (`IJwtTokenService`, `JwtTokenService`)**:
      - `IJwtTokenService` definition in `Nutrition.Application.Services`:
@@ -380,18 +384,26 @@ graph TD
      - Maps `GetUserId()`, `GetEmail()`, `GetRole()`, `GetTier()` transparently across both standard URI claim types and short JWT claim types (`sub`, `role`, `email`, `name`).
      - Eliminates client-supplied `userId` vulnerabilities across all clinical endpoints (`MealsController`, `ProfileController`, `ProgressPhotosController`, `AnalyticsController`).
 
-### Section 3: Dynamic Tier Engine & AI Quota Interceptor
+### Section 3: Dynamic Tier Engine & AI Quota Interceptor `[COMPLETED & COMMITTED]`
+- **Status**: ✅ **Implemented, Verified & Committed**
+- **Git Branch**: `feature/jwt-authentication`
+- **Key Commit**: `43f9023` — `feat(tier): harden photo AI telemetry, client-side tier gating, evals, and living SDD [LOG-20260924-011]`
 - **Deliverables**:
   1. Implement `ITierConfigurationService` with memory caching for dynamic tier rules.
   2. Implement `IAiQuotaService`:
      - Computes localized midnight boundaries based on `UserProfile.Timezone`.
      - Queries `AiUsageLogs` for today's AI executions.
      - Returns structured quota status (`Allowed`, `LimitExceeded`, `RemainingCalls`, `ResetsAtUtc`).
-  3. Enforce `403 Forbidden` (`AiQuotaExceeded`) on `/api/meals/upload` and `/api/meals/analyze-text` when daily limit is exhausted.
-  4. Enforce `403 Forbidden` (`FeatureTierUpgradeRequired`) on `/api/progressphotos/compare` and Excel export for Free and Basic users.
-  5. Record all AI operations in `AiUsageLogs`.
+  3. Enforce `403 Forbidden` (`AiQuotaExceeded`) on photo & text meal detection endpoints when daily limit is exhausted.
+  4. Enforce `403 Forbidden` (`FeatureTierUpgradeRequired`) on Photo Compare and Excel export for Free and Basic users.
+  5. Enforce client-side tier defense: block Excel client export and show upgrade prompt for Free/Basic tiers in `analytics-chart.js`.
+  6. Enforce client-side tier defense: display Obsidian-dark locked state with upgrade CTA on `#face-progress-card` in `progress-modal.js`.
+  7. Record all AI operations (photo, text, retakes) and token telemetry in `AiUsageLogs`.
 
-### Section 4: SuperAdmin & User Management API
+### Section 4: SuperAdmin & User Management API `[COMPLETED & COMMITTED]`
+- **Status**: ✅ **Implemented, Verified & Committed**
+- **Git Branch**: `feature/jwt-authentication`
+- **Key Commit**: `30c73fd` — `feat(ui): obsidian auth gate, quota hud, admin console and living sdd synchronization`
 - **Deliverables**:
   1. Create `AdminController` protected by `[Authorize(Roles = "Admin,SuperAdmin")]`:
      - `GET /api/admin/users`: Paginated list of users, their roles, tiers, legal consent timestamps, and AI consumption.
@@ -401,17 +413,20 @@ graph TD
      - `PUT /api/admin/tier-configs/{tier}`: Update daily limits, feature toggles dynamically.
   2. Hardened rule: SuperAdmin cannot be locked or demoted.
 
-### Section 5: Linear UI Authentication Gate, JWT Client & AI Usage HUD
+### Section 5: Linear UI Authentication Gate, JWT Client & AI Usage HUD `[COMPLETED & COMMITTED]`
+- **Status**: ✅ **Implemented, Verified & Committed**
+- **Git Branch**: `feature/jwt-authentication`
+- **Key Commit**: `30c73fd` & `43f9023`
 - **Deliverables**:
   1. `partials/auth-gate.html`: Obsidian-dark Authentication Gate modal blocking the entire dashboard when unauthenticated/unverified.
      - Tabs: **Sign In**, **Register** (with mandatory Email, Mobile, Terms & AI Training Checkbox, and Health Consent Checkbox), **Verify Email OTP**.
      - Accessible legal modal popups for full Terms of Service and Data & AI Training Policy.
      - Shows dev helper badge in local dev mode displaying the generated test OTP.
   2. **Client-Side JWT Token Lifecycle Management**:
-     - `auth-service.js`: Stores JWT in `localStorage` under key `diet_dost_jwt_token`. Provides `getToken()`, `setToken()`, and `clearToken()`. Clears token upon logout or 401 response.
+     - `auth-service.js`: Stores JWT in `localStorage` under key `dd_jwt_token`. Provides `getToken()`, `isAdmin()`, `isSuperAdmin()`. Clears token upon logout or 401 response.
      - `api-client.js`: `_getAuthHeaders()` interceptor automatically attaches `Authorization: Bearer <token>` to all outgoing API requests. Detects `Token-Expired: true` header to trigger re-authentication.
   3. `partials/header.html` update:
-     - Logged-in user badge with tier pill (`⚡ Premium`, `👑 Super User`, `🆓 Free`).
+     - Logged-in user badge with tier pill (`⚡ Premium`, `👑 Super User`, `⭐ Basic`, `🆓 Free`).
      - Account dropdown menu (Profile, AI Usage, Admin Panel if eligible, Sign Out).
   4. `partials/profile-modal.html` update:
      - New interactive **"AI Quota & Usage"** section with today's gauge, 1D/7D/30D aggregations, countdown to midnight reset, and recent operations table.
@@ -421,7 +436,10 @@ graph TD
   6. JavaScript state & services updates:
      - `auth-service.js`, `auth-gate.js`, `admin-service.js`, `admin-modal.js`.
 
-### Section 6: Testing Harness, JWT Evals & Living SDD Sync
+### Section 6: Testing Harness, JWT Evals & Living SDD Sync `[COMPLETED & COMMITTED]`
+- **Status**: ✅ **Implemented, Verified & Committed**
+- **Git Branch**: `feature/jwt-authentication`
+- **Key Commit**: `43f9023` — `feat(tier): harden photo AI telemetry, client-side tier gating, evals, and living SDD [LOG-20260924-011]`
 - **Deliverables**:
   1. **Comprehensive Automated Test Harness**:
      - **JWT Authentication Tests (`JwtAuthenticationTests.cs`)**:
@@ -433,9 +451,10 @@ graph TD
      - **Legal & Auth Tests**: Registration rejection when consent unchecked, forensic timestamp/IP capture, email OTP verification, login, logout, unauthorized rejection.
      - **Security Tests**: IDOR prevention, rate-limit defense, unverified account lockdown, account deletion purge.
      - **AI Quota Tests**: Free limit (1), Basic limit (7), Premium limit (30), SuperAdmin unlimited, daily midnight reset.
-     - **Tier Gate Tests**: Photo compare & Excel export return 403 on Free/Basic.
+     - **Tier Gate Tests**: Photo compare & Excel export return 403 on Free/Basic, and verified enabled for Premium/SuperAdmin.
   2. **Synchronize Living SDD**:
      - Update `docs/sdd/00_sdd_index.md`, `02_solution_architecture.md`, `03_data_models_and_contracts.md`, `04_security_and_compliance.md`.
-     - Append comprehensive log entry to `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-010]`).
+     - Appended comprehensive log entries to `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`).
   3. **Verification**:
-     - `dotnet test` passing with 0 warnings and 0 errors across all test projects.
+     - `dotnet test` passing with **86/86 passing**, 0 warnings and 0 errors across all test projects.
+
