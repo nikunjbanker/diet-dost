@@ -3,11 +3,13 @@ using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
+using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Domain.Model.Progress;
 using Nutrition.Infrastructure.AI;
 using Nutrition.Infrastructure.Persistence;
+using Nutrition.Infrastructure.Security;
 
 using OpenTelemetry;
 using OpenTelemetry.Logs;
@@ -56,6 +58,7 @@ builder.Services.AddEndpointsApiExplorer();
 
 // Storage Infrastructure (Swappable SQLite V1 per SDD section 3.1)
 builder.Services.AddStorageInfrastructure(builder.Configuration);
+builder.Services.AddSecurityInfrastructure();
 builder.Services.AddScoped<ClinicalDietitianService>();
 
 // AI Agent Infrastructure (Microsoft Agent Framework + Google AI Gemini)
@@ -197,7 +200,131 @@ using (var scope = app.Services.CreateScope())
             );
             CREATE INDEX IF NOT EXISTS ""IX_AiFeedbacks_UserId_CreatedAtUtc"" ON ""AiFeedbacks"" (""UserId"", ""CreatedAtUtc"");
             CREATE INDEX IF NOT EXISTS ""IX_AiFeedbacks_Rating"" ON ""AiFeedbacks"" (""Rating"");
+
+            CREATE TABLE IF NOT EXISTS ""Users"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_Users"" PRIMARY KEY,
+                ""Email"" TEXT NOT NULL,
+                ""NormalizedEmail"" TEXT NOT NULL,
+                ""MobileNumber"" TEXT NOT NULL,
+                ""NormalizedMobileNumber"" TEXT NOT NULL,
+                ""PasswordHash"" TEXT NOT NULL,
+                ""SecurityStamp"" TEXT NOT NULL,
+                ""Role"" INTEGER NOT NULL,
+                ""Tier"" INTEGER NOT NULL,
+                ""IsEmailVerified"" INTEGER NOT NULL,
+                ""IsMobileVerified"" INTEGER NOT NULL,
+                ""IsActive"" INTEGER NOT NULL,
+                ""TermsAcceptedAtUtc"" TEXT NULL,
+                ""TermsVersionAccepted"" TEXT NULL,
+                ""HealthConsentAcceptedAtUtc"" TEXT NULL,
+                ""HealthConsentVersionAccepted"" TEXT NULL,
+                ""ConsentIpAddress"" TEXT NULL,
+                ""ConsentUserAgent"" TEXT NULL,
+                ""CreatedAtUtc"" TEXT NOT NULL,
+                ""LastLoginAtUtc"" TEXT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_NormalizedEmail"" ON ""Users"" (""NormalizedEmail"");
+            CREATE INDEX IF NOT EXISTS ""IX_Users_NormalizedMobileNumber"" ON ""Users"" (""NormalizedMobileNumber"");
+            CREATE INDEX IF NOT EXISTS ""IX_Users_Role"" ON ""Users"" (""Role"");
+            CREATE INDEX IF NOT EXISTS ""IX_Users_Tier"" ON ""Users"" (""Tier"");
+
+            CREATE TABLE IF NOT EXISTS ""VerificationOtps"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_VerificationOtps"" PRIMARY KEY,
+                ""UserId"" TEXT NOT NULL,
+                ""Target"" TEXT NOT NULL,
+                ""OtpCodeHash"" TEXT NOT NULL,
+                ""Channel"" INTEGER NOT NULL,
+                ""ExpiresAtUtc"" TEXT NOT NULL,
+                ""AttemptCount"" INTEGER NOT NULL,
+                ""IsUsed"" INTEGER NOT NULL,
+                ""CreatedAtUtc"" TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_VerificationOtps_UserId_Target"" ON ""VerificationOtps"" (""UserId"", ""Target"");
+            CREATE INDEX IF NOT EXISTS ""IX_VerificationOtps_Target_Channel_IsUsed"" ON ""VerificationOtps"" (""Target"", ""Channel"", ""IsUsed"");
+            CREATE INDEX IF NOT EXISTS ""IX_VerificationOtps_ExpiresAtUtc"" ON ""VerificationOtps"" (""ExpiresAtUtc"");
+
+            CREATE TABLE IF NOT EXISTS ""TierConfigurations"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_TierConfigurations"" PRIMARY KEY,
+                ""Tier"" INTEGER NOT NULL,
+                ""DailyAiDetectionLimit"" INTEGER NOT NULL,
+                ""AllowPhotoCompare"" INTEGER NOT NULL,
+                ""AllowDataExport"" INTEGER NOT NULL,
+                ""AnalyticsHistoryDays"" INTEGER NOT NULL,
+                ""Description"" TEXT NOT NULL,
+                ""UpdatedAtUtc"" TEXT NOT NULL,
+                ""UpdatedByUserId"" TEXT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS ""IX_TierConfigurations_Tier"" ON ""TierConfigurations"" (""Tier"");
+
+            CREATE TABLE IF NOT EXISTS ""AiUsageLogs"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_AiUsageLogs"" PRIMARY KEY,
+                ""UserId"" TEXT NOT NULL,
+                ""OperationType"" INTEGER NOT NULL,
+                ""ModelId"" TEXT NOT NULL,
+                ""EstimatedTokensUsed"" INTEGER NOT NULL,
+                ""LatencyMs"" REAL NOT NULL,
+                ""IsSuccess"" INTEGER NOT NULL,
+                ""ErrorReason"" TEXT NULL,
+                ""TimestampUtc"" TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_AiUsageLogs_UserId_TimestampUtc"" ON ""AiUsageLogs"" (""UserId"", ""TimestampUtc"");
+            CREATE INDEX IF NOT EXISTS ""IX_AiUsageLogs_UserId_OperationType"" ON ""AiUsageLogs"" (""UserId"", ""OperationType"");
         ");
+
+        // Seed default Tier Configurations
+        if (!await db.TierConfigurations.AnyAsync())
+        {
+            await db.TierConfigurations.AddRangeAsync(TierFeatureConfiguration.GetDefaultConfigurations());
+            await db.SaveChangesAsync();
+            initLogger.LogInformation("Default tier configurations seeded successfully.");
+        }
+
+        // Initialize / Seed SuperAdmin User
+        var superAdminEmail = builder.Configuration["Auth:SuperAdminEmail"]
+            ?? Environment.GetEnvironmentVariable("SUPER_ADMIN_EMAIL")
+            ?? "admin@dietdost.app";
+        var normalizedSuperAdminEmail = ApplicationUser.NormalizeEmailAddress(superAdminEmail);
+
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        var superAdminUser = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedSuperAdminEmail);
+        if (superAdminUser == null)
+        {
+            superAdminUser = new ApplicationUser
+            {
+                Id = "user-superadmin",
+                Email = superAdminEmail,
+                NormalizedEmail = normalizedSuperAdminEmail,
+                MobileNumber = "+919999999999",
+                NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999999"),
+                PasswordHash = passwordHasher.HashPassword("SuperAdmin@DietDost2026!"),
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                Role = UserRole.SuperAdmin,
+                Tier = UserTier.SuperAdmin,
+                IsEmailVerified = true,
+                IsMobileVerified = true,
+                IsActive = true,
+                TermsAcceptedAtUtc = DateTime.UtcNow,
+                TermsVersionAccepted = builder.Configuration["Auth:TermsVersion"] ?? "v1.0-202609",
+                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                HealthConsentVersionAccepted = builder.Configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
+                ConsentIpAddress = "127.0.0.1",
+                ConsentUserAgent = "SystemBootstrap",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            await db.Users.AddAsync(superAdminUser);
+            await db.SaveChangesAsync();
+            initLogger.LogInformation("SuperAdmin account provisioned successfully.");
+        }
+
+        // Migrate pre-existing 'user-default' sample records to the SuperAdmin user
+        await db.Database.ExecuteSqlRawAsync(@"
+            UPDATE ""Profiles"" SET ""Id"" = {0} WHERE ""Id"" = 'user-default';
+            UPDATE ""Meals"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+            UPDATE ""Ledgers"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+            UPDATE ""ProgressPhotos"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+            UPDATE ""Corrections"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+            UPDATE ""AiFeedbacks"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+        ", superAdminUser.Id);
 
         initLogger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");
     }
@@ -207,11 +334,13 @@ using (var scope = app.Services.CreateScope())
         throw;
     }
 
+    var activeSuperAdmin = await db.Users.FirstAsync(u => u.Role == UserRole.SuperAdmin);
+
     if (!await db.Profiles.AnyAsync())
     {
         var defaultProfile = new UserProfile
         {
-            Id = "user-default",
+            Id = activeSuperAdmin.Id,
             Name = "Aarav Sharma",
             Sex = BiologicalSex.Male,
             Age = 32,
@@ -247,7 +376,7 @@ using (var scope = app.Services.CreateScope())
         {
             new()
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 CapturedAtUtc = baselineDate,
                 WeightKg = 85.0,
                 PhotoType = ProgressPhotoType.Face,
@@ -257,7 +386,7 @@ using (var scope = app.Services.CreateScope())
             },
             new()
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 CapturedAtUtc = currentDate,
                 WeightKg = 81.5,
                 PhotoType = ProgressPhotoType.Face,
@@ -267,7 +396,7 @@ using (var scope = app.Services.CreateScope())
             },
             new()
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 CapturedAtUtc = baselineDate,
                 WeightKg = 85.0,
                 PhotoType = ProgressPhotoType.FullBodyFront,
@@ -277,7 +406,7 @@ using (var scope = app.Services.CreateScope())
             },
             new()
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 CapturedAtUtc = currentDate,
                 WeightKg = 81.5,
                 PhotoType = ProgressPhotoType.FullBodyFront,
@@ -297,7 +426,7 @@ using (var scope = app.Services.CreateScope())
         {
             new MealLog
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 LoggedAt = now.AddHours(-3),
                 MealType = MealType.Lunch,
                 DishName = "North Indian Thali (Phulkas, Dal & Bhindi Masala)",
@@ -315,7 +444,7 @@ using (var scope = app.Services.CreateScope())
             },
             new MealLog
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 LoggedAt = now.AddHours(-7),
                 MealType = MealType.Breakfast,
                 DishName = "Kanda Poha with Roasted Peanuts",
@@ -331,7 +460,7 @@ using (var scope = app.Services.CreateScope())
             },
             new MealLog
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 LoggedAt = now.AddDays(-1).Date.AddHours(20),
                 MealType = MealType.Dinner,
                 DishName = "Palak Paneer with Phulkas",
@@ -346,7 +475,7 @@ using (var scope = app.Services.CreateScope())
             },
             new MealLog
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 LoggedAt = now.AddDays(-1).Date.AddHours(13),
                 MealType = MealType.Lunch,
                 DishName = "Rajma Chawal with Kachumber Salad",
@@ -361,7 +490,7 @@ using (var scope = app.Services.CreateScope())
             },
             new MealLog
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 LoggedAt = now.AddDays(-2).Date.AddHours(20).AddMinutes(15),
                 MealType = MealType.Dinner,
                 DishName = "Moong Dal Khichdi with Curd",
@@ -376,7 +505,7 @@ using (var scope = app.Services.CreateScope())
             },
             new MealLog
             {
-                UserId = "user-default",
+                UserId = activeSuperAdmin.Id,
                 LoggedAt = now.AddDays(-3).Date.AddHours(17),
                 MealType = MealType.Snack,
                 DishName = "Roasted Makhana & Green Tea",

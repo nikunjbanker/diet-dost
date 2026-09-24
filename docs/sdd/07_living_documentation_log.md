@@ -1497,6 +1497,60 @@
   - Redundant duplicates removed.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-005] User Management: Section 1 - Identity, Legal Consent & Verification Domain Engine
+- **Date / Timestamp**: 2026-09-24 15:20:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[LEGAL_COMPLIANCE]`
+- **Affected Microservices / Components**: `Nutrition.Domain`, `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.Domain.Tests`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Domain Models & Identity Context (§1.0)**:
+     - Implemented `ApplicationUser` aggregate with full legal compliance audit fields (unbundled `TermsAcceptedAtUtc`, `HealthConsentAcceptedAtUtc`, `ConsentIpAddress`, `ConsentUserAgent`, versions) adhering to India DPDPA 2023 §6.
+     - Implemented `VerificationOtp` entity with 6-digit cryptographic generation, SHA-256 hash storage, 5-minute expiry, max 3 verification attempts, and constant-time verification (`CryptographicOperations.FixedTimeEquals`).
+     - Implemented `TierFeatureConfiguration` aggregate with dynamic database-backed quotas (Free: 1, Basic: 7, Premium: 30, SuperAdmin: -1), feature toggles (`AllowPhotoCompare`, `AllowDataExport`), and analytics retention ceilings.
+     - Implemented `AiUsageLog` immutable audit record for telemetry and quota tracking across vision/text AI models.
+     - Implemented enums: `UserRole`, `UserTier`, `OtpChannel`, `AiOperationType`.
+  2. **OWASP Cryptographic Services (§2)**:
+     - Implemented `IPasswordHasher` and `Pbkdf2PasswordHasher` with PBKDF2-HMAC-SHA512 (100,000 iterations, 128-bit cryptographically random salt, 256-bit subkey).
+     - Implemented `IOtpService` and `OtpService` with unbiased `RandomNumberGenerator.GetInt32(100000, 1000000)`.
+     - Registered in DI via `SecurityInfrastructureExtensions.AddSecurityInfrastructure()`.
+  3. **Swappable SQLite Schema Migration & SuperAdmin Provisioning (§3.1)**:
+     - Updated `DietTrackerDbContext` with DbSets: `Users`, `VerificationOtps`, `TierConfigurations`, `AiUsageLogs`.
+     - Added safe SQLite migration scripts in `Program.cs` creating tables and indexes without data loss.
+     - Auto-seeded default tier configurations (`Free`, `Basic`, `Premium`, `SuperAdmin`).
+     - Provisioned parameterized SuperAdmin account (`Auth:SuperAdminEmail` / `admin@dietdost.app`) and seamlessly migrated existing `'user-default'` sample profiles, meals, ledgers, and progress photos to this account.
+  4. **Automated Unit & Cryptography Tests**:
+     - Added `IdentityDomainModelTests` in `Nutrition.Domain.Tests` (15 new test cases, 36/36 passing).
+     - Added `SecurityCryptographyTests` in `Nutrition.EvalHarness.Tests` (9 new test cases, 29/29 passing).
+     - Total solution tests: 65 passed, 0 failed, 0 warnings.
+- **Modified & Created Files**:
+  - `src/Nutrition.Domain/Model/Identity/UserRole.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/UserTier.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/OtpChannel.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/AiOperationType.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/TierFeatureConfiguration.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/AiUsageLog.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/VerificationOtp.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/ApplicationUser.cs` [CREATED]
+  - `src/Nutrition.Application/Common/IPasswordHasher.cs` [CREATED]
+  - `src/Nutrition.Application/Common/IOtpService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/Pbkdf2PasswordHasher.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/OtpService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/SecurityInfrastructureExtensions.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Persistence/DietTrackerDbContext.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `tests/Nutrition.Domain.Tests/IdentityDomainModelTests.cs` [CREATED]
+  - `tests/Nutrition.EvalHarness.Tests/SecurityCryptographyTests.cs` [CREATED]
+  - `docs/sdd/03_data_models_and_contracts.md` [MODIFIED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - CLI: `dotnet test`
+  - Result: `Passed: 65, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

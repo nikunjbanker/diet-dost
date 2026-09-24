@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Ledger;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
@@ -18,6 +19,12 @@ public class DietTrackerDbContext : DbContext
     public DbSet<UserCorrectionRecord> Corrections => Set<UserCorrectionRecord>();
     public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
     public DbSet<AiDetectionFeedbackRecord> AiFeedbacks => Set<AiDetectionFeedbackRecord>();
+
+    // Identity & Security DbSets
+    public DbSet<ApplicationUser> Users => Set<ApplicationUser>();
+    public DbSet<VerificationOtp> VerificationOtps => Set<VerificationOtp>();
+    public DbSet<TierFeatureConfiguration> TierConfigurations => Set<TierFeatureConfiguration>();
+    public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
 
     public DietTrackerDbContext(DbContextOptions<DietTrackerDbContext> options) : base(options)
     {
@@ -117,6 +124,40 @@ public class DietTrackerDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.CreatedAtUtc });
             entity.HasIndex(e => e.Rating);
+        });
+
+        // ApplicationUser entity configuration
+        modelBuilder.Entity<ApplicationUser>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.NormalizedEmail).IsUnique();
+            entity.HasIndex(e => e.NormalizedMobileNumber);
+            entity.HasIndex(e => e.Role);
+            entity.HasIndex(e => e.Tier);
+        });
+
+        // VerificationOtp entity configuration
+        modelBuilder.Entity<VerificationOtp>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.Target });
+            entity.HasIndex(e => new { e.Target, e.Channel, e.IsUsed });
+            entity.HasIndex(e => e.ExpiresAtUtc);
+        });
+
+        // TierFeatureConfiguration entity configuration
+        modelBuilder.Entity<TierFeatureConfiguration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Tier).IsUnique();
+        });
+
+        // AiUsageLog entity configuration
+        modelBuilder.Entity<AiUsageLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.TimestampUtc });
+            entity.HasIndex(e => new { e.UserId, e.OperationType });
         });
 
         // ============================================================================
