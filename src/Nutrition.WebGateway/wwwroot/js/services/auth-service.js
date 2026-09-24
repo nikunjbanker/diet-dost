@@ -24,6 +24,9 @@ export class AuthService {
       emailOrMobile,
       password
     });
+    if (res.token) {
+      localStorage.setItem('dd_jwt_token', res.token);
+    }
     this.currentUser = res.user;
     return res;
   }
@@ -38,6 +41,9 @@ export class AuthService {
       channel,
       code
     });
+    if (res.token) {
+      localStorage.setItem('dd_jwt_token', res.token);
+    }
     this.currentUser = res.user;
     return res;
   }
@@ -53,14 +59,20 @@ export class AuthService {
     try {
       await this.api.post('/api/auth/logout', {});
     } finally {
+      localStorage.removeItem('dd_jwt_token');
       this.currentUser = null;
     }
   }
 
   async deleteAccount() {
     const res = await this.api.post('/api/auth/delete-account', {});
+    localStorage.removeItem('dd_jwt_token');
     this.currentUser = null;
     return res;
+  }
+
+  getToken() {
+    return localStorage.getItem('dd_jwt_token');
   }
 
   isAdmin() {

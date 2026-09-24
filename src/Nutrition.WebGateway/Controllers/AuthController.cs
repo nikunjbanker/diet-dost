@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Common;
+using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Infrastructure.Persistence;
@@ -51,6 +52,7 @@ public class AuthController : ControllerBase
     private readonly DietTrackerDbContext _db;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpService _otpService;
+    private readonly IJwtTokenService _jwtTokenService;
     private readonly IConfiguration _config;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<AuthController> _logger;
@@ -59,6 +61,7 @@ public class AuthController : ControllerBase
         DietTrackerDbContext db,
         IPasswordHasher passwordHasher,
         IOtpService otpService,
+        IJwtTokenService jwtTokenService,
         IConfiguration config,
         IWebHostEnvironment env,
         ILogger<AuthController> logger)
@@ -66,6 +69,7 @@ public class AuthController : ControllerBase
         _db = db;
         _passwordHasher = passwordHasher;
         _otpService = otpService;
+        _jwtTokenService = jwtTokenService;
         _config = config;
         _env = env;
         _logger = logger;
@@ -226,8 +230,10 @@ public class AuthController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-        await SignInUserAsync(user, profile?.Name ?? user.Email);
+        var displayName = profile?.Name ?? user.Email;
+        await SignInUserAsync(user, displayName);
 
+        var token = _jwtTokenService.GenerateToken(user, displayName);
         var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
         _logger.LogInformation("[AUTH] Account verified and logged in: {UserId}", user.Id);
@@ -235,11 +241,14 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             message = "Account successfully verified and activated.",
+            token = token,
+            tokenType = "Bearer",
+            expiresInSeconds = 86400,
             user = new CurrentUserResponse(
                 user.Id,
                 user.Email,
                 user.MobileNumber,
-                profile?.Name ?? user.Email,
+                displayName,
                 user.Role,
                 user.Tier,
                 user.IsEmailVerified,
@@ -350,8 +359,10 @@ public class AuthController : ControllerBase
         await _db.SaveChangesAsync(ct);
 
         var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-        await SignInUserAsync(user, profile?.Name ?? user.Email);
+        var displayName = profile?.Name ?? user.Email;
+        await SignInUserAsync(user, displayName);
 
+        var token = _jwtTokenService.GenerateToken(user, displayName);
         var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
         _logger.LogInformation("[AUTH] User logged in successfully: {UserId}, Tier: {Tier}", user.Id, user.Tier);
@@ -359,11 +370,65 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             message = "Login successful.",
+            token = token,
+            tokenType = "Bearer",
+            expiresInSeconds = 86400,
             user = new CurrentUserResponse(
                 user.Id,
                 user.Email,
                 user.MobileNumber,
-                profile?.Name ?? user.Email,
+                displayName,
+                user.Role,
+                user.Tier,
+                user.IsEmailVerified,
+                user.IsMobileVerified,
+                tierConfig)
+        });
+    }
+
+    /// <summary>
+    /// Programmatic token issuance endpoint for mobile apps and CLI clients.
+    /// Returns a signed JWT bearer token directly without setting cookie state.
+    /// </summary>
+    [HttpPost("token")]
+    public async Task<IActionResult> GenerateTokenDirect([FromBody] LoginRequest request, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
+            return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
+
+        var identifier = request.EmailOrMobile.Trim();
+        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
+        var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
+
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
+        if (user == null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+        {
+            return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
+        }
+
+        if (!user.CanLogin(out var rejectionReason))
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { error = "AccountIneligible", message = rejectionReason });
+        }
+
+        user.LastLoginAtUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync(ct);
+
+        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
+        var displayName = profile?.Name ?? user.Email;
+        var token = _jwtTokenService.GenerateToken(user, displayName);
+        var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
+
+        return Ok(new
+        {
+            token = token,
+            tokenType = "Bearer",
+            expiresInSeconds = 86400,
+            user = new CurrentUserResponse(
+                user.Id,
+                user.Email,
+                user.MobileNumber,
+                displayName,
                 user.Role,
                 user.Tier,
                 user.IsEmailVerified,

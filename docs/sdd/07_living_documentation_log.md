@@ -1696,6 +1696,50 @@
   - Validated zero errors, zero warnings.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-010] JWT Authentication & Dual SmartScheme Authorization
+- **Date / Timestamp**: 2026-09-24 16:45:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[API]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. **JWT Cryptographic Token Service (`IJwtTokenService`, `JwtTokenService`)**:
+     - Engineered HMAC-SHA256 token generation and validation with minimum 256-bit symmetric signing key (`Jwt:Key` / `JWT_KEY`).
+     - Standardized claim payloads: `sub` (`ClaimTypes.NameIdentifier`), `email` (`ClaimTypes.Email`), `name` (`ClaimTypes.Name`), `jti` (GUID), `role` (`ClaimTypes.Role`), `tier` (`user.Tier`), `isEmailVerified`, `isMobileVerified`.
+     - Automatic 30-second clock skew tolerance and `Token-Expired: true` header emission on expiration.
+  2. **Dual SmartScheme Authentication (`Program.cs`)**:
+     - Configured ASP.NET Core `AddPolicyScheme` forwarding requests with `Authorization: Bearer <token>` to `JwtBearerDefaults.AuthenticationScheme`, while browser session requests without Bearer headers default to `CookieAuthenticationDefaults.AuthenticationScheme`.
+     - Added authorization policies (`RequireAdmin`, `RequireSuperAdmin`, `RequireActiveUser`).
+     - Added `/api/auth/token` to Polly sliding-window rate limiting pipeline.
+  3. **Gateway Token Endpoints & Client Integration**:
+     - Updated `AuthController.Login` and `AuthController.VerifyOtp` to issue signed JWT tokens in the response payload.
+     - Added dedicated `POST /api/auth/token` endpoint for programmatic, CLI, and mobile client authentication.
+     - Updated `api-client.js` to automatically attach `Authorization: Bearer <token>` headers to all requests when logged in.
+     - Updated `auth-service.js` to store the token in local storage and purge it upon logout or 401 response.
+  4. **Verification Test Harness (`JwtAuthenticationTests.cs`)**:
+     - Validated token generation structure (HS256, 3 parts, correct issuer/audience).
+     - Validated claims extraction (sub, email, role, tier, verification flags).
+     - Validated tampering rejection (signature tampering returns null).
+     - Validated expired token rejection.
+     - Validated role-based authorization segregation (`SuperAdmin` vs. `User`).
+- **Modified & Created Files**:
+  - `src/Nutrition.Application/Services/IJwtTokenService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/JwtTokenService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/SecurityInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/UserClaimsExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/api-client.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/auth-service.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` [CREATED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Validated zero errors, zero warnings.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

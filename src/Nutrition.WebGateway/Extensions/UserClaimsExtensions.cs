@@ -11,17 +11,21 @@ public static class UserClaimsExtensions
 {
     public static string? GetUserId(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue(ClaimTypes.NameIdentifier);
+        return principal.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? principal.FindFirstValue("sub")
+            ?? principal.FindFirstValue("userId");
     }
 
     public static string? GetEmail(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue(ClaimTypes.Email);
+        return principal.FindFirstValue(ClaimTypes.Email)
+            ?? principal.FindFirstValue("email");
     }
 
     public static string? GetRole(this ClaimsPrincipal principal)
     {
-        return principal.FindFirstValue(ClaimTypes.Role);
+        return principal.FindFirstValue(ClaimTypes.Role)
+            ?? principal.FindFirstValue("role");
     }
 
     public static string? GetTier(this ClaimsPrincipal principal)

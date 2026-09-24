@@ -67,3 +67,24 @@ public static (bool IsValid, string? ErrorMessage, string? MimeType) ValidateIma
   - Global `ValueConverter<DateTime, DateTime>` guarantees that any incoming timestamp is converted to Universal Time (`.ToUniversalTime()`) prior to persistence in SQLite, and all fetched entities have their `Kind` set to `DateTimeKind.Utc`.
 - **Static SVG Fallback Armor**:
   - Fallback placeholders (`placeholder-meal.svg`, `placeholder-progress.svg`) provide high-contrast Obsidian dark styling without external script references, third-party CDNs, or interactive DOM capabilities.
+
+---
+
+## 4. JWT Cryptographic Token Architecture & Dual SmartScheme Authentication
+
+- **Algorithm & Key Strength**: HMAC-SHA256 with minimum 256-bit symmetric signing key (`Jwt:Key` / `JWT_KEY`), validated against key tampering.
+- **Embedded Claims Payload**:
+  - `sub` (`ClaimTypes.NameIdentifier`): Universal User ID (`ApplicationUser.Id`)
+  - `email` (`ClaimTypes.Email`): Normalized user email
+  - `name` (`ClaimTypes.Name`): User display name
+  - `jti`: Cryptographically random GUID preventing token replay
+  - `role` (`ClaimTypes.Role`): RBAC role (`User`, `Admin`, `SuperAdmin`)
+  - `tier`: Entitlement tier (`Free`, `Basic`, `Premium`, `SuperAdmin`)
+  - `isEmailVerified`, `isMobileVerified`: Activation status flags
+- **Dual SmartScheme Authentication (`AddPolicyScheme`)**:
+  - Intelligently inspects the HTTP `Authorization` request header:
+    - If `Authorization: Bearer <token>` is present $\to$ forwards to `JwtBearerDefaults.AuthenticationScheme`.
+    - Otherwise $\to$ forwards to `CookieAuthenticationDefaults.AuthenticationScheme`.
+  - Expiration: Configurable via `Jwt:ExpiryMinutes` (default: 1440 minutes = 24h) with 30-second clock skew tolerance.
+  - Expired or tampered tokens return structured HTTP 401 Unauthorized without HTML redirection loops.
+

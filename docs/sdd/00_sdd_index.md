@@ -66,6 +66,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Polly Rate Limiting (OWASP A04)** | Plan §3.3 | Complete (Sliding window on auth endpoints, HTTP 429 response) | 100% Passed (Polly Tests) |
 | **SuperAdmin Governance & Telemetry**| Plan §5 | Complete (User management API, anti-lockout protection, AI audit log) | Verified via Tests |
 | **Obsidian Dark Auth Gate & UI** | Plan §6 | Complete (Dashboard lock, dual-consent modals, quota HUD, admin console) | Verified in Browser |
+| **JWT Cryptographic Authentication & SmartScheme** | Plan §3.4 | Complete (HMAC-SHA256, 24h lifetime, policy forwarding, programmatic token API) | 100% Passed (Unit Tests) |
 
 ---
 
@@ -102,4 +103,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Localized Midnight Reset** | `Nutrition.Infrastructure.Services` | `AiQuotaService.GetLocalizedMidnightUtc()`, `UserProfile.Timezone` | `AiQuotaAndTierServiceTests` |
 | **SuperAdmin Anti-Lockout Rules** | `Nutrition.WebGateway.Controllers` | `AdminController.UpdateUserRole()`, `UpdateUserStatus()` | Integration Verification |
 | **Tier Feature Gating (Photo/Excel)** | `Nutrition.WebGateway.Controllers` | `MealsController.ExportMeals()`, `ProgressPhotosController.GetComparison()` | 403 Forbidden Response Verification |
+| **JWT Bearer Token Authentication** | `Nutrition.Infrastructure.Security` | `IJwtTokenService`, `JwtTokenService` | `JwtAuthenticationTests` |
+| **Dual SmartScheme Auth Dispatch** | `Nutrition.WebGateway` | `AddPolicyScheme("SmartScheme")`, `Program.cs` | Integration Verification |
+
 

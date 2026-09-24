@@ -8,6 +8,18 @@ export class ApiClient {
   }
 
   /**
+   * Retrieves Bearer authorization header if JWT token is stored locally.
+   */
+  _getAuthHeaders() {
+    const headers = {};
+    const token = localStorage.getItem('dd_jwt_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
+  /**
    * Perform HTTP GET request.
    * @param {string} url
    * @param {Object} [params]
@@ -25,7 +37,10 @@ export class ApiClient {
 
     const res = await fetch(fullUrl, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' }
+      headers: {
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
+      }
     });
 
     return this._handleResponse(res);
@@ -43,7 +58,8 @@ export class ApiClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
       },
       body: JSON.stringify(body)
     });
@@ -61,6 +77,9 @@ export class ApiClient {
     const fullUrl = `${this.baseUrl}${url}`;
     const res = await fetch(fullUrl, {
       method: 'POST',
+      headers: {
+        ...this._getAuthHeaders()
+      },
       body: formData
     });
 
@@ -79,7 +98,8 @@ export class ApiClient {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
       },
       body: JSON.stringify(body)
     });
@@ -97,7 +117,8 @@ export class ApiClient {
     const res = await fetch(fullUrl, {
       method: 'DELETE',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
       }
     });
 
@@ -139,6 +160,7 @@ export class ApiClient {
 
       // Handle session expiry or unauthorized request
       if (res.status === 401) {
+        localStorage.removeItem('dd_jwt_token');
         window.dispatchEvent(new CustomEvent('auth:unauthorized'));
       } else if (res.status === 403) {
         if (data?.error === 'AiQuotaExceeded') {

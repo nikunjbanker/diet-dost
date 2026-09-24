@@ -14,6 +14,7 @@ public static class SecurityInfrastructureExtensions
     {
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.AddSingleton<IOtpService, OtpService>();
+        services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddScoped<ITierConfigurationService, TierConfigurationService>();
         services.AddScoped<IAiQuotaService, AiQuotaService>();
         return services;

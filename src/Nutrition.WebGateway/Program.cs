@@ -1,5 +1,9 @@
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
 using Nutrition.Application.Services;
@@ -75,31 +79,85 @@ builder.Services.AddHttpClient<MicrosoftAgentFoodVisionService>(client =>
 });
 builder.Services.AddScoped<IFoodVisionAgent, MicrosoftAgentFoodVisionService>();
 
-// Authentication & Cookie Session Security (OWASP A02, A07)
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// Authentication & Dual Scheme Security: JWT Bearer + Cookie Session (OWASP A02, A07)
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
+var jwtKey = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? JwtTokenService.DefaultDevKey;
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = "SmartScheme";
+    options.DefaultChallengeScheme = "SmartScheme";
+})
+.AddPolicyScheme("SmartScheme", "JWT Bearer or Cookie Authentication", options =>
+{
+    options.ForwardDefaultSelector = context =>
     {
-        options.Cookie.Name = "DietDost.Session";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
-        options.SlidingExpiration = true;
-
-        // Return 401/403 for API endpoints rather than redirecting to HTML login
-        options.Events.OnRedirectToLogin = context =>
+        var authHeader = context.Request.Headers.Authorization.ToString();
+        if (!string.IsNullOrWhiteSpace(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
         {
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return Task.CompletedTask;
-        };
-        options.Events.OnRedirectToAccessDenied = context =>
+            return JwtBearerDefaults.AuthenticationScheme;
+        }
+        return CookieAuthenticationDefaults.AuthenticationScheme;
+    };
+})
+.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidIssuer = jwtIssuer,
+        ValidateAudience = true,
+        ValidAudience = jwtAudience,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.FromSeconds(30),
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
+    };
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
         {
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+            if (context.Exception is SecurityTokenExpiredException)
+            {
+                context.Response.Headers.Append("Token-Expired", "true");
+            }
             return Task.CompletedTask;
-        };
-    });
+        }
+    };
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.Cookie.Name = "DietDost.Session";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.SlidingExpiration = true;
 
-builder.Services.AddAuthorization();
+    // Return 401/403 for API endpoints rather than redirecting to HTML login
+    options.Events.OnRedirectToLogin = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        return Task.CompletedTask;
+    };
+    options.Events.OnRedirectToAccessDenied = context =>
+    {
+        context.Response.StatusCode = StatusCodes.Status403Forbidden;
+        return Task.CompletedTask;
+    };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("RequireAdmin", policy => policy.RequireRole(UserRole.Admin.ToString(), UserRole.SuperAdmin.ToString()));
+    options.AddPolicy("RequireSuperAdmin", policy => policy.RequireRole(UserRole.SuperAdmin.ToString()));
+    options.AddPolicy("RequireActiveUser", policy => policy.RequireAuthenticatedUser());
+});
 
 // Polly Resilience Pipeline for Rate Limiting & Brute-Force Defense (OWASP A04)
 var authRateLimitPipeline = new ResiliencePipelineBuilder()
@@ -577,7 +635,8 @@ app.Use(async (context, next) =>
     if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
         context.Request.Path.StartsWithSegments("/api/auth/register") ||
         context.Request.Path.StartsWithSegments("/api/auth/verify-otp") ||
-        context.Request.Path.StartsWithSegments("/api/auth/resend-otp"))
+        context.Request.Path.StartsWithSegments("/api/auth/resend-otp") ||
+        context.Request.Path.StartsWithSegments("/api/auth/token"))
     {
         var pipeline = context.RequestServices.GetRequiredService<ResiliencePipeline>();
         try
