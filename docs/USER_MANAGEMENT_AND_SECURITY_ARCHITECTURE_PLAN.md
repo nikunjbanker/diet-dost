@@ -7,6 +7,59 @@
 
 ---
 
+## Implementation Progress & Execution Checklist
+
+- [x] **Section 1: Identity, Legal Consent & Verification Domain Engine**
+  - [x] Create domain entities (`ApplicationUser`, `VerificationOtp`, `TierFeatureConfiguration`, `AiUsageLog`)
+  - [x] Implement PBKDF2 HMAC-SHA512 password hasher (`PasswordHasher`)
+  - [x] Implement cryptographic OTP generator (`OtpService`) with 6-digit generation and 5-min TTL
+  - [x] Configure EF Core schema mappings & SQLite migration routines in `DietTrackerDbContext`
+  - [x] Seed dynamic tier configurations (`Free`, `Basic`, `Premium`, `Admin`, `SuperAdmin`)
+  - [x] Migrate legacy sample profiles and records to configured SuperAdmin account
+  - [x] Verify domain invariants and unit test suite in `IdentityDomainModelTests` (36/36 passing)
+
+- [x] **Section 2: OWASP Auth Gateway, JWT Engine & Gating Middleware**
+  - [x] Define `IJwtTokenService` interface and implement `JwtTokenService` with HMAC-SHA256 signing
+  - [x] Configure ASP.NET Core `AddPolicyScheme` ("SmartScheme") for dual JWT Bearer & Cookie routing
+  - [x] Implement `AuthController` endpoints (`/register`, `/verify-otp`, `/login`, `/token`, `/resend-otp`, `/logout`, `/me`, `/delete-account`)
+  - [x] Implement Polly sliding-window rate limiting on login/OTP/token endpoints (max 5 attempts / 15 mins)
+  - [x] Implement claim-based tenant isolation in `UserClaimsExtensions` supporting both URI and JWT claims
+  - [x] Enforce `[Authorize]` attributes across all clinical endpoints (`Meals`, `Profile`, `ProgressPhotos`, `Analytics`)
+
+- [x] **Section 3: Dynamic Tier Engine & AI Quota Interceptor**
+  - [x] Implement `ITierConfigurationService` with memory caching for dynamic tier thresholds
+  - [x] Implement `IAiQuotaService` computing localized midnight resets based on user timezone
+  - [x] Enforce `403 Forbidden` (`AiQuotaExceeded`) on meal detection endpoints when daily quota is exhausted
+  - [x] Enforce `403 Forbidden` (`FeatureTierUpgradeRequired`) on Photo Compare and Excel export for Free/Basic tiers
+  - [x] Log all AI operations and token telemetry to `AiUsageLogs`
+
+- [x] **Section 4: SuperAdmin & User Management API**
+  - [x] Implement `AdminController` protected by `[Authorize(Roles = "Admin,SuperAdmin")]`
+  - [x] Expose user management APIs (paginated users list, tier upgrades, account lock/unlock)
+  - [x] Expose runtime tier configuration APIs (GET / PUT dynamic tier parameters)
+  - [x] Enforce SuperAdmin lock/demotion immunity invariants
+
+- [x] **Section 5: Linear UI Authentication Gate, JWT Client & AI Usage HUD**
+  - [x] Build Obsidian-dark `auth-gate.html` modal blocking unauthorized DOM rendering
+  - [x] Implement dual legal consent checkboxes (Terms & AI Training License + Sensitive Health Consent)
+  - [x] Implement local dev OTP helper banner for testing without external SMS/SMTP bills
+  - [x] Integrate client-side JWT token storage in `auth-service.js` (`localStorage`)
+  - [x] Update `api-client.js` with `_getAuthHeaders()` injecting `Authorization: Bearer <token>`
+  - [x] Implement `Token-Expired: true` detection and automatic session re-authentication
+  - [x] Update `header.html` with tier pill badges (`⚡ Premium`, `👑 Super User`, `🆓 Free`) and account dropdown
+  - [x] Build interactive "AI Quota & Usage" HUD in `profile-modal.html` and admin portal in `admin-modal.html`
+
+- [x] **Section 6: Testing Harness, JWT Evals & Living SDD Sync**
+  - [x] Build automated test suite for JWT authentication (`JwtAuthenticationTests.cs`)
+  - [x] Build automated test suite for cryptography, password hashing, and OTPs (`SecurityCryptographyTests.cs`)
+  - [x] Build automated test suite for Polly rate limiting (`PollyRateLimitingTests.cs`)
+  - [x] Build automated test suite for AI quotas and tier gating (`AiQuotaAndTierServiceTests.cs`)
+  - [x] Synchronize Living SDD (`00_sdd_index.md`, `02_solution_architecture.md`, `04_security_and_compliance.md`)
+  - [x] Append comprehensive log entries in `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`)
+  - [x] Full solution test verification (`dotnet test`: 79/79 passing, 0 warnings, 0 errors)
+
+---
+
 ## 1. Executive Summary & Gating Mandate
 
 This document defines the complete engineering specification for implementing **User Management, Cost-Optimized Dual-Identifier Authentication, Dual SmartScheme Authentication (JWT Bearer RFC 7519 + HttpOnly Cookie), Role-Based Authorization, Dynamic Tier Quotas, Legal Dual-Consent Governance, and AI Telemetry Tracking** for **Diet Dost**.
