@@ -1,7 +1,7 @@
 # User Management & Security Architecture Plan: Diet Dost
-> **Specification Version**: `v1.5.0-APPROVED-SPEC`  
+> **Specification Version**: `v1.6.0-APPROVED-SPEC` (JWT Bearer RFC 7519 & Dual SmartScheme Enhanced)  
 > **Target Framework**: `.NET 11 RC` (`net11.0`) with Standalone `.NET Aspire 13.5.4`  
-> **Security Standards**: OWASP Top 10 (2021), OWASP Top 10 for LLM / AI Applications (2025), India DPDPA 2023 & ISO/IEC 27001 Baseline  
+> **Security Standards**: OWASP Top 10 (2021), OWASP Top 10 for LLM / AI Applications (2025), India DPDPA 2023, ISO/IEC 27001 Baseline, JWT Bearer (RFC 7519) & OpenID Connect Core 1.0  
 > **Legal Compliance**: Digital Personal Data Protection Act (DPDPA 2023) §6, Consumer Protection (E-Commerce) Rules, Unbundled Health Consent & AI Model Training Governance  
 > **Primary Super/God User Configuration**: Configured dynamically via `SUPER_ADMIN_EMAIL` (e.g., `admin@dietdost.app` / parameterized in environment)  
 
@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary & Gating Mandate
 
-This document defines the complete engineering specification for implementing **User Management, Cost-Optimized Dual-Identifier Authentication, Role-Based Authorization, Dynamic Tier Quotas, Legal Dual-Consent Governance, and AI Telemetry Tracking** for **Diet Dost**.
+This document defines the complete engineering specification for implementing **User Management, Cost-Optimized Dual-Identifier Authentication, Dual SmartScheme Authentication (JWT Bearer RFC 7519 + HttpOnly Cookie), Role-Based Authorization, Dynamic Tier Quotas, Legal Dual-Consent Governance, and AI Telemetry Tracking** for **Diet Dost**.
 
 ### 1.1 Strict Gating Mandate (Zero Unauthorized Data or UI Access)
 1. **Unauthenticated / Unverified State**:
@@ -27,6 +27,52 @@ This document defines the complete engineering specification for implementing **
      - Default in development: `admin@dietdost.app` (configurable in `appsettings.json` or local secrets to match the administrator's private email without committing personal PII to Git).
    - The designated SuperAdmin has infinite AI quotas, full user management capabilities, and dynamic tier configuration governance.
    - Existing sample profile (`Aarav Sharma`), meals, and progress photos currently tied to `"user-default"` will be migrated directly to the configured SuperAdmin account.
+
+### 1.2 Dual SmartScheme Authentication Architecture (JWT Bearer RFC 7519 + Secure Cookie)
+To support diverse client types—including browser-based Single Page Applications (SPAs), mobile applications (Flutter/MAUI), IoT health devices, and automated test evaluation harnesses—Diet Dost implements an ASP.NET Core **Dual SmartScheme Authentication Architecture**:
+
+```mermaid
+flowchart TD
+    Req["Incoming HTTP Request"] --> Gateway["ASP.NET Core Authentication Middleware"]
+    Gateway --> PolicyScheme{"SmartScheme Policy Evaluator"}
+    PolicyScheme -- "Has 'Authorization: Bearer <token>' Header" --> JwtHandler["JwtBearer Handler<br/>(RFC 7519 HMAC-SHA256)"]
+    PolicyScheme -- "No Bearer Header (Browser Request)" --> CookieHandler["Cookie Handler<br/>(HttpOnly, Secure, SameSite=Strict)"]
+    
+    JwtHandler --> ClaimsValidation{"Validate Signature, Key,<br/>Issuer, Audience, Lifetime"}
+    CookieHandler --> CookieValidation{"Validate Ticket,<br/>SecurityStamp & Expiry"}
+    
+    ClaimsValidation -- Valid --> Principal["ClaimsPrincipal Constructed<br/>(UserId, Email, Role, Tier, Flags)"]
+    CookieValidation -- Valid --> Principal
+    
+    ClaimsValidation -- "Invalid / Expired" --> Reject401["401 Unauthorized<br/>(Token-Expired Header if expired)"]
+    CookieValidation -- "Invalid / Expired" --> Reject401
+    
+    Principal --> AuthZ{"Endpoint Authorization<br/>[Authorize], [RequireAdmin], etc."}
+    AuthZ -- Authorized --> Controller["Execute Controller Action<br/>(Claims-Based Tenant Isolation)"]
+    AuthZ -- "Tier/Role Forbidden" --> Reject403["403 Forbidden<br/>(FeatureTierUpgradeRequired)"]
+```
+
+1. **SmartScheme Dynamic Routing**:
+   - Registered via `builder.Services.AddAuthentication("SmartScheme").AddPolicyScheme(...)`.
+   - Checks `context.Request.Headers.Authorization`: if the header starts with `Bearer `, requests are forwarded to `JwtBearerDefaults.AuthenticationScheme`; otherwise, they seamlessly route to `CookieAuthenticationDefaults.AuthenticationScheme`.
+2. **Dual-Issuance Model**:
+   - Successful calls to `/api/auth/login` and `/api/auth/verify-otp` establish the browser session cookie AND emit a cryptographically signed JWT token in the response JSON payload.
+   - A dedicated endpoint `POST /api/auth/token` provides direct token generation for headless, API-only, or mobile clients.
+3. **Claims Payload Contract**:
+   - `sub` (`ClaimTypes.NameIdentifier`): Unique user GUID string.
+   - `email` (`ClaimTypes.Email`): User email address.
+   - `name` (`ClaimTypes.Name`): User display name.
+   - `role` (`ClaimTypes.Role`): Role (`User`, `Admin`, `SuperAdmin`).
+   - `tier`: Dynamic tier (`Free`, `Basic`, `Premium`, `SuperAdmin`).
+   - `isEmailVerified`: `"true"` or `"false"`.
+   - `isMobileVerified`: `"true"` or `"false"`.
+   - `jti`: Cryptographically random GUID per token instance.
+4. **Cryptographic Integrity & Defense**:
+   - Algorithm: Symmetric HMAC-SHA256 (`SecurityAlgorithms.HmacSha256Signature`).
+   - Secret Key Minimum: 256 bits (32 bytes), validated upon startup via `JwtTokenService`.
+   - Default Lifetime: 1440 minutes (24 hours), configurable via `Jwt:ExpiryMinutes`.
+   - Clock Skew Tolerance: Tight 30-second window (`ClockSkew = TimeSpan.FromSeconds(30)`).
+   - Expiration Signaling: Emits `Token-Expired: true` response header on expired tokens for clean client re-authentication.
 
 ---
 
@@ -92,12 +138,12 @@ sequenceDiagram
 
 | Vulnerability Domain | Standard Ref | Threat Scenario | Mitigation in Diet Dost Architecture |
 |---|---|---|---|
-| **Broken Access Control** | OWASP A01:2021 | User tampers with `userId` query/body param to access another user's meals or clinical metrics. | Strict Claim-Based Tenant Isolation: All controllers extract `UserId` strictly from cryptographically validated Claims (`User.FindFirstValue(ClaimTypes.NameIdentifier)`). Client-supplied `userId` parameters are completely eliminated. |
+| **Broken Access Control** | OWASP A01:2021 | User tampers with `userId` query/body param to access another user's meals or clinical metrics. | Strict Claim-Based Tenant Isolation: All controllers extract `UserId` strictly from cryptographically validated Claims (`UserClaimsExtensions.GetUserId(User)`). Client-supplied `userId` parameters are completely eliminated. |
 | **Tier & Quota Enforcement** | OWASP A01 & A04 | User bypasses tier restrictions to use unauthorized features (e.g., Free user attempting Photo Compare or Excel export) or exhausts AI quota. | Granular `403 Forbidden` Enforcement: If an unauthorized feature is attempted, return `403 Forbidden` (`FeatureTierUpgradeRequired`). If daily AI quota is exhausted, return `403 Forbidden` (`AiQuotaExceeded`) with localized reset countdown. |
-| **Cryptographic Failures** | OWASP A02:2021 | Password compromise or stolen plain-text auth tokens. | Passwords hashed using ASP.NET Core PBKDF2 (HMAC-SHA512 with 100,000+ iterations). Sessions protected via `HttpOnly`, `Secure`, `SameSite=Strict` cookies. Transport enforced via TLS 1.3 / HSTS. |
+| **Cryptographic Failures** | OWASP A02:2021 | Password compromise, weak token signing, or plain-text auth tokens in transit. | Passwords hashed with PBKDF2 (HMAC-SHA512, 100,000+ iterations). JWT tokens signed using HMAC-SHA256 with minimum 256-bit keys (`Jwt:Key`). Browser cookies protected via `HttpOnly`, `Secure`, `SameSite=Strict`. Transport enforced via TLS 1.3 / HSTS. |
 | **Injection** | OWASP A03:2021 | SQL injection or script injection via user input fields. | All queries executed through EF Core parameterized expressions. Anti-XSS encoding on all dynamic inputs. |
-| **Insecure Design & Brute Force** | OWASP A04:2021 | Automated OTP guessing or password dictionary attacks on auth endpoints. | Token Bucket Rate Limiting (ASP.NET Core `RateLimiter` / Polly Resilience Pipeline) on login/OTP endpoints (max 5 failed attempts per 15 minutes with account lockouts). OTPs cryptographically generated, 6 digits, 5-minute expiry, max 3 verification attempts. |
-| **Identification & Auth Failures** | OWASP A07:2021 | Credential stuffing, session fixation, unverified fake account spam. | Mandatory Email OTP verification before account activation. Token rotation, secure session termination on logout, sliding session expiration. |
+| **Insecure Design & Brute Force** | OWASP A04:2021 | Automated OTP guessing or password dictionary attacks on auth endpoints. | Polly Resilience sliding-window rate limiting on login/OTP/token endpoints (max 5 failed attempts per 15 minutes with account lockouts). OTPs cryptographically generated, 6 digits, 5-minute expiry, max 3 verification attempts. |
+| **Identification & Auth Failures** | OWASP A07:2021 | Credential stuffing, token tampering, session fixation, unverified fake account spam. | Mandatory Email OTP verification before account activation. JWT signature validation, 30s clock skew tolerance, immediate `401 Unauthorized` on signature tampering, unique `jti` nonces, and sliding expiration. |
 | **Model Denial of Service** | OWASP AI LLM04 | Malicious or runaway users bombarding multimodal Gemini vision endpoints, draining API budgets. | Dynamic Tier Quotas (Free: 1/day, Basic: 7/day, Premium: 30/day) evaluated and locked in atomic DB transaction before routing requests to `MicrosoftAgentFoodVisionService`. |
 | **Prompt Injection & Output Handling** | OWASP AI LLM01 & LLM02 | User manipulates meal notes to alter AI nutritional assessment or exfiltrate model prompts. | Input sanitization, strict JSON schema output contracts, and confidence gating ($\ge 70\%$). |
 | **Sensitive Info Disclosure** | OWASP AI LLM06 | Leaking user health conditions, names, or contact data to AI providers or telemetry logs. | PII redaction middleware: Prompts sent to Gemini contain zero personal identifiers (only meal image stream or dish description). Operational traces log only non-PII operational metadata. |
@@ -145,7 +191,7 @@ All tier parameters are stored in the database (`TierFeatureConfigurations` tabl
 
 ---
 
-## 5. Domain Models & Database Schema Architecture
+## 5. Domain Models, Schema Architecture & JWT Configuration
 
 ### 5.1 Updated Entities in `Nutrition.Domain`
 1. **`ApplicationUser`**:
@@ -200,17 +246,38 @@ All tier parameters are stored in the database (`TierFeatureConfigurations` tabl
   1. Emitted to structured Aspire / OpenTelemetry console logs: `[OTP-DISPATCH] Channel: {Channel}, Target: {Target}, Code: {Code}`.
   2. Returned in a non-production development helper header (`X-Dev-Otp-Code`) and displayed in a UI helper banner/toast for frictionless local testing without SMS/SMTP carrier bills.
 
+### 5.3 JWT Configuration & Cryptographic Key Management
+JWT token generation and validation are governed by configuration parameters loaded from `appsettings.json`, environment variables, or secret managers:
+
+```json
+{
+  "Jwt": {
+    "Key": "DietDost_SuperSecret_Jwt_SigningKey_2026_Min256BitsLong!",
+    "Issuer": "https://dietdost.app",
+    "Audience": "https://dietdost.app",
+    "ExpiryMinutes": 1440
+  }
+}
+```
+- **Configuration Contract**:
+  - `Jwt:Key` (or `JWT_KEY`): Symmetric secret key. Validated at startup to enforce $\ge 32$ bytes (256 bits).
+  - `Jwt:Issuer` (or `JWT_ISSUER`): Authority identifier string (`https://dietdost.app`).
+  - `Jwt:Audience` (or `JWT_AUDIENCE`): Target audience string (`https://dietdost.app`).
+  - `Jwt:ExpiryMinutes` (or `JWT_EXPIRY_MINUTES`): Lifespan in minutes (default `1440` / 24 hours).
+- **Service Registration**:
+  - `IJwtTokenService` registered as a singleton service in `Nutrition.Infrastructure.Security.SecurityInfrastructureExtensions`.
+
 ---
 
 ## 6. Phased Implementation Roadmap (6 Sections)
 
 ```mermaid
 graph TD
-    P1["Section 1: Identity, Legal Consent & Verification Domain Engine"] --> P2["Section 2: OWASP Auth Gateway & Gating Middleware"]
+    P1["Section 1: Identity, Legal Consent & Verification Domain Engine"] --> P2["Section 2: OWASP Auth Gateway, JWT Engine & Gating Middleware"]
     P2 --> P3["Section 3: Dynamic Tier Engine & AI Quota Interceptor"]
     P3 --> P4["Section 4: SuperAdmin & User Management API"]
-    P4 --> P5["Section 5: Linear UI Authentication Gate & AI Usage HUD"]
-    P5 --> P6["Section 6: Testing Harness, Evals & Living SDD Sync"]
+    P4 --> P5["Section 5: Linear UI Authentication Gate, JWT Client & AI Usage HUD"]
+    P5 --> P6["Section 6: Testing Harness, JWT Evals & Living SDD Sync"]
 ```
 
 ### Section 1: Identity, Legal Consent & Verification Domain Engine
@@ -224,20 +291,39 @@ graph TD
   6. Data migration: Migrate existing `"user-default"` records to the configured `SuperAdmin` account.
   7. Unit tests for password hashing, OTP verification, legal consent validation invariants, and domain constraints (0 warnings, 100% pass).
 
-### Section 2: OWASP Auth Gateway & Gating Middleware
+### Section 2: OWASP Auth Gateway, JWT Engine & Gating Middleware
+- **Git Branch**: `feature/jwt-authentication`
 - **Deliverables**:
-  1. Create `AuthController`:
-     - `POST /api/auth/register` (Email, Mobile, Password, Name, AcceptsTerms, AcceptsHealthConsent) -> Validates both legal consents, extracts client IP & UserAgent, generates Email OTP.
-     - `POST /api/auth/verify-otp` (Target, Channel, Code) -> Validates OTP, activates account when email verified.
-     - `POST /api/auth/resend-otp` (Target, Channel) -> Rate-limited resend.
-     - `POST /api/auth/login` (Email or Mobile, Password) -> Requires verified email.
-     - `POST /api/auth/logout` -> Clears auth cookie.
+  1. **JWT Cryptographic Token Service (`IJwtTokenService`, `JwtTokenService`)**:
+     - `IJwtTokenService` definition in `Nutrition.Application.Services`:
+       - `string GenerateToken(ApplicationUser user, int? expiryMinutes = null)`
+       - `ClaimsPrincipal? ValidateToken(string token)`
+     - `JwtTokenService` implementation in `Nutrition.Infrastructure.Security`:
+       - Enforces minimum 256-bit symmetric key validation.
+       - Generates tokens using `SecurityAlgorithms.HmacSha256Signature`.
+       - Embeds claims: `sub`, `email`, `name`, `role`, `tier`, `isEmailVerified`, `isMobileVerified`, and `jti`.
+       - Validates tokens with strict issuer, audience, signature, and 30-second clock skew tolerance.
+  2. **Dual SmartScheme Authentication Pipeline (`Program.cs`)**:
+     - Configures ASP.NET Core `AddPolicyScheme("SmartScheme", ...)`:
+       - Requests with `Authorization: Bearer <token>` route to `JwtBearerDefaults.AuthenticationScheme`.
+       - Requests without Bearer header route to `CookieAuthenticationDefaults.AuthenticationScheme`.
+     - Configures `JwtBearerOptions` with `TokenValidationParameters` matching `JwtTokenService`.
+     - Configures events: OnAuthenticationFailed sets `Token-Expired: true` header when lifetime expires.
+     - Adds explicit authorization policies: `RequireAdmin`, `RequireSuperAdmin`, `RequireActiveUser`.
+  3. **Gateway Endpoints in `AuthController`**:
+     - `POST /api/auth/register` (Email, Mobile, Password, Name, AcceptsTerms, AcceptsHealthConsent) -> Validates dual consent, extracts client IP/UserAgent, dispatches Email OTP.
+     - `POST /api/auth/verify-otp` (Target, Channel, Code) -> Validates OTP, activates account, signs cookie AND returns `{ token, tokenType: "Bearer", expiresIn, user }`.
+     - `POST /api/auth/login` (Email or Mobile, Password) -> Requires verified email, signs cookie AND returns `{ token, tokenType: "Bearer", expiresIn, user }`.
+     - `POST /api/auth/token` -> Dedicated token issuance endpoint for headless/mobile clients.
+     - `POST /api/auth/resend-otp` (Target, Channel) -> Rate-limited OTP resend.
+     - `POST /api/auth/logout` -> Clears auth cookie and instructs client to purge bearer token.
      - `GET /api/auth/me` -> Returns current user identity, tier, role, and legal consent version.
      - `POST /api/auth/delete-account` -> DPDPA-compliant self-service account and health data purge.
-  2. Configure ASP.NET Core `CookieAuthentication` with `HttpOnly`, `Secure`, `SameSite=Strict`.
-  3. Configure ASP.NET Core `RateLimiter` / Polly Resilience policies for authentication endpoints (prevent brute-force).
-  4. Apply `[Authorize]` across all clinical controllers: `MealsController`, `ProfileController`, `ProgressPhotosController`, `AnalyticsController`.
-  5. Refactor all controllers to extract `UserId` strictly from claims (`User.FindFirstValue(ClaimTypes.NameIdentifier)`), eliminating client-supplied `userId` vulnerabilities (OWASP A01).
+  4. **Polly Sliding-Window Rate Limiting**:
+     - Throttles `/api/auth/login`, `/api/auth/verify-otp`, and `/api/auth/token` (max 5 requests per 15-minute sliding window) to prevent brute force and credential stuffing.
+  5. **Universal Claim Mapping & Tenant Isolation (`UserClaimsExtensions.cs`)**:
+     - Maps `GetUserId()`, `GetEmail()`, `GetRole()`, `GetTier()` transparently across both standard URI claim types and short JWT claim types (`sub`, `role`, `email`, `name`).
+     - Eliminates client-supplied `userId` vulnerabilities across all clinical endpoints (`MealsController`, `ProfileController`, `ProgressPhotosController`, `AnalyticsController`).
 
 ### Section 3: Dynamic Tier Engine & AI Quota Interceptor
 - **Deliverables**:
@@ -260,32 +346,41 @@ graph TD
      - `PUT /api/admin/tier-configs/{tier}`: Update daily limits, feature toggles dynamically.
   2. Hardened rule: SuperAdmin cannot be locked or demoted.
 
-### Section 5: Linear UI Authentication Gate & AI Usage HUD
+### Section 5: Linear UI Authentication Gate, JWT Client & AI Usage HUD
 - **Deliverables**:
   1. `partials/auth-gate.html`: Obsidian-dark Authentication Gate modal blocking the entire dashboard when unauthenticated/unverified.
      - Tabs: **Sign In**, **Register** (with mandatory Email, Mobile, Terms & AI Training Checkbox, and Health Consent Checkbox), **Verify Email OTP**.
      - Accessible legal modal popups for full Terms of Service and Data & AI Training Policy.
      - Shows dev helper badge in local dev mode displaying the generated test OTP.
-  2. `partials/header.html` update:
+  2. **Client-Side JWT Token Lifecycle Management**:
+     - `auth-service.js`: Stores JWT in `localStorage` under key `diet_dost_jwt_token`. Provides `getToken()`, `setToken()`, and `clearToken()`. Clears token upon logout or 401 response.
+     - `api-client.js`: `_getAuthHeaders()` interceptor automatically attaches `Authorization: Bearer <token>` to all outgoing API requests. Detects `Token-Expired: true` header to trigger re-authentication.
+  3. `partials/header.html` update:
      - Logged-in user badge with tier pill (`⚡ Premium`, `👑 Super User`, `🆓 Free`).
      - Account dropdown menu (Profile, AI Usage, Admin Panel if eligible, Sign Out).
-  3. `partials/profile-modal.html` update:
+  4. `partials/profile-modal.html` update:
      - New interactive **"AI Quota & Usage"** section with today's gauge, 1D/7D/30D aggregations, countdown to midnight reset, and recent operations table.
      - Low-quota amber advisory badge when remaining detections = 0.
-  4. `partials/admin-modal.html`:
+  5. `partials/admin-modal.html`:
      - Full Admin / Super User portal to manage users, inspect consent dates, and edit tier limits dynamically.
-  5. JavaScript state & services updates:
+  6. JavaScript state & services updates:
      - `auth-service.js`, `auth-gate.js`, `admin-service.js`, `admin-modal.js`.
-     - `api-client.js` updated to handle 401/403 responses by automatically displaying the Auth Gate.
 
-### Section 6: Testing Harness, Evals & Living SDD Sync
+### Section 6: Testing Harness, JWT Evals & Living SDD Sync
 - **Deliverables**:
-  1. Comprehensive automated tests:
-     - Legal & Auth tests: Registration rejection when consent unchecked, forensic timestamp/IP capture, email OTP verification, login, logout, unauthorized rejection.
-     - Security tests: IDOR prevention, rate-limit defense, unverified account lockdown, account deletion purge.
-     - AI quota tests: Free limit (1), Basic limit (7), Premium limit (30), SuperAdmin unlimited, daily midnight reset.
-     - Tier gate tests: Photo compare & Excel export return 403 on Free/Basic.
-  2. Synchronize Living SDD:
+  1. **Comprehensive Automated Test Harness**:
+     - **JWT Authentication Tests (`JwtAuthenticationTests.cs`)**:
+       - `GenerateToken_ShouldProduceValidJwtStructure`: Validates 3 segments (header.payload.signature), HS256 algorithm, issuer, and audience.
+       - `GenerateToken_ShouldEmbedRequiredClaims`: Validates extraction of `sub`, `email`, `name`, `role`, `tier`, `isEmailVerified`, `isMobileVerified`, and `jti`.
+       - `ValidateToken_ShouldRejectTamperedToken`: Verifies that altering payload bytes or signature causes immediate token rejection (`null`).
+       - `ValidateToken_ShouldRejectExpiredToken`: Verifies expired tokens are rejected.
+       - `UserClaimsExtensions_ShouldMapBothStandardAndShortJwtClaimTypes`: Confirms parity between XML/SOAP claim URIs and compact JWT claim names.
+     - **Legal & Auth Tests**: Registration rejection when consent unchecked, forensic timestamp/IP capture, email OTP verification, login, logout, unauthorized rejection.
+     - **Security Tests**: IDOR prevention, rate-limit defense, unverified account lockdown, account deletion purge.
+     - **AI Quota Tests**: Free limit (1), Basic limit (7), Premium limit (30), SuperAdmin unlimited, daily midnight reset.
+     - **Tier Gate Tests**: Photo compare & Excel export return 403 on Free/Basic.
+  2. **Synchronize Living SDD**:
      - Update `docs/sdd/00_sdd_index.md`, `02_solution_architecture.md`, `03_data_models_and_contracts.md`, `04_security_and_compliance.md`.
-     - Append comprehensive log entry to `docs/sdd/07_living_documentation_log.md`.
-  3. Verification with `dotnet test` (0 warnings, 100% passing).
+     - Append comprehensive log entry to `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-010]`).
+  3. **Verification**:
+     - `dotnet test` passing with 0 warnings and 0 errors across all test projects.
