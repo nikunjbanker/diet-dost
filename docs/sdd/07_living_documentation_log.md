@@ -1769,6 +1769,34 @@
   - `dotnet test`: 86 passed, 0 failed, 0 warnings across all test suites.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-012] Server-Side Historical Analytics Tier Gating & Data Export API
+- **Date / Timestamp**: 2026-09-25 00:35:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[API]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`AnalyticsController`), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Server-Side Historical Analytics Gating (`AnalyticsController.cs`)**:
+     - Injected `ITierConfigurationService` into `AnalyticsController`.
+     - Added runtime enforcement of `config.AnalyticsHistoryDays` on `GET /api/analytics/projections`:
+       - Free Tier: Allowed up to 7 days (1D, 7D). Requests for 30D or 365D return `403 Forbidden` (`FeatureTierUpgradeRequired`).
+       - Basic Tier: Allowed up to 30 days (1D, 7D, 30D). Requests for 365D return `403 Forbidden` (`FeatureTierUpgradeRequired`).
+       - Premium & SuperAdmin: Full historical access (365 days) permitted.
+  2. **Server-Side Data Export API (`AnalyticsController.cs`)**:
+     - Implemented `GET /api/analytics/export` streaming CSV meal log data.
+     - Enforced `config.AllowDataExport` tier validation: returns `403 Forbidden` (`FeatureTierUpgradeRequired`) for Free and Basic users.
+     - Preserved full export access for Premium, Admin, and SuperAdmin roles.
+  3. **Harness & Verification Expansion (`AiQuotaAndTierServiceTests.cs`)**:
+     - Added test cases validating `AnalyticsHistoryDays` tier thresholds (Free: 7, Basic: 30, Premium: 365, SuperAdmin: 365).
+     - Full test suite expanded to 90 passing tests (36 in `Nutrition.Domain.Tests`, 54 in `Nutrition.EvalHarness.Tests`).
+- **Modified Files**:
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: 90 passed, 0 failed, 0 warnings across all test suites.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
 
 
 

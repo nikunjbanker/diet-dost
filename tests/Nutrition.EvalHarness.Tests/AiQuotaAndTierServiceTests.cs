@@ -259,4 +259,15 @@ public class AiQuotaAndTierServiceTests : IDisposable
         Assert.Equal(1, after.UsedToday);
         Assert.Equal(0, after.RemainingCalls);
     }
+
+    [Theory]
+    [InlineData(UserTier.Free, 7)]
+    [InlineData(UserTier.Basic, 30)]
+    [InlineData(UserTier.Premium, 365)]
+    [InlineData(UserTier.SuperAdmin, 365)]
+    public async Task AnalyticsHistoryDays_MustMatchTierSpecification(UserTier tier, int expectedDays)
+    {
+        var config = await _tierConfigService.GetConfigurationAsync(tier);
+        Assert.Equal(expectedDays, config.AnalyticsHistoryDays);
+    }
 }

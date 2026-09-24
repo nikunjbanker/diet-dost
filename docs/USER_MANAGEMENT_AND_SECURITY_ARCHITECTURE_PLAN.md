@@ -34,6 +34,7 @@
   - [x] Enforce `403 Forbidden` (`FeatureTierUpgradeRequired`) on Photo Compare and Excel export for Free/Basic tiers
   - [x] Enforce client-side tier defense: block Excel client export and show upgrade prompt for Free/Basic tiers in `analytics-chart.js`
   - [x] Enforce client-side tier defense: display Obsidian-dark locked state with upgrade CTA on `#face-progress-card` in `progress-modal.js`
+  - [x] Enforce server-side tier defense: restrict historical analytics (7D for Free, 30D for Basic, 365D for Premium) and gate CSV data export API in `AnalyticsController`
 
 - [x] **Section 4: SuperAdmin & User Management API**
   - [x] Implement `AdminController` protected by `[Authorize(Roles = "Admin,SuperAdmin")]`
@@ -57,8 +58,8 @@
   - [x] Build automated test suite for Polly rate limiting (`PollyRateLimitingTests.cs`)
   - [x] Build automated test suite for AI quotas, photo telemetry, and tier feature gating (`AiQuotaAndTierServiceTests.cs`)
   - [x] Synchronize Living SDD (`00_sdd_index.md`, `02_solution_architecture.md`, `04_security_and_compliance.md`)
-  - [x] Append comprehensive log entries in `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`)
-  - [x] Full solution test verification (`dotnet test`: 86/86 passing, 0 warnings, 0 errors)
+  - [x] Append comprehensive log entries in `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`, `[LOG-20260925-012]`)
+  - [x] Full solution test verification (`dotnet test`: 90/90 passing, 0 warnings, 0 errors)
 
 ---
 
@@ -398,7 +399,8 @@ graph TD
   4. Enforce `403 Forbidden` (`FeatureTierUpgradeRequired`) on Photo Compare and Excel export for Free and Basic users.
   5. Enforce client-side tier defense: block Excel client export and show upgrade prompt for Free/Basic tiers in `analytics-chart.js`.
   6. Enforce client-side tier defense: display Obsidian-dark locked state with upgrade CTA on `#face-progress-card` in `progress-modal.js`.
-  7. Record all AI operations (photo, text, retakes) and token telemetry in `AiUsageLogs`.
+  7. Enforce server-side tier defense: block historical analytics beyond tier allowance (7D for Free, 30D for Basic, 365D for Premium) and gate CSV data export API in `AnalyticsController`.
+  8. Record all AI operations (photo, text, retakes) and token telemetry in `AiUsageLogs`.
 
 ### Section 4: SuperAdmin & User Management API `[COMPLETED & COMMITTED]`
 - **Status**: ✅ **Implemented, Verified & Committed**
@@ -454,7 +456,7 @@ graph TD
      - **Tier Gate Tests**: Photo compare & Excel export return 403 on Free/Basic, and verified enabled for Premium/SuperAdmin.
   2. **Synchronize Living SDD**:
      - Update `docs/sdd/00_sdd_index.md`, `02_solution_architecture.md`, `03_data_models_and_contracts.md`, `04_security_and_compliance.md`.
-     - Appended comprehensive log entries to `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`).
+     - Appended comprehensive log entries to `docs/sdd/07_living_documentation_log.md` (`[LOG-20260924-009]`, `[LOG-20260924-010]`, `[LOG-20260924-011]`, `[LOG-20260925-012]`).
   3. **Verification**:
-     - `dotnet test` passing with **86/86 passing**, 0 warnings and 0 errors across all test projects.
+     - `dotnet test` passing with **90/90 passing**, 0 warnings and 0 errors across all test projects.
 
