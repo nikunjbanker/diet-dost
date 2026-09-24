@@ -1475,6 +1475,29 @@
   - Branch `feature/sync-skill-with-solution-code` verified via `git status`.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-004] Repository Customizations De-Duplication & AGENTS.md Standardization
+- **Date / Timestamp**: 2026-09-24 08:18:00 UTC
+- **Change Type**: `[CLEANUP]` | `[GOVERNANCE]` | `[CUSTOMIZATIONS]`
+- **Affected Microservices / Components**: `.agents/skills`, `AGENTS.md`, Repository Root
+- **Summary of Change**:
+  1. **Skill Location Consolidation**:
+     - Removed redundant `.gemini/` directory from the solution repository.
+     - Retained [`.agents/skills/indian-diet-calorie-tracker/SKILL.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/indian-diet-calorie-tracker/SKILL.md) as the single authoritative workspace skill file auto-discovered by the agent customization system.
+  2. **Rule File Validation & Single Source of Truth**:
+     - Validated `AGENTS.md` vs `GEMINI.md`. Both files contained identical content. Because the agent environment automatically loads both files into the system prompt when present, maintaining both caused duplicate rule injection.
+     - Removed redundant `GEMINI.md`, standardizing on [`AGENTS.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/AGENTS.md) as the universal, cross-agent solution instruction file at the repository root.
+- **Modified / Deleted Files**:
+  - `.gemini/config/skills/indian-diet-calorie-tracker/SKILL.md` [DELETED]
+  - `GEMINI.md` [DELETED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - `AGENTS.md` and `.agents/skills/indian-diet-calorie-tracker/SKILL.md` verified intact.
+  - Redundant duplicates removed.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 
