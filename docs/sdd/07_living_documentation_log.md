@@ -1385,4 +1385,23 @@
   - `dotnet test tests/Nutrition.EvalHarness.Tests`: **20 passed, 0 failed, 0 skipped**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260924-001] Azure DevOps & Production Deployment Roadmap (Podman & Azure Container Apps)
+- **Date / Timestamp**: 2026-09-24 06:18:00 UTC
+- **Change Type**: `[FEATURE]` | `[DEVOPS]`
+- **Affected Microservices / Components**: `DevOps`, `Docs`, `Nutrition.WebGateway`, `Nutrition.AppHost`
+- **Summary of Change**:
+  1. Formulated a production DevOps deployment architecture targeting **Azure Container Apps (ACA)** serverless runtime with **Podman 5.7.0** (WSL2 backend) as the OCI container engine.
+  2. Created [`docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md) featuring a comprehensive, 7-phase actionable feature TODO checklist with task checkboxes, mermaid deployment topology, Podman-to-ACR authentication, and step-by-step custom domain mapping with free DigiCert TLS 1.3 certificates.
+  3. Updated [`docs/sdd/00_sdd_index.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/00_sdd_index.md) document inventory and traceability matrix.
+- **Modified / Created Documentation Files**:
+  - `docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md` [CREATED]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Confirmed Podman version: `podman version 5.7.0`
+  - Confirmed Podman machine status: `podman-machine-default` running, socket forwarding active, `podman ps` operational.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
 
