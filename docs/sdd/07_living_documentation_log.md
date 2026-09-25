@@ -2093,3 +2093,21 @@
   - AppHost & WebGateway runtime verified live at `http://localhost:5240` with 0 console errors.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-023] Dynamic SuperAdmin Email Configuration & Dual-Alias Demo Seeding
+- **Timestamp**: `2026-09-25T19:48:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[CONFIGURATION]` & `[ENHANCEMENT]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`
+- **Summary of Change**:
+  Dynamically bound `Auth:SuperAdminEmail` from `appsettings.json` (`superadmin@dietdost.app`) into the bootstrap demo seed process in `DatabaseInitializationExtensions.cs`. Implemented seamless dual-alias support preserving both `superadmin@dietdost.app` and `admin@dietdost.app` with common demo password `DietDost@Demo2026!`, ensuring zero regression across legacy admin logins and new configured superadmin credentials.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs` [MODIFIED]
+- **Harness & Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - Aspire AppHost & WebGateway runtime verified live at `http://localhost:5240`.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
