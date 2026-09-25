@@ -54,6 +54,7 @@ public static class StorageInfrastructureExtensions
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Services.LocalPhotoStorageService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Services.DatabaseSecretStore>();
+        services.AddSingleton<Nutrition.Application.Common.Interfaces.IAppEnvironment, Services.AppEnvironment>();
         return services;
     }
 }

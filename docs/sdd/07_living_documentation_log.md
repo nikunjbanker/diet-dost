@@ -2296,6 +2296,45 @@
   - Console errors: **0**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-029] Debug-Only Demo User Security Isolation & Release Mode Data Breach Prevention
+- **Timestamp**: `2026-09-26T00:35:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[SECURITY]`, `[ARCHITECTURE]`, `[CLEAN_ARCHITECTURE]`
+- **Affected Microservices / Components**: `Nutrition.Domain`, `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  Addressed data breach threat where seeded demo accounts could be exploited in production or release environments:
+  1. *Domain Layer*: Added `ApplicationUser.DemoEmails` immutable set, `ApplicationUser.IsDemoAccount` instance property, and `ApplicationUser.IsDemoEmail` helper.
+  2. *Application Layer*: Created `IAppEnvironment` port in `Nutrition.Application.Common.Interfaces` providing `IsDebugMode`, `IsDevelopment`, and `AllowsDemoUsers` properties. Injected `IAppEnvironment` into `LoginCommandHandler` to strictly reject demo user login attempts in Release or non-Development mode (`HTTP 403 DemoAccessForbidden`).
+  3. *Infrastructure Layer*: Implemented `AppEnvironment` adapter in `Nutrition.Infrastructure.Services` bridging C# `#if DEBUG` preprocessor flags and ASP.NET Core `IHostEnvironment.IsDevelopment()`. Added `Microsoft.Extensions.Hosting.Abstractions` reference and registered `IAppEnvironment` as singleton in `StorageInfrastructureExtensions`.
+  4. *Presentation Layer (WebGateway)*:
+     - Updated `DatabaseInitializationExtensions.InitializeDatabaseAsync`: when `AllowsDemoUsers` is false (Release mode or non-Dev), demo user seeding is suppressed.
+     - Added `DeactivateDemoUsersInReleaseModeAsync` to proactively scan for and deactivate (`IsActive = false`) any pre-existing demo accounts and revoke their security stamps (`SecurityStamp = Guid.NewGuid().ToString("N")`) to prevent old tokens from being accepted.
+     - Updated `SeedAppSecretsAsync` to only seed `Auth:DemoPassword` in Debug/Dev mode.
+  5. *Test Harness*:
+     - Created `DemoUserEnvironmentSecurityTests` verifying demo email detection, release mode login rejection, debug mode login success, and real user logins across environments.
+     - Ran `dotnet test`: 122 tests passed (36 Domain + 86 EvalHarness), 0 failed, 0 warnings.
+     - Ran `dotnet build -c Release`: succeeded with 0 warnings, 0 errors.
+     - Executed live E2E validation `tests/validate_e2e_tiers.ps1` in dev mode: 100% passed across all 5 tiers.
+- **Modified & New Code Files**:
+  - `src/Nutrition.Domain/Model/Identity/ApplicationUser.cs` [MODIFIED]
+  - `src/Nutrition.Application/Common/Interfaces/IAppEnvironment.cs` [NEW]
+  - `src/Nutrition.Application/Features/Auth/Commands/Login/LoginCommand.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Services/AppEnvironment.cs` [NEW]
+  - `src/Nutrition.Infrastructure/Persistence/StorageInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/DemoUserEnvironmentSecurityTests.cs` [NEW]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness & Verification Result**:
+  - `dotnet test`: **122 passed (36 Domain + 86 EvalHarness), 0 failed, 0 warnings**.
+  - `dotnet build -c Release`: **0 warnings, 0 errors**.
+  - `tests/validate_e2e_tiers.ps1`: **ALL 5 TIERS PASSED LIVE E2E VALIDATION 100%**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

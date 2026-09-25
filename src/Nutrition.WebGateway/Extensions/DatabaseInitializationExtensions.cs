@@ -29,12 +29,24 @@ public static class DatabaseInitializationExtensions
         var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitialization");
 
+        var appEnv = scope.ServiceProvider.GetRequiredService<Nutrition.Application.Common.Interfaces.IAppEnvironment>();
+
         try
         {
             await EnsureDatabaseCreatedAndMigratedAsync(db);
-            await SeedAppSecretsAsync(db, configuration, logger);
+            await SeedAppSecretsAsync(db, configuration, appEnv, logger);
             await SeedTierConfigurationsAsync(db, logger);
-            await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, logger);
+
+            if (appEnv.AllowsDemoUsers)
+            {
+                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, logger);
+            }
+            else
+            {
+                logger.LogWarning("[SECURITY] Release mode or non-Development environment detected. Demo user seeding skipped and existing demo accounts deactivated.");
+                await DeactivateDemoUsersInReleaseModeAsync(db, logger);
+            }
+
             await MigrateLegacyDataAsync(db, logger);
 
             logger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");
@@ -237,15 +249,23 @@ public static class DatabaseInitializationExtensions
         }
     }
 
-    private static async Task SeedAppSecretsAsync(DietTrackerDbContext db, IConfiguration configuration, ILogger logger)
+    private static async Task SeedAppSecretsAsync(
+        DietTrackerDbContext db,
+        IConfiguration configuration,
+        Nutrition.Application.Common.Interfaces.IAppEnvironment appEnv,
+        ILogger logger)
     {
         var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>
         {
             ("Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!", "Cryptographic signing key for JWT HMAC-SHA256 tokens"),
-            ("Auth:DemoPassword", "DietDost@Demo2026!", "Deterministic password for seeded demo tier accounts"),
             ("AI:GoogleAI:ApiKey", string.Empty, "Google Gemini Vision API Key"),
             ("AI:AzureOpenAI:ApiKey", string.Empty, "Azure OpenAI API Key")
         };
+
+        if (appEnv.AllowsDemoUsers)
+        {
+            defaultSecrets.Add(("Auth:DemoPassword", "DietDost@Demo2026!", "Deterministic password for seeded demo tier accounts (Debug/Dev only)"));
+        }
 
         foreach (var (key, fallbackValue, description) in defaultSecrets)
         {
@@ -268,6 +288,30 @@ public static class DatabaseInitializationExtensions
         }
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task DeactivateDemoUsersInReleaseModeAsync(DietTrackerDbContext db, ILogger logger)
+    {
+        var demoUsers = await db.Users
+            .Where(u => ApplicationUser.DemoEmails.Contains(u.Email) ||
+                        u.Id.StartsWith("user-free") ||
+                        u.Id.StartsWith("user-basic") ||
+                        u.Id.StartsWith("user-premium") ||
+                        u.Id.StartsWith("user-admin") ||
+                        u.Id.StartsWith("user-superadmin"))
+            .ToListAsync();
+
+        if (demoUsers.Count > 0)
+        {
+            foreach (var user in demoUsers)
+            {
+                user.IsActive = false;
+                user.SecurityStamp = Guid.NewGuid().ToString("N");
+            }
+
+            await db.SaveChangesAsync();
+            logger.LogWarning("[SECURITY] Deactivated {Count} demo user account(s) and revoked security stamps to guarantee zero data breach exposure in Release mode.", demoUsers.Count);
+        }
     }
 
     private static async Task SeedTierConfigurationsAsync(DietTrackerDbContext db, ILogger logger)

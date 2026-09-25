@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Auth.DTOs;
 using Nutrition.Application.Services;
@@ -23,6 +24,7 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IJwtTokenService _jwtTokenService;
+    private readonly IAppEnvironment _appEnvironment;
     private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
@@ -32,6 +34,7 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
         IUnitOfWork uow,
         IPasswordHasher passwordHasher,
         IJwtTokenService jwtTokenService,
+        IAppEnvironment appEnvironment,
         ILogger<LoginCommandHandler> logger)
     {
         _userRepo = userRepo;
@@ -40,6 +43,7 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
         _uow = uow;
         _passwordHasher = passwordHasher;
         _jwtTokenService = jwtTokenService;
+        _appEnvironment = appEnvironment;
         _logger = logger;
     }
 
@@ -58,6 +62,13 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
         if (user == null)
         {
             return Result<LoginResultDto>.Failure("Invalid email/mobile or password.", "InvalidCredentials", 401);
+        }
+
+        var isDemo = user.IsDemoAccount || ApplicationUser.IsDemoEmail(identifier);
+        if (isDemo && !_appEnvironment.AllowsDemoUsers)
+        {
+            _logger.LogWarning("[SECURITY] Blocked login attempt to demo account outside Debug/Development mode: {Email}", user.Email);
+            return Result<LoginResultDto>.Failure("Demo accounts are strictly disabled in Release mode to prevent data breach.", "DemoAccessForbidden", 403);
         }
 
         var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
