@@ -7,27 +7,27 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient } from './services/api-client.js?v=1.3.6';
-import { AuthService } from './services/auth-service.js?v=1.3.6';
-import { AdminService } from './services/admin-service.js?v=1.3.6';
-import { MealsService } from './services/meals-service.js?v=1.3.6';
-import { ProfileService } from './services/profile-service.js?v=1.3.6';
-import { AnalyticsService } from './services/analytics-service.js?v=1.3.6';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.3.6';
-import { MedicationService } from './services/medication-service.js?v=1.3.6';
+import { ApiClient, apiClient } from './services/api-client.js?v=1.3.7';
+import { AuthService } from './services/auth-service.js?v=1.3.7';
+import { AdminService } from './services/admin-service.js?v=1.3.7';
+import { MealsService } from './services/meals-service.js?v=1.3.7';
+import { ProfileService } from './services/profile-service.js?v=1.3.7';
+import { AnalyticsService } from './services/analytics-service.js?v=1.3.7';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.3.7';
+import { MedicationService } from './services/medication-service.js?v=1.3.7';
 
-import { toastService } from './ui/toast.js?v=1.3.6';
-import { confettiService } from './ui/confetti.js?v=1.3.6';
-import { DailyHudController } from './ui/daily-hud.js?v=1.3.6';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.3.6';
-import { ReviewModalController } from './ui/review-modal.js?v=1.3.6';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.6';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.3.6';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.6';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.3.6';
-import { AuthGateController } from './ui/auth-gate.js?v=1.3.6';
-import { AdminModalController } from './ui/admin-modal.js?v=1.3.6';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.3.6';
+import { toastService } from './ui/toast.js?v=1.3.7';
+import { confettiService } from './ui/confetti.js?v=1.3.7';
+import { DailyHudController } from './ui/daily-hud.js?v=1.3.7';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.3.7';
+import { ReviewModalController } from './ui/review-modal.js?v=1.3.7';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.7';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.3.7';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.7';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.3.7';
+import { AuthGateController } from './ui/auth-gate.js?v=1.3.7';
+import { AdminModalController } from './ui/admin-modal.js?v=1.3.7';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.3.7';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -188,6 +188,8 @@ async function initApp() {
     const mainContainer = document.querySelector('main.container');
 
     if (!user) {
+      // Reset state to unauthenticated defaults
+      appState.userId = 'user-default';
       if (nameEl) nameEl.textContent = 'Sign In';
       if (tierPillEl) {
         tierPillEl.textContent = 'Guest';
@@ -199,6 +201,14 @@ async function initApp() {
       if (mainContainer) mainContainer.style.display = 'none';
       return;
     }
+
+    // ── Update global state with authenticated user's identity ──────────────
+    // appState.userId drives ALL data API calls (daily ledger, projections, meals).
+    // It must be set before any refresh() calls below.
+    if (user.id) appState.userId = user.id;
+    if (user.userTimezone) appState.userTimezone = user.userTimezone;
+    // UserTier can be numeric enum (0=Free,1=Basic,2=Premium,3=SuperAdmin) or string
+    // ────────────────────────────────────────────────────────────────────────────────
 
     if (mainContainer) mainContainer.style.display = 'block';
 

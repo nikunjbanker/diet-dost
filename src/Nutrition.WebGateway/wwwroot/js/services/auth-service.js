@@ -10,7 +10,10 @@ export class AuthService {
 
   async getCurrentUser() {
     try {
-      const user = await this.api.get('/api/auth/me');
+      const res = await this.api.get('/api/auth/me');
+      // /api/auth/me returns { isAuthenticated, user: { id, email, name, role, tier, ... } }
+      // Unwrap the envelope so callers receive the user object directly.
+      const user = res?.user ?? null;
       this.currentUser = user;
       return user;
     } catch (err) {
