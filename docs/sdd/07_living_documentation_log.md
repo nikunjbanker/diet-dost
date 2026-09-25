@@ -1903,3 +1903,23 @@
 - **Harness Verification Result**:
   - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-016] Fix: Register Missing AddCors Policy — Resolves "Failed to fetch" on Login
+- **Date / Timestamp**: 2026-09-25 09:54:00 UTC
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`Program.cs`)
+- **Summary of Change**:
+  Fixed a startup defect where `app.UseCors("AllowAll")` in the middleware pipeline referenced a CORS policy named `"AllowAll"` that was never registered via `builder.Services.AddCors(...)`. ASP.NET Core throws an `InvalidOperationException` at the first inbound HTTP request when `UseCors` references an unknown policy name, causing the entire request pipeline to fail — manifesting as **"Failed to fetch"** in the browser on every API call including login.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Browser auth gate showed red "Failed to fetch" error banner on Sign In attempt with correct credentials (`admin@dietdost.app`).
+  - *Root Cause*: `app.UseCors("AllowAll")` at `Program.cs:626` wired the CORS middleware referencing a named policy `"AllowAll"`, but no corresponding `builder.Services.AddCors(options => options.AddPolicy("AllowAll", ...))` call existed anywhere in the service registration block. ASP.NET Core validates policy names at request time and throws `InvalidOperationException` when the named policy is absent.
+  - *Preventative Action*: Added `builder.Services.AddCors(...)` with the `"AllowAll"` policy using `SetIsOriginAllowed(_ => true)`, `AllowAnyMethod()`, `AllowAnyHeader()`, and `AllowCredentials()` immediately before `builder.Build()`. This is permissive for local development; in production the app serves its own frontend as same-origin static files so cross-origin requests are not expected.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED] — Added `builder.Services.AddCors(...)` registration
+- **Harness Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (net11.0) — Build succeeded across all 4 projects.
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings** (unchanged).
+- **Git Commit**: `e22d5cd` — `fix(cors): register missing AddCors 'AllowAll' policy — resolves 'Failed to fetch' on login`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
