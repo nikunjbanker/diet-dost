@@ -74,6 +74,29 @@ export class AuthService {
     return res;
   }
 
+  /**
+   * Step 1 of password reset: request a 6-digit OTP to the registered email.
+   * The server returns a generic success even if the email is not found
+   * (anti-enumeration, OWASP A07:2021).
+   */
+  async forgotPassword(email) {
+    return await this.api.post('/api/auth/forgot-password', { email });
+  }
+
+  /**
+   * Step 2 of password reset: submit the OTP + new password.
+   * Both newPassword and confirmNewPassword must match (server also validates).
+   */
+  async resetPassword(email, otpCode, newPassword, confirmNewPassword) {
+    return await this.api.post('/api/auth/reset-password', {
+      email,
+      otpCode,
+      newPassword,
+      confirmNewPassword
+    });
+  }
+
+
   getToken() {
     return localStorage.getItem('dd_jwt_token');
   }
