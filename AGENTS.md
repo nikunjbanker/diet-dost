@@ -23,9 +23,19 @@ This solution-level instruction file defines mandatory engineering and Git workf
 3. **Step 2: Perform End-to-End User Tier Validation**:
    - Run end-to-end product verification across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`).
    - Validate that tier quotas, feature gating (photo comparison, data export, analytics history), and role permissions function accurately in the actual product with 0 runtime or console errors.
-4. **Step 3: Synchronize Living Documentation**:
-   - Adhere to the Zero Documentation Drift Mandate (`docs/sdd/*.md`).
-   - Append an entry to `docs/sdd/07_living_documentation_log.md`.
+4. **Step 3: Major Change Auto-Detection & Living Synchronization**:
+   - **Auto-Detect Major Changes**: Any modification involving:
+     1. *Layer or Architectural Boundaries* (Clean Architecture, Native CQRS handlers, Ports/Adapters, DI registrations).
+     2. *Persistence & Security Additions* (new DB entities/tables, secret stores, encryption, migrations).
+     3. *Security & Environment Boundary Gating* (Debug/Release environment isolation, auth scheme routing, `#if DEBUG` guards).
+     4. *Clinical & Domain Logic Modifications* (ICMR-NIN 2024 algorithms, WHO cutoffs, macro distributions).
+     5. *Tier Quotas & Feature Gating* (tier quotas, paywalls, role authorization rules).
+   - **Mandatory Synchronization Actions**:
+     - Synchronize `README.md` (technology matrix, architecture diagrams, file tree, test metrics).
+     - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
+     - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, etc.).
+     - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
+     - Append an entry to `docs/sdd/07_living_documentation_log.md`.
 5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash
@@ -42,3 +52,4 @@ This solution-level instruction file defines mandatory engineering and Git workf
 3. **Standalone Aspire AppHost**: Use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">`.
 4. **Clinical Dietetics Governance**: Adhere strictly to the Indian Medical Standards (ICMR-NIN 2024 & WHO guidelines) and the Zero-Assumption Rule specified in the solution skill.
 5. **Mandatory End-to-End Tier Verification**: No refactoring, new feature implementation, or bug fix is complete without verifying actual product behavior across all user tiers using the seeded demo accounts.
+6. **Zero Documentation Drift Standard**: Never omit synchronizing README, Mermaid diagrams, SDD docs, and agent skills after implementing major architectural or security enhancements.

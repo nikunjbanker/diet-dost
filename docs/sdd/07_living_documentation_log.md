@@ -2334,6 +2334,39 @@
   - `tests/validate_e2e_tiers.ps1`: **ALL 5 TIERS PASSED LIVE E2E VALIDATION 100%**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-030] Living Architecture Synchronization, README Enhancement & Major Change Auto-Detection Mandate
+- **Timestamp**: `2026-09-26T00:50:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[DOCUMENTATION]`, `[ARCHITECTURE]`, `[SKILLS]`, `[GOVERNANCE]`
+- **Affected Microservices / Components**: Solution-wide (`README.md`, `docs/architecture/diagrams/*`, `docs/sdd/*`, `.agents/skills/*`, `AGENTS.md`)
+- **Summary of Change**:
+  1. *README Modernization*: Updated `README.md` to comprehensively document .NET 11 Clean Architecture & Native CQRS, Swappable Database Secret Store (`AppSecrets`), Debug-Only Demo User Security Isolation, Tier Quotas, updated repository directory structure, 122 automated tests, and live E2E validation script. Replaced legacy monolithic diagram with updated 7-layer Mermaid architecture.
+  2. *Architecture Diagrams Synchronization*:
+     - Synchronized `docs/architecture/diagrams/solution_architecture.mermaid` and `docs/sdd/02_solution_architecture.md` to reflect Clean Architecture, Native CQRS, `IAppEnvironment` gate, and Database Secret Store.
+     - Synchronized `docs/architecture/diagrams/security_boundary.mermaid` with `IAppEnvironment` gate, demo user release prohibitions (`THREAT-12`), and `AppSecrets` store.
+  3. *Living SDD Security Specs*: Added `THREAT-12` (Default Demo Credential Exploitation & Release Mode Isolation) to `docs/sdd/04_security_and_compliance.md`.
+  4. *Major Change Auto-Detection Mandate*:
+     - Updated `.agents/skills/indian-diet-calorie-tracker/SKILL.md` (Package Governance Rule 7 and new Section 12) with explicit auto-detection triggers (Layers/CQRS, Persistence/Secrets, Security/Environment, Clinical, Tier Quotas) and the mandatory synchronization checklist.
+     - Updated `.agents/skills/diet-dost-clean-architecture/SKILL.md` (Rule 8) and `.agents/skills/diet-dost-user-management-security/SKILL.md` (Rule 7).
+     - Updated repository rulebook `AGENTS.md` (Step 3 and Standard 6) to strictly mandate automated major change detection and living documentation/skill synchronization without waiting for manual prompting.
+- **Modified Files**:
+  - `README.md` [MODIFIED]
+  - `AGENTS.md` [MODIFIED]
+  - `docs/architecture/diagrams/solution_architecture.mermaid` [MODIFIED]
+  - `docs/architecture/diagrams/security_boundary.mermaid` [MODIFIED]
+  - `docs/sdd/02_solution_architecture.md` [MODIFIED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-user-management-security/SKILL.md` [MODIFIED]
+- **Verification Result**:
+  - Solution build: **0 Warnings, 0 Errors**.
+  - All test suites: **122 passed, 0 failed**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
 
 
 

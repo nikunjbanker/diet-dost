@@ -12,6 +12,11 @@
 
 ## 🌟 Key Highlights
 
+- **🏛️ .NET 11 Clean Architecture & Native CQRS**: Pure dependency-inversion Onion architecture with native CQRS (`ICommand`, `IQuery`, `ICommandHandler`, `IQueryHandler`) implemented via `Microsoft.Extensions.DependencyInjection`—eliminating commercial licensing risks (Zero MediatR RPL-1.5). Thin controllers delegate exclusively to application handlers.
+- **🔐 Swappable Database Secret Store**: Zero hardcoded secrets in source code or `appsettings.json`. Secrets are persisted in the `AppSecrets` database table via `ISecretStore` with in-memory caching and projected directly into ASP.NET Core `IConfiguration` via a custom `DatabaseConfigurationProvider` during host startup.
+- **🛡️ Debug-Only Demo User Security Isolation**: Prevents production data breaches by restricting seeded demo accounts (`free@`, `basic@`, `premium@`, `admin.demo@`, `superadmin@dietdost.app`) strictly to Debug builds in Development hosting environments. In Release mode, demo user seeding is suppressed, login attempts are blocked with `HTTP 403 DemoAccessForbidden`, and any pre-existing demo accounts are proactively deactivated with revoked security stamps.
+- **⚡ Dual SmartScheme Auth & Tier Quota Engine**: RFC 7519 JWT Bearer + HttpOnly Cookie dual authentication with India DPDPA 2023 forensic consent audit logging. Features dynamic tier quotas (`Free`: 1/day, `Basic`: 7/day, `Premium`: 30/day, `SuperAdmin`: Unlimited) with automated feature gating (visual progress comparisons and meal data exports).
+- **🧪 Mandatory End-to-End Tier Verification Harness**: 122 automated unit/eval tests plus an automated live E2E PowerShell test harness (`pwsh -File tests/validate_e2e_tiers.ps1`) verifying all 5 demo user tiers, quotas, feature gating, and admin permissions on the running WebGateway.
 - **🇮🇳 South Asian & Indian Phenotype Specific**: Tailored for Indian dietary realities—including dal, sabzi, roti, rice, street snacks, and regional preparations—calibrated with WHO Asian-Indian BMI cutoffs (Normal: 18.5–22.9, Overweight: 23–24.9, Obese: $\ge$ 25 kg/m²).
 - **🔬 Zero-Assumption Clinical Engine**: Zero hallucination or guesswork. Requires complete clinical profile metrics (age, biological sex, height, weight, activity multiplier, health conditions) before issuing caloric and macronutrient targets.
 - **📸 Multimodal AI Meal Vision**: Upload or take photos of Indian dishes. Powered by Microsoft Agent Framework + Google Gemini multimodal vision with a strict $\ge 70\%$ confidence gating floor and editable 1-tap review modals.
@@ -35,62 +40,76 @@
 
 ## 🏛️ Architecture & Tech Stack
 
-Diet Dost is built on a clean **Domain-Driven Design (DDD)** onion architecture:
+Diet Dost is built on a decoupled **Clean Architecture & Native CQRS** pattern:
 
 ```mermaid
 graph TD
-    subgraph Client ["Frontend (PWA)"]
+    subgraph PRESENTATION ["1. Presentation Layer (Nutrition.WebGateway)"]
         UI["Linear Obsidian Web Client (HTML5 / Vanilla ES Modules)"]
-        DI["Client Dependency Injection & EventBus"]
-        Partials["Modular HTML Partials (HUD, Camera, Modals, Diary, History)"]
-        Badge["Model Transparency Badge (Configurable)"]
-        Assets["Obsidian SVG Fallbacks (Plate & Progress Silhouettes)"]
+        Gate["Obsidian Dark Auth Gate (Dual DPDPA Consent UI)"]
+        Controllers["Thin REST Controllers (Auth, Meals, Profile, Analytics, Admin)"]
+        MW["Middlewares (SmartScheme Auth, Polly RateLimit, Telemetry, RFC 7807 Errors)"]
     end
 
-    subgraph Gateway ["Web & API Gateway"]
-        WebGateway["Nutrition.WebGateway (.NET 11 RC ASP.NET Core)"]
-        MW["HttpPayloadTelemetryMiddleware (Trace Payloads)"]
-        StaticFileServer["Static File & Partial Loader Engine"]
+    subgraph APPLICATION ["2. Application Layer (Nutrition.Application)"]
+        CQRS["Native CQRS Pipeline (Commands, Queries, In-Memory Dispatcher)"]
+        Handlers["Command & Query Handlers (Login, Register, MealVision, Profile, Analytics)"]
+        Ports["Port Abstractions (IRepository, ISecretStore, IAppEnvironment, IPhotoStorage)"]
+        TelService["NutritionTelemetry ActivitySource (GenAI Semantic Spans)"]
     end
 
-    subgraph Core ["Application & Domain"]
-        Domain["Nutrition.Domain (DDD Core)"]
-        Clinical["Clinical Calculations & ICMR-NIN Safeguards"]
-        Contracts["Data Contracts & Aggregates"]
-        Telemetry["NutritionTelemetry (GenAI Semantic ActivitySource)"]
+    subgraph DOMAIN ["3. Domain Core Layer (Nutrition.Domain)"]
+        Aggregates["DDD Aggregates (ApplicationUser, UserProfile, MealLog, DailyCalorieLedger)"]
+        ClinicalCalculators["Clinical Engine (Mifflin-St Jeor, ICMR-NIN 2024 Safeguards, WHO Asian-Indian Cutoffs)"]
+        SecModel["Security Models (AppSecret, PasswordPolicy, TierFeatureConfiguration)"]
     end
 
-    subgraph Infra ["Infrastructure & Persistence"]
-        SQLite["Swappable SQLite Persistence (Universal UTC Converters & PRAGMA Checks)"]
-        AgentVision["Microsoft Agent Framework Vision Agent"]
-        Cascade["Multi-Model Fallback Cascade (3-Flash -> 2.5-Flash -> 2.5-Pro)"]
-        Aspire["Aspire Orchestrator & Dashboard (Blazor JS Patched)"]
+    subgraph INFRASTRUCTURE ["4. Infrastructure Layer (Nutrition.Infrastructure)"]
+        Adapters["Adapters: EfRepository, LocalPhotoStorageService, DatabaseSecretStore, AppEnvironment"]
+        ConfigProvider["DatabaseConfigurationProvider (Project AppSecrets -> IConfiguration)"]
+        DbPersistence["DietTrackerDbContext (SQLite V1, Universal UTC, PRAGMA Checks, ValueComparers)"]
+        AgentVision["Microsoft Agent Framework Vision Agent (Multi-Model Cascade)"]
+        TokenService["JwtTokenService (HMAC-SHA256 via Database Secret Store)"]
     end
 
-    UI --> WebGateway
-    WebGateway --> MW
-    WebGateway --> Domain
-    WebGateway --> SQLite
-    WebGateway --> AgentVision
-    AgentVision --> Cascade
-    Cascade --> GoogleGemini["Google Gemini AI Vision API"]
-    Domain --> Telemetry
-    Telemetry -.-> Aspire
-    MW -.-> Aspire
+    subgraph ORCHESTRATION ["5. Orchestration & Observability (Nutrition.AppHost)"]
+        Aspire["Standalone .NET Aspire 13.5.4 AppHost & Developer Dashboard (:18888)"]
+        OTel["OpenTelemetry OTLP Collector (Traces, Metrics, GenAI Spans)"]
+    end
+
+    UI --> Gate
+    Gate --> Controllers
+    Controllers --> MW
+    Controllers --> CQRS
+    CQRS --> Handlers
+    Handlers --> Ports
+    Handlers --> TelService
+    Handlers --> Aggregates
+    Adapters -.->|Implements| Ports
+    ConfigProvider -.->|Feeds Secrets| MW
+    Adapters --> DbPersistence
+    Adapters --> AgentVision
+    Adapters --> TokenService
+    TelService -.-> OTel
+    MW -.-> OTel
+    Aspire --> Controllers
+    Aspire --> OTel
 ```
 
 ### Technology Matrix
 
 | Layer | Technologies |
 |---|---|
-| **Platform** | [.NET 11 RC](https://dotnet.microsoft.com/) / C# 13 |
-| **Orchestration & Dashboard** | [.NET Aspire 13.5.4](https://learn.microsoft.com/dotnet/aspire/) (Blazor Virtualize JS Patched) |
+| **Platform** | [.NET 11 RC](https://dotnet.microsoft.com/) (`net11.0`) / C# 13 |
+| **Architecture** | Clean Architecture (Onion/Hexagonal), Native CQRS via `Microsoft.Extensions.DependencyInjection` (Zero MediatR) |
+| **Orchestration & Dashboard** | [.NET Aspire 13.5.4](https://learn.microsoft.com/dotnet/aspire/) (Standalone AppHost SDK) |
+| **Secrets Management** | Database Secret Store (`AppSecrets` table, `ISecretStore` port, `DatabaseConfigurationProvider`) |
+| **Security & Environment** | `IAppEnvironment` dual-guard (#if DEBUG & `IHostEnvironment`), Dual SmartScheme JWT Bearer + HttpOnly Cookies |
 | **Observability** | OpenTelemetry, `HttpPayloadTelemetryMiddleware`, GenAI Semantic Conventions |
-| **Domain Logic** | Clean Architecture / Domain-Driven Design (DDD) |
+| **Domain Logic** | Domain-Driven Design (DDD), ICMR-NIN 2024, WHO Asian-Indian Guidelines, Mifflin-St Jeor Equation |
 | **AI / Multimodal Vision** | Microsoft Agent Framework + Google Gemini AI (3-Flash, 2.5-Flash, 2.5-Pro Cascade) |
-| **Frontend** | Vanilla ES Modules, CSS Glassmorphism, Chart.js, HTML5 Canvas, PWA |
+| **Frontend** | Vanilla ES Modules, CSS Glassmorphism (Linear.app aesthetic), Chart.js, HTML5 Canvas, PWA |
 | **Database** | SQLite V1 (Universal UTC `ValueConverter`, Schema-aware `PRAGMA table_info` checks, EF Core collection `ValueComparer`s) |
-| **Clinical Guidelines** | ICMR-NIN 2024, WHO Asian-Indian Guidelines, Mifflin-St Jeor Equation |
 
 ---
 
@@ -99,24 +118,25 @@ graph TD
 ```
 diet-dost/
 ├── src/
-│   ├── Nutrition.AppHost/           # .NET Aspire orchestration host & typed resource topology
-│   ├── Nutrition.Domain/            # DDD entities, clinical calculators, aggregates
-│   ├── Nutrition.Application/       # NutritionTelemetry ActivitySource & application services
-│   ├── Nutrition.Infrastructure/    # AI Vision agent, EF Core DbContext, repositories, ValueComparers
-│   └── Nutrition.WebGateway/        # ASP.NET Core gateway, HttpPayloadTelemetryMiddleware, PWA
+│   ├── Nutrition.AppHost/           # Standalone .NET Aspire 13.5.4 AppHost orchestration topology
+│   ├── Nutrition.Domain/            # DDD core entities, clinical calculators, AppSecret, password policy
+│   ├── Nutrition.Application/       # Native CQRS commands, queries, handlers, ISecretStore, IAppEnvironment
+│   ├── Nutrition.Infrastructure/    # DatabaseSecretStore, DatabaseConfigurationProvider, EF Core DbContext, AI Agent
+│   └── Nutrition.WebGateway/        # ASP.NET Core WebGateway, thin controllers, SmartScheme auth, PWA static files
 │       └── wwwroot/
 │           ├── assets/              # SVG vectors (placeholder-meal.svg, placeholder-progress.svg)
 │           ├── css/                 # Linear.app glassmorphic stylesheets
 │           ├── js/                  # ES Module client (di, services, state, ui)
-│           ├── partials/            # 11 modular HTML components (review-modal, delete-meal-modal, HUD, etc.)
+│           ├── partials/            # 11 modular HTML components (auth-gate, review-modal, delete-meal-modal, HUD, etc.)
 │           └── index.html           # Single Page App shell
 ├── tests/
-│   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & safeguards
-│   └── Nutrition.EvalHarness.Tests/ # AI food vision evaluation harness & benchmark tests
+│   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & medical safeguards (36 tests)
+│   ├── Nutrition.EvalHarness.Tests/ # AI Vision evals, auth, rate limiting, and secret store tests (86 tests)
+│   └── validate_e2e_tiers.ps1       # Automated live end-to-end user tier validation test harness
 ├── docs/
 │   ├── architecture/diagrams/       # Standalone synchronized Mermaid architecture diagrams
-│   └── sdd/                         # Comprehensive Software Design Documents (SDD v1.3.1)
-│       ├── 00_sdd_index.md          # Master index & traceability matrix (v1.3.1)
+│   └── sdd/                         # Comprehensive Living Software Design Documents (SDD v1.3.1)
+│       ├── 00_sdd_index.md          # Master index & traceability matrix
 │       ├── 01_clinical_dietetics_spec.md
 │       ├── 02_solution_architecture.md
 │       ├── 03_data_models_and_contracts.md
@@ -190,21 +210,37 @@ dotnet run --project src/Nutrition.AppHost
 
 ---
 
-## 🧪 Running Tests
+## 🧪 Running Tests & Validation
 
-Execute the automated clinical unit tests and evaluation harnesses:
+### 1. Automated Test Suite (122 Tests, 0 Warnings, 0 Errors)
+Execute the comprehensive domain, clinical, security, and AI evaluation suite:
 
 ```bash
 dotnet test
 ```
 
 Test coverage includes:
-- Mifflin-St Jeor basal metabolic rate calculations.
-- WHO South Asian BMI classification boundaries.
-- ICMR-NIN 2024 starvation floor compliance (male & female).
-- Health condition adjustments (Hypothyroidism, Hypertension, Diabetes, NAFLD).
-- Food vision prompt evaluation gating and multi-model fallback.
-- Database schema migration idempotency and collection value comparers.
+- **Clinical & Safeguards (`Nutrition.Domain.Tests` - 36 tests)**:
+  - Mifflin-St Jeor South Asian BMR/TDEE calculations.
+  - WHO Asian-Indian BMI boundaries and cardiometabolic cutoffs.
+  - ICMR-NIN 2024 starvation caloric floors (1,200 kcal F / 1,500 kcal M).
+  - Health condition macro adjustments (Diabetes, HTN, Thyroid, NAFLD).
+- **Security & Infrastructure (`Nutrition.EvalHarness.Tests` - 86 tests)**:
+  - Multimodal AI food vision prompt defense, confidence gating ($\ge 70\%$), and fallback cascade.
+  - PBKDF2 password hashing (HMAC-SHA512) and strict password policy validation.
+  - RFC 7519 JWT Bearer authentication and HttpOnly session validation.
+  - Polly sliding-window rate limiting resilience pipelines.
+  - Database Secret Store (`AppSecrets` table, `ISecretStore` port, and caching).
+  - Debug-only demo user isolation and release mode login rejection (`HTTP 403 DemoAccessForbidden`).
+
+### 2. Live End-to-End User Tier Validation Harness
+Run the automated end-to-end product verification across all 5 demo user tiers on the running WebGateway (`http://localhost:5240`):
+
+```powershell
+pwsh -File tests/validate_e2e_tiers.ps1
+```
+
+Validates real-time authentication, JWT issuance, profile calculations, daily AI quotas (`Free`: 1, `Basic`: 7, `Premium`: 30, `SuperAdmin`: Unlimited), feature gating (progress photos & CSV export paywalls), and Admin role authorization.
 
 ---
 

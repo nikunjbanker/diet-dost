@@ -36,6 +36,15 @@ This skill guides the design, architecture, documentation, and development of a 
 6. **Mandatory End-to-End User Tier Validation**:
    - No refactoring, new feature implementation, or defect fix is complete without verifying actual product behavior across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`).
    - Validate that tier quotas, feature gating (photo comparison, data export paywalls), and role permissions function accurately in the actual product with 0 runtime or console errors.
+7. **Major Change Auto-Detection & Mandatory Living Synchronization**:
+   - **Auto-Detection Requirement**: The agent MUST proactively evaluate whether the task introduces a **Major Change** (new layers, CQRS commands/queries, ports/adapters, database entities/tables, secret stores, security/debug environment gating, clinical algorithms, or tier quotas).
+   - **Mandatory Actions**: Upon detecting any major change, the agent **MUST NOT** complete the turn without synchronizing:
+     1. `README.md` (architecture diagram, technology stack, directory tree, test metrics).
+     2. `docs/architecture/diagrams/*.mermaid` (all affected system and flow diagrams).
+     3. `docs/sdd/*.md` (Living SDD system specifications, security threat matrix, and data models).
+     4. `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
+     5. `docs/sdd/07_living_documentation_log.md` (append-only ledger entry).
+     6. End-to-end verification across all 5 demo user tiers and automated test harnesses.
 
 
 ---
@@ -1149,3 +1158,45 @@ graph TD
 Before raising a PR or completing any task:
 1. Run `pwsh -File tests/validate_e2e_tiers.ps1` against the running WebGateway (`http://localhost:5240`) to verify 100% pass across all 5 accounts.
 2. Confirm 0 console errors and 0 unhandled runtime exceptions.
+
+---
+
+## 12. Automated Major Change Detection & Living Artifact Synchronization Protocol
+
+> [!IMPORTANT]
+> **Mandatory Rule for All Agents & Engineers**: To prevent architectural and documentation drift, you MUST continuously auto-detect major changes across the solution and execute the living artifact synchronization checklist before concluding any work.
+
+### 12.1 Auto-Detection Triggers & Evaluation Matrix
+
+An automated audit trigger fires whenever an edit or proposal touches any of the following 5 dimensions:
+
+| Trigger ID | Dimension | Detection Criteria / Examples | Action Required |
+| :--- | :--- | :--- | :--- |
+| **TRIGGER-1** | **Clean Architecture & CQRS** | Introducing new layers, CQRS commands/queries, ports (`I*Repository`, `I*Service`), pipeline decorators, or modifying dependency registration. | Update `README.md`, `docs/architecture/diagrams/*.mermaid`, `docs/sdd/02_solution_architecture.md`, `diet-dost-clean-architecture/SKILL.md`. |
+| **TRIGGER-2** | **Persistence & Secret Management** | New database entities/tables (e.g. `AppSecret`), changes to EF Core configurations, migration scripts, or secret storage mechanisms. | Update `README.md`, `docs/sdd/03_data_models_and_contracts.md`, `docs/sdd/04_security_and_compliance.md`, `docs/architecture/diagrams/security_boundary.mermaid`. |
+| **TRIGGER-3** | **Security & Environment Boundaries** | Changes to authentication schemes, `#if DEBUG` guards, `IAppEnvironment` gates, demo user release prohibitions (`THREAT-12`), or CORS/CSP headers. | Update `docs/sdd/04_security_and_compliance.md`, `docs/architecture/diagrams/security_boundary.mermaid`, `diet-dost-user-management-security/SKILL.md`. |
+| **TRIGGER-4** | **Clinical & Domain Intelligence** | Changes to ICMR-NIN 2024 equations, WHO Asian-Indian cutoffs, macronutrient splits, food database schemas, or multi-provider AI prompt templates. | Update `docs/sdd/01_clinical_dietetics_spec.md`, `README.md`, `indian-diet-calorie-tracker/SKILL.md`. |
+| **TRIGGER-5** | **Tier Quotas & Feature Gating** | Adjusting daily AI quota limits, role permissions, or feature gating (photo comparison paywall, CSV export paywall). | Update `README.md`, `docs/sdd/05_api_and_integration.md`, `docs/cft/scratchpad_e2e_user_tier_verification_checklist.md`, run `validate_e2e_tiers.ps1`. |
+
+### 12.2 Mandatory Artifact Synchronization Checklist
+
+When any trigger fires, the agent **MUST** complete all of the following steps:
+1. **Update `README.md`**:
+   - Refresh the Feature Matrix, Solution File Tree, and Technology Stack table.
+   - Synchronize the Master Architecture Mermaid diagram to match current code layers and components.
+   - Update test suite metrics (`dotnet test` count and results).
+2. **Synchronize Mermaid Architecture Diagrams**:
+   - `docs/architecture/diagrams/solution_architecture.mermaid`: Verify 7-layer clean architecture alignment.
+   - `docs/architecture/diagrams/security_boundary.mermaid`: Verify environment gates, auth schemes, and secret stores.
+   - `docs/architecture/diagrams/functional_meal_flow.mermaid`: Verify meal ingestion, AI provider cascade, and confidence score paths.
+3. **Synchronize Living SDD Specifications (`docs/sdd/*.md`)**:
+   - `02_solution_architecture.md`: Architecture diagrams and layer topology.
+   - `04_security_and_compliance.md`: Threat matrix entries, environment isolation rules, and secret storage.
+4. **Harmonize Solution Skills (`.agents/skills/*.md`)**:
+   - Update `indian-diet-calorie-tracker/SKILL.md`, `diet-dost-clean-architecture/SKILL.md`, and `diet-dost-user-management-security/SKILL.md` to ensure rules, contracts, and patterns remain synchronized with the codebase.
+5. **Append Entry to Living SDD Log**:
+   - Append a complete entry with timestamp, change type, modified files, diagrams synchronized, and test results to `docs/sdd/07_living_documentation_log.md`.
+6. **Execute Automated & E2E Verification**:
+   - Run `dotnet test` (targeting .NET 11, 0 warnings, 0 errors).
+   - Run `pwsh -File tests/validate_e2e_tiers.ps1` against live running application to verify all 5 tiers.
+
