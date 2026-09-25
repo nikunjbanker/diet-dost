@@ -7,6 +7,31 @@
 
 ## 1. Domain Aggregates & Value Objects
 
+### 1.0 `Nutrition.Identity` Context
+- **Aggregate Root**: `ApplicationUser`
+  - `Id`: string (unique identifier / GUID)
+  - `Email`: string (normalized unique index)
+  - `MobileNumber`: string (normalized index)
+  - `PasswordHash`: string (PBKDF2-HMAC-SHA512)
+  - `SecurityStamp`: string (session invalidation stamp)
+  - `Role`: UserRole (`User`, `Admin`, `SuperAdmin`)
+  - `Tier`: UserTier (`Free`, `Basic`, `Premium`, `SuperAdmin`)
+  - `IsEmailVerified`: bool (mandatory for account activation)
+  - `IsMobileVerified`: bool (optional/deferred for SMS cost control)
+  - `IsActive`: bool
+  - `TermsAcceptedAtUtc`: DateTime? (mandatory DPDPA forensic timestamp)
+  - `TermsVersionAccepted`: string? (e.g. "v1.0-202609")
+  - `HealthConsentAcceptedAtUtc`: DateTime? (mandatory Sensitive Health Data consent)
+  - `HealthConsentVersionAccepted`: string? (e.g. "v1.0-202609")
+  - `ConsentIpAddress`: string? (client IP recorded at registration)
+  - `ConsentUserAgent`: string? (client user agent recorded at registration)
+  - `CreatedAtUtc`: DateTime (universal UTC)
+  - `LastLoginAtUtc`: DateTime? (universal UTC)
+- **Entities & Dynamic Quota Models**:
+  - `VerificationOtp`: Id, UserId, Target, OtpCodeHash (SHA-256), Channel (Email, Sms), ExpiresAtUtc (5m TTL), AttemptCount (max 3), IsUsed, CreatedAtUtc
+  - `TierFeatureConfiguration`: Id, Tier, DailyAiDetectionLimit (Free: 1, Basic: 7, Premium: 30, SuperAdmin: -1), AllowPhotoCompare, AllowDataExport, AnalyticsHistoryDays, Description, UpdatedAtUtc, UpdatedByUserId
+  - `AiUsageLog`: Id, UserId, OperationType (PhotoDetection, TextDetection, ProgressCompare), ModelId, EstimatedTokensUsed, LatencyMs, IsSuccess, ErrorReason, TimestampUtc
+
 ### 1.1 `Nutrition.ProfileService` Context
 - **Aggregate Root**: `UserProfile`
   - `Id`: string (unique identifier / user handle)

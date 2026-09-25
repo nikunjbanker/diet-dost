@@ -17,5 +17,33 @@
     <button id="btn-open-profile" class="btn" title="View or edit clinical metrics" onclick="openProfileModal()">
       ⚙️ Clinical Intake
     </button>
+
+    <!-- User Account & Tier Entitlements Dropdown -->
+    <div class="user-menu-wrapper" style="position: relative;">
+      <button type="button" id="btn-user-menu" class="btn btn-outline" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px;">
+        <span id="header-user-avatar">👤</span>
+        <span id="header-user-name" style="font-size: 0.85rem; font-weight: 600;">Account</span>
+        <span id="header-tier-pill" class="tier-badge-pill">⚡ Premium</span>
+      </button>
+
+      <div id="user-menu-dropdown" class="user-dropdown" style="display: none;">
+        <div class="user-dropdown-header">
+          <div id="dropdown-user-fullname" style="font-weight: 600; font-size: 0.9rem;">User</div>
+          <div id="dropdown-user-email" style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">user@domain.com</div>
+        </div>
+        <div class="user-dropdown-divider"></div>
+        <a href="javascript:void(0)" id="menu-open-quota" class="user-dropdown-item">
+          <span>📊 AI Quota & Telemetry</span>
+          <span id="menu-quota-preview" style="font-size: 0.72rem; color: var(--accent); font-family: monospace;">--</span>
+        </a>
+        <a href="javascript:void(0)" id="menu-open-admin" class="user-dropdown-item" style="display: none;">
+          <span>👑 Admin Governance</span>
+        </a>
+        <div class="user-dropdown-divider"></div>
+        <a href="javascript:void(0)" id="menu-btn-signout" class="user-dropdown-item" style="color: #ff6b6b;">
+          <span>🚪 Sign Out</span>
+        </a>
+      </div>
+    </div>
   </div>
 </header>

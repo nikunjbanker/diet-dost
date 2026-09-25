@@ -1,0 +1,75 @@
+<!-- AI Quota & Telemetry Modal Component -->
+<div id="quota-modal" class="review-modal-overlay" style="display: none;">
+  <div class="review-card quota-modal-card" style="max-width: min(94vw, 560px);">
+    <div class="review-header">
+      <div>
+        <div class="hud-title">AI Vision & Text Telemetry</div>
+        <h2 style="font-size: 1.25rem; font-weight: 700;">AI Usage & Quota</h2>
+      </div>
+      <button type="button" id="btn-close-quota-modal" class="btn btn-sm">✕</button>
+    </div>
+
+    <!-- Active Tier Banner -->
+    <div class="quota-tier-banner">
+      <div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Current Plan</div>
+        <div id="quota-tier-name" style="font-size: 1.15rem; font-weight: 700; margin-top: 2px;">⚡ Premium Tier</div>
+      </div>
+      <div id="quota-tier-pill" class="progress-delta-pill" style="font-size: 0.8rem; padding: 4px 10px;">⚡ Active</div>
+    </div>
+
+    <!-- Today's Quota Gauge -->
+    <div class="quota-gauge-box">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+        <span style="font-size: 0.85rem; font-weight: 600;">Today's AI Detections</span>
+        <span id="quota-used-display" style="font-size: 1.1rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;">0 / 30</span>
+      </div>
+      <div class="quota-progress-bar-bg">
+        <div id="quota-progress-bar-fill" class="quota-progress-bar-fill" style="width: 0%;"></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+        <span id="quota-remaining-label">30 detections remaining</span>
+        <span id="quota-reset-label">Resets at midnight</span>
+      </div>
+    </div>
+
+    <!-- Historical Usage Stats Row -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+      <div class="quota-stat-tile">
+        <div class="quota-stat-label">Past 7 Days</div>
+        <div id="quota-7d-count" class="quota-stat-value">0</div>
+        <div class="quota-stat-sub">Detections</div>
+      </div>
+      <div class="quota-stat-tile">
+        <div class="quota-stat-label">Past 30 Days</div>
+        <div id="quota-30d-count" class="quota-stat-value">0</div>
+        <div class="quota-stat-sub">Detections</div>
+      </div>
+    </div>
+
+    <!-- Recent Operations Table -->
+    <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Recent Operations</div>
+    <div style="max-height: 180px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 4px;">
+      <table style="width: 100%; font-size: 0.75rem; border-collapse: collapse;">
+        <thead>
+          <tr style="color: var(--text-muted); text-align: left; border-bottom: 1px solid var(--border-subtle);">
+            <th style="padding: 4px 6px;">Operation</th>
+            <th style="padding: 4px 6px;">Model</th>
+            <th style="padding: 4px 6px;">Latency</th>
+            <th style="padding: 4px 6px;">Time</th>
+          </tr>
+        </thead>
+        <tbody id="quota-recent-ops-body">
+          <tr>
+            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 1rem;">No AI operations logged today.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem;">
+      <button type="button" id="btn-quota-refresh" class="btn btn-sm btn-outline">🔄 Refresh</button>
+      <button type="button" id="btn-quota-close" class="btn btn-sm">Close</button>
+    </div>
+  </div>
+</div>

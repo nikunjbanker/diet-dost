@@ -1,0 +1,286 @@
+<!-- Obsidian Authentication & Verification Gate Component -->
+<div id="auth-gate-modal" class="auth-gate-overlay" style="display: none;">
+  <div class="auth-gate-card">
+    <!-- Brand Header -->
+    <div class="auth-brand-header">
+      <div class="brand-badge-large">DD</div>
+      <h1 class="auth-title">Diet Dost</h1>
+      <p class="auth-subtitle">Medical-Grade South Asian Nutrition &amp; Weight Loss Intelligence</p>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="auth-tabs">
+      <button type="button" id="btn-tab-signin" class="auth-tab-btn active">Sign In</button>
+      <button type="button" id="btn-tab-register" class="auth-tab-btn">Create Account</button>
+      <button type="button" id="btn-tab-verify" class="auth-tab-btn" style="display: none;">Verify OTP</button>
+      <button type="button" id="btn-tab-reset" class="auth-tab-btn" style="display: none;">Reset Password</button>
+    </div>
+
+    <!-- Tab 1: Sign In -->
+    <form id="form-signin" class="auth-form">
+      <div id="signin-error" class="auth-error-alert" style="display: none;"></div>
+
+      <div class="form-group">
+        <label for="signin-identifier">Email or Mobile Number</label>
+        <input type="text" id="signin-identifier" class="text-input" placeholder="e.g. user@example.com or +919876543210" required autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <label for="signin-password">Password</label>
+          <a href="javascript:void(0)" id="link-goto-forgot-password" class="btn-link" style="font-size: 0.78rem;">Forgot password?</a>
+        </div>
+        <input type="password" id="signin-password" class="text-input" placeholder="••••••••••••" required autocomplete="current-password">
+      </div>
+
+      <button type="submit" id="btn-submit-signin" class="btn btn-primary auth-submit-btn">
+        <span class="btn-text">Sign In ➔</span>
+        <span class="btn-spinner" style="display: none;">⏳ Signing in...</span>
+      </button>
+
+      <div class="auth-footer-prompt">
+        Don't have an account? <a href="javascript:void(0)" id="link-goto-register">Create one free</a>
+      </div>
+    </form>
+
+    <!-- Tab 2: Create Account -->
+    <form id="form-register" class="auth-form" style="display: none;">
+      <div id="register-error" class="auth-error-alert" style="display: none;"></div>
+
+      <div class="form-group">
+        <label for="reg-name">Full Name *</label>
+        <input type="text" id="reg-name" class="text-input" placeholder="e.g. Aarav Sharma" required autocomplete="name">
+      </div>
+
+      <div class="form-group">
+        <label for="reg-email">Email Address (Mandatory for OTP verification) *</label>
+        <input type="email" id="reg-email" class="text-input" placeholder="name@domain.com" required autocomplete="email">
+      </div>
+
+      <div class="form-group">
+        <label for="reg-mobile">Mobile Phone Number (Mandatory) *</label>
+        <input type="tel" id="reg-mobile" class="text-input" placeholder="+91 98765 43210" required autocomplete="tel">
+      </div>
+
+      <div class="form-group">
+        <label for="reg-password">Password *
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400;"> (10–30 chars · upper · lower · digit · special)</span>
+        </label>
+        <input type="password" id="reg-password" class="text-input" placeholder="Create a strong password"
+               required minlength="10" maxlength="30" autocomplete="new-password">
+        <!-- Password strength meter -->
+        <div id="reg-pwd-strength-bar" style="height:3px; border-radius:2px; margin-top:5px; background:var(--border-color); overflow:hidden;">
+          <div id="reg-pwd-strength-fill" style="height:100%; width:0%; transition:width 0.25s, background 0.25s;"></div>
+        </div>
+        <div id="reg-pwd-strength-label" style="font-size:0.72rem; margin-top:3px; color:var(--text-muted);"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="reg-confirm-password">Confirm Password *</label>
+        <input type="password" id="reg-confirm-password" class="text-input" placeholder="Re-enter your password"
+               required minlength="10" maxlength="30" autocomplete="new-password">
+        <div id="reg-confirm-match-label" style="font-size:0.72rem; margin-top:3px;"></div>
+      </div>
+
+      <!-- Legal Dual-Consent Framework (DPDPA 2023 §6 Compliant) -->
+      <div class="legal-consent-container">
+        <!-- Agreement 1: Terms of Service & AI Training License -->
+        <label class="legal-checkbox-label">
+          <input type="checkbox" id="reg-consent-terms" required>
+          <span>
+            I agree to the <a href="/terms.html" id="link-open-terms" target="_blank">Terms of Service</a> and grant Diet Dost a worldwide, royalty-free license to use de-identified meal logs, photos, and nutritional feedback for AI model training and trusted clinical partner research.
+          </span>
+        </label>
+
+        <!-- Agreement 2: Sensitive Personal Health Data Consent -->
+        <label class="legal-checkbox-label">
+          <input type="checkbox" id="reg-consent-health" required>
+          <span>
+            I provide explicit consent for <a href="/clinical-health-consent.html" id="link-open-health-consent" target="_blank">Clinical Health &amp; Nutrition Processing</a> of my biometrics, medical conditions, and medications under the Digital Personal Data Protection Act (DPDPA 2023).
+          </span>
+        </label>
+      </div>
+
+      <button type="submit" id="btn-submit-register" class="btn btn-primary auth-submit-btn">
+        <span class="btn-text">Create Account &amp; Send Code ➔</span>
+        <span class="btn-spinner" style="display: none;">⏳ Creating Account...</span>
+      </button>
+
+      <div class="auth-footer-prompt">
+        Already registered? <a href="javascript:void(0)" id="link-goto-signin">Sign In</a>
+      </div>
+    </form>
+
+    <!-- Tab 3: Verify OTP -->
+    <form id="form-verify-otp" class="auth-form" style="display: none;">
+      <div id="verify-error" class="auth-error-alert" style="display: none;"></div>
+
+      <div class="otp-instruction-box">
+        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔐</div>
+        <div style="font-weight: 600; font-size: 0.95rem;">Verify Your Account</div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+          Enter the 6-digit code sent to <span id="otp-target-display" style="color: var(--text-primary); font-weight: 600;">your email</span>
+        </div>
+      </div>
+
+      <!-- Development OTP Helper Banner -->
+      <div id="dev-otp-helper" class="dev-otp-banner" style="display: none;">
+        <span>🛠️ Local Dev Code:</span>
+        <strong id="dev-otp-code" style="letter-spacing: 2px;">------</strong>
+        <button type="button" id="btn-fill-dev-otp" class="btn btn-xs btn-outline">Auto-Fill</button>
+      </div>
+
+      <div class="form-group" style="text-align: center;">
+        <input type="text" id="otp-code-input" class="text-input otp-digits-input" placeholder="123456" maxlength="6" pattern="[0-9]{6}" required autocomplete="one-time-code">
+      </div>
+
+      <button type="submit" id="btn-submit-verify" class="btn btn-primary auth-submit-btn">
+        <span class="btn-text">Verify &amp; Activate Account ➔</span>
+        <span class="btn-spinner" style="display: none;">⏳ Verifying...</span>
+      </button>
+
+      <div class="otp-resend-row">
+        <span>Didn't receive the code?</span>
+        <button type="button" id="btn-resend-otp" class="btn-link">Resend Code</button>
+        <span id="resend-countdown" style="display: none; color: var(--text-muted); font-size: 0.8rem;">(wait 60s)</span>
+      </div>
+    </form>
+
+    <!-- Tab 4: Reset Password (2-step: Request OTP → Enter OTP + New Password) -->
+    <div id="form-reset-password" class="auth-form" style="display: none;">
+      <div id="reset-error" class="auth-error-alert" style="display: none;"></div>
+      <div id="reset-success" class="auth-success-alert" style="display: none;"></div>
+
+      <!-- Step A: Enter email to receive reset OTP -->
+      <div id="reset-step-email">
+        <div class="otp-instruction-box">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔑</div>
+          <div style="font-weight: 600; font-size: 0.95rem;">Reset Your Password</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+            Enter your registered email address. We'll send a 6-digit reset code if an active account exists.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reset-email">Registered Email Address *</label>
+          <input type="email" id="reset-email" class="text-input" placeholder="name@domain.com" autocomplete="email">
+        </div>
+        <!-- Dev OTP helper for reset flow -->
+        <div id="dev-reset-otp-helper" class="dev-otp-banner" style="display: none;">
+          <span>🛠️ Local Dev Code:</span>
+          <strong id="dev-reset-otp-code" style="letter-spacing: 2px;">------</strong>
+          <button type="button" id="btn-fill-dev-reset-otp" class="btn btn-xs btn-outline">Auto-Fill</button>
+        </div>
+        <button type="button" id="btn-send-reset-otp" class="btn btn-primary auth-submit-btn">
+          <span class="btn-text">Send Reset Code ➔</span>
+          <span class="btn-spinner" style="display: none;">⏳ Sending...</span>
+        </button>
+        <div class="auth-footer-prompt">
+          Remember your password? <a href="javascript:void(0)" id="link-back-to-signin-from-reset">Sign In</a>
+        </div>
+      </div>
+
+      <!-- Step B: Enter OTP + new password + confirm -->
+      <div id="reset-step-newpwd" style="display: none;">
+        <div class="otp-instruction-box">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔒</div>
+          <div style="font-weight: 600; font-size: 0.95rem;">Enter Reset Code &amp; New Password</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+            Code sent to <span id="reset-otp-email-display" style="color: var(--text-primary); font-weight: 600;"></span>
+          </div>
+        </div>
+        <div class="form-group" style="text-align: center;">
+          <label for="reset-otp-code">6-Digit Reset Code</label>
+          <input type="text" id="reset-otp-code" class="text-input otp-digits-input" placeholder="123456"
+                 maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code">
+        </div>
+        <div class="form-group">
+          <label for="reset-new-password">New Password *
+            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400;"> (10–30 chars · upper · lower · digit · special)</span>
+          </label>
+          <input type="password" id="reset-new-password" class="text-input" placeholder="Create a strong password"
+                 minlength="10" maxlength="30" autocomplete="new-password">
+          <!-- Strength meter for reset flow -->
+          <div id="reset-pwd-strength-bar" style="height:3px; border-radius:2px; margin-top:5px; background:var(--border-color); overflow:hidden;">
+            <div id="reset-pwd-strength-fill" style="height:100%; width:0%; transition:width 0.25s, background 0.25s;"></div>
+          </div>
+          <div id="reset-pwd-strength-label" style="font-size:0.72rem; margin-top:3px; color:var(--text-muted);"></div>
+        </div>
+        <div class="form-group">
+          <label for="reset-confirm-password">Confirm New Password *</label>
+          <input type="password" id="reset-confirm-password" class="text-input" placeholder="Re-enter new password"
+                 minlength="10" maxlength="30" autocomplete="new-password">
+          <div id="reset-confirm-match-label" style="font-size:0.72rem; margin-top:3px;"></div>
+        </div>
+        <button type="button" id="btn-submit-reset" class="btn btn-primary auth-submit-btn">
+          <span class="btn-text">Reset Password ➔</span>
+          <span class="btn-spinner" style="display: none;">⏳ Resetting...</span>
+        </button>
+        <div class="otp-resend-row">
+          <span>Didn't receive the code?</span>
+          <button type="button" id="btn-resend-reset-otp" class="btn-link">Resend Code</button>
+          <span id="reset-resend-countdown" style="display: none; color: var(--text-muted); font-size: 0.8rem;">(wait 60s)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<!-- Legal Agreement Sub-Modal: Terms of Service & AI Training License -->
+<div id="legal-terms-modal" class="review-modal-overlay" style="display: none;">
+  <div class="legal-modal-card">
+    <div class="legal-modal-header">
+      <div>
+        <div class="hud-title">Legal Governance (Version v1.0-202609)</div>
+        <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0.25rem 0 0 0;">Terms of Service & AI Training License</h2>
+      </div>
+      <button type="button" id="btn-close-terms-modal" class="btn btn-sm btn-outline">✕</button>
+    </div>
+    <div class="legal-modal-body">
+      <h3>1. Wellness Companion & Non-Medical Scope</h3>
+      <p>Diet Dost is an artificial intelligence-driven dietary and lifestyle tracking companion designed in adherence to ICMR-NIN 2024 recommendations. Diet Dost is <strong>not</strong> a hospital, clinic, licensed physician, or prescription provider. Recommendations generated by Diet Dost are for informational and educational wellness purposes only. You must always consult a licensed medical practitioner prior to initiating substantial caloric deficits or dietary modifications.</p>
+
+      <h3>2. AI Model Training & Data License</h3>
+      <p>By registering, you grant Diet Dost a worldwide, royalty-free, perpetual, non-exclusive license to utilize de-identified and anonymized meal photographs, dish descriptions, portion estimates, user correction records, and app telemetry strictly for internal research, algorithmic benchmarking, and training/fine-tuning machine learning models (including Small Language Models and Multimodal Vision Models).</p>
+
+      <h3>3. Partner Sharing & Research</h3>
+      <p>Diet Dost may share de-identified and aggregated nutritional cohorts with certified clinical dietitians, academic research institutions, and technology partners to improve Indian and South Asian dietary intelligence.</p>
+
+      <h3>4. Statutory DPDPA 2023 Compliance</h3>
+      <p>All personal data is processed under the Digital Personal Data Protection Act (DPDPA 2023). You retain the right to erase your account and all associated health records at any time.</p>
+    </div>
+    <div class="legal-modal-footer">
+      <a href="/terms.html" target="_blank" class="legal-full-link">Open Full Page ↗</a>
+      <button type="button" id="btn-accept-terms-modal" class="btn btn-primary btn-sm">I Understand & Accept</button>
+    </div>
+  </div>
+</div>
+
+<!-- Legal Agreement Sub-Modal: Sensitive Health Data Processing -->
+<div id="legal-health-modal" class="review-modal-overlay" style="display: none;">
+  <div class="legal-modal-card">
+    <div class="legal-modal-header">
+      <div>
+        <div class="hud-title">DPDPA 2023 §6 Compliance</div>
+        <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0.25rem 0 0 0;">Sensitive Clinical Health Processing Consent</h2>
+      </div>
+      <button type="button" id="btn-close-health-modal" class="btn btn-sm btn-outline">✕</button>
+    </div>
+    <div class="legal-modal-body">
+      <h3>1. Processing of Sensitive Health Data</h3>
+      <p>Under Section 6 of India's Digital Personal Data Protection Act (DPDPA 2023), you explicitly consent to the collection, cryptographic storage, and computational processing of your biometric markers (height, weight, biological sex, age), clinical health conditions (e.g. Type 2 Diabetes, Hypertension, PCOS, Hypothyroidism), and pharmaceutical medications.</p>
+
+      <h3>2. Purpose Limitation</h3>
+      <p>Your health data is processed solely to calculate personalized Mifflin-St Jeor metabolic equations, ICMR-NIN 2024 macronutrient ratios, glycemic load alerts, and potential drug-nutrient interaction warnings.</p>
+
+      <h3>3. Right to Erasure</h3>
+      <p>In accordance with DPDPA 2023 §12, you retain the right to erase your account and all associated health records at any time via the self-service Account Deletion tool.</p>
+
+      <h3>4. Security & Isolation Standard</h3>
+      <p>Your records are secured using AES-256 / PBKDF2 encryption and isolated at the tenant claim level. Third-party advertisers and data brokers have zero access to your health metrics.</p>
+    </div>
+    <div class="legal-modal-footer">
+      <a href="/clinical-health-consent.html" target="_blank" class="legal-full-link">Open Full Page ↗</a>
+      <button type="button" id="btn-accept-health-modal" class="btn btn-primary btn-sm">I Understand & Accept</button>
+    </div>
+  </div>
+</div>

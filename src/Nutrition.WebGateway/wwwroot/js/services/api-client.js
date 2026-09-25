@@ -8,6 +8,18 @@ export class ApiClient {
   }
 
   /**
+   * Retrieves Bearer authorization header if JWT token is stored locally.
+   */
+  _getAuthHeaders() {
+    const headers = {};
+    const token = localStorage.getItem('dd_jwt_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
+  /**
    * Perform HTTP GET request.
    * @param {string} url
    * @param {Object} [params]
@@ -25,7 +37,10 @@ export class ApiClient {
 
     const res = await fetch(fullUrl, {
       method: 'GET',
-      headers: { 'Accept': 'application/json' }
+      headers: {
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
+      }
     });
 
     return this._handleResponse(res);
@@ -43,7 +58,8 @@ export class ApiClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
       },
       body: JSON.stringify(body)
     });
@@ -61,6 +77,9 @@ export class ApiClient {
     const fullUrl = `${this.baseUrl}${url}`;
     const res = await fetch(fullUrl, {
       method: 'POST',
+      headers: {
+        ...this._getAuthHeaders()
+      },
       body: formData
     });
 
@@ -79,7 +98,8 @@ export class ApiClient {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
       },
       body: JSON.stringify(body)
     });
@@ -97,7 +117,8 @@ export class ApiClient {
     const res = await fetch(fullUrl, {
       method: 'DELETE',
       headers: {
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        ...this._getAuthHeaders()
       }
     });
 
@@ -105,7 +126,21 @@ export class ApiClient {
   }
 
   /**
-   * Unified response handler with typed error parsing.
+   * Perform HTTP POST request (convenience alias for JSON).
+   */
+  async post(url, body) {
+    return this.postJson(url, body);
+  }
+
+  /**
+   * Perform HTTP PUT request (convenience alias for JSON).
+   */
+  async put(url, body) {
+    return this.putJson(url, body);
+  }
+
+  /**
+   * Unified response handler with typed error parsing and auth/quota event dispatching.
    * @param {Response} res
    */
   async _handleResponse(res) {
@@ -122,6 +157,24 @@ export class ApiClient {
       const error = new Error(errorMsg);
       error.status = res.status;
       error.data = data;
+
+      // Handle session expiry or unauthorized request (OWASP token lifecycle)
+      const isTokenExpired = res.headers.get('Token-Expired') === 'true' || res.headers.get('token-expired') === 'true';
+      if (isTokenExpired) {
+        localStorage.removeItem('dd_jwt_token');
+        window.dispatchEvent(new CustomEvent('auth:token_expired', { detail: { reason: 'TokenExpired', status: res.status } }));
+        window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { reason: 'TokenExpired' } }));
+      } else if (res.status === 401) {
+        localStorage.removeItem('dd_jwt_token');
+        window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { reason: 'Unauthorized' } }));
+      } else if (res.status === 403) {
+        if (data?.error === 'AiQuotaExceeded') {
+          window.dispatchEvent(new CustomEvent('quota:exceeded', { detail: data }));
+        } else if (data?.error === 'FeatureTierUpgradeRequired') {
+          window.dispatchEvent(new CustomEvent('tier:upgrade_required', { detail: data }));
+        }
+      }
+
       throw error;
     }
 

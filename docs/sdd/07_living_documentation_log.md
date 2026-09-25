@@ -1497,7 +1497,617 @@
   - Redundant duplicates removed.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
 
+### [LOG-20260924-005] User Management: Section 1 - Identity, Legal Consent & Verification Domain Engine
+- **Date / Timestamp**: 2026-09-24 15:20:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[LEGAL_COMPLIANCE]`
+- **Affected Microservices / Components**: `Nutrition.Domain`, `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.Domain.Tests`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Domain Models & Identity Context (§1.0)**:
+     - Implemented `ApplicationUser` aggregate with full legal compliance audit fields (unbundled `TermsAcceptedAtUtc`, `HealthConsentAcceptedAtUtc`, `ConsentIpAddress`, `ConsentUserAgent`, versions) adhering to India DPDPA 2023 §6.
+     - Implemented `VerificationOtp` entity with 6-digit cryptographic generation, SHA-256 hash storage, 5-minute expiry, max 3 verification attempts, and constant-time verification (`CryptographicOperations.FixedTimeEquals`).
+     - Implemented `TierFeatureConfiguration` aggregate with dynamic database-backed quotas (Free: 1, Basic: 7, Premium: 30, SuperAdmin: -1), feature toggles (`AllowPhotoCompare`, `AllowDataExport`), and analytics retention ceilings.
+     - Implemented `AiUsageLog` immutable audit record for telemetry and quota tracking across vision/text AI models.
+     - Implemented enums: `UserRole`, `UserTier`, `OtpChannel`, `AiOperationType`.
+  2. **OWASP Cryptographic Services (§2)**:
+     - Implemented `IPasswordHasher` and `Pbkdf2PasswordHasher` with PBKDF2-HMAC-SHA512 (100,000 iterations, 128-bit cryptographically random salt, 256-bit subkey).
+     - Implemented `IOtpService` and `OtpService` with unbiased `RandomNumberGenerator.GetInt32(100000, 1000000)`.
+     - Registered in DI via `SecurityInfrastructureExtensions.AddSecurityInfrastructure()`.
+  3. **Swappable SQLite Schema Migration & SuperAdmin Provisioning (§3.1)**:
+     - Updated `DietTrackerDbContext` with DbSets: `Users`, `VerificationOtps`, `TierConfigurations`, `AiUsageLogs`.
+     - Added safe SQLite migration scripts in `Program.cs` creating tables and indexes without data loss.
+     - Auto-seeded default tier configurations (`Free`, `Basic`, `Premium`, `SuperAdmin`).
+     - Provisioned parameterized SuperAdmin account (`Auth:SuperAdminEmail` / `admin@dietdost.app`) and seamlessly migrated existing `'user-default'` sample profiles, meals, ledgers, and progress photos to this account.
+  4. **Automated Unit & Cryptography Tests**:
+     - Added `IdentityDomainModelTests` in `Nutrition.Domain.Tests` (15 new test cases, 36/36 passing).
+     - Added `SecurityCryptographyTests` in `Nutrition.EvalHarness.Tests` (9 new test cases, 29/29 passing).
+     - Total solution tests: 65 passed, 0 failed, 0 warnings.
+- **Modified & Created Files**:
+  - `src/Nutrition.Domain/Model/Identity/UserRole.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/UserTier.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/OtpChannel.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/AiOperationType.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/TierFeatureConfiguration.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/AiUsageLog.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/VerificationOtp.cs` [CREATED]
+  - `src/Nutrition.Domain/Model/Identity/ApplicationUser.cs` [CREATED]
+  - `src/Nutrition.Application/Common/IPasswordHasher.cs` [CREATED]
+  - `src/Nutrition.Application/Common/IOtpService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/Pbkdf2PasswordHasher.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/OtpService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/SecurityInfrastructureExtensions.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Persistence/DietTrackerDbContext.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `tests/Nutrition.Domain.Tests/IdentityDomainModelTests.cs` [CREATED]
+  - `tests/Nutrition.EvalHarness.Tests/SecurityCryptographyTests.cs` [CREATED]
+  - `docs/sdd/03_data_models_and_contracts.md` [MODIFIED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+### [LOG-20260924-006] User Management: Section 2 - OWASP Auth Gateway, Gating Middleware & Polly Rate Limiter
+- **Date / Timestamp**: 2026-09-24 16:00:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[RATE_LIMITING]` | `[POLICIES]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`, `docs`
+- **Summary of Change**:
+  1. **User Management & Security Architecture Plan Stored in Repository**:
+     - Preserved approved architecture plan under [`docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md).
+     - Strictly enforced Zero-PII policy (`SUPER_ADMIN_EMAIL` / `admin@dietdost.app`).
+  2. **OWASP Authentication Gateway (`AuthController`)**:
+     - Implemented `/api/auth/register` with unbundled dual-consent validation (Terms/AI Training license + Sensitive Health Data processing), extracting client IP and User-Agent for legal audit trail.
+     - Implemented `/api/auth/verify-otp` with constant-time verification activating user upon email OTP validation.
+     - Implemented `/api/auth/resend-otp` with rate limit checks.
+     - Implemented `/api/auth/login` enforcing email verification requirement.
+     - Implemented `/api/auth/logout` terminating session cookies.
+     - Implemented `/api/auth/me` returning authenticated user profile, tier, and entitlements.
+     - Implemented `/api/auth/delete-account` for self-service DPDPA-compliant data purge.
+  3. **Polly Resilience Pipeline for Rate Limiting (OWASP A04)**:
+     - Replaced raw rate limiting with `Polly.RateLimiting` (v8.5.2) and `Polly.Core`.
+     - Configured `SlidingWindowRateLimiter` resilience pipeline (15 permits/min, 4 segments, 0 queue).
+     - Implemented ASP.NET Core middleware executing auth requests through Polly's `ResiliencePipeline`, catching `RateLimiterRejectedException` and returning HTTP 429 Too Many Requests with JSON message.
+  4. **Strict Claim-Based Tenant Isolation (OWASP A01)**:
+     - Implemented `UserClaimsExtensions` to extract `UserId`, `Role`, `Tier` strictly from cryptographically verified Claims.
+     - Protected all endpoints across `MealsController`, `ProfileController`, `AnalyticsController`, and `ProgressPhotosController` with `[Authorize]`.
+     - Eliminated insecure client-supplied `userId` parameters to prevent IDOR attacks. Non-admin users are strictly quarantined to their own records.
+  5. **Automated Unit Tests**:
+     - Added `PollyRateLimitingTests` in `Nutrition.EvalHarness.Tests` verifying permitted executions, limit ceiling rejections (`RateLimiterRejectedException`), and fixed window behavior.
+     - All 68 tests passing across solution (0 warnings, 0 errors).
+- **Modified & Created Files**:
+  - `docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md` [CREATED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [CREATED]
+  - `src/Nutrition.WebGateway/Extensions/UserClaimsExtensions.cs` [CREATED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProfileController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProgressPhotosController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Nutrition.WebGateway.csproj` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/PollyRateLimitingTests.cs` [CREATED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - CLI: `dotnet test`
+  - Result: `Passed: 68, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
 
+### [LOG-20260924-007] User Management: Section 3 - Dynamic Tier Engine & AI Quota Interceptor
+- **Date / Timestamp**: 2026-09-24 16:15:00 UTC
+- **Change Type**: `[FEATURE]` | `[TIER_GOVERNANCE]` | `[AI_QUOTAS]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Dynamic Tier Configuration Governance (`ITierConfigurationService`)**:
+     - Implemented `ITierConfigurationService` and `TierConfigurationService` with in-memory caching and runtime DB synchronization.
+     - Supports runtime modification of daily limits, export toggles, and photo comparison capabilities without redeployment.
+  2. **AI Quota Tracking & Localized Midnight Reset (`IAiQuotaService`)**:
+     - Implemented `IAiQuotaService` and `AiQuotaService` computing localized midnight reset boundaries from `UserProfile.Timezone` (fallback to `Asia/Kolkata`).
+     - Queries `AiUsageLogs` for today's successful detections against tier daily limits (Free: 1, Basic: 7, Premium: 30, SuperAdmin: $\infty$).
+     - Records immutable telemetry logs (`AiUsageLog`) capturing operation type, model ID, latency, and token consumption.
+  3. **Tier Feature Gating & Quota Interception in Controllers**:
+     - `MealsController`: Enforces `403 Forbidden` (`AiQuotaExceeded`) on `/api/meals/upload` and `/api/meals/analyze-text` when daily limit is exhausted.
+     - `MealsController`: Enforces `403 Forbidden` (`FeatureTierUpgradeRequired`) on `/api/meals/export` when Free or Basic users attempt data export.
+     - `MealsController`: Added `/api/meals/quota` endpoint returning today's, 7D, and 30D usage stats and midnight reset countdown.
+     - `ProgressPhotosController`: Enforces `403 Forbidden` (`FeatureTierUpgradeRequired`) on `/api/progress-photos/comparison` when Free or Basic users attempt photo comparison.
+  4. **Automated Unit Tests**:
+     - Added `AiQuotaAndTierServiceTests` in `Nutrition.EvalHarness.Tests` validating Free (1), Basic (7), Premium (30), and SuperAdmin ($\infty$) quotas, limit rejections, cache invalidation, and telemetry rollups.
+     - Total tests: 74 passed, 0 failed, 0 warnings.
+- **Modified & Created Files**:
+  - `src/Nutrition.Application/Services/ITierConfigurationService.cs` [CREATED]
+  - `src/Nutrition.Application/Services/IAiQuotaService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Services/TierConfigurationService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Services/AiQuotaService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/SecurityInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.Domain/Model/Identity/TierFeatureConfiguration.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProgressPhotosController.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [CREATED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - CLI: `dotnet test`
+  - Result: `Passed: 74, Failed: 0, Skipped: 0` (0 warnings, 0 errors, targeting .NET 11 RC)
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260924-008] User Management: Section 4 - SuperAdmin & User Management API
+- **Date / Timestamp**: 2026-09-24 16:20:00 UTC
+- **Change Type**: `[FEATURE]` | `[ADMIN_PORTAL]` | `[SECURITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. **SuperAdmin & Admin Management API (`AdminController`)**:
+     - Created `AdminController` protected strictly by `[Authorize(Roles = "Admin,SuperAdmin")]`.
+     - `GET /api/admin/users`: Comprehensive user listing with real-time rollups of today's AI detections count, legal consent verification timestamps, and mobile verification status.
+     - `PUT /api/admin/users/{id}/tier`: Tier modifications (`Free`, `Basic`, `Premium`, `SuperAdmin`) with SuperAdmin demotion protection.
+     - `PUT /api/admin/users/{id}/role`: Role modifications (`User`, `Admin`, `SuperAdmin`) ensuring only SuperAdmin can promote/demote SuperAdmin, with anti-lockout safeguards.
+     - `PUT /api/admin/users/{id}/status`: Toggle active / locked status with SuperAdmin deactivation protection.
+     - `GET /api/admin/tier-configs`: View all dynamic tier limits and feature toggles.
+     - `PUT /api/admin/tier-configs/{tier}`: Runtime customization of daily AI limits, photo compare, and data export toggles.
+     - `GET /api/admin/ai-logs`: System-wide audit querying of `AiUsageLogs`.
+- **Modified & Created Files**:
+  - `src/Nutrition.WebGateway/Controllers/AdminController.cs` [CREATED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - CLI: `dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj /t:Compile`
+  - Result: `Build succeeded. 0 Warning(s), 0 Error(s).`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260924-009] User Management: Section 5 - Obsidian UI Auth Gate, Quota HUD & Admin Console
+- **Date / Timestamp**: 2026-09-24 16:30:00 UTC
+- **Change Type**: `[FEATURE]` | `[UI/UX]` | `[SECURITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (PWA Frontend)
+- **Summary of Change**:
+  1. **Obsidian Dark Auth & Verification Gate (`auth-gate.html`, `auth-gate.js`)**:
+     - Strict dashboard gating preventing any unauthenticated or unverified users from viewing dashboard data or UI.
+     - Dual-consent legal agreements complying with India DPDPA 2023 §6:
+       - Terms & Conditions (data processing, platform usage, partner sharing).
+       - Health & Nutrition Data Sharing Consent (dietary analysis, AI model optimization).
+     - 6-digit Email OTP verification screen with countdown timer (60s cooldown) and dev OTP autofill in local environments.
+  2. **Account Menu & Tier Badge (`header.html`, `styles.css`)**:
+     - Modern Obsidian header dropdown displaying user profile, glowing tier badge (`Free`, `Basic`, `Premium`, `SuperAdmin`), and dynamic Admin Portal menu item visible exclusively to `Admin` and `SuperAdmin` users.
+  3. **AI Quota HUD Modal (`quota-modal.html`, `quota-modal.js`)**:
+     - Interactive gauge displaying today's consumed vs. remaining AI detections, color-coded threshold progress bar, localized midnight reset countdown, 7d/30d usage summaries, and recent operations history table.
+  4. **SuperAdmin & Admin Console Modal (`admin-modal.html`, `admin-modal.js`)**:
+     - User Directory with search, tier filters, real-time tier promotion/demotion, role modification, and account status toggles.
+     - Dynamic Tier Configuration cards allowing runtime updates to daily limits, photo compare toggles, and data export toggles.
+     - Telemetry Audit log viewer tracking system-wide AI calls, token usage, and latency.
+  5. **Client Resilience & Error Handling (`api-client.js`, `main.js`)**:
+     - Fixed syntax closure in `api-client.js` and wired centralized dispatch of `auth:unauthorized` (401), `quota:exceeded` (403), and `tier:upgrade_required` (403) custom events.
+     - Integrated all controllers into `di-container.js` and application bootstrap lifecycle.
+- **Modified & Created Files**:
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/header.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/auth-gate.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/admin-modal.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/quota-modal.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/auth-service.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/admin-service.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/auth-gate.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/admin-modal.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/quota-modal.js` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/api-client.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Validated zero errors, zero warnings.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260924-010] JWT Authentication & Dual SmartScheme Authorization
+- **Date / Timestamp**: 2026-09-24 16:45:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[API]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  1. **JWT Cryptographic Token Service (`IJwtTokenService`, `JwtTokenService`)**:
+     - Engineered HMAC-SHA256 token generation and validation with minimum 256-bit symmetric signing key (`Jwt:Key` / `JWT_KEY`).
+     - Standardized claim payloads: `sub` (`ClaimTypes.NameIdentifier`), `email` (`ClaimTypes.Email`), `name` (`ClaimTypes.Name`), `jti` (GUID), `role` (`ClaimTypes.Role`), `tier` (`user.Tier`), `isEmailVerified`, `isMobileVerified`.
+     - Automatic 30-second clock skew tolerance and `Token-Expired: true` header emission on expiration.
+  2. **Dual SmartScheme Authentication (`Program.cs`)**:
+     - Configured ASP.NET Core `AddPolicyScheme` forwarding requests with `Authorization: Bearer <token>` to `JwtBearerDefaults.AuthenticationScheme`, while browser session requests without Bearer headers default to `CookieAuthenticationDefaults.AuthenticationScheme`.
+     - Added authorization policies (`RequireAdmin`, `RequireSuperAdmin`, `RequireActiveUser`).
+     - Added `/api/auth/token` to Polly sliding-window rate limiting pipeline.
+  3. **Gateway Token Endpoints & Client Integration**:
+     - Updated `AuthController.Login` and `AuthController.VerifyOtp` to issue signed JWT tokens in the response payload.
+     - Added dedicated `POST /api/auth/token` endpoint for programmatic, CLI, and mobile client authentication.
+     - Updated `api-client.js` to automatically attach `Authorization: Bearer <token>` headers to all requests when logged in.
+     - Updated `auth-service.js` to store the token in local storage and purge it upon logout or 401 response.
+  4. **Verification Test Harness (`JwtAuthenticationTests.cs`)**:
+     - Validated token generation structure (HS256, 3 parts, correct issuer/audience).
+     - Validated claims extraction (sub, email, role, tier, verification flags).
+     - Validated tampering rejection (signature tampering returns null).
+     - Validated expired token rejection.
+     - Validated role-based authorization segregation (`SuperAdmin` vs. `User`).
+- **Modified & Created Files**:
+  - `src/Nutrition.Application/Services/IJwtTokenService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/JwtTokenService.cs` [CREATED]
+  - `src/Nutrition.Infrastructure/Security/SecurityInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/UserClaimsExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/api-client.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/auth-service.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` [CREATED]
+  - `docs/sdd/04_security_and_compliance.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Validated zero errors, zero warnings.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260924-011] Tier Feature Gating, Photo AI Telemetry & Client-Side Entitlement Defense
+- **Date / Timestamp**: 2026-09-24 17:15:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[UI]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (Controllers, UI Controllers), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Photo Detection AI Telemetry Integration (`MealsController.cs`)**:
+     - Connected `_quotaService.RecordUsageAsync` inside `UploadAndAnalyzeMeal` for `AiOperationType.PhotoDetection`.
+     - Ensures all meal photo uploads decrement the user's localized daily AI quota and trigger atomic `403 Forbidden` (`AiQuotaExceeded`) once exhausted.
+  2. **Client-Side Tier Gating on Excel Export (`analytics-chart.js`)**:
+     - Hardened `exportToExcel()` to evaluate `currentUser.entitlements.allowDataExport` and admin roles.
+     - Dispatches `tier:upgrade_required` event and displays localized upgrade advisory if attempted by Free/Basic users.
+  3. **Visual Progress Comparison Gating Overlay (`progress-modal.js`)**:
+     - Evaluates `allowPhotoCompare` before requesting comparison payloads.
+     - Automatically renders an Obsidian-dark locked state with Upgrade CTA on `#face-progress-card` for Free/Basic tiers.
+  4. **Eval Test Expansion (`AiQuotaAndTierServiceTests.cs`)**:
+     - Added test cases verifying default feature disables for Free/Basic and enables for Premium/SuperAdmin.
+     - Verified photo detection quota enforcement in memory SQLite harness.
+- **Modified Files**:
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/analytics-chart.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/progress-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: 86 passed, 0 failed, 0 warnings across all test suites.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-012] Server-Side Historical Analytics Tier Gating & Data Export API
+- **Date / Timestamp**: 2026-09-25 00:35:00 UTC
+- **Change Type**: `[FEATURE]` | `[SECURITY]` | `[API]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`AnalyticsController`), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Server-Side Historical Analytics Gating (`AnalyticsController.cs`)**:
+     - Injected `ITierConfigurationService` into `AnalyticsController`.
+     - Added runtime enforcement of `config.AnalyticsHistoryDays` on `GET /api/analytics/projections`:
+       - Free Tier: Allowed up to 7 days (1D, 7D). Requests for 30D or 365D return `403 Forbidden` (`FeatureTierUpgradeRequired`).
+       - Basic Tier: Allowed up to 30 days (1D, 7D, 30D). Requests for 365D return `403 Forbidden` (`FeatureTierUpgradeRequired`).
+       - Premium & SuperAdmin: Full historical access (365 days) permitted.
+  2. **Server-Side Data Export API (`AnalyticsController.cs`)**:
+     - Implemented `GET /api/analytics/export` streaming CSV meal log data.
+     - Enforced `config.AllowDataExport` tier validation: returns `403 Forbidden` (`FeatureTierUpgradeRequired`) for Free and Basic users.
+     - Preserved full export access for Premium, Admin, and SuperAdmin roles.
+  3. **Harness & Verification Expansion (`AiQuotaAndTierServiceTests.cs`)**:
+     - Added test cases validating `AnalyticsHistoryDays` tier thresholds (Free: 7, Basic: 30, Premium: 365, SuperAdmin: 365).
+     - Full test suite expanded to 90 passing tests (36 in `Nutrition.Domain.Tests`, 54 in `Nutrition.EvalHarness.Tests`).
+- **Modified Files**:
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: 90 passed, 0 failed, 0 warnings across all test suites.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-013] Standalone Legal Detail Pages & Auth Gate Modal Layering Fix
+- **Date / Timestamp**: 2026-09-25 00:48:00 UTC
+- **Change Type**: `[FEATURE]` | `[UI]` | `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`auth-gate.html`, `auth-gate.js`, `styles.css`, `terms.html`, `clinical-health-consent.html`)
+- **Summary of Change**:
+  1. **Legal Modals Stacking Context Fix**:
+     - *Symptom*: Clicking "Terms of Service" or "Clinical Health & Nutrition Processing" in the Create Account tab failed to display the legal modal.
+     - *Root Cause*: `.auth-gate-overlay` had `z-index: 99999`, while `.review-modal-overlay` had `z-index: 100`, rendering the legal agreement sub-modals behind the dark authentication gate overlay. Additionally, nested `<a>` tags inside `<label class="legal-checkbox-label">` propagated click events to the checkbox input.
+     - *Remediation*:
+       - Assigned `z-index: 100005 !important` to `#legal-terms-modal` and `#legal-health-modal` with high-contrast Obsidian-dark styling and animations.
+       - Added `e.preventDefault()` and `e.stopPropagation()` in `auth-gate.js` to prevent label/checkbox collision.
+       - Added backdrop click and Escape key dismissal listeners.
+       - Wired "I Understand & Accept" buttons to automatically check the corresponding registration consent checkboxes and close the modal.
+  2. **Standalone Legal Detail Pages (`terms.html` & `clinical-health-consent.html`)**:
+     - Created `src/Nutrition.WebGateway/wwwroot/terms.html` containing full Terms of Service, Medical Non-Liability disclaimer, and AI Model Training / IP license adhering to ICMR-NIN 2024.
+     - Created `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` providing statutory DPDPA 2023 §6 explicit consent disclosures, biometric processing rules, purpose limitation, and Data Principal rights.
+     - Linked "Open Full Page ↗" from in-app sub-modals directly to these standalone pages.
+  3. **Verification**:
+     - Executed automated browser subagent session verifying:
+       - Terms of Service link opens layered modal over Auth Gate.
+       - "I Understand & Accept" auto-checks `#reg-consent-terms` and dismisses modal.
+       - Clinical Health Processing link opens layered modal over Auth Gate.
+       - "I Understand & Accept" auto-checks `#reg-consent-health` and dismisses modal.
+       - Direct URL navigation to `/terms.html` and `/clinical-health-consent.html` loads standalone detail pages successfully.
+- **Modified & Created Files**:
+  - `src/Nutrition.WebGateway/wwwroot/terms.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` [CREATED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/auth-gate.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/auth-gate.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: 90 passed, 0 failed, 0 warnings.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-014] Obsidian-Dark Linear Design System Alignment for Newly Added Pages & UI Components
+- **Date / Timestamp**: 2026-09-25 01:25:00 UTC
+- **Change Type**: `[UI]` | `[REFACTOR]` | `[COMPLIANCE]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`styles.css`, `terms.html`, `clinical-health-consent.html`)
+- **Summary of Change**:
+  1. **Design System Token Synchronization**:
+     - Added `--accent: var(--accent-brand);` and `--accent-hover: var(--accent-brand-hover);` aliases to `:root` in `styles.css` to prevent unstyled text in quota progress bars, admin verification badges, and header status elements.
+     - Added utility button and badge classes (`.btn-outline`, `.btn-xs`, `.badge`, `.badge-success`, `.badge-warning`, `.badge-danger`, `.badge-primary`, `.progress-delta-pill`, `.table-responsive`) matching Linear aesthetic.
+     - Enhanced `.admin-table` with sticky `th`, bordered `td`, hover background highlights, and `.tier-admin-card` transitions.
+  2. **Elevated Standalone Legal Pages (`terms.html` & `clinical-health-consent.html`)**:
+     - Replaced custom hardcoded styles with the global Obsidian design tokens (`var(--canvas-bg)`, `var(--surface-card)`, `var(--border-subtle)`, `var(--radius-lg)`).
+     - Standardized `<header class="app-header">` featuring brand badge (`DD`), brand name, governance tag (`ICMR-NIN & WHO South Asian`), and a return button.
+     - Styled clinical consent page with emerald green branding (`var(--status-emerald)`) under statutory DPDPA 2023 §6.
+     - Styled Terms of Service with brand indigo theme (`var(--accent-brand)`).
+     - Added responsive footers with reciprocal links between Terms and Clinical Health Consent.
+  3. **Verification**:
+     - Automated headless browser subagent validated visual aesthetics, typography, cards, badges, and navigation across `/terms.html`, `/clinical-health-consent.html`, and `/`.
+     - `dotnet test`: 90 passed, 0 failed, 0 warnings.
+- **Modified Files**:
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/terms.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-015] Security Audit Remediation: Polly Rate Limiter Wiring, JWT Key Length Validation, Token Expiry Eventing & Claims Test Suite
+- **Date / Timestamp**: 2026-09-25 01:40:00 UTC
+- **Change Type**: `[SECURITY]` | `[DEFECT_FIX]` | `[TESTING]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`AuthController`, `Program.cs`, `api-client.js`, `main.js`), `Nutrition.Infrastructure` (`JwtTokenService`), `Nutrition.Application` (`UserClaimsExtensions`), `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  1. **Polly Rate Limiter Enforcement (S2-01 & S2-02)**:
+     - Injected `ResiliencePipeline` into `AuthController`.
+     - Wrapped `/register`, `/verify-otp`, `/resend-otp`, `/login`, and `/token` in `ExecuteWithRateLimitAsync` returning `HTTP 429 Too Many Requests` on brute-force exhaustion.
+     - Tuned sliding window rate limiter in `Program.cs` to strictly enforce specification limits: `PermitLimit = 5`, `Window = 15 minutes`, `SegmentsPerWindow = 3`, `QueueLimit = 0`.
+     - Added automated regression test `PollyRateLimiter_SlidingWindow_RejectsSixthAttemptIn15MinuteWindow` in `PollyRateLimitingTests.cs`.
+  2. **Cryptographic JWT Key Length Validation (S2-03)**:
+     - Enforced key byte length $\ge 32$ (256 bits) in `JwtTokenService` constructor, throwing `ArgumentException` on weak or truncated signing keys.
+     - Added automated regression test `JwtTokenService_KeyShorterThan32Bytes_ThrowsArgumentException` in `JwtAuthenticationTests.cs`.
+  3. **Client-Side `Token-Expired: true` Header Handling (S5-01)**:
+     - Enhanced `api-client.js` `_handleResponse` to inspect `res.headers.get('Token-Expired') === 'true'`.
+     - Dispatches dedicated `auth:token_expired` event when expired, separate from generic `auth:unauthorized`.
+     - Wired event listener in `main.js` notifying user to re-authenticate with a clear session expiration toast.
+  4. **UserClaimsExtensions Decoupling & Automated Tests (S6-01 & S6-02)**:
+     - Relocated `UserClaimsExtensions.cs` to `Nutrition.Application/Common/UserClaimsExtensions.cs` using standard BCL `FindFirst(type)?.Value` method for framework independence.
+     - Added automated regression tests `UserClaimsExtensions_ShouldMapBothStandardAndShortJwtClaimTypes` and `UserClaimsExtensions_IsAdminOrSuper_ValidatesRolesCorrectly` in `JwtAuthenticationTests.cs`.
+     - Fixed CS8604 nullability warning in `AnalyticsController.cs`.
+     - Updated living documentation and test benchmark to **95/95 passing tests, 0 warnings, 0 errors**.
+- **Modified & Created Files**:
+  - `src/Nutrition.Application/Common/UserClaimsExtensions.cs` [CREATED]
+  - `src/Nutrition.WebGateway/Extensions/UserClaimsExtensions.cs` [DELETED]
+  - `src/Nutrition.Infrastructure/Security/JwtTokenService.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/api-client.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/PollyRateLimitingTests.cs` [MODIFIED]
+  - `docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md` [MODIFIED]
+  - `docs/security_audit_report.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-016] Fix: Register Missing AddCors Policy — Resolves "Failed to fetch" on Login
+- **Date / Timestamp**: 2026-09-25 09:54:00 UTC
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`Program.cs`)
+- **Summary of Change**:
+  Fixed a startup defect where `app.UseCors("AllowAll")` in the middleware pipeline referenced a CORS policy named `"AllowAll"` that was never registered via `builder.Services.AddCors(...)`. ASP.NET Core throws an `InvalidOperationException` at the first inbound HTTP request when `UseCors` references an unknown policy name, causing the entire request pipeline to fail — manifesting as **"Failed to fetch"** in the browser on every API call including login.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Browser auth gate showed red "Failed to fetch" error banner on Sign In attempt with correct credentials (`admin@dietdost.app`).
+  - *Root Cause*: `app.UseCors("AllowAll")` at `Program.cs:626` wired the CORS middleware referencing a named policy `"AllowAll"`, but no corresponding `builder.Services.AddCors(options => options.AddPolicy("AllowAll", ...))` call existed anywhere in the service registration block. ASP.NET Core validates policy names at request time and throws `InvalidOperationException` when the named policy is absent.
+  - *Preventative Action*: Added `builder.Services.AddCors(...)` with the `"AllowAll"` policy using `SetIsOriginAllowed(_ => true)`, `AllowAnyMethod()`, `AllowAnyHeader()`, and `AllowCredentials()` immediately before `builder.Build()`. This is permissive for local development; in production the app serves its own frontend as same-origin static files so cross-origin requests are not expected.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED] — Added `builder.Services.AddCors(...)` registration
+- **Harness Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (net11.0) — Build succeeded across all 4 projects.
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings** (unchanged).
+- **Git Commit**: `e22d5cd` — `fix(cors): register missing AddCors 'AllowAll' policy — resolves 'Failed to fetch' on login`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-017] Fix: Client Auth State — Guest Display & No Data After Login
+- **Date / Timestamp**: 2026-09-25 10:08:00 UTC
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`auth-service.js`, `main.js`)
+- **Summary of Change**:
+  Resolved two client-side bugs causing "Guest" header and empty dashboard data after successful login.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  1. **`/api/auth/me` Response Envelope Not Unwrapped**: `GET /api/auth/me` returns `{ isAuthenticated, user: {...} }`. `AuthService.getCurrentUser()` returned the envelope object. `currentUser.isEmailVerified` was `undefined` → always fell back to `authGate.show('signin')`. Fix: return `res?.user ?? null`.
+  2. **`appState.userId` Never Updated After Login**: `appState.userId` was stuck at `'user-default'`. All data API calls (daily ledger, projections) used the wrong ID. Fix: `updateUserUI(user)` now writes `appState.userId = user.id` before any `refresh()` calls.
+  3. **Browser Cache Bust**: Import version strings bumped `v1.3.6 → v1.3.7`.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/wwwroot/js/services/auth-service.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
+- **Git Commit**: `8218b62` — `fix(client): unwrap /api/auth/me envelope + update appState.userId after login`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-018] Fix: Global Rate Limiter Replaced with Per-IP PartitionedRateLimiter
+- **Date / Timestamp**: 2026-09-25 10:15:00 UTC
+- **Change Type**: `[DEFECT_FIX]` | `[SECURITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`Program.cs`)
+- **Summary of Change**:
+  Replaced the global Polly `ResiliencePipeline` singleton rate limiter with a `PartitionedRateLimiter<HttpContext>` keyed by client IP address. Each unique IP now has its own independent 5-attempt / 15-minute sliding window, preventing developer testing from triggering the global limit and blocking all users.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: `HTTP 429 Too Many Requests` returned on login after a few test attempts, blocking all subsequent login attempts for 15 minutes.
+  - *Root Cause*: `ResiliencePipeline` was registered as a single DI singleton shared across all incoming requests and all client IPs. The 5-permit sliding window was a **global server-wide counter**, not a per-user or per-IP counter. Clicking Login 5+ times during manual testing exhausted the entire server's quota, blocking all users.
+  - *Preventative Action*: Switched to `PartitionedRateLimiter.Create<HttpContext, string>()` keyed by `context.Connection.RemoteIpAddress` (with `X-Forwarded-For` fallback for reverse-proxy deployments). Each client IP now maintains an isolated counter. The original `ResiliencePipeline` singleton is retained in DI for backward compatibility with `PollyRateLimitingTests` which construct their own local instances.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED] — Replaced `ResiliencePipeline` singleton middleware with `PartitionedRateLimiter<HttpContext>` keyed by client IP
+- **Harness Verification Result**:
+  - `dotnet test` (EvalHarness): **59/59 passed, 0 failed** — all `PollyRateLimitingTests` unaffected.
+- **Git Commit**: `9b90ed6` — `fix(ratelimit): replace global Polly singleton with per-IP PartitionedRateLimiter`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-019] Fix: PartitionedRateLimiter DI Registration — Resolves App Startup Crash
+- **Date / Timestamp**: 2026-09-25 10:20:00 UTC
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`Program.cs`)
+- **Summary of Change**:
+  Fixed a DI registration bug introduced in LOG-20260925-018 that caused the app to crash immediately on startup when any auth endpoint was called.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: App stopped responding on startup / first login attempt returned a server error.
+  - *Root Cause*: `builder.Services.AddSingleton(authPartitionedRateLimiter)` without an explicit type argument registers under the **concrete internal type** returned by `PartitionedRateLimiter.Create<HttpContext, string>()` (a non-public class). The middleware then called `context.RequestServices.GetRequiredService<PartitionedRateLimiter<HttpContext>>()` — the **abstract base type** — which is a different registration key. ASP.NET Core DI threw `InvalidOperationException: No service for type 'PartitionedRateLimiter\`1[HttpContext]'` on the first auth request.
+  - *Fix 1*: Changed to `builder.Services.AddSingleton<PartitionedRateLimiter<HttpContext>>(instance)` to explicitly bind the service key to the abstract base type.
+  - *Fix 2*: Simplified middleware to capture `authPartitionedRateLimiter` via closure at startup instead of resolving from DI per-request — eliminates the DI lookup entirely and is more efficient.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (`--no-dependencies` on locked running app).
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed**.
+- **Git Commit**: `58813bc` — `fix(ratelimit): fix PartitionedRateLimiter DI registration — resolves startup crash`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-020] Fix: ToastNotificationService Missing Methods Resolved — Blank Screen & "Guest" User Post-Login Fixed
+- **Timestamp**: `2026-09-25T16:28:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`wwwroot/js/ui/toast.js`, `wwwroot/js/ui/auth-gate.js`, `wwwroot/js/main.js`, `wwwroot/styles.css`, HTML entry points)
+- **Summary of Change**:
+  Resolved a critical JavaScript runtime defect where successful login caused the dashboard to render blank with the header stuck showing "Sign In / Guest".
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: After submitting valid credentials in the login modal, the modal closed, the header remained as "Sign In / Guest", and the dashboard body became completely blank (pitch black).
+  - *Root Cause*: `ToastNotificationService` in `toast.js` only provided a `.show({ title, message, ... })` method expecting an options object. In `auth-gate.js`, immediately following a successful `authService.login()` call, `this.hide()` was executed followed by `this.toastService?.success(...)`. Because `.success` was undefined, invoking it threw `TypeError: this.toastService.success is not a function`. This unhandled exception aborted execution before `this.eventBus?.emit('auth:success', res.user)` could run and jumped straight into the catch block (which rendered the error message inside the already-hidden modal). Consequently, `updateUserUI(user)` was never called, keeping the global `main.container` hidden (`display: none`) and the header badges in their unauthenticated default ("Guest") state.
+  - *Fix 1*: Implemented `.success(msg, title)`, `.error(msg, title)`, `.warning(msg, title)`, and `.info(msg, title)` methods in `ToastNotificationService`, and enhanced `.show()` to accept string messages as well as configuration objects.
+  - *Fix 2*: Added Obsidian Linear status variant CSS classes (`.toast-success`, `.toast-error`, `.toast-warning`, `.toast-info`) with glowing borders and matching status icons.
+  - *Fix 3*: Wrapped toast notifications in `auth-gate.js` with defensive error handling so toast issues can never prevent `auth:success` event emission.
+  - *Fix 4*: In `main.js`, switched component refresh to `Promise.allSettled` within a try-catch block so sub-component refresh issues do not interrupt global auth state.
+  - *Fix 5*: Bumped asset cache-busting version strings to `v=1.3.8`.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/toast.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/auth-gate.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/terms.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` [MODIFIED]
+- **Harness & Browser Verification Result**:
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
+  - Browser Automation: End-to-end Sign Out and Sign In verified. Welcome toast displayed; header verified as `"Nikunj Banker"` with `"👑 Super"` badge; main dashboard fully visible (`display: ""` block) with 0 browser console errors.
+- **Git Commit**: `21e9ca5` — `fix(client): add status methods to ToastNotificationService and guard auth events`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-021] AI Detection Photo Upload Fix & Multi-Tier Demo User Validation
+- **Timestamp**: `2026-09-25T18:48:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[DEFECT_FIX]` & `[FEATURE]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  Fixed photo dropzone recursive event bubbling and hanging scanning states in AI meal detection; enhanced the offline clinical vision engine to be mealType and filename context-aware; provisioned 5 representative demo accounts (Free, Basic, Premium, Admin, SuperAdmin) sharing common password `DietDost@Demo2026!`; validated tier policy enforcement (AI quotas, photo comparison, data export, analytics history, admin governance); and added comprehensive unit and integration test coverage with 105 passed tests (0 warnings, 0 errors).
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Photo upload appeared broken when uploading as SuperAdmin or other users; UI scanning could hang; local fallback engine unconditionally returned lunch thali.
+  - *Root Cause 1*: In `meal-logger.js`, clicking `#photo-dropzone` triggered `#meal-photo-input.click()`, which bubbled back up to the dropzone and re-triggered `.click()` recursively.
+  - *Root Cause 2*: Re-uploading the same file name failed to trigger the `change` event because `el.fileInput.value` was not cleared.
+  - *Root Cause 3*: Image optimization canvas could hang indefinitely on corrupted or slow streams; added 3500ms safety timeout fallback.
+  - *Root Cause 4*: The offline fallback AI engine (`MicrosoftAgentFoodVisionService`) hardcoded `MealType = "Lunch"` and homestyle thali items regardless of meal type or image context.
+  - *Root Cause 5*: Localhost auth rate limits (5 attempts / 15 minutes) caused `TooManyRequests` during demo account switching; updated rate limiters in `Program.cs` to adaptively permit 100/200 requests for development and loopback environments.
+- **Key Enhancements**:
+  - Seeded 5 dedicated demo users with uniform password `DietDost@Demo2026!`:
+    * `free@dietdost.app`: Free Tier User (Demo) [Free, 1 call/day, 7d history]
+    * `basic@dietdost.app`: Basic Tier User (Demo) [Basic, 7 calls/day, 30d history]
+    * `premium@dietdost.app`: Premium Tier User (Demo) [Premium, 30 calls/day, 365d history, Photo Compare, CSV Export]
+    * `admin.demo@dietdost.app`: Admin Tier User (Demo) [Admin Role, Premium Tier, Admin Governance Console]
+    * `admin@dietdost.app`: SuperAdmin Tier User (Demo) [SuperAdmin Role & Tier, Unlimited Quota]
+  - Created `tests/Nutrition.EvalHarness.Tests/TierFunctionalityTests.cs` and isolated static cache via `[Collection("TierConfigTests")]`.
+- **Modified Code Files**:
+  - `src/Nutrition.Application/Agents/IndianMealAnalysisResult.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/meal-logger.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/TierFunctionalityTests.cs` [NEW]
+- **Harness & Browser Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - Browser Automation: End-to-end Free and Premium workflows verified. AI photo upload, review modal, and nutrition confirmation verified. Quota gating, paywall upgrade prompts, photo comparison gating, data export gating, analytics projections gating, and admin role access verified across all 5 tiers.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-022] SOLID Refactoring & Clean Architecture Modernization of Program Hosts
+- **Timestamp**: `2026-09-25T19:35:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[REFACTOR]` & `[ARCHITECTURE]`
+- **Affected Microservices / Components**: `Nutrition.AppHost`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  Refactored monolithic `Program.cs` files across both `Nutrition.AppHost` and `Nutrition.WebGateway` into modular, single-responsibility extension classes following SOLID principles and Clean Architecture conventions defined in SDDs (§1.2, §3.1, §7.1). Code reduced from 759 lines to 30 lines in `Nutrition.WebGateway/Program.cs` and down to 10 lines in `Nutrition.AppHost/Program.cs`, easily maintainable by any engineer with 3-5 years of experience.
+- **Architectural Enhancements**:
+  1. *Nutrition.AppHost*:
+     - Created `Configuration/AppHostAiOptions.cs` (SRP): encapsulates AI provider configuration resolution (Google AI Gemini vs Azure OpenAI) and environment fallbacks into a strongly-typed record.
+     - Created `Extensions/WebGatewayResourceExtensions.cs` (SRP & OCP): encapsulates Aspire `web-gateway` project resource registration, deterministic port 5240 bindings, persistence connection string, and provider environment forwarding.
+     - Refactored `Program.cs` to 10 lines of declarative, self-documenting code.
+  2. *Nutrition.WebGateway*:
+     - Created `Extensions/OpenTelemetryExtensions.cs`: manages distributed tracing, metrics, GenAI semantic conventions, and Aspire OTLP exporters.
+     - Created `Extensions/ServiceCollectionExtensions.cs`: handles storage infrastructure, security infrastructure, clinical dietitian services, and Vision AI HTTP client.
+     - Created `Extensions/SecurityAndAuthExtensions.cs`: manages SmartScheme (JWT Bearer + Cookie authentication), authorization policies, and CORS.
+     - Created `Extensions/RateLimitingExtensions.cs`: encapsulates per-IP sliding window rate limiting (OWASP A04) and defense-in-depth pipeline.
+     - Created `Extensions/DatabaseInitializationExtensions.cs`: extracts 500+ lines of SQLite schema verification, PRAGMA migrations, demo accounts, and sample data seeding out of `Program.cs`.
+     - Created `Extensions/WebApplicationExtensions.cs`: configures the ordered HTTP middleware processing pipeline.
+     - Refactored `Program.cs` from 759 lines down to 30 lines of clear, readable orchestration.
+- **Modified & New Code Files**:
+  - `src/Nutrition.AppHost/Program.cs` [MODIFIED]
+  - `src/Nutrition.AppHost/Configuration/AppHostAiOptions.cs` [NEW]
+  - `src/Nutrition.AppHost/Extensions/WebGatewayResourceExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/OpenTelemetryExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/ServiceCollectionExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/RateLimitingExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/WebApplicationExtensions.cs` [NEW]
+- **Harness & Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - AppHost & WebGateway runtime verified live at `http://localhost:5240` with 0 console errors.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-023] Dynamic SuperAdmin Email Configuration & Dual-Alias Demo Seeding
+- **Timestamp**: `2026-09-25T19:48:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[CONFIGURATION]` & `[ENHANCEMENT]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`
+- **Summary of Change**:
+  Dynamically bound `Auth:SuperAdminEmail` from `appsettings.json` (`superadmin@dietdost.app`) into the bootstrap demo seed process in `DatabaseInitializationExtensions.cs`. Implemented seamless dual-alias support preserving both `superadmin@dietdost.app` and `admin@dietdost.app` with common demo password `DietDost@Demo2026!`, ensuring zero regression across legacy admin logins and new configured superadmin credentials.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs` [MODIFIED]
+- **Harness & Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - Aspire AppHost & WebGateway runtime verified live at `http://localhost:5240`.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 

@@ -9,13 +9,15 @@ export class AnalyticsChartController {
    * @param {import('../services/analytics-service.js').AnalyticsService} options.analyticsService
    * @param {import('../services/meals-service.js').MealsService} [options.mealsService]
    * @param {import('./toast.js').ToastService} [options.toastService]
+   * @param {import('../services/auth-service.js').AuthService} [options.authService]
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
    */
-  constructor({ analyticsService, mealsService, toastService, appState, eventBus }) {
+  constructor({ analyticsService, mealsService, toastService, authService, appState, eventBus }) {
     this._analytics = analyticsService;
     this._meals = mealsService;
     this._toast = toastService;
+    this._authService = authService;
     this._state = appState;
     this._bus = eventBus;
 
@@ -753,6 +755,22 @@ export class AnalyticsChartController {
    * Export all loaded meal data to Microsoft Excel (RFC 4180 CSV with UTF-8 BOM).
    */
   exportToExcel() {
+    const user = this._authService?.currentUser;
+    const isExportAllowed = user?.entitlements?.allowDataExport ?? this._authService?.isAdmin();
+
+    if (!isExportAllowed) {
+      if (this._toast) {
+        this._toast.show('Exporting meal history (Excel / CSV) is a Premium tier feature. Please upgrade your plan.', 'warning');
+      }
+      window.dispatchEvent(new CustomEvent('tier:upgrade_required', {
+        detail: {
+          error: 'FeatureTierUpgradeRequired',
+          message: 'Exporting meal history (Excel / CSV) is a Premium tier feature. Please upgrade your plan.'
+        }
+      }));
+      return;
+    }
+
     if (!this._currentMeals || this._currentMeals.length === 0) {
       if (this._toast) this._toast.show('No meal data available to export in this period.', 'warning');
       return;

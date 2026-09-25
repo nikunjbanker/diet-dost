@@ -128,6 +128,12 @@ export class ReviewModalController {
 
     // Photo Lightbox Inspection
     if (el.mealPhoto) {
+      el.mealPhoto.addEventListener('load', () => {
+        if (el.mealPhoto.src && !el.mealPhoto.src.includes('placeholder')) {
+          const caption = el.photoWrapper?.querySelector('.review-photo-caption span');
+          if (caption) caption.textContent = 'Click to inspect full photo';
+        }
+      });
       el.mealPhoto.addEventListener('error', () => {
         el.mealPhoto.src = '/assets/placeholder-meal.svg';
         const caption = el.photoWrapper?.querySelector('.review-photo-caption span');
@@ -532,6 +538,8 @@ export class ReviewModalController {
     if (photoUrl) {
       if (el.mealPhoto) {
         el.mealPhoto.src = photoUrl;
+        const caption = el.photoWrapper?.querySelector('.review-photo-caption span');
+        if (caption) caption.textContent = 'Click to inspect full photo';
       }
       if (el.photoContainer) {
         el.photoContainer.style.display = 'block';

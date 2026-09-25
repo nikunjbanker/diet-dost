@@ -26,6 +26,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 11 AppHost topology, OTel pipelines, Redis caching, Docker runbook | `APPROVED` |
 | [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, Aspire test harness, AI vision benchmarks, clinical unit tests | `APPROVED` |
 | [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Log** | Continuous chronological audit trail of features, defect fixes, and RCAs | `SYNCHRONIZED` |
+| [`USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md) | **User Management & Security Architecture Plan** | Complete implementation blueprint for Auth, Tiers, DPDPA dual-consent, and dynamic AI quotas | `APPROVED` |
 | [`ICMR_NIN_2024_FEATURE_ROADMAP.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/ICMR_NIN_2024_FEATURE_ROADMAP.md) | **ICMR-NIN 2024 Feature Roadmap** | Comprehensive 17-guideline feature recommendations, prioritization matrix, and roadmap | `PROPOSED & AUDITED` |
 | [`LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md) | **Local Indian Food Text/Vision SLM Training Guide** | Dataset, local fine-tuning, Agent Framework integration, and evaluation gates | `PROPOSED` |
 | [`AZURE_DEVOPS_DEPLOYMENT_TODO.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md) | **Azure DevOps & Deployment Feature TODO** | Podman 5.7.0, Azure Container Apps, ACR push, custom domain & free managed TLS | `APPROVED & ACTIONABLE` |
@@ -59,6 +60,13 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Aspire Dashboard Virtualize JS Patch**| Skill §4.1, §7.1 | Complete (4th parameter `SpacerVisibilityReason` patch in `blazor.web.11.js`) | 0 JS Interop Exceptions |
 | **HTTP Request/Response Tracing Telemetry**| Skill §4.1, §7.2 | Complete (`HttpPayloadTelemetryMiddleware.cs`, `http.request.body`, `http.response.body`) | Verified in Aspire Traces |
 | **GenAI Semantic Tracing & Logging Scopes**| Skill §4.1, §7.2 | Complete (`NutritionTelemetry.cs`, GenAI semantic tags, non-PII logging scopes) | Verified in Aspire Traces & Logs |
+| **Identity & Authentication Engine** | Plan §2, §3 | Complete (PBKDF2-HMAC-SHA512, DPDPA Dual-Consent, 6-digit OTP activation) | 100% Passed (Unit Tests) |
+| **User Tiers & Entitlements** | Plan §1, §4 | Complete (Free, Basic, Premium, SuperAdmin dynamic limits & feature flags) | 100% Passed (Unit Tests) |
+| **Dynamic AI Quota & Mid-Reset** | Plan §4 | Complete (Localized midnight reset, 7d/30d tracking, photo compare gating) | 100% Passed (Eval Harness) |
+| **Polly Rate Limiting (OWASP A04)** | Plan §3.3 | Complete (Sliding window on auth endpoints, HTTP 429 response) | 100% Passed (Polly Tests) |
+| **SuperAdmin Governance & Telemetry**| Plan §5 | Complete (User management API, anti-lockout protection, AI audit log) | Verified via Tests |
+| **Obsidian Dark Auth Gate & UI** | Plan §6 | Complete (Dashboard lock, dual-consent modals, quota HUD, admin console) | Verified in Browser |
+| **JWT Cryptographic Authentication & SmartScheme** | Plan §3.4 | Complete (HMAC-SHA256, 24h lifetime, policy forwarding, programmatic token API) | 100% Passed (Unit Tests) |
 
 ---
 
@@ -88,3 +96,14 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **GenAI Semantic Spans & Logging Scopes** | `Nutrition.Application.Common` | `NutritionTelemetry.ActivitySource`, GenAI semantic conventions | Aspire Traces & Structured Logs |
 | **Schema-Safe DB Migration & Comparers** | `Nutrition.Infrastructure.Data` | `NutritionDbContext`, `EfRepository<T>`, `EfUnitOfWork` | Database Startup Verification (0 Errors) |
 | **Non-PII Diagnostic Logging** | `Nutrition.Infrastructure.Data` | `EfRepository<T>`, `EfUnitOfWork` sanitized diagnostics | Log Inspection Verification |
+| **Zero-PII Git Compliance** | `Nutrition.WebGateway` | `SUPER_ADMIN_EMAIL`, `admin@dietdost.app` configuration | Config & Repo Inspection |
+| **DPDPA 2023 Dual Consent** | `Nutrition.Domain.Model.Identity` | `ApplicationUser.TermsAcceptedAtUtc`, `HealthConsentAcceptedAtUtc` | Integration & DB Schema Verification |
+| **Polly Sliding Window Limiting** | `Nutrition.WebGateway` | `ResiliencePipelineBuilder.AddRateLimiter`, Auth Middleware | `PollyRateLimitingTests` |
+| **Dynamic Tier AI Detection Ceilings** | `Nutrition.Application.Services` | `IAiQuotaService`, `ITierConfigurationService`, `AiQuotaService` | `AiQuotaAndTierServiceTests` |
+| **Localized Midnight Reset** | `Nutrition.Infrastructure.Services` | `AiQuotaService.GetLocalizedMidnightUtc()`, `UserProfile.Timezone` | `AiQuotaAndTierServiceTests` |
+| **SuperAdmin Anti-Lockout Rules** | `Nutrition.WebGateway.Controllers` | `AdminController.UpdateUserRole()`, `UpdateUserStatus()` | Integration Verification |
+| **Tier Feature Gating (Photo/Excel)** | `Nutrition.WebGateway.Controllers` | `MealsController.ExportMeals()`, `ProgressPhotosController.GetComparison()` | 403 Forbidden Response Verification |
+| **JWT Bearer Token Authentication** | `Nutrition.Infrastructure.Security` | `IJwtTokenService`, `JwtTokenService` | `JwtAuthenticationTests` |
+| **Dual SmartScheme Auth Dispatch** | `Nutrition.WebGateway` | `AddPolicyScheme("SmartScheme")`, `Program.cs` | Integration Verification |
+
+

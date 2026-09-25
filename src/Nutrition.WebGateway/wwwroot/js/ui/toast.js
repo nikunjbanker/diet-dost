@@ -1,6 +1,6 @@
 /**
  * ToastNotificationService
- * Manages Obsidian Dark animated toasts with action buttons and dismiss timers.
+ * Manages Obsidian Dark animated toasts with action buttons, status variants, and dismiss timers.
  */
 export class ToastNotificationService {
   constructor(containerId = 'toast-container') {
@@ -13,26 +13,62 @@ export class ToastNotificationService {
 
   /**
    * Display a styled toast notification.
-   * @param {Object} options
-   * @param {string} options.title
-   * @param {string} options.message
-   * @param {string} [options.actionText]
-   * @param {Function} [options.onAction]
-   * @param {number} [options.duration=6500]
+   * Supports both object syntax: show({ title, message, type, ... })
+   * and shorthand string syntax: show('Message text', 'warning'|'success'|'error'|'info')
+   *
+   * @param {Object|string} optionsOrMessage
+   * @param {string|Object} [typeOrOptions='info']
    */
-  show({ title, message, actionText, onAction, duration = 6500 }) {
+  show(optionsOrMessage, typeOrOptions = 'info') {
     const parent = this.container;
     if (!parent) return;
 
+    let opts = {};
+    if (typeof optionsOrMessage === 'string') {
+      opts.message = optionsOrMessage;
+      if (typeof typeOrOptions === 'string') {
+        opts.type = typeOrOptions;
+      } else if (typeof typeOrOptions === 'object' && typeOrOptions !== null) {
+        Object.assign(opts, typeOrOptions);
+      }
+    } else if (typeof optionsOrMessage === 'object' && optionsOrMessage !== null) {
+      opts = { ...optionsOrMessage };
+    }
+
+    const type = opts.type || 'info';
+    const typeIcons = {
+      success: '✓',
+      error: '✕',
+      warning: '⚠',
+      info: 'ℹ'
+    };
+    const defaultTitles = {
+      success: 'Success',
+      error: 'Error',
+      warning: 'Notice',
+      info: 'Information'
+    };
+
+    const icon = opts.icon || typeIcons[type] || 'ℹ';
+    const title = opts.title ?? defaultTitles[type] ?? '';
+    const message = opts.message || '';
+    const duration = opts.duration ?? 6500;
+    const actionText = opts.actionText;
+    const onAction = opts.onAction;
+
     const toast = document.createElement('div');
-    toast.className = 'toast-item';
+    toast.className = `toast-item toast-${type}`;
     toast.innerHTML = `
-      <div class="toast-icon">✓</div>
+      <div class="toast-icon">${icon}</div>
       <div class="toast-content">
+        ${title ? `
         <div class="toast-title">
           <span>${title}</span>
           <button type="button" class="toast-close" title="Close">✕</button>
-        </div>
+        </div>` : `
+        <div style="display: flex; justify-content: flex-end;">
+          <button type="button" class="toast-close" title="Close">✕</button>
+        </div>`}
         <div class="toast-body">${message}</div>
         ${actionText ? `<button type="button" class="toast-action-btn">${actionText}</button>` : ''}
       </div>
@@ -58,7 +94,45 @@ export class ToastNotificationService {
     }
 
     parent.appendChild(toast);
-    setTimeout(dismiss, duration);
+    if (duration > 0) {
+      setTimeout(dismiss, duration);
+    }
+  }
+
+  /**
+   * Shorthand helper for success toasts.
+   * @param {string} message
+   * @param {string} [title='Success']
+   */
+  success(message, title = 'Success') {
+    this.show({ title, message, type: 'success' });
+  }
+
+  /**
+   * Shorthand helper for error toasts.
+   * @param {string} message
+   * @param {string} [title='Error']
+   */
+  error(message, title = 'Error') {
+    this.show({ title, message, type: 'error' });
+  }
+
+  /**
+   * Shorthand helper for warning toasts.
+   * @param {string} message
+   * @param {string} [title='Notice']
+   */
+  warning(message, title = 'Notice') {
+    this.show({ title, message, type: 'warning' });
+  }
+
+  /**
+   * Shorthand helper for informational toasts.
+   * @param {string} message
+   * @param {string} [title='Information']
+   */
+  info(message, title = 'Information') {
+    this.show({ title, message, type: 'info' });
   }
 }
 
