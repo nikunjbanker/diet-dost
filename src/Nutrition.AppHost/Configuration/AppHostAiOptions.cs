@@ -17,19 +17,24 @@ public sealed record AppHostAiOptions(
 {
     public static AppHostAiOptions FromConfiguration(IConfiguration configuration)
     {
-        var geminiKey = configuration["AI:GoogleAI:ApiKey"]
-            ?? configuration["AI:ApiKey"]
-            ?? configuration["Gemini:ApiKey"]
-            ?? Environment.GetEnvironmentVariable("AI__GoogleAI__ApiKey")
-            ?? Environment.GetEnvironmentVariable("AI__ApiKey")
-            ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+        var geminiKey = ResolveUsableKey(
+            configuration["AI:GoogleAI:ApiKey"],
+            configuration["AI:ApiKey"],
+            configuration["Gemini:ApiKey"],
+            configuration["GoogleAI:ApiKey"],
+            Environment.GetEnvironmentVariable("AI__GoogleAI__ApiKey"),
+            Environment.GetEnvironmentVariable("AI__ApiKey"),
+            Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
+            Environment.GetEnvironmentVariable("GOOGLE_AI_KEY"),
+            Environment.GetEnvironmentVariable("GOOGLE_API_KEY"));
 
         var aiProvider = configuration["AI:Provider"]
             ?? Environment.GetEnvironmentVariable("AI__Provider")
             ?? "GoogleAI";
 
-        var azureKey = configuration["AI:AzureOpenAI:ApiKey"]
-            ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__ApiKey");
+        var azureKey = ResolveUsableKey(
+            configuration["AI:AzureOpenAI:ApiKey"],
+            Environment.GetEnvironmentVariable("AI__AzureOpenAI__ApiKey"));
 
         var azureEndpoint = configuration["AI:AzureOpenAI:Endpoint"]
             ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__Endpoint");
@@ -54,5 +59,24 @@ public sealed record AppHostAiOptions(
             AzureApiKey: azureKey,
             AzureEndpoint: azureEndpoint,
             AzureDeploymentName: azureDeployment);
+    }
+
+    private static string? ResolveUsableKey(params string?[] candidates)
+    {
+        foreach (var c in candidates)
+        {
+            if (!string.IsNullOrWhiteSpace(c))
+            {
+                var trimmed = c.Trim();
+                if (trimmed.Length >= 20 &&
+                    !trimmed.Contains('*') &&
+                    !trimmed.Contains("YOUR_", StringComparison.OrdinalIgnoreCase) &&
+                    !trimmed.Contains('<'))
+                {
+                    return trimmed;
+                }
+            }
+        }
+        return null;
     }
 }
