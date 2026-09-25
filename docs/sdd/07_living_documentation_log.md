@@ -1923,3 +1923,23 @@
   - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings** (unchanged).
 - **Git Commit**: `e22d5cd` — `fix(cors): register missing AddCors 'AllowAll' policy — resolves 'Failed to fetch' on login`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-017] Fix: Client Auth State — Guest Display & No Data After Login
+- **Date / Timestamp**: 2026-09-25 10:08:00 UTC
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`auth-service.js`, `main.js`)
+- **Summary of Change**:
+  Resolved two client-side bugs causing "Guest" header and empty dashboard data after successful login.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  1. **`/api/auth/me` Response Envelope Not Unwrapped**: `GET /api/auth/me` returns `{ isAuthenticated, user: {...} }`. `AuthService.getCurrentUser()` returned the envelope object. `currentUser.isEmailVerified` was `undefined` → always fell back to `authGate.show('signin')`. Fix: return `res?.user ?? null`.
+  2. **`appState.userId` Never Updated After Login**: `appState.userId` was stuck at `'user-default'`. All data API calls (daily ledger, projections) used the wrong ID. Fix: `updateUserUI(user)` now writes `appState.userId = user.id` before any `refresh()` calls.
+  3. **Browser Cache Bust**: Import version strings bumped `v1.3.6 → v1.3.7`.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/wwwroot/js/services/auth-service.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
+- **Git Commit**: `8218b62` — `fix(client): unwrap /api/auth/me envelope + update appState.userId after login`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
