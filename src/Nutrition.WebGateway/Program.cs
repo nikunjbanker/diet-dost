@@ -173,6 +173,16 @@ var authRateLimitPipeline = new ResiliencePipelineBuilder()
 
 builder.Services.AddSingleton(authRateLimitPipeline);
 
+// CORS policy — dev-mode permissive (same-origin in prod via static file hosting)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials());
+});
+
 var app = builder.Build();
 
 // Ensure SQLite database is created and seed initial profile
