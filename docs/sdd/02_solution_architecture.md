@@ -11,146 +11,162 @@ The solution architecture integrates core architectural dimensions into a cohesi
 
 ```mermaid
 graph TB
-    subgraph LAYER_DESIGN ["1. DESIGN & CLIENT PRESENTATION LAYER (Linear.app Aesthetic & PWA)"]
+    %% =========================================================================
+    %% MASTER SOLUTION ARCHITECTURE: DIET DOST (.NET 11 RC & ASPIRE)
+    %% Clean Architecture, Native CQRS, Database Secret Store, Debug-Only Isolation
+    %% =========================================================================
+
+    subgraph LAYER_DESIGN ["1. PRESENTATION LAYER (Linear.app Glassmorphic PWA Client)"]
         direction TB
         UI_Linear["Linear Design System<br/>(Obsidian #08090a, Linear Violet #5e6ad2, Emerald #27c380)<br/>Geist Sans & Tabular Numbers"]
+        UI_AuthGate["Obsidian Dark Auth Gate<br/>(Dual DPDPA 2023 Forensic Consent & Tier Engine)"]
         UI_PWA["PWA Web Client & Mobile Shell<br/>(Camera / Photo Capture, Habit Streak HUD, Macro Gauges)"]
-        UI_Badge["Model Transparency Badge<br/>('AI:ShowModelDetails': true, Live Model Indicator)"]
-        UI_Diary["Food Diary & Logged Meals<br/>(Section Filters: 1D/7D/30D/90D/365D, Card/Grid Views, Excel Export)"]
-        UI_DeleteModal["Obsidian Delete Modal<br/>(Danger Pulse, 6-Macro Mini-Pills, Deficit Advisory)"]
-        UI_Fallback["Obsidian SVG Image Fallbacks<br/>(Plate & Progress Vector Assets, Capturing Error Interceptor)"]
-        UI_Feedback["Delight & Micro-Interactions<br/>(Confetti Micro-Burst, Haptic Feedback, 1-Tap Pill Chips)"]
+        UI_Tiers["Dynamic Tier Status Badges<br/>(Free, Basic, ⚡ Premium, 👑 SuperAdmin)"]
+        UI_Diary["Food Diary & History<br/>(1D/7D/30D/90D/365D Filter, Card/Grid Toggle, Excel Export)"]
+        UI_DeleteModal["Custom Obsidian Delete Modal<br/>(Danger Pulse & Deficit Recalculation Advisory)"]
+        UI_Fallback["Static Vector Fallback Armor<br/>(placeholder-meal.svg & placeholder-progress.svg)"]
         UI_Offline["Client-Side Offline Engine<br/>(WASM SQLite with OPFS / IndexedDB Dexie.js & ServiceWorker)"]
         
-        UI_Linear --- UI_PWA
-        UI_PWA --- UI_Badge
+        UI_Linear --- UI_AuthGate
+        UI_AuthGate --- UI_PWA
+        UI_PWA --- UI_Tiers
         UI_PWA --- UI_Diary
-        UI_PWA --- UI_DeleteModal
+        UI_Diary --- UI_DeleteModal
         UI_PWA --- UI_Fallback
-        UI_PWA --- UI_Feedback
         UI_PWA <-->|Offline Caching & Background Sync| UI_Offline
     end
 
     subgraph LAYER_SECURITY ["2. SECURITY & BOUNDARY DEFENSE LAYER (OWASP ASVS & Guardrails)"]
         direction TB
         SEC_Perimeter["Perimeter & Transport Security<br/>(TLS 1.3, Strict CSP, Minimal CORS, Secure HTTPOnly Cookies)"]
-        SEC_RateLimit["ASP.NET Core RateLimiter<br/>(Token-Bucket per User IP / Bearer Token)"]
+        SEC_DualAuth["Dual SmartScheme Authentication<br/>(RFC 7519 JWT Bearer + Secure HttpOnly Cookie)"]
+        SEC_DebugGuard["Debug-Only Demo User Security Isolation<br/>(#if DEBUG & IAppEnvironment.AllowsDemoUsers)<br/>Release Mode Seeding Suppression & Auto-Deactivation"]
+        SEC_RateLimit["ASP.NET Core RateLimiter<br/>(Polly Sliding Window per User IP / Bearer Token)"]
         SEC_FileArmor["File Ingestion Armor<br/>(Magic Byte Check: JPEG/PNG/WEBP, Max 8MB, EXIF GPS Stripper)"]
         SEC_AIGuard["AI Prompt Guardrails & Safety<br/>(Prompt Delimiters, Strict JSON Schema, PII Redaction)"]
-        SEC_NonPiiLog["Non-PII Diagnostic Logging<br/>(Sanitized DB Exception Logger: Class & Action Only, Zero Clinical Values)"]
         SEC_DataFilter["Data Isolation Guardrails<br/>(EF Core Global Query Filters: UserId == CurrentUser.Id)"]
     end
 
-    subgraph LAYER_GATEWAY ["3. INGRESS & ORCHESTRATION GATEWAY"]
-        YARP["YARP API Gateway / Reverse Proxy (.NET 11 RC)<br/>(Path Routing, Auth Token Verification, Distributed Rate Limiting)"]
-        MW_Payload["HttpPayloadTelemetryMiddleware<br/>(Request/Response Body Capture -> Activity.SetTag http.request/response.body)"]
+    subgraph LAYER_GATEWAY ["3. PRESENTATION GATEWAY (Nutrition.WebGateway)"]
+        direction TB
+        CONTROLLERS["Thin REST Controllers (.NET 11 RC)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController)"]
+        MW_Pipeline["HTTP Middleware Pipeline<br/>(Authentication, Rate Limiting, Exception Handling RFC 7807, HttpPayloadTelemetry)"]
+        CONFIG_DB["DatabaseConfigurationProvider<br/>(Loads AppSecrets into ASP.NET Core IConfiguration during startup)"]
     end
 
-    subgraph LAYER_APPLICATION ["4. APPLICATION SERVICES LAYER (DDD Bounded Contexts)"]
+    subgraph LAYER_APPLICATION ["4. APPLICATION LAYER (Nutrition.Application - Clean Architecture)"]
         direction TB
-        subgraph SVC_PROFILE ["Nutrition.ProfileService"]
-            MOD_Profile["User Profile & Clinical Assessment Context"]
-            AGG_Profile["Aggregate Root: UserProfile<br/>(Height, Weight, Pace, Dietary Preference, Timezone)"]
-            VO_ClinIntake["Value Objects: ClinicalRecord & MedicationRegimen<br/>(Metformin, Thyronorm, Telmisartan, etc.)"]
-            VO_Tz["Timezone & Circadian Window<br/>(Auto-Detected IANA Timezone, UTC Normalization)"]
-            CALC_BMR["Mifflin-St Jeor & TDEE Calculation Engine"]
+        CQRS_Engine["Native CQRS Pipeline (Zero MediatR Dependency)<br/>(Pure Microsoft.Extensions.DependencyInjection Handlers)"]
+        
+        subgraph USECASES_AUTH ["Identity & Security Use Cases"]
+            CMD_Login["LoginCommandHandler<br/>(Debug-Only Demo Guard & JWT Generation)"]
+            CMD_Register["RegisterUserCommandHandler<br/>(DPDPA Consent & PasswordPolicy)"]
+            CMD_Reset["ResetPasswordCommandHandler<br/>(Active User Check & Policy)"]
         end
 
-        subgraph SVC_VISION ["Nutrition.VisionService"]
-            MOD_Vision["AI Multimodal Meal Ingestion Context"]
-            AGG_Meal["Aggregate Root: MealLog<br/>(MealType, PhotoUri, Status: Uploaded->Analyzed->Verified)"]
-            QTY_Parser["Indian Cooking Quantity Parser<br/>(1.5 Cup, 1 Katori, 5-6 Slices, Steppers)"]
-            MACRO_Nutrients["6-Macro Real-Time Aggregator<br/>(Calories, Protein, Carbs, Fat, Fiber, Sugar)"]
-            AGENT_Food["Microsoft Agent Framework Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
-            GATE_Confidence["Confidence Gating Engine (>= 70% Auto-Log vs < 70% Retake)"]
-            LEARN_Memory["Adaptive Memory & Continuous Learning<br/>(UserCorrectionRecord: Original vs Modified Diff Log)"]
+        subgraph USECASES_VISION ["Meal Vision Use Cases"]
+            CMD_MealUpload["UploadMealCommandHandler<br/>(Tier Quota Check & Cascade Vision)"]
+            CMD_MealReview["ReviewMealCommandHandler<br/>(Macro Recalculation)"]
         end
 
-        subgraph SVC_ANALYTICS ["Nutrition.AnalyticsService"]
-            MOD_Ledger["Calorie Ledger & Analytics Context"]
-            AGG_Ledger["Aggregate Root: DailyCalorieLedger<br/>(User Local Circadian Date, Consumed, Budget, Sugar Ceiling)"]
-            PROJ_Trends["Multi-Period Trend Projections<br/>(1D, 7D Deficit, 30D Weight Curve, 90D, 365D Trends)"]
-            ENG_Game["Dietitian Dost & Gamification Engine<br/>(Streaks, Daily Health Score 0-100, Achievement Badges)"]
+        subgraph USECASES_PROFILE ["Clinical Profile Use Cases"]
+            CMD_SaveProfile["SaveProfileCommandHandler<br/>(Mifflin-St Jeor & ICMR-NIN Safeguards)"]
+            QRY_GetProfile["GetProfileQueryHandler<br/>(TDEE & Target Budget Calculation)"]
+        end
+
+        subgraph USECASES_ANALYTICS ["Analytics & Ledger Use Cases"]
+            QRY_Ledger["GetTodayLedgerQueryHandler<br/>(6-Macro Balances & Daily Deficit)"]
+            QRY_History["GetMealHistoryQueryHandler<br/>(Multi-Period Trend Filtering)"]
+        end
+
+        PORTS["Application Ports & Abstractions<br/>(ISecretStore, IAppEnvironment, IPhotoStorageService, IRepository, IUnitOfWork)"]
+    end
+
+    subgraph LAYER_DOMAIN ["5. DOMAIN CORE LAYER (Nutrition.Domain - DDD)"]
+        direction TB
+        subgraph AGGREGATES ["Domain Aggregates & Entities"]
+            AGG_User["ApplicationUser (Aggregate Root)<br/>(DPDPA Consent Timestamps, SecurityStamp, DemoEmails, Tier, Role)"]
+            AGG_Profile["UserProfile (Aggregate Root)<br/>(Height, Weight, Pace, Dietary Preference, IANA Timezone)"]
+            AGG_Meal["MealLog (Aggregate Root)<br/>(MealType, PhotoUri, Status: Uploaded->Analyzed->Verified)"]
+            AGG_Ledger["DailyCalorieLedger (Aggregate Root)<br/>(Date, Consumed, Budget, Pending Deficit)"]
+            ENT_Secret["AppSecret Entity<br/>(Key, Value, Description, CreatedAtUtc, UpdatedAtUtc)"]
+            ENT_TierConfig["TierFeatureConfiguration<br/>(DailyAiLimit: 1, 7, 30, -1; PhotoCompare; DataExport)"]
+        end
+
+        subgraph CLINICAL ["Clinical Dietetics Safeguards (ICMR-NIN 2024 & WHO)"]
+            CALC_BMR["Mifflin-St Jeor BMR & TDEE Multipliers"]
+            CLIN_Floors["Starvation Floors (1200 kcal F / 1500 kcal M)"]
+            CLIN_Rules["Clinical Matrix (Diabetes, HTN, Thyroid, NAFLD Adjustments)"]
+            CLIN_WHO["WHO Asian-Indian Cutoffs & 3:1 Cereal:Pulse Ratio"]
         end
     end
 
-    subgraph LAYER_FUNCTIONAL ["5. FUNCTIONAL CLINICAL DIETETICS ENGINE (ICMR-NIN & WHO)"]
+    subgraph LAYER_INFRASTRUCTURE ["6. INFRASTRUCTURE LAYER (Nutrition.Infrastructure - Adapters)"]
         direction TB
-        FUNC_ZeroAssump["Zero-Assumption Intake Engine<br/>(HALTS on missing height/weight/conditions/meds)"]
-        FUNC_Matrix["Clinical & Medication Adjustment Matrix<br/>(Diabetes: NetCarbs <= 40% | HTN: Sodium < 1500mg | Thyroid: -12% TDEE)"]
-        FUNC_WHO["WHO & ICMR-NIN Rulebook<br/>(Max 20-25g Visible Cooking Fat | 3:1 Cereal:Pulse | Salt < 5g | Free Sugar < 25g | Trans Fat < 1%)"]
-        FUNC_Safety["Clinical Safety Floor Checks<br/>(Floor: 1200 kcal F / 1500 kcal M | Max Deficit: 1000 kcal/day)"]
+        ADAPTER_Secrets["DatabaseSecretStore Adapter<br/>(ConcurrentDictionary In-Memory Cache)"]
+        ADAPTER_Env["AppEnvironment Adapter<br/>(#if DEBUG Preprocessor & IHostEnvironment)"]
+        ADAPTER_Repo["EfRepository & EfUnitOfWork<br/>(Generic EF Core Data Access)"]
+        ADAPTER_Photo["LocalPhotoStorageService<br/>(Cryptographic SHA-256 Hashed File Storage)"]
+        ADAPTER_Jwt["JwtTokenService<br/>(HMAC-SHA256 Token Issuer via ISecretStore)"]
+        ADAPTER_Agent["Microsoft Agent Framework Vision Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
+        
+        DB_Context["DietTrackerDbContext<br/>(SQLite V1, Universal UTC ValueConverter, Schema-Aware PRAGMA, Collection ValueComparers)"]
+        TABLE_Secrets[("AppSecrets Table<br/>(Jwt:Key, Auth:DemoPassword, AI:GoogleAI:ApiKey)")]
     end
 
-    subgraph LAYER_AI ["6. EXTERNAL AI FOUNDATION (EXTENSIBLE MULTI-PROVIDER)"]
-        CLOUD_AI["AI Provider Factory (Strategy Pattern)<br/>• Google AI Cascade: gemini-3-flash-preview -> gemini-3.6-flash<br/>• Azure OpenAI: gpt-5.6-luna (OpenAI.Responses)<br/>• Single-family active toggle via config, extensible to future providers"]
-    end
-
-    subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11 RC)"]
+    subgraph LAYER_ORCHESTRATION ["7. DEVOPS & OBSERVABILITY (.NET Aspire 13.5.4)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (NET 11 RC)<br/>(Distributed Orchestration & Typed Resource Topology)"]
-        ASPIRE_Dash["Aspire Developer Dashboard (Port 18888)<br/>(Blazor Virtualize JS Patched, Live Resources, Traces, Structured Logs)"]
-        OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')<br/>GenAI Semantic Tags & Structured Logging Scopes"]
-        STORE_Cache[("Redis Cache Cluster<br/>(Session Store, Token Bucket, Query Acceleration)")]
-        STORE_Db[("Decoupled Persistence: SQLite V1 / PostgreSQL<br/>(Universal UTC ValueConverters, Schema-Aware PRAGMA Checks, EF ValueComparers)")]
-        STORE_Blob[("Encrypted Meal Photo Storage<br/>(Local AppData / Cloud Blob Storage)")]
-        CONTAINERS["Containerization & CI/CD<br/>(Docker / Podman, GitHub Actions Pipeline, Health Watchdogs)"]
+        ASPIRE_Host[".NET Aspire AppHost (net11.0)<br/>(Distributed Orchestration & Typed Topology)"]
+        ASPIRE_Dash["Aspire Developer Dashboard (:18888)<br/>(Live Resources, Distributed Traces, GenAI Semantic Spans)"]
+        OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')"]
+        TEST_Harness["Validation Harnesses<br/>(122 Automated Tests + pwsh validate_e2e_tiers.ps1)"]
     end
 
-    %% Flow Relationships
+    %% Flow Connections
     UI_PWA -->|HTTPS / WSS| SEC_Perimeter
     SEC_Perimeter --> SEC_RateLimit
-    SEC_RateLimit --> YARP
-    YARP --- MW_Payload
+    SEC_RateLimit --> SEC_DualAuth
+    SEC_DualAuth --> CONTROLLERS
+    
+    CONTROLLERS --> MW_Pipeline
+    CONTROLLERS --> CQRS_Engine
+    CONFIG_DB -.->|Injects DB Secrets| CONTROLLERS
+    
+    CQRS_Engine --> CMD_Login
+    CQRS_Engine --> CMD_Register
+    CQRS_Engine --> CMD_MealUpload
+    CQRS_Engine --> CMD_SaveProfile
+    CQRS_Engine --> QRY_Ledger
 
-    YARP -->|Route /api/profiles| SVC_PROFILE
-    YARP -->|Route /api/meals/upload| SEC_FileArmor
-    SEC_FileArmor --> SVC_VISION
-    YARP -->|Route /api/analytics| SVC_ANALYTICS
+    CMD_Login --> SEC_DebugGuard
+    CMD_Login --> PORTS
+    CMD_MealUpload --> PORTS
+    CMD_SaveProfile --> PORTS
+    QRY_Ledger --> PORTS
 
-    SVC_PROFILE --> FUNC_ZeroAssump
-    FUNC_ZeroAssump --> FUNC_Matrix
-    FUNC_Matrix --> FUNC_WHO
-    FUNC_WHO --> FUNC_Safety
-    FUNC_Safety --> AGG_Profile
+    PORTS -.->|Implements| ADAPTER_Secrets
+    PORTS -.->|Implements| ADAPTER_Env
+    PORTS -.->|Implements| ADAPTER_Repo
+    PORTS -.->|Implements| ADAPTER_Photo
 
-    SVC_VISION --> SEC_AIGuard
-    SEC_AIGuard --> AGENT_Food
-    AGENT_Food <-->|Multimodal Request / Response with Fallback| CLOUD_AI
-    AGENT_Food --> GATE_Confidence
-    GATE_Confidence -->|Confidence >= 70% Verified| AGG_Meal
-    GATE_Confidence -->|< 70% Retake Prompt / Manual Fallback| UI_PWA
-    AGG_Meal --> LEARN_Memory
+    ADAPTER_Repo --> DB_Context
+    ADAPTER_Secrets --> DB_Context
+    DB_Context --> TABLE_Secrets
+    ADAPTER_Agent --> CLOUD_AI["Google Gemini Multimodal Vision API"]
 
-    AGG_Meal -.->|Domain Event: MealConfirmedEvent| SVC_ANALYTICS
-    SVC_ANALYTICS --> AGG_Ledger
-    AGG_Ledger --> PROJ_Trends
-    AGG_Ledger --> ENG_Game
-    ENG_Game -.->|Streak & Badge Notifications| UI_Feedback
+    CMD_SaveProfile --> CLINICAL
+    CLINICAL --> AGG_Profile
+    CMD_Login --> AGG_User
 
-    %% Data Isolation & Persistence
-    SVC_PROFILE --> SEC_DataFilter
-    SVC_VISION --> SEC_DataFilter
-    SVC_ANALYTICS --> SEC_DataFilter
-    SEC_DataFilter --> STORE_Db
-    SVC_VISION --> STORE_Blob
-    YARP <--> STORE_Cache
-    STORE_Db --- SEC_NonPiiLog
-
-    %% DevOps & Telemetry Wiring
-    ASPIRE_Host -->|Orchestrates| YARP
-    ASPIRE_Host -->|Orchestrates| SVC_PROFILE
-    ASPIRE_Host -->|Orchestrates| SVC_VISION
-    ASPIRE_Host -->|Orchestrates| SVC_ANALYTICS
-    ASPIRE_Host -->|Orchestrates| STORE_Cache
-    ASPIRE_Host -->|Orchestrates| STORE_Db
-
-    YARP -.->|Traces with Payloads| OTEL_Collector
-    SVC_PROFILE -.->|Traces & Metrics| OTEL_Collector
-    SVC_VISION -.->|GenAI Semantic Spans & Scopes| OTEL_Collector
-    SVC_ANALYTICS -.->|Traces & Metrics| OTEL_Collector
+    %% Telemetry & Observability
+    MW_Pipeline -.->|Payload Telemetry| OTEL_Collector
+    CQRS_Engine -.->|GenAI Semantic Spans| OTEL_Collector
     OTEL_Collector --> ASPIRE_Dash
+    ASPIRE_Host -->|Orchestrates| CONTROLLERS
+    ASPIRE_Host -->|Orchestrates| ASPIRE_Dash
+    TEST_Harness -.->|Validates E2E Tiers| CONTROLLERS
 ```
+
 
 ---
 

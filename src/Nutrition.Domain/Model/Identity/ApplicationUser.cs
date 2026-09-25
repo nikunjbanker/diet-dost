@@ -172,6 +172,36 @@ public partial class ApplicationUser
         return true;
     }
 
+    /// <summary>
+    /// Seeded demo account email addresses strictly intended for development, testing, and evaluation.
+    /// </summary>
+    public static readonly IReadOnlySet<string> DemoEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "free@dietdost.app",
+        "basic@dietdost.app",
+        "premium@dietdost.app",
+        "admin.demo@dietdost.app",
+        "superadmin@dietdost.app",
+        "admin@dietdost.app"
+    };
+
+    /// <summary>
+    /// Indicates whether this user instance is a seeded demo account.
+    /// </summary>
+    public bool IsDemoAccount =>
+        DemoEmails.Contains(Email) ||
+        Id.StartsWith("user-free", StringComparison.OrdinalIgnoreCase) ||
+        Id.StartsWith("user-basic", StringComparison.OrdinalIgnoreCase) ||
+        Id.StartsWith("user-premium", StringComparison.OrdinalIgnoreCase) ||
+        Id.StartsWith("user-admin", StringComparison.OrdinalIgnoreCase) ||
+        Id.StartsWith("user-superadmin", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Evaluates whether an email string belongs to a demo account.
+    /// </summary>
+    public static bool IsDemoEmail(string? email) =>
+        !string.IsNullOrWhiteSpace(email) && DemoEmails.Contains(email.Trim());
+
     [GeneratedRegex(@"[^\d+]")]
     private static partial Regex PhoneNumberDigitsRegex();
 }

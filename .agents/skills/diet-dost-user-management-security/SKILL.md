@@ -32,6 +32,7 @@ description: >-
 > 4. After implementation, run `dotnet test` and confirm 100% pass before pushing.
 > 5. Synchronize Living SDD (`docs/sdd/*.md`) and append a log entry to `docs/sdd/07_living_documentation_log.md`.
 > 6. **Mandatory End-to-End User Tier Validation**: After any change, refactoring, new feature implementation, or bug fix, execute live end-to-end verification of the running application across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Verify actual product behavior: token issuance, quota meters, feature gating (photo compare, meal export paywalls), admin role authorization, and ensure 0 runtime/console errors.
+> 7. **Major Change Auto-Detection & Living Artifact Synchronization**: Proactively detect major changes (secret storage, auth gates, environment isolation, demo account restrictions, tier quotas) and automatically synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, and `docs/sdd/*.md` without requiring manual prompts.
 
 ---
 

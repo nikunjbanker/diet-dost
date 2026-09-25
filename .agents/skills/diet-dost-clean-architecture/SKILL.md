@@ -34,6 +34,7 @@ description: >-
 > 5. **Test Verification**: Run `dotnet test` and confirm 100% pass rate before committing or raising PRs.
 > 6. **Living SDD Synchronization**: Synchronize `docs/sdd/*.md` and append an entry to `docs/sdd/07_living_documentation_log.md`.
 > 7. **Mandatory End-to-End User Tier Validation**: After any refactoring, new feature implementation, or bug fix, execute comprehensive end-to-end verification of the running application across all 5 user tiers using seeded demo accounts (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Ensure zero runtime exceptions, accurate quota enforcement, correct tier gating (e.g. photo comparison and data export paywalls), and zero browser console errors.
+> 8. **Major Change Auto-Detection & Artifact Synchronization**: Continuously detect major changes (CQRS commands/queries, ports, entities, secret store, environment gates). Auto-synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, `docs/sdd/*.md`, and relevant skills without manual prompting.
 
 ---
 
