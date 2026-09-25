@@ -2015,3 +2015,81 @@
 - **Git Commit**: `21e9ca5` — `fix(client): add status methods to ToastNotificationService and guard auth events`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-021] AI Detection Photo Upload Fix & Multi-Tier Demo User Validation
+- **Timestamp**: `2026-09-25T18:48:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[DEFECT_FIX]` & `[FEATURE]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  Fixed photo dropzone recursive event bubbling and hanging scanning states in AI meal detection; enhanced the offline clinical vision engine to be mealType and filename context-aware; provisioned 5 representative demo accounts (Free, Basic, Premium, Admin, SuperAdmin) sharing common password `DietDost@Demo2026!`; validated tier policy enforcement (AI quotas, photo comparison, data export, analytics history, admin governance); and added comprehensive unit and integration test coverage with 105 passed tests (0 warnings, 0 errors).
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Photo upload appeared broken when uploading as SuperAdmin or other users; UI scanning could hang; local fallback engine unconditionally returned lunch thali.
+  - *Root Cause 1*: In `meal-logger.js`, clicking `#photo-dropzone` triggered `#meal-photo-input.click()`, which bubbled back up to the dropzone and re-triggered `.click()` recursively.
+  - *Root Cause 2*: Re-uploading the same file name failed to trigger the `change` event because `el.fileInput.value` was not cleared.
+  - *Root Cause 3*: Image optimization canvas could hang indefinitely on corrupted or slow streams; added 3500ms safety timeout fallback.
+  - *Root Cause 4*: The offline fallback AI engine (`MicrosoftAgentFoodVisionService`) hardcoded `MealType = "Lunch"` and homestyle thali items regardless of meal type or image context.
+  - *Root Cause 5*: Localhost auth rate limits (5 attempts / 15 minutes) caused `TooManyRequests` during demo account switching; updated rate limiters in `Program.cs` to adaptively permit 100/200 requests for development and loopback environments.
+- **Key Enhancements**:
+  - Seeded 5 dedicated demo users with uniform password `DietDost@Demo2026!`:
+    * `free@dietdost.app`: Free Tier User (Demo) [Free, 1 call/day, 7d history]
+    * `basic@dietdost.app`: Basic Tier User (Demo) [Basic, 7 calls/day, 30d history]
+    * `premium@dietdost.app`: Premium Tier User (Demo) [Premium, 30 calls/day, 365d history, Photo Compare, CSV Export]
+    * `admin.demo@dietdost.app`: Admin Tier User (Demo) [Admin Role, Premium Tier, Admin Governance Console]
+    * `admin@dietdost.app`: SuperAdmin Tier User (Demo) [SuperAdmin Role & Tier, Unlimited Quota]
+  - Created `tests/Nutrition.EvalHarness.Tests/TierFunctionalityTests.cs` and isolated static cache via `[Collection("TierConfigTests")]`.
+- **Modified Code Files**:
+  - `src/Nutrition.Application/Agents/IndianMealAnalysisResult.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/meal-logger.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/TierFunctionalityTests.cs` [NEW]
+- **Harness & Browser Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - Browser Automation: End-to-end Free and Premium workflows verified. AI photo upload, review modal, and nutrition confirmation verified. Quota gating, paywall upgrade prompts, photo comparison gating, data export gating, analytics projections gating, and admin role access verified across all 5 tiers.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-022] SOLID Refactoring & Clean Architecture Modernization of Program Hosts
+- **Timestamp**: `2026-09-25T19:35:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[REFACTOR]` & `[ARCHITECTURE]`
+- **Affected Microservices / Components**: `Nutrition.AppHost`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  Refactored monolithic `Program.cs` files across both `Nutrition.AppHost` and `Nutrition.WebGateway` into modular, single-responsibility extension classes following SOLID principles and Clean Architecture conventions defined in SDDs (§1.2, §3.1, §7.1). Code reduced from 759 lines to 30 lines in `Nutrition.WebGateway/Program.cs` and down to 10 lines in `Nutrition.AppHost/Program.cs`, easily maintainable by any engineer with 3-5 years of experience.
+- **Architectural Enhancements**:
+  1. *Nutrition.AppHost*:
+     - Created `Configuration/AppHostAiOptions.cs` (SRP): encapsulates AI provider configuration resolution (Google AI Gemini vs Azure OpenAI) and environment fallbacks into a strongly-typed record.
+     - Created `Extensions/WebGatewayResourceExtensions.cs` (SRP & OCP): encapsulates Aspire `web-gateway` project resource registration, deterministic port 5240 bindings, persistence connection string, and provider environment forwarding.
+     - Refactored `Program.cs` to 10 lines of declarative, self-documenting code.
+  2. *Nutrition.WebGateway*:
+     - Created `Extensions/OpenTelemetryExtensions.cs`: manages distributed tracing, metrics, GenAI semantic conventions, and Aspire OTLP exporters.
+     - Created `Extensions/ServiceCollectionExtensions.cs`: handles storage infrastructure, security infrastructure, clinical dietitian services, and Vision AI HTTP client.
+     - Created `Extensions/SecurityAndAuthExtensions.cs`: manages SmartScheme (JWT Bearer + Cookie authentication), authorization policies, and CORS.
+     - Created `Extensions/RateLimitingExtensions.cs`: encapsulates per-IP sliding window rate limiting (OWASP A04) and defense-in-depth pipeline.
+     - Created `Extensions/DatabaseInitializationExtensions.cs`: extracts 500+ lines of SQLite schema verification, PRAGMA migrations, demo accounts, and sample data seeding out of `Program.cs`.
+     - Created `Extensions/WebApplicationExtensions.cs`: configures the ordered HTTP middleware processing pipeline.
+     - Refactored `Program.cs` from 759 lines down to 30 lines of clear, readable orchestration.
+- **Modified & New Code Files**:
+  - `src/Nutrition.AppHost/Program.cs` [MODIFIED]
+  - `src/Nutrition.AppHost/Configuration/AppHostAiOptions.cs` [NEW]
+  - `src/Nutrition.AppHost/Extensions/WebGatewayResourceExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/OpenTelemetryExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/ServiceCollectionExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/RateLimitingExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/WebApplicationExtensions.cs` [NEW]
+- **Harness & Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - AppHost & WebGateway runtime verified live at `http://localhost:5240` with 0 console errors.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
