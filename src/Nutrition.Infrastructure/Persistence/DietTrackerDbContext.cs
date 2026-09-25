@@ -7,6 +7,7 @@ using Nutrition.Domain.Model.Ledger;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Domain.Model.Progress;
+using Nutrition.Domain.Model.Security;
 
 namespace Nutrition.Infrastructure.Persistence;
 
@@ -25,6 +26,7 @@ public class DietTrackerDbContext : DbContext
     public DbSet<VerificationOtp> VerificationOtps => Set<VerificationOtp>();
     public DbSet<TierFeatureConfiguration> TierConfigurations => Set<TierFeatureConfiguration>();
     public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
+    public DbSet<AppSecret> AppSecrets => Set<AppSecret>();
 
     public DietTrackerDbContext(DbContextOptions<DietTrackerDbContext> options) : base(options)
     {
@@ -158,6 +160,15 @@ public class DietTrackerDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.TimestampUtc });
             entity.HasIndex(e => new { e.UserId, e.OperationType });
+        });
+
+        modelBuilder.Entity<AppSecret>(entity =>
+        {
+            entity.ToTable("AppSecrets");
+            entity.HasKey(e => e.Key);
+            entity.Property(e => e.Key).HasMaxLength(128).IsRequired();
+            entity.Property(e => e.Value).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(512);
         });
 
         // ============================================================================

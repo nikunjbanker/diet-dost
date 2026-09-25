@@ -20,18 +20,16 @@ public class JwtTokenService : IJwtTokenService
     private readonly int _expiryMinutes;
     private readonly SymmetricSecurityKey _signingKey;
 
-    public const string DefaultDevKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
-
     public JwtTokenService(IConfiguration configuration)
     {
         _issuer = configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
         _audience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
-        _key = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? DefaultDevKey;
+        _key = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? string.Empty;
 
         var keyBytes = Encoding.UTF8.GetBytes(_key);
         if (keyBytes.Length < 32)
         {
-            throw new ArgumentException("JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256 security.", nameof(configuration));
+            throw new ArgumentException("JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256 security. Ensure Jwt:Key is configured in the AppSecrets database table.", nameof(configuration));
         }
 
         if (int.TryParse(configuration["Jwt:ExpiryMinutes"] ?? Environment.GetEnvironmentVariable("JWT_EXPIRY_MINUTES"), out var exp) && exp != 0)

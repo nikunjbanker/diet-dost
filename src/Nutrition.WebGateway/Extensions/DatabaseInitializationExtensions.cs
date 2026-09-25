@@ -7,6 +7,7 @@ using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Domain.Model.Progress;
+using Nutrition.Domain.Model.Security;
 using Nutrition.Infrastructure.Persistence;
 using Nutrition.Infrastructure.Security;
 
@@ -18,7 +19,6 @@ namespace Nutrition.WebGateway.Extensions;
 /// </summary>
 public static class DatabaseInitializationExtensions
 {
-    private const string CommonDemoPassword = "DietDost@Demo2026!";
 
     public static async Task InitializeAndSeedDatabaseAsync(this IApplicationBuilder app, IConfiguration configuration)
     {
@@ -32,6 +32,7 @@ public static class DatabaseInitializationExtensions
         try
         {
             await EnsureDatabaseCreatedAndMigratedAsync(db);
+            await SeedAppSecretsAsync(db, configuration, logger);
             await SeedTierConfigurationsAsync(db, logger);
             await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, logger);
             await MigrateLegacyDataAsync(db, logger);
@@ -181,6 +182,14 @@ public static class DatabaseInitializationExtensions
             );
             CREATE INDEX IF NOT EXISTS ""IX_AiUsageLogs_UserId_TimestampUtc"" ON ""AiUsageLogs"" (""UserId"", ""TimestampUtc"");
             CREATE INDEX IF NOT EXISTS ""IX_AiUsageLogs_UserId_OperationType"" ON ""AiUsageLogs"" (""UserId"", ""OperationType"");
+
+            CREATE TABLE IF NOT EXISTS ""AppSecrets"" (
+                ""Key"" TEXT NOT NULL CONSTRAINT ""PK_AppSecrets"" PRIMARY KEY,
+                ""Value"" TEXT NOT NULL,
+                ""Description"" TEXT NULL,
+                ""CreatedAtUtc"" TEXT NOT NULL,
+                ""UpdatedAtUtc"" TEXT NOT NULL
+            );
         ");
     }
 
@@ -226,6 +235,39 @@ public static class DatabaseInitializationExtensions
             await db.Database.ExecuteSqlRawAsync($"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};");
 #pragma warning restore EF1002
         }
+    }
+
+    private static async Task SeedAppSecretsAsync(DietTrackerDbContext db, IConfiguration configuration, ILogger logger)
+    {
+        var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>
+        {
+            ("Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!", "Cryptographic signing key for JWT HMAC-SHA256 tokens"),
+            ("Auth:DemoPassword", "DietDost@Demo2026!", "Deterministic password for seeded demo tier accounts"),
+            ("AI:GoogleAI:ApiKey", string.Empty, "Google Gemini Vision API Key"),
+            ("AI:AzureOpenAI:ApiKey", string.Empty, "Azure OpenAI API Key")
+        };
+
+        foreach (var (key, fallbackValue, description) in defaultSecrets)
+        {
+            var existing = await db.AppSecrets.FirstOrDefaultAsync(s => s.Key == key);
+            if (existing == null)
+            {
+                var configuredValue = configuration[key];
+                var finalValue = !string.IsNullOrWhiteSpace(configuredValue) ? configuredValue : fallbackValue;
+
+                await db.AppSecrets.AddAsync(new AppSecret
+                {
+                    Key = key,
+                    Value = finalValue,
+                    Description = description,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    UpdatedAtUtc = DateTime.UtcNow
+                });
+                logger.LogInformation("Seeded database secret into AppSecrets table: {Key}", key);
+            }
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task SeedTierConfigurationsAsync(DietTrackerDbContext db, ILogger logger)
@@ -338,6 +380,10 @@ public static class DatabaseInitializationExtensions
             ));
         }
 
+        var demoPassword = configuration["Auth:DemoPassword"]
+            ?? (await db.AppSecrets.Where(s => s.Key == "Auth:DemoPassword").Select(s => s.Value).FirstOrDefaultAsync())
+            ?? "DietDost@Demo2026!";
+
         var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
 
@@ -352,7 +398,7 @@ public static class DatabaseInitializationExtensions
                 {
                     user.Email = spec.Email;
                     user.NormalizedEmail = normEmail;
-                    user.PasswordHash = passwordHasher.HashPassword(CommonDemoPassword);
+                    user.PasswordHash = passwordHasher.HashPassword(demoPassword);
                     user.Role = spec.Role;
                     user.Tier = spec.Tier;
                     user.IsEmailVerified = true;
@@ -370,7 +416,7 @@ public static class DatabaseInitializationExtensions
                         NormalizedEmail = normEmail,
                         MobileNumber = spec.Mobile,
                         NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber(spec.Mobile),
-                        PasswordHash = passwordHasher.HashPassword(CommonDemoPassword),
+                        PasswordHash = passwordHasher.HashPassword(demoPassword),
                         SecurityStamp = Guid.NewGuid().ToString("N"),
                         Role = spec.Role,
                         Tier = spec.Tier,
@@ -392,7 +438,7 @@ public static class DatabaseInitializationExtensions
             }
             else
             {
-                user.PasswordHash = passwordHasher.HashPassword(CommonDemoPassword);
+                user.PasswordHash = passwordHasher.HashPassword(demoPassword);
                 user.Role = spec.Role;
                 user.Tier = spec.Tier;
                 user.IsEmailVerified = true;

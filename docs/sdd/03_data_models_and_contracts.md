@@ -31,6 +31,7 @@
   - `VerificationOtp`: Id, UserId, Target, OtpCodeHash (SHA-256), Channel (Email, Sms), ExpiresAtUtc (5m TTL), AttemptCount (max 3), IsUsed, CreatedAtUtc
   - `TierFeatureConfiguration`: Id, Tier, DailyAiDetectionLimit (Free: 1, Basic: 7, Premium: 30, SuperAdmin: -1), AllowPhotoCompare, AllowDataExport, AnalyticsHistoryDays, Description, UpdatedAtUtc, UpdatedByUserId
   - `AiUsageLog`: Id, UserId, OperationType (PhotoDetection, TextDetection, ProgressCompare), ModelId, EstimatedTokensUsed, LatencyMs, IsSuccess, ErrorReason, TimestampUtc
+  - `AppSecret`: Key (primary key string, e.g. "Jwt:Key", "Auth:DemoPassword"), Value (encrypted/plain secret string), Description, CreatedAtUtc, UpdatedAtUtc (Swappable Database Secret Store; clean architecture port `ISecretStore` with in-memory caching and ASP.NET Core `DatabaseConfigurationProvider`)
 
 ### 1.1 `Nutrition.ProfileService` Context
 - **Aggregate Root**: `UserProfile`

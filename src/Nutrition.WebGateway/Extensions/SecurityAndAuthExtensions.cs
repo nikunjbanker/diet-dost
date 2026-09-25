@@ -23,7 +23,8 @@ public static class SecurityAndAuthExtensions
 
         var jwtIssuer = configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
         var jwtAudience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
-        var jwtKey = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? JwtTokenService.DefaultDevKey;
+        var jwtKey = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? throw new InvalidOperationException("JWT signing key not found. Ensure Jwt:Key is configured in the AppSecrets database table or environment.");
 
         services.AddAuthentication(options =>
         {

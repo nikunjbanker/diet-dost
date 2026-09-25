@@ -1,4 +1,4 @@
-﻿---
+---
 name: diet-dost-user-management-security
 version: 1.6.0
 status: Final Approved Production Specification & Security Rulebook
@@ -31,6 +31,7 @@ description: >-
 > 3. Build must produce **0 warnings, 0 errors**.
 > 4. After implementation, run `dotnet test` and confirm 100% pass before pushing.
 > 5. Synchronize Living SDD (`docs/sdd/*.md`) and append a log entry to `docs/sdd/07_living_documentation_log.md`.
+> 6. **Mandatory End-to-End User Tier Validation**: After any change, refactoring, new feature implementation, or bug fix, execute live end-to-end verification of the running application across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Verify actual product behavior: token issuance, quota meters, feature gating (photo compare, meal export paywalls), admin role authorization, and ensure 0 runtime/console errors.
 
 ---
 
@@ -621,5 +622,37 @@ When implementing or modifying any feature touching auth, identity, or security:
 - [ ] SuperAdmin immunity invariants respected in Admin API
 - [ ] Test coverage for new code (see Section 12 harness requirements)
 - [ ] `dotnet test` — 0 failures, 0 warnings, 0 errors
+- [ ] Mandatory End-to-End User Tier Validation executed across all 5 demo user tiers with 100% pass rate
 - [ ] Living SDD updated (`04_security_and_compliance.md` + log entry in `07_living_documentation_log.md`)
 - [ ] Branch pushed and PR opened (no direct merge to `main`)
+
+---
+
+## 17. Mandatory End-to-End User Tier Validation Standard
+
+> [!CAUTION]
+> **Zero Assumptions Policy**: No refactoring, architecture change, security modification, or new feature implementation is considered complete or approved for pull request merge without verifying actual product behavior on the running live application across **all 5 seeded demo user accounts**.
+
+### 17.1 Demo Credentials & Expected Invariants Matrix
+
+| User Account | Demo Password | Expected Tier | Expected Role | Daily AI Quota | Feature Gating Invariants | Expected UI Badges |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `free@dietdost.app` | `DietDost@Demo2026!` | `Free` (0) | `User` | 1 / day | • Visual photo comparison: **403 Gated / Upgrade Modal**<br>• Meal CSV export: **403 Gated / Upgrade Modal**<br>• Admin console: **403 Forbidden** | `Free` |
+| `basic@dietdost.app` | `DietDost@Demo2026!` | `Basic` (1) | `User` | 7 / day | • Visual photo comparison: **403 Gated**<br>• Meal CSV export: **403 Gated**<br>• Admin console: **403 Forbidden** | `Basic` |
+| `premium@dietdost.app` | `DietDost@Demo2026!` | `Premium` (2) | `User` | 30 / day | • Visual photo comparison: **200 OK Unlocked**<br>• Meal CSV export: **200 OK Unlocked**<br>• Admin console: **403 Forbidden** | `⚡ Premium` |
+| `admin.demo@dietdost.app` | `DietDost@Demo2026!` | `Premium` (2) | `Admin` | 30 / day | • Visual photo comparison: **200 OK Unlocked**<br>• Meal CSV export: **200 OK Unlocked**<br>• User Management API: **200 OK Unlocked** (`/api/admin/users`) | `⚡ Premium` + Admin Menu |
+| `superadmin@dietdost.app` | `DietDost@Demo2026!` | `SuperAdmin` (3) | `SuperAdmin` | Unlimited (`-1`) | • All features unlocked<br>• Admin Governance Console: **200 OK Unlocked**<br>• AI Telemetry & User Directory: **200 OK Unlocked** | `👑 Super` |
+
+### 17.2 Execution Methods
+
+Agents or engineers must execute validation through either:
+1. **Automated Live Harness**:
+   ```powershell
+   pwsh -File tests/validate_e2e_tiers.ps1
+   ```
+   Ensuring all 5 tiers output `[PASS]` across authentication, profile calculation, quota endpoints, feature gating, and admin role authorization.
+2. **Browser Subagent / Interactive UI Verification**:
+   - Launch application on `http://localhost:5240`.
+   - Log in sequentially as each of the 5 demo accounts.
+   - Inspect DOM, user menu badge, quota modal, and paywall trigger on locked features.
+   - Confirm **0 console errors** and **0 unhandled runtime exceptions**.

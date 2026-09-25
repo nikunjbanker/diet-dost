@@ -1,0 +1,25 @@
+# E2E User Tier Verification Checklist
+
+- [ ] 1. Free Tier (`free@dietdost.app` / `DietDost@Demo2026!`)
+  - [ ] Dashboard loads with clinical targets (Target Calories, Protein)
+  - [ ] User tier badge shows 'Free'
+  - [ ] Quota meter shows 1 detection/day
+  - [ ] Progress Photos / Export triggers Paywall / Upgrade modal
+  - [ ] Screenshot captured (`free_tier_dashboard`)
+- [ ] 2. Basic Tier (`basic@dietdost.app` / `DietDost@Demo2026!`)
+  - [ ] Dashboard loads, tier shows 'Basic'
+  - [ ] Quota shows 7 detections/day
+  - [ ] Screenshot captured (`basic_tier_dashboard`)
+- [ ] 3. Premium Tier (`premium@dietdost.app` / `DietDost@Demo2026!`)
+  - [ ] Dashboard loads, tier shows '⚡ Premium'
+  - [ ] Quota shows 30 detections/day
+  - [ ] Export / Progress Photos accessible without paywall
+  - [ ] Screenshot captured (`premium_tier_dashboard`)
+- [ ] 4. Admin Tier (`admin.demo@dietdost.app` / `DietDost@Demo2026!`)
+  - [ ] Admin role verified, user management / metrics accessible
+  - [ ] Screenshot captured (`admin_tier_dashboard`)
+- [ ] 5. SuperAdmin Tier (`superadmin@dietdost.app` / `DietDost@Demo2026!`)
+  - [ ] SuperAdmin role, badge shows '👑 Super', quota unlimited (-1)
+  - [ ] Governance Console inspected (User Directory, Tier Configs, AI Telemetry)
+  - [ ] Screenshot captured (`superadmin_governance_console`)
+- [ ] Check browser console logs for errors across all steps.
