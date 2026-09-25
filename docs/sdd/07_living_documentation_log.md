@@ -1983,3 +1983,35 @@
   - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed**.
 - **Git Commit**: `58813bc` — `fix(ratelimit): fix PartitionedRateLimiter DI registration — resolves startup crash`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-020] Fix: ToastNotificationService Missing Methods Resolved — Blank Screen & "Guest" User Post-Login Fixed
+- **Timestamp**: `2026-09-25T16:28:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`wwwroot/js/ui/toast.js`, `wwwroot/js/ui/auth-gate.js`, `wwwroot/js/main.js`, `wwwroot/styles.css`, HTML entry points)
+- **Summary of Change**:
+  Resolved a critical JavaScript runtime defect where successful login caused the dashboard to render blank with the header stuck showing "Sign In / Guest".
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: After submitting valid credentials in the login modal, the modal closed, the header remained as "Sign In / Guest", and the dashboard body became completely blank (pitch black).
+  - *Root Cause*: `ToastNotificationService` in `toast.js` only provided a `.show({ title, message, ... })` method expecting an options object. In `auth-gate.js`, immediately following a successful `authService.login()` call, `this.hide()` was executed followed by `this.toastService?.success(...)`. Because `.success` was undefined, invoking it threw `TypeError: this.toastService.success is not a function`. This unhandled exception aborted execution before `this.eventBus?.emit('auth:success', res.user)` could run and jumped straight into the catch block (which rendered the error message inside the already-hidden modal). Consequently, `updateUserUI(user)` was never called, keeping the global `main.container` hidden (`display: none`) and the header badges in their unauthenticated default ("Guest") state.
+  - *Fix 1*: Implemented `.success(msg, title)`, `.error(msg, title)`, `.warning(msg, title)`, and `.info(msg, title)` methods in `ToastNotificationService`, and enhanced `.show()` to accept string messages as well as configuration objects.
+  - *Fix 2*: Added Obsidian Linear status variant CSS classes (`.toast-success`, `.toast-error`, `.toast-warning`, `.toast-info`) with glowing borders and matching status icons.
+  - *Fix 3*: Wrapped toast notifications in `auth-gate.js` with defensive error handling so toast issues can never prevent `auth:success` event emission.
+  - *Fix 4*: In `main.js`, switched component refresh to `Promise.allSettled` within a try-catch block so sub-component refresh issues do not interrupt global auth state.
+  - *Fix 5*: Bumped asset cache-busting version strings to `v=1.3.8`.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/toast.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/auth-gate.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/main.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/styles.css` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/index.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/terms.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/clinical-health-consent.html` [MODIFIED]
+- **Harness & Browser Verification Result**:
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
+  - Browser Automation: End-to-end Sign Out and Sign In verified. Welcome toast displayed; header verified as `"Nikunj Banker"` with `"👑 Super"` badge; main dashboard fully visible (`display: ""` block) with 0 browser console errors.
+- **Git Commit**: `21e9ca5` — `fix(client): add status methods to ToastNotificationService and guard auth events`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
