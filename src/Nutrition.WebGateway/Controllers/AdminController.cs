@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Nutrition.Application.Services;
+using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Features.Admin.Commands.TierConfiguration;
+using Nutrition.Application.Features.Admin.Commands.UserManagement;
+using Nutrition.Application.Features.Admin.Queries.GetAdminUsers;
 using Nutrition.Domain.Model.Identity;
-using Nutrition.Infrastructure.Persistence;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
@@ -19,42 +20,20 @@ public record UpdateTierConfigRequest(
     string Description
 );
 
-public record AdminUserSummaryDto(
-    string Id,
-    string Email,
-    string MobileNumber,
-    UserRole Role,
-    UserTier Tier,
-    bool IsEmailVerified,
-    bool IsMobileVerified,
-    bool IsActive,
-    DateTime? TermsAcceptedAtUtc,
-    string? TermsVersionAccepted,
-    DateTime? HealthConsentAcceptedAtUtc,
-    string? HealthConsentVersionAccepted,
-    string? ConsentIpAddress,
-    DateTime CreatedAtUtc,
-    DateTime? LastLoginAtUtc,
-    int TodayAiDetectionsCount
-);
-
+/// <summary>
+/// Thin Presentation Controller for Administrator & SuperAdmin Operations.
+/// Dispatches all governance, tier adjustments, and user state management to Application CQRS handlers.
+/// </summary>
 [Authorize(Roles = "Admin,SuperAdmin")]
 [ApiController]
 [Route("api/[controller]")]
 public class AdminController : ControllerBase
 {
-    private readonly DietTrackerDbContext _db;
-    private readonly ITierConfigurationService _tierConfigService;
-    private readonly ILogger<AdminController> _logger;
+    private readonly IDispatcher _dispatcher;
 
-    public AdminController(
-        DietTrackerDbContext db,
-        ITierConfigurationService tierConfigService,
-        ILogger<AdminController> logger)
+    public AdminController(IDispatcher dispatcher)
     {
-        _db = db;
-        _tierConfigService = tierConfigService;
-        _logger = logger;
+        _dispatcher = dispatcher;
     }
 
     [HttpGet("users")]
@@ -64,57 +43,15 @@ public class AdminController : ControllerBase
         [FromQuery] UserRole? role = null,
         CancellationToken ct = default)
     {
-        var query = _db.Users.AsNoTracking().AsQueryable();
+        var query = new GetAdminUsersQuery(search, tier, role);
+        var result = await _dispatcher.QueryAsync(query, ct);
 
-        if (!string.IsNullOrWhiteSpace(search))
+        if (!result.Succeeded)
         {
-            var searchLower = search.Trim().ToLowerInvariant();
-            query = query.Where(u => u.Email.ToLower().Contains(searchLower) ||
-                                     u.MobileNumber.Contains(searchLower));
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        if (tier.HasValue)
-        {
-            query = query.Where(u => u.Tier == tier.Value);
-        }
-
-        if (role.HasValue)
-        {
-            query = query.Where(u => u.Role == role.Value);
-        }
-
-        var users = await query
-            .OrderByDescending(u => u.CreatedAtUtc)
-            .ToListAsync(ct);
-
-        var todayUtc = DateTime.UtcNow.Date;
-        var todayAiCounts = await _db.AiUsageLogs
-            .AsNoTracking()
-            .Where(l => l.TimestampUtc >= todayUtc && l.IsSuccess)
-            .GroupBy(l => l.UserId)
-            .Select(g => new { UserId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.UserId, x => x.Count, ct);
-
-        var dtos = users.Select(u => new AdminUserSummaryDto(
-            Id: u.Id,
-            Email: u.Email,
-            MobileNumber: u.MobileNumber,
-            Role: u.Role,
-            Tier: u.Tier,
-            IsEmailVerified: u.IsEmailVerified,
-            IsMobileVerified: u.IsMobileVerified,
-            IsActive: u.IsActive,
-            TermsAcceptedAtUtc: u.TermsAcceptedAtUtc,
-            TermsVersionAccepted: u.TermsVersionAccepted,
-            HealthConsentAcceptedAtUtc: u.HealthConsentAcceptedAtUtc,
-            HealthConsentVersionAccepted: u.HealthConsentVersionAccepted,
-            ConsentIpAddress: u.ConsentIpAddress,
-            CreatedAtUtc: u.CreatedAtUtc,
-            LastLoginAtUtc: u.LastLoginAtUtc,
-            TodayAiDetectionsCount: todayAiCounts.TryGetValue(u.Id, out var count) ? count : 0
-        )).ToList();
-
-        return Ok(dtos);
+        return Ok(result.Data);
     }
 
     [HttpPut("users/{id}/tier")]
@@ -123,27 +60,20 @@ public class AdminController : ControllerBase
         [FromBody] UpdateUserTierRequest request,
         CancellationToken ct = default)
     {
-        var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
-        if (targetUser == null)
-            return NotFound(new { error = "User not found." });
+        var adminUserId = User.GetUserId() ?? "System";
+        var command = new UpdateUserTierCommand(id, request.Tier, adminUserId);
+        var result = await _dispatcher.SendAsync(command, ct);
 
-        // SuperAdmin protection
-        if (targetUser.Role == UserRole.SuperAdmin && request.Tier != UserTier.SuperAdmin)
+        if (!result.Succeeded)
         {
-            return BadRequest(new { error = "Cannot demote the SuperAdmin tier." });
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
-
-        targetUser.Tier = request.Tier;
-        await _db.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Admin {AdminId} changed tier of User {TargetId} to {NewTier}",
-            User.GetUserId(), id, request.Tier);
 
         return Ok(new
         {
-            message = $"User tier updated to {request.Tier}.",
-            userId = id,
-            tier = targetUser.Tier
+            message = result.Data!.Message,
+            userId = result.Data.UserId,
+            tier = result.Data.Tier
         });
     }
 
@@ -153,33 +83,21 @@ public class AdminController : ControllerBase
         [FromBody] UpdateUserRoleRequest request,
         CancellationToken ct = default)
     {
-        var currentRole = User.GetRole();
-        if (currentRole != nameof(UserRole.SuperAdmin) && request.Role == UserRole.SuperAdmin)
+        var adminUserId = User.GetUserId() ?? "System";
+        var currentRole = User.GetRole() ?? string.Empty;
+        var command = new UpdateUserRoleCommand(id, request.Role, adminUserId, currentRole);
+        var result = await _dispatcher.SendAsync(command, ct);
+
+        if (!result.Succeeded)
         {
-            return Forbid();
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
-
-        var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
-        if (targetUser == null)
-            return NotFound(new { error = "User not found." });
-
-        // SuperAdmin account cannot be demoted
-        if (targetUser.Role == UserRole.SuperAdmin && request.Role != UserRole.SuperAdmin)
-        {
-            return BadRequest(new { error = "Cannot demote the SuperAdmin role." });
-        }
-
-        targetUser.Role = request.Role;
-        await _db.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Admin {AdminId} changed role of User {TargetId} to {NewRole}",
-            User.GetUserId(), id, request.Role);
 
         return Ok(new
         {
-            message = $"User role updated to {request.Role}.",
-            userId = id,
-            role = targetUser.Role
+            message = result.Data!.Message,
+            userId = result.Data.UserId,
+            role = result.Data.Role
         });
     }
 
@@ -189,35 +107,33 @@ public class AdminController : ControllerBase
         [FromBody] UpdateUserStatusRequest request,
         CancellationToken ct = default)
     {
-        var targetUser = await _db.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
-        if (targetUser == null)
-            return NotFound(new { error = "User not found." });
+        var adminUserId = User.GetUserId() ?? "System";
+        var command = new UpdateUserStatusCommand(id, request.IsActive, adminUserId);
+        var result = await _dispatcher.SendAsync(command, ct);
 
-        // SuperAdmin protection: cannot lock/deactivate SuperAdmin
-        if (targetUser.Role == UserRole.SuperAdmin && !request.IsActive)
+        if (!result.Succeeded)
         {
-            return BadRequest(new { error = "Cannot deactivate or lock the SuperAdmin account." });
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
-
-        targetUser.IsActive = request.IsActive;
-        await _db.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Admin {AdminId} changed active status of User {TargetId} to {IsActive}",
-            User.GetUserId(), id, request.IsActive);
 
         return Ok(new
         {
-            message = $"User status updated to {(request.IsActive ? "Active" : "Locked")}.",
-            userId = id,
-            isActive = targetUser.IsActive
+            message = result.Data!.Message,
+            userId = result.Data.UserId,
+            isActive = result.Data.IsActive
         });
     }
 
     [HttpGet("tier-configs")]
     public async Task<IActionResult> GetTierConfigs(CancellationToken ct = default)
     {
-        var configs = await _tierConfigService.GetAllConfigurationsAsync(ct);
-        return Ok(configs);
+        var result = await _dispatcher.QueryAsync(new GetTierConfigsQuery(), ct);
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+
+        return Ok(result.Data);
     }
 
     [HttpPut("tier-configs/{tier}")]
@@ -226,23 +142,27 @@ public class AdminController : ControllerBase
         [FromBody] UpdateTierConfigRequest request,
         CancellationToken ct = default)
     {
-        var config = await _tierConfigService.GetConfigurationAsync(tier, ct);
-        config.DailyAiDetectionLimit = request.DailyAiDetectionLimit;
-        config.AllowPhotoCompare = request.AllowPhotoCompare;
-        config.AllowDataExport = request.AllowDataExport;
-        config.AnalyticsHistoryDays = request.AnalyticsHistoryDays;
-        config.Description = request.Description;
-        config.UpdatedByUserId = User.GetUserId();
+        var adminUserId = User.GetUserId();
+        var command = new UpdateTierConfigCommand(
+            tier,
+            request.DailyAiDetectionLimit,
+            request.AllowPhotoCompare,
+            request.AllowDataExport,
+            request.AnalyticsHistoryDays,
+            request.Description,
+            adminUserId
+        );
 
-        var updated = await _tierConfigService.UpdateConfigurationAsync(config, ct);
-
-        _logger.LogInformation("Admin {AdminId} updated tier config for {Tier}",
-            User.GetUserId(), tier);
+        var result = await _dispatcher.SendAsync(command, ct);
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
 
         return Ok(new
         {
-            message = $"Tier configuration for {tier} updated successfully.",
-            configuration = updated
+            message = result.Data!.Message,
+            configuration = result.Data.Configuration
         });
     }
 
@@ -252,18 +172,12 @@ public class AdminController : ControllerBase
         [FromQuery] int limit = 50,
         CancellationToken ct = default)
     {
-        var query = _db.AiUsageLogs.AsNoTracking().AsQueryable();
-
-        if (!string.IsNullOrWhiteSpace(userId))
+        var result = await _dispatcher.QueryAsync(new GetAiLogsQuery(userId, limit), ct);
+        if (!result.Succeeded)
         {
-            query = query.Where(l => l.UserId == userId);
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        var logs = await query
-            .OrderByDescending(l => l.TimestampUtc)
-            .Take(Math.Min(limit, 100))
-            .ToListAsync(ct);
-
-        return Ok(logs);
+        return Ok(result.Data);
     }
 }

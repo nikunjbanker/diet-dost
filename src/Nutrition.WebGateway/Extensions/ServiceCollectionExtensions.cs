@@ -1,3 +1,4 @@
+using Nutrition.Application;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Services;
 using Nutrition.Infrastructure.AI;
@@ -33,6 +34,13 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(120);
         });
         services.AddScoped<IFoodVisionAgent, MicrosoftAgentFoodVisionService>();
+
+        // Native .NET 11 Clean Architecture Application Services & CQRS Dispatcher
+        services.AddApplicationServices();
+
+        // Ambient User Claims Context Provider (OWASP ASVS tenant isolation)
+        services.AddHttpContextAccessor();
+        services.AddScoped<Nutrition.Application.Common.Interfaces.ICurrentUserService, Services.CurrentUserService>();
 
         return services;
     }

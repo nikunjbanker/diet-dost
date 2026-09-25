@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common;
-using Nutrition.Application.Services;
+using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Features.ProgressPhotos.Commands.DeleteProgressPhoto;
+using Nutrition.Application.Features.ProgressPhotos.Commands.UploadProgressPhoto;
+using Nutrition.Application.Features.ProgressPhotos.Queries.CompareProgressPhotos;
+using Nutrition.Application.Features.ProgressPhotos.Queries.GetProgressPhotos;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Progress;
 using Nutrition.Infrastructure.Security;
@@ -9,29 +13,20 @@ using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
 
+/// <summary>
+/// Thin Presentation Controller for user progress photos and visual comparisons.
+/// Dispatches all persistence, file I/O, and comparison operations to Application CQRS handlers.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/progress-photos")]
 public class ProgressPhotosController : ControllerBase
 {
-    private readonly IRepository<ProgressPhoto> _photoRepo;
-    private readonly ITierConfigurationService _tierConfigService;
-    private readonly IUnitOfWork _uow;
-    private readonly IWebHostEnvironment _env;
-    private readonly ILogger<ProgressPhotosController> _logger;
+    private readonly IDispatcher _dispatcher;
 
-    public ProgressPhotosController(
-        IRepository<ProgressPhoto> photoRepo,
-        ITierConfigurationService tierConfigService,
-        IUnitOfWork uow,
-        IWebHostEnvironment env,
-        ILogger<ProgressPhotosController> logger)
+    public ProgressPhotosController(IDispatcher dispatcher)
     {
-        _photoRepo = photoRepo;
-        _tierConfigService = tierConfigService;
-        _uow = uow;
-        _env = env;
-        _logger = logger;
+        _dispatcher = dispatcher;
     }
 
     [HttpPost("upload")]
@@ -50,9 +45,6 @@ public class ProgressPhotosController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
-        // Enforce claim-based user identity
-        var targetUserId = currentUserId;
-
         if (image == null || image.Length == 0)
             return BadRequest(new { error = "Please provide an image file." });
 
@@ -61,59 +53,24 @@ public class ProgressPhotosController : ControllerBase
         if (!isValid)
             return BadRequest(new { error = errorMessage });
 
-        // Ensure storage directory exists
-        var uploadsFolder = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), "uploads", "progress");
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
+        var command = new UploadProgressPhotoCommand(
+            currentUserId,
+            stream,
+            image.FileName,
+            mimeType!,
+            weightKg,
+            photoType,
+            isBaseline,
+            notes,
+            capturedDate);
 
-        var extension = mimeType switch
+        var result = await _dispatcher.SendAsync(command, ct);
+        if (!result.Succeeded)
         {
-            "image/jpeg" => ".jpg",
-            "image/png" => ".png",
-            "image/webp" => ".webp",
-            _ => ".jpg"
-        };
-
-        var fileName = $"{targetUserId}_{photoType}_{Guid.NewGuid():N}{extension}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        stream.Position = 0;
-        using (var fileStream = new FileStream(filePath, FileMode.Create))
-        {
-            await stream.CopyToAsync(fileStream, ct);
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        var relativeUri = $"/uploads/progress/{fileName}";
-
-        var capturedAt = DateTime.UtcNow;
-        if (!string.IsNullOrWhiteSpace(capturedDate) && DateTime.TryParse(capturedDate, out var parsedDate))
-        {
-            capturedAt = DateTime.SpecifyKind(parsedDate, DateTimeKind.Utc);
-        }
-
-        var photo = new ProgressPhoto
-        {
-            UserId = targetUserId,
-            CapturedAtUtc = capturedAt,
-            WeightKg = weightKg ?? 80.0,
-            PhotoType = photoType,
-            PhotoUri = relativeUri,
-            IsBaseline = isBaseline,
-            Notes = notes?.Trim()
-        };
-
-        await _photoRepo.AddAsync(photo, ct);
-        await _uow.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Saved new progress photo {Id} for user {UserId}, type: {Type}", photo.Id, targetUserId, photoType);
-
-        return Ok(new
-        {
-            photo,
-            message = isBaseline
-                ? "🌟 Baseline progress photo successfully recorded!"
-                : "📸 Progress check-in photo saved! Visual timeline updated."
-        });
+        return Ok(result.Data);
     }
 
     [HttpGet]
@@ -126,18 +83,19 @@ public class ProgressPhotosController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
-        var targetUserId = string.IsNullOrWhiteSpace(userId) ? currentUserId : userId;
-        if (targetUserId != currentUserId && !User.IsAdminOrSuper())
+        var query = new GetProgressPhotosQuery(
+            currentUserId,
+            userId,
+            User.IsAdminOrSuper(),
+            photoType);
+
+        var result = await _dispatcher.QueryAsync(query, ct);
+        if (!result.Succeeded)
         {
-            return Forbid();
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        var photos = await _photoRepo.FindAsync(
-            p => p.UserId == targetUserId && (!photoType.HasValue || p.PhotoType == photoType.Value),
-            ct);
-
-        var ordered = photos.OrderBy(p => p.CapturedAtUtc).ToList();
-        return Ok(ordered);
+        return Ok(result.Data);
     }
 
     [HttpGet("comparison")]
@@ -151,63 +109,20 @@ public class ProgressPhotosController : ControllerBase
 
         var tierString = User.GetTier();
         var userTier = Enum.TryParse<UserTier>(tierString, out var parsedTier) ? parsedTier : UserTier.Free;
-        var config = await _tierConfigService.GetConfigurationAsync(userTier, ct);
 
-        if (!config.AllowPhotoCompare && !User.IsAdminOrSuper())
+        var query = new CompareProgressPhotosQuery(
+            currentUserId,
+            userId,
+            userTier,
+            User.IsAdminOrSuper());
+
+        var result = await _dispatcher.QueryAsync(query, ct);
+        if (!result.Succeeded)
         {
-            return StatusCode(StatusCodes.Status403Forbidden, new
-            {
-                error = "FeatureTierUpgradeRequired",
-                message = "Visual Photo Comparison is a Premium tier feature. Please upgrade your plan."
-            });
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        var targetUserId = string.IsNullOrWhiteSpace(userId) ? currentUserId : userId;
-        if (targetUserId != currentUserId && !User.IsAdminOrSuper())
-        {
-            return Forbid();
-        }
-
-        var allPhotos = (await _photoRepo.FindAsync(p => p.UserId == targetUserId, ct))
-            .OrderBy(p => p.CapturedAtUtc)
-            .ToList();
-
-        var facePhotos = allPhotos.Where(p => p.PhotoType == ProgressPhotoType.Face).ToList();
-        var fullBodyPhotos = allPhotos.Where(p => p.PhotoType != ProgressPhotoType.Face).ToList();
-
-        var baselineFace = facePhotos.FirstOrDefault(p => p.IsBaseline) ?? facePhotos.FirstOrDefault();
-        var currentFace = facePhotos.LastOrDefault(p => p.Id != baselineFace?.Id) ?? baselineFace;
-
-        var baselineFullBody = fullBodyPhotos.FirstOrDefault(p => p.IsBaseline) ?? fullBodyPhotos.FirstOrDefault();
-        var currentFullBody = fullBodyPhotos.LastOrDefault(p => p.Id != baselineFullBody?.Id) ?? baselineFullBody;
-
-        double weightDeltaKg = 0;
-        int daysElapsed = 0;
-
-        if (baselineFace != null && currentFace != null && baselineFace.Id != currentFace.Id)
-        {
-            weightDeltaKg = Math.Round(currentFace.WeightKg - baselineFace.WeightKg, 1);
-            daysElapsed = Math.Max(1, (int)(currentFace.CapturedAtUtc.Date - baselineFace.CapturedAtUtc.Date).TotalDays);
-        }
-        else if (baselineFullBody != null && currentFullBody != null && baselineFullBody.Id != currentFullBody.Id)
-        {
-            weightDeltaKg = Math.Round(currentFullBody.WeightKg - baselineFullBody.WeightKg, 1);
-            daysElapsed = Math.Max(1, (int)(currentFullBody.CapturedAtUtc.Date - baselineFullBody.CapturedAtUtc.Date).TotalDays);
-        }
-
-        return Ok(new
-        {
-            hasComparison = (baselineFace != null && currentFace != null && baselineFace.Id != currentFace.Id) ||
-                            (baselineFullBody != null && currentFullBody != null && baselineFullBody.Id != currentFullBody.Id),
-            baselineFace,
-            currentFace,
-            baselineFullBody,
-            currentFullBody,
-            weightDeltaKg,
-            daysElapsed,
-            totalPhotosCount = allPhotos.Count,
-            allPhotos
-        });
+        return Ok(result.Data);
     }
 
     [HttpDelete("{id}")]
@@ -217,30 +132,16 @@ public class ProgressPhotosController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
-        var photo = await _photoRepo.GetByIdAsync(id, ct);
-        if (photo == null)
-            return NotFound(new { error = "Photo not found." });
+        var command = new DeleteProgressPhotoCommand(
+            id,
+            currentUserId,
+            User.IsAdminOrSuper());
 
-        if (photo.UserId != currentUserId && !User.IsAdminOrSuper())
+        var result = await _dispatcher.SendAsync(command, ct);
+        if (!result.Succeeded)
         {
-            return Forbid();
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
-
-        // Try delete physical file
-        try
-        {
-            var relative = photo.PhotoUri.TrimStart('/');
-            var fullPath = Path.Combine(_env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"), relative);
-            if (System.IO.File.Exists(fullPath))
-                System.IO.File.Delete(fullPath);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not delete physical photo file {Uri}", photo.PhotoUri);
-        }
-
-        await _photoRepo.DeleteAsync(photo.Id, ct);
-        await _uow.SaveChangesAsync(ct);
 
         return Ok(new { message = "Progress photo deleted successfully." });
     }

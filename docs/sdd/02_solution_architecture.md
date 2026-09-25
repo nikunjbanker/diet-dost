@@ -230,3 +230,43 @@ sequenceDiagram
     MW->>OTel: Export Complete Trace Hierarchy
 ```
 
+---
+
+### 2.6 Native .NET 11 Clean Architecture & Zero-Dependency CQRS Specification
+
+To enforce strict separation of concerns, eliminate fat presentation controllers, and completely eliminate commercial licensing risks associated with MediatR v13+ (Lucky Penny Software LLC RPL-1.5 / commercial dual licensing), the application utilizes a **Native .NET 11 Zero-Dependency CQRS & Clean Architecture Engine**.
+
+#### 2.6.1 Layer Inversion & Port/Adapter Topology
+
+```mermaid
+graph TD
+    subgraph PRESENTATION ["1. Presentation Layer (Nutrition.WebGateway)"]
+        direction TB
+        TC["Thin Controllers<br/>(AuthController, MealsController, AdminController,<br/>ProfileController, AnalyticsController, ProgressPhotosController)"]
+        TC -->|"1. Dispatches Command/Query"| DISP["IDispatcher (NativeDispatcher)"]
+        CUS["CurrentUserService (Adapter)"] -.->|"implements"| ICUS["ICurrentUserService (Port)"]
+    end
+
+    subgraph APPLICATION ["2. Application Layer (Nutrition.Application)"]
+        direction TB
+        DISP -->|"2. Resolves Scoped Handler"| HANDLERS["Feature Slice Handlers<br/>(ICommandHandler&lt;TCommand, TResult&gt;,<br/>IQueryHandler&lt;TQuery, TResult&gt;)"]
+        HANDLERS -->|"3. Domain Invariants & Rules"| DOMAIN["Domain Entities & Aggregates<br/>(UserProfile, MealLog, ProgressPhoto, etc.)"]
+        HANDLERS -->|"4. Calls Port Abstraction"| REPO_PORT["IRepository&lt;T&gt; & IUnitOfWork (Ports)"]
+        HANDLERS -->|"5. Calls Port Abstraction"| PHOTO_PORT["IPhotoStorageService (Port)"]
+    end
+
+    subgraph INFRASTRUCTURE ["3. Infrastructure Layer (Nutrition.Infrastructure)"]
+        direction TB
+        EF_REPO["EfRepository&lt;T&gt; & EfUnitOfWork"] -.->|"implements"| REPO_PORT
+        LOCAL_PHOTO["LocalPhotoStorageService"] -.->|"implements"| PHOTO_PORT
+        SQLITE_CTX["NutritionDbContext (SQLite/PostgreSQL)"]
+        EF_REPO --> SQLITE_CTX
+    end
+```
+
+#### 2.6.2 Key Architectural Tenets
+1. **Zero External CQRS Package**: No MediatR or Third-Party Dispatcher dependencies. Uses pure `Microsoft.Extensions.DependencyInjection` with reflection-cached handler invocation.
+2. **Thin Controllers**: Controllers contain 0 business logic, 0 direct EF Core queries, 0 direct file system manipulation. They simply extract user claims, bind request objects, dispatch via `_dispatcher.SendAsync(...)` or `_dispatcher.QueryAsync(...)`, and map `Result<T>` envelopes into HTTP responses.
+3. **Decoupled Ports & Adapters**: File storage is abstracted behind `IPhotoStorageService` (allowing transparent swaps between local disk, Azure Blob, AWS S3, or Google Cloud Storage). Identity is abstracted behind `ICurrentUserService`.
+4. **Universal Result Envelope**: `Result<T>` and `Result` encapsulate operation outcome, typed data payloads, error messages, and HTTP status codes, decoupling application use cases from ASP.NET Core presentation contracts.
+

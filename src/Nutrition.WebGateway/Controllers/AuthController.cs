@@ -1,17 +1,20 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Nutrition.Application.Common;
-using Nutrition.Application.Services;
+using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Features.Auth.Commands.DeleteAccount;
+using Nutrition.Application.Features.Auth.Commands.ForgotPassword;
+using Nutrition.Application.Features.Auth.Commands.Login;
+using Nutrition.Application.Features.Auth.Commands.RegisterUser;
+using Nutrition.Application.Features.Auth.Commands.ResendOtp;
+using Nutrition.Application.Features.Auth.Commands.ResetPassword;
+using Nutrition.Application.Features.Auth.Commands.VerifyOtp;
+using Nutrition.Application.Features.Auth.Queries.GetCurrentUser;
 using Nutrition.Domain.Model.Identity;
-using Nutrition.Domain.Model.Profile;
-using Nutrition.Infrastructure.Persistence;
+using Nutrition.WebGateway.Extensions;
 using Polly;
 using Polly.RateLimiting;
-using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
 
@@ -36,60 +39,35 @@ public record LoginRequest(
     string EmailOrMobile,
     string Password);
 
-/// <summary>
-/// Initiates a password-reset OTP flow for an existing, active, email-verified user.
-/// </summary>
 public record ForgotPasswordRequest(string Email);
 
-/// <summary>
-/// Completes a password reset after OTP validation. Requires the new password and
-/// its confirmation to match, and both must satisfy the Diet Dost password policy.
-/// </summary>
 public record ResetPasswordRequest(
     string Email,
     string OtpCode,
     string NewPassword,
     string ConfirmNewPassword);
 
-public record CurrentUserResponse(
-    string Id,
-    string Email,
-    string MobileNumber,
-    string Name,
-    UserRole Role,
-    UserTier Tier,
-    bool IsEmailVerified,
-    bool IsMobileVerified,
-    TierFeatureConfiguration? Entitlements);
-
+/// <summary>
+/// Thin Presentation Controller for Authentication & Identity.
+/// Strictly handles HTTP semantics, rate limiting, and cookie headers;
+/// dispatches all business use-cases to Application CQRS handlers.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
-    private readonly DietTrackerDbContext _db;
-    private readonly IPasswordHasher _passwordHasher;
-    private readonly IOtpService _otpService;
-    private readonly IJwtTokenService _jwtTokenService;
-    private readonly IConfiguration _config;
+    private readonly IDispatcher _dispatcher;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<AuthController> _logger;
     private readonly ResiliencePipeline _rateLimiter;
 
     public AuthController(
-        DietTrackerDbContext db,
-        IPasswordHasher passwordHasher,
-        IOtpService otpService,
-        IJwtTokenService jwtTokenService,
-        IConfiguration config,
+        IDispatcher dispatcher,
         IWebHostEnvironment env,
         ILogger<AuthController> logger,
         ResiliencePipeline rateLimiter)
     {
-        _db = db;
-        _passwordHasher = passwordHasher;
-        _otpService = otpService;
-        _jwtTokenService = jwtTokenService;
-        _config = config;
+        _dispatcher = dispatcher;
         _env = env;
         _logger = logger;
         _rateLimiter = rateLimiter;
@@ -117,116 +95,36 @@ public class AuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.Name) ||
-                string.IsNullOrWhiteSpace(request.Email) ||
-                string.IsNullOrWhiteSpace(request.MobileNumber) ||
-                string.IsNullOrWhiteSpace(request.Password))
-            {
-                return BadRequest(new { error = "MissingFields", message = "Name, email, mobile phone number, and password are all required." });
-            }
-
-            if (!request.AcceptTerms || !request.AcceptHealthConsent)
-            {
-                return BadRequest(new
-                {
-                    error = "LegalConsentRequired",
-                    message = "DPDPA 2023 Compliance Violation: Both the Terms & AI Model Training Agreement and the Sensitive Health Data Processing Consent must be affirmatively accepted."
-                });
-            }
-
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
-            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(request.MobileNumber);
-
-            var existingUser = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
-            if (existingUser != null)
-            {
-                return Conflict(new { error = "EmailAlreadyRegistered", message = "An account with this email address already exists. Please log in or reset your password." });
-            }
-
-            var termsVersion = _config["Auth:TermsVersion"] ?? "v1.0-202609";
-            var healthConsentVersion = _config["Auth:HealthConsentVersion"] ?? "v1.0-202609";
-            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
-            var userAgent = Request.Headers.UserAgent.ToString();
-
-            // ── Password policy enforcement (must happen BEFORE hashing) ───
-            if (!PasswordPolicy.IsValid(request.Password, out var pwdError))
-            {
-                return BadRequest(new { error = "WeakPassword", message = pwdError });
-            }
-
-            var user = new ApplicationUser
-            {
-                Email = request.Email.Trim(),
-                NormalizedEmail = normalizedEmail,
-                MobileNumber = request.MobileNumber.Trim(),
-                NormalizedMobileNumber = normalizedPhone,
-                PasswordHash = _passwordHasher.HashPassword(request.Password),
-                SecurityStamp = Guid.NewGuid().ToString("N"),
-                Role = UserRole.User,
-                Tier = UserTier.Free,
-                IsEmailVerified = false,
-                IsMobileVerified = false,
-                IsActive = true,
-                TermsAcceptedAtUtc = DateTime.UtcNow,
-                TermsVersionAccepted = termsVersion,
-                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
-                HealthConsentVersionAccepted = healthConsentVersion,
-                ConsentIpAddress = ipAddress,
-                ConsentUserAgent = userAgent,
-                CreatedAtUtc = DateTime.UtcNow
-            };
-
-            try
-            {
-                user.ValidateRegistration();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { error = "ValidationFailed", message = ex.Message });
-            }
-
-            await _db.Users.AddAsync(user, ct);
-
-            // Pre-create clinical profile with standard default baseline
-            var profile = new UserProfile
-            {
-                Id = user.Id,
-                Name = request.Name.Trim(),
-                Sex = BiologicalSex.Male,
-                Age = 30,
-                HeightCm = 170,
-                CurrentWeightKg = 70,
-                TargetWeightKg = 65,
-                DesiredPaceKgPerWeek = 0.5,
-                ActivityLevel = ActivityLevel.Sedentary,
-                DietaryPreference = DietaryPreference.LactoVeg,
-                RegionalCuisine = "North Indian",
-                Timezone = "Asia/Kolkata"
-            };
-            await _db.Profiles.AddAsync(profile, ct);
-
-            // Generate 6-digit OTP code for Email verification
-            var rawCode = _otpService.GenerateCode();
-            var otp = _otpService.CreateOtp(user.Id, user.Email, OtpChannel.Email, rawCode);
-            await _db.VerificationOtps.AddAsync(otp, ct);
-
-            await _db.SaveChangesAsync(ct);
-
-            _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. OTP dispatched to: {Target}", user.Id, user.Email);
-
-            // In development mode, provide OTP in dev header & response for test harness automation
             var isDev = _env.IsDevelopment();
-            if (isDev)
+            var command = new RegisterUserCommand(
+                request.Name,
+                request.Email,
+                request.MobileNumber,
+                request.Password,
+                request.AcceptTerms,
+                request.AcceptHealthConsent,
+                HttpContext.Connection.RemoteIpAddress?.ToString(),
+                Request.Headers.UserAgent.ToString(),
+                isDev
+            );
+
+            var result = await _dispatcher.SendAsync(command, ct);
+            if (!result.Succeeded)
             {
-                Response.Headers.Append("X-Dev-Otp-Code", rawCode);
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
 
-            return StatusCode(StatusCodes.Status201Created, new
+            if (isDev && !string.IsNullOrWhiteSpace(result.Data!.DevOtpCode))
             {
-                userId = user.Id,
-                email = user.Email,
-                message = "Registration successful. Please enter the 6-digit verification code sent to your email to activate your account.",
-                devOtpCode = isDev ? rawCode : null
+                Response.Headers.Append("X-Dev-Otp-Code", result.Data.DevOtpCode);
+            }
+
+            return StatusCode(result.StatusCode, new
+            {
+                userId = result.Data!.UserId,
+                email = result.Data.Email,
+                message = result.Data.Message,
+                devOtpCode = result.Data.DevOtpCode
             });
         });
     }
@@ -236,72 +134,34 @@ public class AuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.Target) || string.IsNullOrWhiteSpace(request.Code))
-                return BadRequest(new { error = "MissingFields", message = "Target and verification code are required." });
+            var command = new VerifyOtpCommand(request.Target, request.Channel, request.Code);
+            var result = await _dispatcher.SendAsync(command, ct);
 
-            var targetTrimmed = request.Target.Trim();
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(targetTrimmed);
-            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
-
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-            if (user == null)
-                return NotFound(new { error = "UserNotFound", message = "No user found associated with this email or mobile." });
-
-            var now = DateTime.UtcNow;
-            var activeOtp = await _db.VerificationOtps
-                .Where(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAtUtc > now)
-                .OrderByDescending(o => o.CreatedAtUtc)
-                .FirstOrDefaultAsync(ct);
-
-            if (activeOtp == null)
+            if (!result.Succeeded)
             {
-                return BadRequest(new { error = "NoActiveOtp", message = "No active verification code found or code has expired. Please request a new code." });
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
 
-            var isValid = _otpService.ValidateCode(activeOtp, request.Code, out var failureReason);
-            if (!isValid)
+            // Issue HttpOnly browser session cookie if principal provided
+            if (result.Data!.Principal != null)
             {
-                await _db.SaveChangesAsync(ct);
-                return BadRequest(new { error = "InvalidOtp", message = failureReason, attemptsRemaining = VerificationOtp.MaxAttemptsAllowed - activeOtp.AttemptCount });
+                await HttpContext.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    result.Data.Principal,
+                    new AuthenticationProperties
+                    {
+                        IsPersistent = true,
+                        ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+                    });
             }
-
-            if (request.Channel == OtpChannel.Email || activeOtp.Channel == OtpChannel.Email)
-            {
-                user.IsEmailVerified = true;
-            }
-            else
-            {
-                user.IsMobileVerified = true;
-            }
-
-            user.LastLoginAtUtc = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
-
-            var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-            var displayName = profile?.Name ?? user.Email;
-            await SignInUserAsync(user, displayName);
-
-            var token = _jwtTokenService.GenerateToken(user, displayName);
-            var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
-
-            _logger.LogInformation("[AUTH] Account verified and logged in: {UserId}", user.Id);
 
             return Ok(new
             {
-                message = "Account successfully verified and activated.",
-                token = token,
+                message = result.Data.Message,
+                token = result.Data.Token,
                 tokenType = "Bearer",
                 expiresInSeconds = 86400,
-                user = new CurrentUserResponse(
-                    user.Id,
-                    user.Email,
-                    user.MobileNumber,
-                    displayName,
-                    user.Role,
-                    user.Tier,
-                    user.IsEmailVerified,
-                    user.IsMobileVerified,
-                    tierConfig)
+                user = result.Data.User
             });
         });
     }
@@ -311,57 +171,24 @@ public class AuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.Target))
-                return BadRequest(new { error = "MissingFields", message = "Target email or mobile number is required." });
-
-            var targetTrimmed = request.Target.Trim();
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(targetTrimmed);
-            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
-
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-            if (user == null)
-                return NotFound(new { error = "UserNotFound", message = "No user found associated with this email or mobile." });
-
-            // Cooldown check: prevent generating more than 1 code per 60 seconds
-            var recentOtp = await _db.VerificationOtps
-                .Where(o => o.UserId == user.Id && o.CreatedAtUtc > DateTime.UtcNow.AddSeconds(-60))
-                .FirstOrDefaultAsync(ct);
-
-            if (recentOtp != null)
-            {
-                return StatusCode(StatusCodes.Status429TooManyRequests, new
-                {
-                    error = "CooldownActive",
-                    message = "Please wait at least 60 seconds before requesting another verification code."
-                });
-            }
-
-            // Expire older active OTPs
-            var existingOtps = await _db.VerificationOtps
-                .Where(o => o.UserId == user.Id && !o.IsUsed)
-                .ToListAsync(ct);
-            foreach (var old in existingOtps)
-            {
-                old.IsUsed = true;
-            }
-
-            var rawCode = _otpService.GenerateCode();
-            var newOtp = _otpService.CreateOtp(user.Id, user.Email, request.Channel, rawCode);
-            await _db.VerificationOtps.AddAsync(newOtp, ct);
-            await _db.SaveChangesAsync(ct);
-
-            _logger.LogInformation("[AUTH] Resent OTP for user: {UserId}. Target: {Target}", user.Id, user.Email);
-
             var isDev = _env.IsDevelopment();
-            if (isDev)
+            var command = new ResendOtpCommand(request.Target, request.Channel, isDev);
+            var result = await _dispatcher.SendAsync(command, ct);
+
+            if (!result.Succeeded)
             {
-                Response.Headers.Append("X-Dev-Otp-Code", rawCode);
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+            }
+
+            if (isDev && !string.IsNullOrWhiteSpace(result.Data!.DevOtpCode))
+            {
+                Response.Headers.Append("X-Dev-Otp-Code", result.Data.DevOtpCode);
             }
 
             return Ok(new
             {
-                message = "A fresh 6-digit verification code has been dispatched.",
-                devOtpCode = isDev ? rawCode : null
+                message = result.Data!.Message,
+                devOtpCode = result.Data.DevOtpCode
             });
         });
     }
@@ -371,72 +198,31 @@ public class AuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
+            var command = new LoginCommand(request.EmailOrMobile, request.Password);
+            var result = await _dispatcher.SendAsync(command, ct);
 
-            var identifier = request.EmailOrMobile.Trim();
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
-            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
-
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-            if (user == null)
+            if (!result.Succeeded)
             {
-                return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
 
-            var isPasswordValid = _passwordHasher.VerifyPassword(request.Password, user.PasswordHash);
-            if (!isPasswordValid)
-            {
-                return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
-            }
-
-            if (!user.CanLogin(out var rejectionReason))
-            {
-                if (!user.IsEmailVerified)
+            // Sign-in HttpOnly cookie for browser clients
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                result.Data!.Principal,
+                new AuthenticationProperties
                 {
-                    return StatusCode(StatusCodes.Status403Forbidden, new
-                    {
-                        error = "UnverifiedAccount",
-                        message = rejectionReason,
-                        email = user.Email
-                    });
-                }
-
-                return StatusCode(StatusCodes.Status403Forbidden, new
-                {
-                    error = "AccountDeactivated",
-                    message = rejectionReason
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
                 });
-            }
-
-            user.LastLoginAtUtc = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
-
-            var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-            var displayName = profile?.Name ?? user.Email;
-            await SignInUserAsync(user, displayName);
-
-            var token = _jwtTokenService.GenerateToken(user, displayName);
-            var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
-
-            _logger.LogInformation("[AUTH] User logged in successfully: {UserId}, Tier: {Tier}", user.Id, user.Tier);
 
             return Ok(new
             {
                 message = "Login successful.",
-                token = token,
+                token = result.Data.Token,
                 tokenType = "Bearer",
                 expiresInSeconds = 86400,
-                user = new CurrentUserResponse(
-                    user.Id,
-                    user.Email,
-                    user.MobileNumber,
-                    displayName,
-                    user.Role,
-                    user.Tier,
-                    user.IsEmailVerified,
-                    user.IsMobileVerified,
-                    tierConfig)
+                user = result.Data.User
             });
         });
     }
@@ -450,47 +236,20 @@ public class AuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.EmailOrMobile) || string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest(new { error = "MissingFields", message = "Email/mobile and password are required." });
+            var command = new LoginCommand(request.EmailOrMobile, request.Password);
+            var result = await _dispatcher.SendAsync(command, ct);
 
-            var identifier = request.EmailOrMobile.Trim();
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(identifier);
-            var normalizedPhone = ApplicationUser.NormalizePhoneNumber(identifier);
-
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-            if (user == null || !_passwordHasher.VerifyPassword(request.Password, user.PasswordHash))
+            if (!result.Succeeded)
             {
-                return Unauthorized(new { error = "InvalidCredentials", message = "Invalid email/mobile or password." });
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
-
-            if (!user.CanLogin(out var rejectionReason))
-            {
-                return StatusCode(StatusCodes.Status403Forbidden, new { error = "AccountIneligible", message = rejectionReason });
-            }
-
-            user.LastLoginAtUtc = DateTime.UtcNow;
-            await _db.SaveChangesAsync(ct);
-
-            var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-            var displayName = profile?.Name ?? user.Email;
-            var token = _jwtTokenService.GenerateToken(user, displayName);
-            var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
             return Ok(new
             {
-                token = token,
+                token = result.Data!.Token,
                 tokenType = "Bearer",
                 expiresInSeconds = 86400,
-                user = new CurrentUserResponse(
-                    user.Id,
-                    user.Email,
-                    user.MobileNumber,
-                    displayName,
-                    user.Role,
-                    user.Tier,
-                    user.IsEmailVerified,
-                    user.IsMobileVerified,
-                    tierConfig)
+                user = result.Data.User
             });
         });
     }
@@ -500,250 +259,85 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Ok(new { message = "Logged out successfully." });
-    }
-
-    [HttpGet("me")]
-    public async Task<IActionResult> GetCurrentUser(CancellationToken ct)
-    {
-        if (User.Identity?.IsAuthenticated != true)
-        {
-            return Unauthorized(new { isAuthenticated = false });
-        }
-
-        var userId = User.GetUserId();
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Unauthorized(new { isAuthenticated = false });
-        }
-
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user == null || !user.IsActive)
-        {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return Unauthorized(new { isAuthenticated = false });
-        }
-
-        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id, ct);
-        var tierConfig = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
-
-        return Ok(new
-        {
-            isAuthenticated = true,
-            user = new CurrentUserResponse(
-                user.Id,
-                user.Email,
-                user.MobileNumber,
-                profile?.Name ?? user.Email,
-                user.Role,
-                user.Tier,
-                user.IsEmailVerified,
-                user.IsMobileVerified,
-                tierConfig)
-        });
+        return Ok(new { message = "Logged out successfully. Secure session terminated." });
     }
 
     [Authorize]
-    [HttpPost("delete-account")]
+    [HttpDelete("account")]
     public async Task<IActionResult> DeleteAccount(CancellationToken ct)
     {
         var userId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(userId))
             return Unauthorized();
 
-        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
-        if (user == null)
-            return NotFound();
-
-        if (user.Role == UserRole.SuperAdmin)
+        var result = await _dispatcher.SendAsync(new DeleteAccountCommand(userId), ct);
+        if (!result.Succeeded)
         {
-            return BadRequest(new { error = "CannotDeleteSuperAdmin", message = "The primary SuperAdmin account cannot be deleted." });
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        // DPDPA 2023 Right to Erasure: Cascade purge of all user records
-        var meals = await _db.Meals.Where(m => m.UserId == userId).ToListAsync(ct);
-        _db.Meals.RemoveRange(meals);
-
-        var ledgers = await _db.Ledgers.Where(l => l.UserId == userId).ToListAsync(ct);
-        _db.Ledgers.RemoveRange(ledgers);
-
-        var photos = await _db.ProgressPhotos.Where(p => p.UserId == userId).ToListAsync(ct);
-        _db.ProgressPhotos.RemoveRange(photos);
-
-        var feedbacks = await _db.AiFeedbacks.Where(f => f.UserId == userId).ToListAsync(ct);
-        _db.AiFeedbacks.RemoveRange(feedbacks);
-
-        var corrections = await _db.Corrections.Where(c => c.UserId == userId).ToListAsync(ct);
-        _db.Corrections.RemoveRange(corrections);
-
-        var otps = await _db.VerificationOtps.Where(o => o.UserId == userId).ToListAsync(ct);
-        _db.VerificationOtps.RemoveRange(otps);
-
-        var aiLogs = await _db.AiUsageLogs.Where(l => l.UserId == userId).ToListAsync(ct);
-        _db.AiUsageLogs.RemoveRange(aiLogs);
-
-        var profile = await _db.Profiles.FirstOrDefaultAsync(p => p.Id == userId, ct);
-        if (profile != null)
-            _db.Profiles.Remove(profile);
-
-        _db.Users.Remove(user);
-        await _db.SaveChangesAsync(ct);
-
         await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-
-        _logger.LogWarning("[AUTH] User account and all health data purged under DPDPA Right to Erasure: {UserId}", userId);
-
-        return Ok(new { message = "Your account and all associated health records have been permanently deleted per DPDPA guidelines." });
+        return Ok(new { message = result.Data });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Password-Reset Flow (OTP-gated, active users only)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Step 1 of password reset: generate and dispatch a 6-digit OTP to the
-    /// provided email, but ONLY if the account is found, active, and email-verified.
-    /// Intentionally returns a generic 200 even when the email is not found, to
-    /// prevent user-enumeration attacks (OWASP A07:2021).
-    /// </summary>
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.Email))
-                return BadRequest(new { error = "MissingFields", message = "Email address is required." });
+            var isDev = _env.IsDevelopment();
+            var command = new ForgotPasswordCommand(request.Email, isDev);
+            var result = await _dispatcher.SendAsync(command, ct);
 
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
-
-            // Anti-enumeration: always acknowledge generically
-            if (user == null || !user.IsActive || !user.IsEmailVerified)
+            if (!result.Succeeded)
             {
-                _logger.LogInformation("[AUTH] ForgotPassword: no eligible user for email {Email}", request.Email);
-                return Ok(new { message = "If a matching active account exists, a reset code has been sent to its email address." });
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
 
-            // Expire any outstanding OTPs for this user
-            var existingOtps = await _db.VerificationOtps
-                .Where(o => o.UserId == user.Id && !o.IsUsed)
-                .ToListAsync(ct);
-            foreach (var old in existingOtps) old.IsUsed = true;
-
-            var rawCode = _otpService.GenerateCode();
-            var otp = _otpService.CreateOtp(user.Id, user.Email, OtpChannel.Email, rawCode);
-            await _db.VerificationOtps.AddAsync(otp, ct);
-            await _db.SaveChangesAsync(ct);
-
-            _logger.LogInformation("[AUTH] ForgotPassword OTP dispatched for user: {UserId}", user.Id);
-
-            var isDev = _env.IsDevelopment();
-            if (isDev) Response.Headers.Append("X-Dev-Otp-Code", rawCode);
+            if (isDev && !string.IsNullOrWhiteSpace(result.Data!.DevOtpCode))
+            {
+                Response.Headers.Append("X-Dev-Otp-Code", result.Data.DevOtpCode);
+            }
 
             return Ok(new
             {
-                message = "If a matching active account exists, a reset code has been sent to its email address.",
-                devOtpCode = isDev ? rawCode : null
+                message = result.Data!.Message,
+                devOtpCode = result.Data.DevOtpCode
             });
         });
     }
 
-    /// <summary>
-    /// Step 2 of password reset: validates the OTP, enforces the password policy,
-    /// and persists the new hash. SecurityStamp is rotated to invalidate all
-    /// existing sessions/cookies (OWASP A07:2021).
-    /// </summary>
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            if (string.IsNullOrWhiteSpace(request.Email) ||
-                string.IsNullOrWhiteSpace(request.OtpCode) ||
-                string.IsNullOrWhiteSpace(request.NewPassword) ||
-                string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
+            var command = new ResetPasswordCommand(request.Email, request.OtpCode, request.NewPassword, request.ConfirmNewPassword);
+            var result = await _dispatcher.SendAsync(command, ct);
+
+            if (!result.Succeeded)
             {
-                return BadRequest(new { error = "MissingFields", message = "Email, OTP code, new password, and confirmation are all required." });
+                return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
 
-            // ── Passwords must match ──────────────────────────────────────────
-            if (request.NewPassword != request.ConfirmNewPassword)
-            {
-                return BadRequest(new { error = "PasswordMismatch", message = "New password and confirmation password do not match." });
-            }
-
-            // ── Password policy check (BEFORE hashing) ────────────────────────
-            if (!PasswordPolicy.IsValid(request.NewPassword, out var pwdError))
-            {
-                return BadRequest(new { error = "WeakPassword", message = pwdError });
-            }
-
-            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
-            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
-
-            // ── User must exist AND be active ─────────────────────────────────
-            if (user == null || !user.IsActive)
-            {
-                return NotFound(new { error = "UserNotFound", message = "No active user account was found for this email address." });
-            }
-
-            // ── Resolve latest active OTP ─────────────────────────────────────
-            var now = DateTime.UtcNow;
-            var activeOtp = await _db.VerificationOtps
-                .Where(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAtUtc > now)
-                .OrderByDescending(o => o.CreatedAtUtc)
-                .FirstOrDefaultAsync(ct);
-
-            if (activeOtp == null)
-            {
-                return BadRequest(new { error = "NoActiveOtp", message = "No active reset code found or it has expired. Please request a new code." });
-            }
-
-            var isValid = _otpService.ValidateCode(activeOtp, request.OtpCode, out var failureReason);
-            if (!isValid)
-            {
-                await _db.SaveChangesAsync(ct); // persist incremented AttemptCount
-                return BadRequest(new
-                {
-                    error = "InvalidOtp",
-                    message = failureReason,
-                    attemptsRemaining = VerificationOtp.MaxAttemptsAllowed - activeOtp.AttemptCount
-                });
-            }
-
-            // ── All checks passed — update password and rotate SecurityStamp ──
-            user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
-            user.SecurityStamp = Guid.NewGuid().ToString("N"); // invalidates existing sessions
-            await _db.SaveChangesAsync(ct);
-
-            _logger.LogInformation("[AUTH] Password reset completed for user: {UserId}", user.Id);
-
-            return Ok(new { message = "Password has been successfully reset. Please sign in with your new password." });
+            return Ok(new { message = result.Data });
         });
     }
 
-    private async Task SignInUserAsync(ApplicationUser user, string displayName)
+    [Authorize]
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser(CancellationToken ct)
     {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, displayName),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString()),
-            new("tier", user.Tier.ToString()),
-            new("security_stamp", user.SecurityStamp)
-        };
+        var userId = User.GetUserId();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
-        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var authProperties = new AuthenticationProperties
+        var result = await _dispatcher.QueryAsync(new GetCurrentUserQuery(userId), ct);
+        if (!result.Succeeded)
         {
-            IsPersistent = true,
-            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-        };
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
 
-        await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
-            new ClaimsPrincipal(claimsIdentity),
-            authProperties);
+        return Ok(result.Data);
     }
 }

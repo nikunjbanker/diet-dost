@@ -63,6 +63,56 @@ public class EfRepository<T> : IRepository<T> where T : class
         }
     }
 
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default)
+    {
+        try
+        {
+            return await _dbSet.FirstOrDefaultAsync(predicate, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
+                nameof(FirstOrDefaultAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default)
+    {
+        try
+        {
+            return await _dbSet.AnyAsync(predicate, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
+                nameof(AnyAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<int> CountAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default)
+    {
+        try
+        {
+            return await _dbSet.CountAsync(predicate, ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
+                nameof(CountAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
+    public IQueryable<T> Query()
+    {
+        return _dbSet.AsQueryable();
+    }
+
     public async Task AddAsync(T entity, CancellationToken ct = default)
     {
         try

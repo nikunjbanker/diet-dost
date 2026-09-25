@@ -1,21 +1,27 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Nutrition.Application.Services;
+using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Features.Profile.Commands.SaveProfile;
+using Nutrition.Application.Features.Profile.Queries.GetProfile;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
 
+/// <summary>
+/// Thin Presentation Controller for Clinical Profiles.
+/// Dispatches profile retrieval and onboarding persistence to Application CQRS handlers.
+/// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class ProfileController : ControllerBase
 {
-    private readonly ClinicalDietitianService _dietitianService;
+    private readonly IDispatcher _dispatcher;
 
-    public ProfileController(ClinicalDietitianService dietitianService)
+    public ProfileController(IDispatcher dispatcher)
     {
-        _dietitianService = dietitianService;
+        _dispatcher = dispatcher;
     }
 
     [HttpGet("{userId?}")]
@@ -25,24 +31,19 @@ public class ProfileController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
-        // Enforce tenant boundary: non-admins cannot inspect other users' health profiles (OWASP A01)
-        var targetUserId = string.IsNullOrWhiteSpace(userId) ? currentUserId : userId;
-        if (targetUserId != currentUserId && !User.IsAdminOrSuper())
+        var query = new GetProfileQuery(currentUserId, userId, User.IsAdminOrSuper());
+        var result = await _dispatcher.QueryAsync(query, ct);
+
+        if (!result.Succeeded)
         {
-            return Forbid();
+            return StatusCode(result.StatusCode, new { message = result.Error, error = result.ErrorCode });
         }
-
-        var profile = await _dietitianService.GetProfileAsync(targetUserId, ct);
-        if (profile == null) return NotFound(new { message = "User profile not found. Please complete clinical onboarding." });
-
-        var budget = _dietitianService.CalculateTargetBudget(profile);
-        var macros = _dietitianService.CalculateMacros(profile);
 
         return Ok(new
         {
-            profile,
-            budget,
-            macros
+            profile = result.Data!.Profile,
+            budget = result.Data.Budget,
+            macros = result.Data.Macros
         });
     }
 
@@ -53,26 +54,24 @@ public class ProfileController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
-        // Bind profile ID strictly to authenticated identity
-        profile.Id = currentUserId;
+        var command = new SaveProfileCommand(profile, currentUserId);
+        var result = await _dispatcher.SendAsync(command, ct);
 
-        try
+        if (!result.Succeeded)
         {
-            var saved = await _dietitianService.SaveProfileAsync(profile, ct);
-            var budget = _dietitianService.CalculateTargetBudget(saved);
-            var macros = _dietitianService.CalculateMacros(saved);
-
-            return Ok(new
+            return StatusCode(result.StatusCode, new
             {
-                profile = saved,
-                budget,
-                macros,
-                message = "Clinical profile saved successfully. Caloric budget and macronutrients calculated per ICMR-NIN & WHO standards."
+                error = result.Error,
+                zeroAssumptionViolation = result.ErrorCode == "ZeroAssumptionViolation"
             });
         }
-        catch (InvalidOperationException ex)
+
+        return Ok(new
         {
-            return BadRequest(new { error = ex.Message, zeroAssumptionViolation = true });
-        }
+            profile = result.Data!.Profile,
+            budget = result.Data.Budget,
+            macros = result.Data.Macros,
+            message = result.Data.Message
+        });
     }
 }
