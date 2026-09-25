@@ -1770,6 +1770,38 @@ body {
   transform: translateX(100%);
 }
 
+.toast-item.toast-success {
+  border-color: rgba(39, 195, 128, 0.45);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(39, 195, 128, 0.2);
+}
+.toast-item.toast-success .toast-icon {
+  color: var(--status-emerald, #27c380);
+}
+
+.toast-item.toast-error {
+  border-color: rgba(244, 63, 94, 0.45);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(244, 63, 94, 0.2);
+}
+.toast-item.toast-error .toast-icon {
+  color: #f43f5e;
+}
+
+.toast-item.toast-warning {
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(245, 158, 11, 0.2);
+}
+.toast-item.toast-warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-item.toast-info {
+  border-color: rgba(56, 189, 248, 0.45);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.7), 0 0 25px rgba(56, 189, 248, 0.2);
+}
+.toast-item.toast-info .toast-icon {
+  color: #38bdf8;
+}
+
 .toast-icon {
   font-size: 1.2rem;
   line-height: 1;

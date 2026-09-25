@@ -175,7 +175,11 @@ export class AuthGateController {
     try {
       const res = await this.authService.login(identifier, password);
       this.hide();
-      this.toastService?.success(`Welcome back, ${res.user.name || 'Friend'}! 🥑`);
+      try {
+        this.toastService?.success(`Welcome back, ${res.user?.name || 'Friend'}! 🥑`);
+      } catch (tErr) {
+        console.warn('[AuthGate] Failed to display welcome toast:', tErr);
+      }
       this.eventBus?.emit('auth:success', res.user);
     } catch (err) {
       if (err.status === 403 && err.data?.requireEmailVerification) {
@@ -256,7 +260,11 @@ export class AuthGateController {
     try {
       const res = await this.authService.verifyOtp(this.pendingEmail, 0, code); // 0 = Email
       this.hide();
-      this.toastService?.success('Account verified and activated successfully! 🎉');
+      try {
+        this.toastService?.success('Account verified and activated successfully! 🎉');
+      } catch (tErr) {
+        console.warn('[AuthGate] Failed to display verification toast:', tErr);
+      }
       this.eventBus?.emit('auth:success', res.user);
     } catch (err) {
       this.showError(this.verifyError, err.data?.error || err.message || 'Invalid or expired OTP code.');

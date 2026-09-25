@@ -7,27 +7,27 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient } from './services/api-client.js?v=1.3.7';
-import { AuthService } from './services/auth-service.js?v=1.3.7';
-import { AdminService } from './services/admin-service.js?v=1.3.7';
-import { MealsService } from './services/meals-service.js?v=1.3.7';
-import { ProfileService } from './services/profile-service.js?v=1.3.7';
-import { AnalyticsService } from './services/analytics-service.js?v=1.3.7';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.3.7';
-import { MedicationService } from './services/medication-service.js?v=1.3.7';
+import { ApiClient, apiClient } from './services/api-client.js?v=1.3.8';
+import { AuthService } from './services/auth-service.js?v=1.3.8';
+import { AdminService } from './services/admin-service.js?v=1.3.8';
+import { MealsService } from './services/meals-service.js?v=1.3.8';
+import { ProfileService } from './services/profile-service.js?v=1.3.8';
+import { AnalyticsService } from './services/analytics-service.js?v=1.3.8';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.3.8';
+import { MedicationService } from './services/medication-service.js?v=1.3.8';
 
-import { toastService } from './ui/toast.js?v=1.3.7';
-import { confettiService } from './ui/confetti.js?v=1.3.7';
-import { DailyHudController } from './ui/daily-hud.js?v=1.3.7';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.3.7';
-import { ReviewModalController } from './ui/review-modal.js?v=1.3.7';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.7';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.3.7';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.7';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.3.7';
-import { AuthGateController } from './ui/auth-gate.js?v=1.3.7';
-import { AdminModalController } from './ui/admin-modal.js?v=1.3.7';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.3.7';
+import { toastService } from './ui/toast.js?v=1.3.8';
+import { confettiService } from './ui/confetti.js?v=1.3.8';
+import { DailyHudController } from './ui/daily-hud.js?v=1.3.8';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.3.8';
+import { ReviewModalController } from './ui/review-modal.js?v=1.3.8';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.8';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.3.8';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.8';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.3.8';
+import { AuthGateController } from './ui/auth-gate.js?v=1.3.8';
+import { AdminModalController } from './ui/admin-modal.js?v=1.3.8';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.3.8';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -296,11 +296,15 @@ async function initApp() {
 
   eventBus.on('auth:success', async (user) => {
     updateUserUI(user);
-    await Promise.all([
-      dailyHud.refresh(),
-      analyticsChart.refresh(),
-      progressModal.refresh()
-    ]);
+    try {
+      await Promise.allSettled([
+        dailyHud.refresh(),
+        analyticsChart.refresh(),
+        progressModal.refresh()
+      ]);
+    } catch (err) {
+      console.warn('[Main] Error refreshing components after login:', err);
+    }
   });
 
   // ============================================================================
