@@ -1962,3 +1962,24 @@
   - `dotnet test` (EvalHarness): **59/59 passed, 0 failed** — all `PollyRateLimitingTests` unaffected.
 - **Git Commit**: `9b90ed6` — `fix(ratelimit): replace global Polly singleton with per-IP PartitionedRateLimiter`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-019] Fix: PartitionedRateLimiter DI Registration — Resolves App Startup Crash
+- **Date / Timestamp**: 2026-09-25 10:20:00 UTC
+- **Change Type**: `[DEFECT_FIX]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`Program.cs`)
+- **Summary of Change**:
+  Fixed a DI registration bug introduced in LOG-20260925-018 that caused the app to crash immediately on startup when any auth endpoint was called.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: App stopped responding on startup / first login attempt returned a server error.
+  - *Root Cause*: `builder.Services.AddSingleton(authPartitionedRateLimiter)` without an explicit type argument registers under the **concrete internal type** returned by `PartitionedRateLimiter.Create<HttpContext, string>()` (a non-public class). The middleware then called `context.RequestServices.GetRequiredService<PartitionedRateLimiter<HttpContext>>()` — the **abstract base type** — which is a different registration key. ASP.NET Core DI threw `InvalidOperationException: No service for type 'PartitionedRateLimiter\`1[HttpContext]'` on the first auth request.
+  - *Fix 1*: Changed to `builder.Services.AddSingleton<PartitionedRateLimiter<HttpContext>>(instance)` to explicitly bind the service key to the abstract base type.
+  - *Fix 2*: Simplified middleware to capture `authPartitionedRateLimiter` via closure at startup instead of resolving from DI per-request — eliminates the DI lookup entirely and is more efficient.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (`--no-dependencies` on locked running app).
+  - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed**.
+- **Git Commit**: `58813bc` — `fix(ratelimit): fix PartitionedRateLimiter DI registration — resolves startup crash`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
