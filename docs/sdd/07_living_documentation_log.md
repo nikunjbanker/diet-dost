@@ -1943,3 +1943,22 @@
   - `dotnet test`: **95 passed (36 Domain + 59 EvalHarness), 0 failed, 0 warnings**.
 - **Git Commit**: `8218b62` — `fix(client): unwrap /api/auth/me envelope + update appState.userId after login`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-018] Fix: Global Rate Limiter Replaced with Per-IP PartitionedRateLimiter
+- **Date / Timestamp**: 2026-09-25 10:15:00 UTC
+- **Change Type**: `[DEFECT_FIX]` | `[SECURITY]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway` (`Program.cs`)
+- **Summary of Change**:
+  Replaced the global Polly `ResiliencePipeline` singleton rate limiter with a `PartitionedRateLimiter<HttpContext>` keyed by client IP address. Each unique IP now has its own independent 5-attempt / 15-minute sliding window, preventing developer testing from triggering the global limit and blocking all users.
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: `HTTP 429 Too Many Requests` returned on login after a few test attempts, blocking all subsequent login attempts for 15 minutes.
+  - *Root Cause*: `ResiliencePipeline` was registered as a single DI singleton shared across all incoming requests and all client IPs. The 5-permit sliding window was a **global server-wide counter**, not a per-user or per-IP counter. Clicking Login 5+ times during manual testing exhausted the entire server's quota, blocking all users.
+  - *Preventative Action*: Switched to `PartitionedRateLimiter.Create<HttpContext, string>()` keyed by `context.Connection.RemoteIpAddress` (with `X-Forwarded-For` fallback for reverse-proxy deployments). Each client IP now maintains an isolated counter. The original `ResiliencePipeline` singleton is retained in DI for backward compatibility with `PollyRateLimitingTests` which construct their own local instances.
+- **Modified Code Files**:
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED] — Replaced `ResiliencePipeline` singleton middleware with `PartitionedRateLimiter<HttpContext>` keyed by client IP
+- **Harness Verification Result**:
+  - `dotnet test` (EvalHarness): **59/59 passed, 0 failed** — all `PollyRateLimitingTests` unaffected.
+- **Git Commit**: `9b90ed6` — `fix(ratelimit): replace global Polly singleton with per-IP PartitionedRateLimiter`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
