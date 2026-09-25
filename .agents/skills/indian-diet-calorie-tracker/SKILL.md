@@ -33,6 +33,9 @@ This skill guides the design, architecture, documentation, and development of a 
    - **Step 0: Always Create a Dedicated Branch First**: Before making any code, configuration, or documentation modifications, always create and switch to a new descriptive branch (e.g., `git checkout -b feature/<feature-name>`, `git checkout -b fix/<defect-name>`, or `git checkout -b docs/<topic>`).
    - **Perform All Work in the Branch**: Apply targeted changes, run builds, execute test harnesses, and synchronize living documentation strictly within this branch.
    - **PR-Only Merge Enforcement**: Changes **MUST** be merged into `main` exclusively via a Pull Request (PR) after passing all CI validation checks and review gates. Direct commits or direct pushes to `main` are strictly forbidden.
+6. **Mandatory End-to-End User Tier Validation**:
+   - No refactoring, new feature implementation, or defect fix is complete without verifying actual product behavior across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`).
+   - Validate that tier quotas, feature gating (photo comparison, data export paywalls), and role permissions function accurately in the actual product with 0 runtime or console errors.
 
 
 ---
@@ -1124,3 +1127,25 @@ graph TD
     AS -.->|Traces / Metrics| OTel
     OTel -->|Aggregate Telemetry| Dash
 ```
+
+---
+
+## 11. Mandatory End-to-End User Tier Validation & Verification Playbook
+
+> [!CAUTION]
+> **Zero Assumptions Policy**: No refactoring, architecture change, clinical update, or new feature implementation is considered complete or approved for pull request merge without verifying actual product behavior on the running live application across **all 5 seeded demo user accounts**.
+
+### 11.1 Demo Accounts Matrix
+
+| Account | Password | Tier | Role | AI Daily Quota | Feature Gating Behavior |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `free@dietdost.app` | `DietDost@Demo2026!` | `Free` (0) | `User` | 1 / day | Photo comparison & data export gated with 403 / Upgrade Paywall modal. |
+| `basic@dietdost.app` | `DietDost@Demo2026!` | `Basic` (1) | `User` | 7 / day | Photo comparison & data export gated with 403 / Upgrade Paywall modal. |
+| `premium@dietdost.app` | `DietDost@Demo2026!` | `Premium` (2) | `User` | 30 / day | Photo comparison & CSV export unlocked (200 OK). |
+| `admin.demo@dietdost.app` | `DietDost@Demo2026!` | `Premium` (2) | `Admin` | 30 / day | Photo comparison & CSV export unlocked (200 OK), Admin directory accessible. |
+| `superadmin@dietdost.app` | `DietDost@Demo2026!` | `SuperAdmin` (3) | `SuperAdmin` | Unlimited (`-1`) | Full access, SuperAdmin governance console with live telemetry unlocked. |
+
+### 11.2 Verification Mandate
+Before raising a PR or completing any task:
+1. Run `pwsh -File tests/validate_e2e_tiers.ps1` against the running WebGateway (`http://localhost:5240`) to verify 100% pass across all 5 accounts.
+2. Confirm 0 console errors and 0 unhandled runtime exceptions.
