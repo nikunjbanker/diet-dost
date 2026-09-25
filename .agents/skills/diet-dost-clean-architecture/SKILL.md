@@ -33,6 +33,7 @@ description: >-
 > 4. **Zero Third-Party CQRS Dependencies**: Do NOT use `MediatR`. MediatR v13+ moved to a commercial / RPL-1.5 reciprocal license requiring paid license keys. Implement CQRS using native .NET 11 BCL abstractions.
 > 5. **Test Verification**: Run `dotnet test` and confirm 100% pass rate before committing or raising PRs.
 > 6. **Living SDD Synchronization**: Synchronize `docs/sdd/*.md` and append an entry to `docs/sdd/07_living_documentation_log.md`.
+> 7. **Mandatory End-to-End User Tier Validation**: After any refactoring, new feature implementation, or bug fix, execute comprehensive end-to-end verification of the running application across all 5 user tiers using seeded demo accounts (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Ensure zero runtime exceptions, accurate quota enforcement, correct tier gating (e.g. photo comparison and data export paywalls), and zero browser console errors.
 
 ---
 
@@ -369,3 +370,41 @@ When executing the Clean Architecture restructuring:
 5. **Slice 5: Verification & Living SDD Update**:
    - Run `dotnet test` to confirm 100% test pass rate across all projects.
    - Update `docs/sdd/02_solution_architecture.md` and append an entry to `docs/sdd/07_living_documentation_log.md`.
+6. **Slice 6: End-to-End User Tier Validation on Live Product**:
+   - Launch application on `http://localhost:5240`.
+   - Execute the end-to-end tier validation protocol defined in Section 7 across all 5 demo accounts.
+   - Run browser automation / UI verification to ensure zero regressions in visual presentation, paywall modals, and navigation.
+
+---
+
+## 7. Mandatory End-to-End User Tier Verification Protocol
+
+Whenever code in the solution is modified, refactored, or introduced, the following validation matrix **MUST** be verified against the live application:
+
+### 7.1 Deterministic Demo User Credentials Matrix
+All seeded demo accounts share the common demo password: `DietDost@Demo2026!`
+
+| Demo User Identifier | User Tier | User Role | Daily AI Quota | Photo Compare Gating | Data Export Gating | Analytics History | Admin Console |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `free@dietdost.app` | `Free` (0) | `User` | 1 / day | **Gated (403 / Paywall Modal)** | **Gated (403 / Paywall Modal)** | 7 Days | **Gated (403 Forbidden)** |
+| `basic@dietdost.app` | `Basic` (1) | `User` | 7 / day | **Gated (403 / Paywall Modal)** | **Gated (403 / Paywall Modal)** | 30 Days | **Gated (403 Forbidden)** |
+| `premium@dietdost.app` | `Premium` (2) | `User` | 30 / day | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days | **Gated (403 Forbidden)** |
+| `admin.demo@dietdost.app` | `Premium` (2) | `Admin` | 30 / day | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days | **Unlocked (200 OK)** |
+| `superadmin@dietdost.app` | `SuperAdmin` (3) | `SuperAdmin` | Unlimited (-1) | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days | **Unlocked (200 OK & Full Governance)** |
+
+### 7.2 Validation Workflow Steps
+1. **API Protocol Validation**:
+   - `POST /api/auth/login`: Authenticate and obtain JWT bearer token / cookie.
+   - `GET /api/auth/me`: Confirm authenticated user profile, claims, tier, and role.
+   - `GET /api/profile`: Validate clinical intake formulas and macro distribution calculation.
+   - `GET /api/analytics/ledger/today`: Confirm daily calorie ledger budget calculations.
+   - `GET /api/meals/quota`: Verify daily AI detection quota limits and remaining counter.
+   - `GET /api/progress-photos/comparison`: Assert HTTP 403 for Free/Basic and HTTP 200 for Premium/Admin/SuperAdmin.
+   - `GET /api/meals/export`: Assert HTTP 403 for Free/Basic and HTTP 200 for Premium/Admin/SuperAdmin.
+   - `GET /api/admin/users`: Assert HTTP 403 for User role and HTTP 200 for Admin/SuperAdmin.
+2. **Interactive UI Verification**:
+   - Verify visual rendering of Hero HUD, gauges, and meal logger for Free user.
+   - Trigger gated feature (e.g. clicking "Upgrade to Premium" on locked photo comparison) to verify paywall modal emerges cleanly.
+   - Log in as Premium user: verify `⚡ Premium` badge and unlocked side-by-side photo comparison view.
+   - Log in as SuperAdmin user: verify `👑 Super` badge and `👑 Admin Governance` console modal.
+   - Ensure zero browser console errors and zero backend exceptions.

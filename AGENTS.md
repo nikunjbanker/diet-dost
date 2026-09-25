@@ -20,10 +20,13 @@ This solution-level instruction file defines mandatory engineering and Git workf
 2. **Step 1: Perform All Changes Strictly on the Branch**:
    - Implement the required changes, domain logic, and tests within this isolated branch.
    - Run local validation: `dotnet test` and build checks (targeting .NET 11 with 0 warnings).
-3. **Step 2: Synchronize Living Documentation**:
+3. **Step 2: Perform End-to-End User Tier Validation**:
+   - Run end-to-end product verification across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`).
+   - Validate that tier quotas, feature gating (photo comparison, data export, analytics history), and role permissions function accurately in the actual product with 0 runtime or console errors.
+4. **Step 3: Synchronize Living Documentation**:
    - Adhere to the Zero Documentation Drift Mandate (`docs/sdd/*.md`).
    - Append an entry to `docs/sdd/07_living_documentation_log.md`.
-4. **Step 3: Push Branch & PR-Only Merge**:
+5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash
      git push -u origin <branch-name>
@@ -38,3 +41,4 @@ This solution-level instruction file defines mandatory engineering and Git workf
 2. **Zero-Warning Standard**: 0 warnings, 0 errors. Eliminate nullability warnings and resolve vulnerabilities.
 3. **Standalone Aspire AppHost**: Use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">`.
 4. **Clinical Dietetics Governance**: Adhere strictly to the Indian Medical Standards (ICMR-NIN 2024 & WHO guidelines) and the Zero-Assumption Rule specified in the solution skill.
+5. **Mandatory End-to-End Tier Verification**: No refactoring, new feature implementation, or bug fix is complete without verifying actual product behavior across all user tiers using the seeded demo accounts.

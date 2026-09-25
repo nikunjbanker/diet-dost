@@ -2174,3 +2174,48 @@
   - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-025] Mandatory End-to-End User Tier Validation Protocol & Verification Harness
+- **Timestamp**: `2026-09-25T23:30:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[VERIFICATION]`, `[GOVERNANCE]`, `[PROCESS]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`, `.agents/skills/diet-dost-clean-architecture`, `AGENTS.md`, `tests/`
+- **Summary of Change**:
+  Conducted full end-to-end verification across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`) on the live running application (`http://localhost:5240`). Formulated and added the **Mandatory End-to-End User Tier Validation Mandate** to both `AGENTS.md` (Workflow Step 2 and Architecture Standard 5) and `.agents/skills/diet-dost-clean-architecture/SKILL.md` (Rule 7 and Section 7). Created reusable automated validation script `tests/validate_e2e_tiers.ps1` for continuous product health checks after any refactoring or feature implementation.
+- **Validation Results**:
+  1. *Free Tier (`free@dietdost.app`)*:
+     - Authentication: 200 OK (JWT and HttpOnly cookie issued).
+     - Clinical Profile & Calorie Ledger: 200 OK (Calculated target budget 1,586 kcal, protein 87.6g).
+     - AI Detection Quota: Daily limit 1, Tier Free.
+     - Feature Gating: Visual photo comparison blocked (403 Forbidden / Paywall modal displayed); Meal data export blocked (403 Forbidden).
+     - Admin Authorization: Blocked with 403 Forbidden.
+  2. *Basic Tier (`basic@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - AI Detection Quota: Daily limit 7, Tier Basic.
+     - Feature Gating: Visual photo comparison & data export blocked (403 Forbidden).
+  3. *Premium Tier (`premium@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - AI Detection Quota: Daily limit 30, Tier Premium.
+     - Unlocked Features: Visual photo comparison granted (200 OK with side-by-side transformation); Meal data export granted (200 OK).
+     - Header Badge: `⚡ Premium`.
+  4. *Admin Tier (`admin.demo@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - Admin Endpoints: `/api/admin/users` granted (200 OK, returns 7 users).
+  5. *SuperAdmin Tier (`superadmin@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - Quota: Unlimited (-1).
+     - Admin Governance Console: Unlocked with user directory, tier configs, and AI telemetry.
+     - Header Badge: `👑 Super`.
+  6. *UI & Browser Verification*:
+     - Zero console errors, zero runtime exceptions across interactive flows.
+- **Modified & New Code Files**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `tests/validate_e2e_tiers.ps1` [NEW]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - `tests/validate_e2e_tiers.ps1`: **ALL 5 TIERS PASSED LIVE E2E VALIDATION 100%**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
