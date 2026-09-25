@@ -2111,3 +2111,112 @@
   - Aspire AppHost & WebGateway runtime verified live at `http://localhost:5240`.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-024] Native .NET 11 Clean Architecture & Zero-Dependency CQRS Refactor
+- **Timestamp**: `2026-09-25T22:00:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[REFACTOR]`, `[ARCHITECTURE]`, `[CLEAN_CODE]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`
+- **Summary of Change**:
+  Complete solution-wide Clean Architecture and Native Zero-Dependency CQRS refactoring. Eliminated all fat controllers in `Nutrition.WebGateway` by migrating direct database queries, file system I/O, and business orchestration into decoupled Application feature commands and queries. Avoided commercial license friction (MediatR v13+ RPL-1.5 / commercial dual license) by implementing a lightweight, native, reflection-cached `IDispatcher` using `Microsoft.Extensions.DependencyInjection`.
+- **Architectural Enhancements**:
+  1. *Native Zero-Dependency CQRS Engine*:
+     - Created `ICommand`, `ICommand<TResult>`, `IQuery<TResult>`, `ICommandHandler<TCommand, TResult>`, `ICommandHandler<TCommand>`, `IQueryHandler<TQuery, TResult>`, and `IDispatcher` in `Nutrition.Application.Common.CQRS`.
+     - Implemented `NativeDispatcher` with thread-safe cached generic method reflection.
+     - Implemented universal `Result<T>` and `Result` response envelopes in `Nutrition.Application.Common.Models`.
+     - Registered automatic assembly scanner in `Nutrition.Application.DependencyInjection.AddApplicationServices()`.
+  2. *Port & Adapter Decoupling*:
+     - Introduced `IPhotoStorageService` in Application layer, implemented by `LocalPhotoStorageService` in Infrastructure (decoupled from ASP.NET Core presentation contracts).
+     - Introduced `ICurrentUserService` in Application layer, implemented by `CurrentUserService` in WebGateway.
+     - Augmented `IRepository<T>` with asynchronous query extensions (`FirstOrDefaultAsync`, `AnyAsync`, `CountAsync`, `Query`).
+  3. *Thin Controllers Across All 6 Domains*:
+     - `AuthController`: Delegates registration, OTP verification, password reset, login, account deletion to CQRS commands.
+     - `MealsController`: Delegates multimodal photo upload & analysis, text analysis, meal confirmation, history, AI feedback, and corrections to CQRS commands/queries.
+     - `AdminController`: Delegates user management, role/tier updates, and AI audit telemetry to CQRS commands/queries.
+     - `ProfileController`: Delegates clinical intake onboarding and profile retrieval to CQRS command/query.
+     - `AnalyticsController`: Delegates daily ledger retrieval, trend projections, and export to CQRS queries.
+     - `ProgressPhotosController`: Delegates photo upload, history, tier-gated visual comparisons, and photo deletion to CQRS commands/queries.
+  4. *Clean Architecture Reusable Skill*:
+     - Created `.agents/skills/diet-dost-clean-architecture/SKILL.md` (v1.1.0-NATIVE-SPEC) with complete layer boundaries, naming conventions, and anti-patterns.
+- **Modified & New Code Files**:
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [NEW]
+  - `src/Nutrition.Application/Common/CQRS/IDispatcher.cs` [NEW]
+  - `src/Nutrition.Application/Common/CQRS/ICommand.cs` [NEW]
+  - `src/Nutrition.Application/Common/CQRS/IQuery.cs` [NEW]
+  - `src/Nutrition.Application/Common/CQRS/NativeDispatcher.cs` [NEW]
+  - `src/Nutrition.Application/Common/Interfaces/IPhotoStorageService.cs` [NEW]
+  - `src/Nutrition.Application/Common/Interfaces/ICurrentUserService.cs` [NEW]
+  - `src/Nutrition.Application/Common/Models/Result.cs` [NEW]
+  - `src/Nutrition.Application/Common/IRepository.cs` [MODIFIED]
+  - `src/Nutrition.Application/DependencyInjection.cs` [NEW]
+  - `src/Nutrition.Application/Features/Admin/*` [NEW]
+  - `src/Nutrition.Application/Features/Analytics/*` [NEW]
+  - `src/Nutrition.Application/Features/Auth/*` [NEW]
+  - `src/Nutrition.Application/Features/Meals/*` [NEW]
+  - `src/Nutrition.Application/Features/Profile/*` [NEW]
+  - `src/Nutrition.Application/Features/ProgressPhotos/*` [NEW]
+  - `src/Nutrition.Infrastructure/Persistence/EfRepository.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Persistence/StorageInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Services/LocalPhotoStorageService.cs` [NEW]
+  - `src/Nutrition.WebGateway/Controllers/AdminController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AnalyticsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AuthController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProfileController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/ProgressPhotosController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Services/CurrentUserService.cs` [NEW]
+  - `src/Nutrition.WebGateway/Extensions/ServiceCollectionExtensions.cs` [MODIFIED]
+  - `docs/sdd/02_solution_architecture.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11 across all projects).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260925-025] Mandatory End-to-End User Tier Validation Protocol & Verification Harness
+- **Timestamp**: `2026-09-25T23:30:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[VERIFICATION]`, `[GOVERNANCE]`, `[PROCESS]`
+- **Affected Microservices / Components**: `Nutrition.WebGateway`, `.agents/skills/diet-dost-clean-architecture`, `AGENTS.md`, `tests/`
+- **Summary of Change**:
+  Conducted full end-to-end verification across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`) on the live running application (`http://localhost:5240`). Formulated and added the **Mandatory End-to-End User Tier Validation Mandate** to both `AGENTS.md` (Workflow Step 2 and Architecture Standard 5) and `.agents/skills/diet-dost-clean-architecture/SKILL.md` (Rule 7 and Section 7). Created reusable automated validation script `tests/validate_e2e_tiers.ps1` for continuous product health checks after any refactoring or feature implementation.
+- **Validation Results**:
+  1. *Free Tier (`free@dietdost.app`)*:
+     - Authentication: 200 OK (JWT and HttpOnly cookie issued).
+     - Clinical Profile & Calorie Ledger: 200 OK (Calculated target budget 1,586 kcal, protein 87.6g).
+     - AI Detection Quota: Daily limit 1, Tier Free.
+     - Feature Gating: Visual photo comparison blocked (403 Forbidden / Paywall modal displayed); Meal data export blocked (403 Forbidden).
+     - Admin Authorization: Blocked with 403 Forbidden.
+  2. *Basic Tier (`basic@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - AI Detection Quota: Daily limit 7, Tier Basic.
+     - Feature Gating: Visual photo comparison & data export blocked (403 Forbidden).
+  3. *Premium Tier (`premium@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - AI Detection Quota: Daily limit 30, Tier Premium.
+     - Unlocked Features: Visual photo comparison granted (200 OK with side-by-side transformation); Meal data export granted (200 OK).
+     - Header Badge: `⚡ Premium`.
+  4. *Admin Tier (`admin.demo@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - Admin Endpoints: `/api/admin/users` granted (200 OK, returns 7 users).
+  5. *SuperAdmin Tier (`superadmin@dietdost.app`)*:
+     - Authentication: 200 OK.
+     - Quota: Unlimited (-1).
+     - Admin Governance Console: Unlocked with user directory, tier configs, and AI telemetry.
+     - Header Badge: `👑 Super`.
+  6. *UI & Browser Verification*:
+     - Zero console errors, zero runtime exceptions across interactive flows.
+- **Modified & New Code Files**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `tests/validate_e2e_tiers.ps1` [NEW]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - `tests/validate_e2e_tiers.ps1`: **ALL 5 TIERS PASSED LIVE E2E VALIDATION 100%**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
