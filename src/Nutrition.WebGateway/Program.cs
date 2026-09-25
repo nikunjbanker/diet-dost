@@ -159,9 +159,27 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("RequireActiveUser", policy => policy.RequireAuthenticatedUser());
 });
 
-// Polly Resilience Pipeline for Rate Limiting & Brute-Force Defense (OWASP A04)
-// Enforces sliding window of max 5 attempts per 15 minutes on authentication endpoints
-var authRateLimitPipeline = new ResiliencePipelineBuilder()
+// Per-IP Partitioned Rate Limiter for Brute-Force Defense (OWASP A04)
+// Each unique client IP gets an independent sliding window: max 5 attempts per 15 minutes.
+// This replaces the previous global singleton which incorrectly shared one counter across all IPs.
+var authPartitionedRateLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    RateLimitPartition.GetSlidingWindowLimiter(
+        partitionKey: context.Connection.RemoteIpAddress?.ToString()
+                      ?? context.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+                      ?? "unknown",
+        factory: _ => new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = 5,
+            Window = TimeSpan.FromMinutes(15),
+            SegmentsPerWindow = 3,
+            QueueLimit = 0
+        }));
+
+builder.Services.AddSingleton(authPartitionedRateLimiter);
+
+// Keep ResiliencePipeline registered so PollyRateLimitingTests & any DI consumers resolve correctly.
+// The middleware now uses the partitioned limiter above instead of this singleton.
+var legacyPollyPipeline = new ResiliencePipelineBuilder()
     .AddRateLimiter(new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
     {
         PermitLimit = 5,
@@ -170,8 +188,7 @@ var authRateLimitPipeline = new ResiliencePipelineBuilder()
         QueueLimit = 0
     }))
     .Build();
-
-builder.Services.AddSingleton(authRateLimitPipeline);
+builder.Services.AddSingleton(legacyPollyPipeline);
 
 // CORS policy — dev-mode permissive (same-origin in prod via static file hosting)
 builder.Services.AddCors(options =>
@@ -640,7 +657,8 @@ app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Polly Rate Limiter Middleware for Auth & Sensitive Endpoints (OWASP A04)
+// Per-IP Rate Limiter Middleware for Auth & Sensitive Endpoints (OWASP A04)
+// Each client IP has an independent 5-attempts-per-15-minutes sliding window.
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
@@ -649,20 +667,15 @@ app.Use(async (context, next) =>
         context.Request.Path.StartsWithSegments("/api/auth/resend-otp") ||
         context.Request.Path.StartsWithSegments("/api/auth/token"))
     {
-        var pipeline = context.RequestServices.GetRequiredService<ResiliencePipeline>();
-        try
-        {
-            await pipeline.ExecuteAsync(async _ =>
-            {
-                await next();
-            });
-            return;
-        }
-        catch (RateLimiterRejectedException)
+        var rateLimiter = context.RequestServices
+            .GetRequiredService<PartitionedRateLimiter<HttpContext>>();
+        using var lease = await rateLimiter.AcquireAsync(context, permitCount: 1);
+        if (!lease.IsAcquired)
         {
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync("{\"error\":\"TooManyRequests\",\"message\":\"Rate limit exceeded. Please wait 1 minute before retrying.\"}");
+            await context.Response.WriteAsync(
+                "{\"error\":\"TooManyRequests\",\"message\":\"Too many authentication attempts from your IP. Please wait before retrying.\"}");
             return;
         }
     }
