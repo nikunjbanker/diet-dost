@@ -247,78 +247,96 @@ public static class DatabaseInitializationExtensions
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
         var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
 
-        var demoSpecs = new[]
+        var configuredSuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim();
+        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(configuredSuperAdminEmail)
+            ? configuredSuperAdminEmail
+            : "superadmin@dietdost.app";
+
+        var demoSpecs = new List<DemoUserSpec>
         {
-            new
-            {
-                Id = "user-free",
-                Email = "free@dietdost.app",
-                Name = "Free Tier User (Demo)",
-                Mobile = "+919876500001",
-                Role = UserRole.User,
-                Tier = UserTier.Free,
-                Cuisine = "North Indian",
-                Conditions = new List<string>(),
-                Medications = new List<MedicationEntry>()
-            },
-            new
-            {
-                Id = "user-basic",
-                Email = "basic@dietdost.app",
-                Name = "Basic Tier User (Demo)",
-                Mobile = "+919876500002",
-                Role = UserRole.User,
-                Tier = UserTier.Basic,
-                Cuisine = "South Indian",
-                Conditions = new List<string> { "Hypertension" },
-                Medications = new List<MedicationEntry>
+            new(
+                Id: "user-free",
+                Email: "free@dietdost.app",
+                Name: "Free Tier User (Demo)",
+                Mobile: "+919876500001",
+                Role: UserRole.User,
+                Tier: UserTier.Free,
+                Cuisine: "North Indian",
+                Conditions: new List<string>(),
+                Medications: new List<MedicationEntry>()
+            ),
+            new(
+                Id: "user-basic",
+                Email: "basic@dietdost.app",
+                Name: "Basic Tier User (Demo)",
+                Mobile: "+919876500002",
+                Role: UserRole.User,
+                Tier: UserTier.Basic,
+                Cuisine: "South Indian",
+                Conditions: new List<string> { "Hypertension" },
+                Medications: new List<MedicationEntry>
                 {
                     new() { DrugName = "Telmisartan 40mg", Dosage = "40mg", Frequency = "Morning" }
                 }
-            },
-            new
-            {
-                Id = "user-premium",
-                Email = "premium@dietdost.app",
-                Name = "Premium Tier User (Demo)",
-                Mobile = "+919876500003",
-                Role = UserRole.User,
-                Tier = UserTier.Premium,
-                Cuisine = "Gujarati",
-                Conditions = new List<string> { "Pre-Diabetes" },
-                Medications = new List<MedicationEntry>
+            ),
+            new(
+                Id: "user-premium",
+                Email: "premium@dietdost.app",
+                Name: "Premium Tier User (Demo)",
+                Mobile: "+919876500003",
+                Role: UserRole.User,
+                Tier: UserTier.Premium,
+                Cuisine: "Gujarati",
+                Conditions: new List<string> { "Pre-Diabetes" },
+                Medications: new List<MedicationEntry>
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            },
-            new
-            {
-                Id = "user-admin",
-                Email = "admin.demo@dietdost.app",
-                Name = "Admin Tier User (Demo)",
-                Mobile = "+919876500004",
-                Role = UserRole.Admin,
-                Tier = UserTier.Premium,
-                Cuisine = "Maharashtrian",
-                Conditions = new List<string>(),
-                Medications = new List<MedicationEntry>()
-            },
-            new
-            {
-                Id = "user-superadmin",
-                Email = "admin@dietdost.app",
-                Name = "SuperAdmin Tier User (Demo)",
-                Mobile = "+919999999999",
-                Role = UserRole.SuperAdmin,
-                Tier = UserTier.SuperAdmin,
-                Cuisine = "North Indian",
-                Conditions = new List<string> { "Pre-Diabetes" },
-                Medications = new List<MedicationEntry>
+            ),
+            new(
+                Id: "user-admin",
+                Email: "admin.demo@dietdost.app",
+                Name: "Admin Tier User (Demo)",
+                Mobile: "+919876500004",
+                Role: UserRole.Admin,
+                Tier: UserTier.Premium,
+                Cuisine: "Maharashtrian",
+                Conditions: new List<string>(),
+                Medications: new List<MedicationEntry>()
+            ),
+            new(
+                Id: "user-superadmin",
+                Email: primarySuperAdminEmail,
+                Name: "SuperAdmin Tier User (Demo)",
+                Mobile: "+919999999999",
+                Role: UserRole.SuperAdmin,
+                Tier: UserTier.SuperAdmin,
+                Cuisine: "North Indian",
+                Conditions: new List<string> { "Pre-Diabetes" },
+                Medications: new List<MedicationEntry>
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            }
+            )
         };
+
+        if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
+        {
+            demoSpecs.Add(new(
+                Id: "user-superadmin-alias",
+                Email: "admin@dietdost.app",
+                Name: "SuperAdmin Tier User (Alias)",
+                Mobile: "+919999999998",
+                Role: UserRole.SuperAdmin,
+                Tier: UserTier.SuperAdmin,
+                Cuisine: "North Indian",
+                Conditions: new List<string> { "Pre-Diabetes" },
+                Medications: new List<MedicationEntry>
+                {
+                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                }
+            ));
+        }
 
         var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
@@ -329,31 +347,48 @@ public static class DatabaseInitializationExtensions
             var user = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normEmail);
             if (user == null)
             {
-                user = new ApplicationUser
+                user = await db.Users.FirstOrDefaultAsync(u => u.Id == spec.Id);
+                if (user != null)
                 {
-                    Id = spec.Id,
-                    Email = spec.Email,
-                    NormalizedEmail = normEmail,
-                    MobileNumber = spec.Mobile,
-                    NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber(spec.Mobile),
-                    PasswordHash = passwordHasher.HashPassword(CommonDemoPassword),
-                    SecurityStamp = Guid.NewGuid().ToString("N"),
-                    Role = spec.Role,
-                    Tier = spec.Tier,
-                    IsEmailVerified = true,
-                    IsMobileVerified = true,
-                    IsActive = true,
-                    TermsAcceptedAtUtc = DateTime.UtcNow,
-                    TermsVersionAccepted = configuration["Auth:TermsVersion"] ?? "v1.0-202609",
-                    HealthConsentAcceptedAtUtc = DateTime.UtcNow,
-                    HealthConsentVersionAccepted = configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
-                    ConsentIpAddress = "127.0.0.1",
-                    ConsentUserAgent = "SystemBootstrap",
-                    CreatedAtUtc = DateTime.UtcNow
-                };
-                await db.Users.AddAsync(user);
-                await db.SaveChangesAsync();
-                logger.LogInformation("Provisioned demo user: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                    user.Email = spec.Email;
+                    user.NormalizedEmail = normEmail;
+                    user.PasswordHash = passwordHasher.HashPassword(CommonDemoPassword);
+                    user.Role = spec.Role;
+                    user.Tier = spec.Tier;
+                    user.IsEmailVerified = true;
+                    user.IsMobileVerified = true;
+                    user.IsActive = true;
+                    await db.SaveChangesAsync();
+                    logger.LogInformation("Updated demo user email to match configuration: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                }
+                else
+                {
+                    user = new ApplicationUser
+                    {
+                        Id = spec.Id,
+                        Email = spec.Email,
+                        NormalizedEmail = normEmail,
+                        MobileNumber = spec.Mobile,
+                        NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber(spec.Mobile),
+                        PasswordHash = passwordHasher.HashPassword(CommonDemoPassword),
+                        SecurityStamp = Guid.NewGuid().ToString("N"),
+                        Role = spec.Role,
+                        Tier = spec.Tier,
+                        IsEmailVerified = true,
+                        IsMobileVerified = true,
+                        IsActive = true,
+                        TermsAcceptedAtUtc = DateTime.UtcNow,
+                        TermsVersionAccepted = configuration["Auth:TermsVersion"] ?? "v1.0-202609",
+                        HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                        HealthConsentVersionAccepted = configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
+                        ConsentIpAddress = "127.0.0.1",
+                        ConsentUserAgent = "SystemBootstrap",
+                        CreatedAtUtc = DateTime.UtcNow
+                    };
+                    await db.Users.AddAsync(user);
+                    await db.SaveChangesAsync();
+                    logger.LogInformation("Provisioned demo user: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                }
             }
             else
             {
@@ -549,4 +584,15 @@ public static class DatabaseInitializationExtensions
             ", activeSuperAdmin.Id);
         }
     }
+
+    private sealed record DemoUserSpec(
+        string Id,
+        string Email,
+        string Name,
+        string Mobile,
+        UserRole Role,
+        UserTier Tier,
+        string Cuisine,
+        List<string> Conditions,
+        List<MedicationEntry> Medications);
 }
