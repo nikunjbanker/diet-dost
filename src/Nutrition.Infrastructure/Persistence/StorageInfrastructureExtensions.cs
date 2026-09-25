@@ -53,6 +53,7 @@ public static class StorageInfrastructureExtensions
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Services.LocalPhotoStorageService>();
+        services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Services.DatabaseSecretStore>();
         return services;
     }
 }

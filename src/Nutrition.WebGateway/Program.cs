@@ -1,3 +1,4 @@
+using Nutrition.Infrastructure.Configuration;
 using Nutrition.WebGateway.Extensions;
 
 // ====================================================================================
@@ -7,6 +8,10 @@ using Nutrition.WebGateway.Extensions;
 // ====================================================================================
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 0. Load Application Secrets from Database Table into IConfiguration Hierarchy
+var dbConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
+builder.Configuration.AddDatabaseSecrets(dbConnectionString);
 
 // 1. Core Framework & Distributed Telemetry (Aspire / OpenTelemetry)
 builder.Services.AddAppTelemetry(builder.Logging, builder.Configuration);

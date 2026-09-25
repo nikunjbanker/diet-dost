@@ -2219,4 +2219,52 @@
   - `tests/validate_e2e_tiers.ps1`: **ALL 5 TIERS PASSED LIVE E2E VALIDATION 100%**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-027] Clean Architecture Database Secret Store Migration (`AppSecrets` Table)
+- **Timestamp**: `2026-09-25T23:45:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[ARCHITECTURE]`, `[SECURITY]`, `[CLEAN_ARCHITECTURE]`
+- **Affected Microservices / Components**: `Nutrition.Domain`, `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  Scanned the solution for hardcoded secrets, eliminated hardcoded JWT keys (`DefaultDevKey`) and hardcoded demo passwords from application code. Introduced an extensible, swappable Database Secret Store following Clean Architecture:
+  1. *Domain Layer*: Added `AppSecret` entity in `Nutrition.Domain.Model.Security` (`Key`, `Value`, `Description`, `CreatedAtUtc`, `UpdatedAtUtc`).
+  2. *Application Layer*: Defined `ISecretStore` port abstraction in `Nutrition.Application.Common.Interfaces` with `SecretKeys` constants (`Jwt:Key`, `Auth:DemoPassword`, `AI:GoogleAI:ApiKey`, `AI:AzureOpenAI:ApiKey`).
+  3. *Infrastructure Layer*: 
+     - Added `AppSecrets` DbSet and EF Core entity mapping in `DietTrackerDbContext`.
+     - Implemented `DatabaseSecretStore` adapter with high-throughput thread-safe `ConcurrentDictionary` caching.
+     - Implemented custom ASP.NET Core `DatabaseConfigurationProvider` and `DatabaseConfigurationSource` allowing EF-persisted database secrets to project directly into standard `IConfiguration` during host startup before authentication middleware builds.
+     - Registered `ISecretStore` in DI via `StorageInfrastructureExtensions`.
+     - Removed hardcoded `DefaultDevKey` fallback from `JwtTokenService`.
+  4. *Presentation Layer (WebGateway)*:
+     - Plugged `builder.Configuration.AddDatabaseSecrets(...)` into `Program.cs`.
+     - Removed `DefaultDevKey` fallback from `SecurityAndAuthExtensions`.
+     - Added automatic table bootstrap and `SeedAppSecretsAsync` in `DatabaseInitializationExtensions` to dynamically seed default development secrets into the database if absent.
+     - Sanitized `appsettings.json` by clearing sensitive values.
+  5. *Test Harness*:
+     - Created `DatabaseSecretStoreTests` verifying `AppSecret` entity behavior, caching, DB persistence, and `DatabaseConfigurationProvider` loading into `IConfiguration`.
+     - Validated all 111 unit & integration tests pass with 0 errors, 0 warnings.
+     - Ran live E2E validation script `tests/validate_e2e_tiers.ps1` across all 5 demo user tiers with 100% pass rate.
+- **Modified & New Code Files**:
+  - `src/Nutrition.Domain/Model/Security/AppSecret.cs` [NEW]
+  - `src/Nutrition.Application/Common/Interfaces/ISecretStore.cs` [NEW]
+  - `src/Nutrition.Infrastructure/Configuration/DatabaseConfigurationProvider.cs` [NEW]
+  - `src/Nutrition.Infrastructure/Services/DatabaseSecretStore.cs` [NEW]
+  - `src/Nutrition.Infrastructure/Persistence/DietTrackerDbContext.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Persistence/StorageInfrastructureExtensions.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/Security/JwtTokenService.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/appsettings.json` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/DatabaseSecretStoreTests.cs` [NEW]
+  - `docs/sdd/03_data_models_and_contracts.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+  - `.gitignore` [MODIFIED]
+- **Harness Verification Result**:
+  - `dotnet test`: **111 passed (36 Domain + 75 EvalHarness), 0 failed, 0 warnings**.
+  - `tests/validate_e2e_tiers.ps1`: **ALL 5 TIERS PASSED LIVE E2E VALIDATION 100%**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
