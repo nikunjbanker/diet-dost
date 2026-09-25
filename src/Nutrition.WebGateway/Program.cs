@@ -175,7 +175,10 @@ var authPartitionedRateLimiter = PartitionedRateLimiter.Create<HttpContext, stri
             QueueLimit = 0
         }));
 
-builder.Services.AddSingleton(authPartitionedRateLimiter);
+// Explicitly register under the abstract base type PartitionedRateLimiter<HttpContext>.
+// AddSingleton(instance) without the type arg registers under the concrete internal type,
+// which is invisible to GetRequiredService<PartitionedRateLimiter<HttpContext>>() at runtime.
+builder.Services.AddSingleton<PartitionedRateLimiter<HttpContext>>(authPartitionedRateLimiter);
 
 // Keep ResiliencePipeline registered so PollyRateLimitingTests & any DI consumers resolve correctly.
 // The middleware now uses the partitioned limiter above instead of this singleton.
@@ -658,7 +661,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Per-IP Rate Limiter Middleware for Auth & Sensitive Endpoints (OWASP A04)
-// Each client IP has an independent 5-attempts-per-15-minutes sliding window.
+// Captures the partitioned limiter instance at startup via closure — avoids per-request DI lookup.
 app.Use(async (context, next) =>
 {
     if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
@@ -667,9 +670,7 @@ app.Use(async (context, next) =>
         context.Request.Path.StartsWithSegments("/api/auth/resend-otp") ||
         context.Request.Path.StartsWithSegments("/api/auth/token"))
     {
-        var rateLimiter = context.RequestServices
-            .GetRequiredService<PartitionedRateLimiter<HttpContext>>();
-        using var lease = await rateLimiter.AcquireAsync(context, permitCount: 1);
+        using var lease = await authPartitionedRateLimiter.AcquireAsync(context, permitCount: 1);
         if (!lease.IsAcquired)
         {
             context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
