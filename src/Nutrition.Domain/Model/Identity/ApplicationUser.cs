@@ -120,6 +120,17 @@ public partial class ApplicationUser
     }
 
     /// <summary>
+    /// Validates a plain-text password against the Diet Dost password policy
+    /// before it is hashed and stored. Must be called in the registration and
+    /// password-reset flows BEFORE <see cref="IPasswordHasher.HashPassword"/>.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Thrown when the password violates the policy.</exception>
+    public static void ValidateRawPassword(string plainTextPassword)
+    {
+        PasswordPolicy.EnforceOrThrow(plainTextPassword);
+    }
+
+    /// <summary>
     /// Enforces domain invariants and mandatory legal consent rules upon registration.
     /// </summary>
     public void ValidateRegistration()

@@ -36,6 +36,21 @@ public record LoginRequest(
     string EmailOrMobile,
     string Password);
 
+/// <summary>
+/// Initiates a password-reset OTP flow for an existing, active, email-verified user.
+/// </summary>
+public record ForgotPasswordRequest(string Email);
+
+/// <summary>
+/// Completes a password reset after OTP validation. Requires the new password and
+/// its confirmation to match, and both must satisfy the Diet Dost password policy.
+/// </summary>
+public record ResetPasswordRequest(
+    string Email,
+    string OtpCode,
+    string NewPassword,
+    string ConfirmNewPassword);
+
 public record CurrentUserResponse(
     string Id,
     string Email,
@@ -132,6 +147,12 @@ public class AuthController : ControllerBase
             var healthConsentVersion = _config["Auth:HealthConsentVersion"] ?? "v1.0-202609";
             var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
             var userAgent = Request.Headers.UserAgent.ToString();
+
+            // ── Password policy enforcement (must happen BEFORE hashing) ───
+            if (!PasswordPolicy.IsValid(request.Password, out var pwdError))
+            {
+                return BadRequest(new { error = "WeakPassword", message = pwdError });
+            }
 
             var user = new ApplicationUser
             {
@@ -573,6 +594,132 @@ public class AuthController : ControllerBase
         _logger.LogWarning("[AUTH] User account and all health data purged under DPDPA Right to Erasure: {UserId}", userId);
 
         return Ok(new { message = "Your account and all associated health records have been permanently deleted per DPDPA guidelines." });
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Password-Reset Flow (OTP-gated, active users only)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Step 1 of password reset: generate and dispatch a 6-digit OTP to the
+    /// provided email, but ONLY if the account is found, active, and email-verified.
+    /// Intentionally returns a generic 200 even when the email is not found, to
+    /// prevent user-enumeration attacks (OWASP A07:2021).
+    /// </summary>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
+    {
+        return await ExecuteWithRateLimitAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Email))
+                return BadRequest(new { error = "MissingFields", message = "Email address is required." });
+
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
+
+            // Anti-enumeration: always acknowledge generically
+            if (user == null || !user.IsActive || !user.IsEmailVerified)
+            {
+                _logger.LogInformation("[AUTH] ForgotPassword: no eligible user for email {Email}", request.Email);
+                return Ok(new { message = "If a matching active account exists, a reset code has been sent to its email address." });
+            }
+
+            // Expire any outstanding OTPs for this user
+            var existingOtps = await _db.VerificationOtps
+                .Where(o => o.UserId == user.Id && !o.IsUsed)
+                .ToListAsync(ct);
+            foreach (var old in existingOtps) old.IsUsed = true;
+
+            var rawCode = _otpService.GenerateCode();
+            var otp = _otpService.CreateOtp(user.Id, user.Email, OtpChannel.Email, rawCode);
+            await _db.VerificationOtps.AddAsync(otp, ct);
+            await _db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("[AUTH] ForgotPassword OTP dispatched for user: {UserId}", user.Id);
+
+            var isDev = _env.IsDevelopment();
+            if (isDev) Response.Headers.Append("X-Dev-Otp-Code", rawCode);
+
+            return Ok(new
+            {
+                message = "If a matching active account exists, a reset code has been sent to its email address.",
+                devOtpCode = isDev ? rawCode : null
+            });
+        });
+    }
+
+    /// <summary>
+    /// Step 2 of password reset: validates the OTP, enforces the password policy,
+    /// and persists the new hash. SecurityStamp is rotated to invalidate all
+    /// existing sessions/cookies (OWASP A07:2021).
+    /// </summary>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
+    {
+        return await ExecuteWithRateLimitAsync(async () =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Email) ||
+                string.IsNullOrWhiteSpace(request.OtpCode) ||
+                string.IsNullOrWhiteSpace(request.NewPassword) ||
+                string.IsNullOrWhiteSpace(request.ConfirmNewPassword))
+            {
+                return BadRequest(new { error = "MissingFields", message = "Email, OTP code, new password, and confirmation are all required." });
+            }
+
+            // ── Passwords must match ──────────────────────────────────────────
+            if (request.NewPassword != request.ConfirmNewPassword)
+            {
+                return BadRequest(new { error = "PasswordMismatch", message = "New password and confirmation password do not match." });
+            }
+
+            // ── Password policy check (BEFORE hashing) ────────────────────────
+            if (!PasswordPolicy.IsValid(request.NewPassword, out var pwdError))
+            {
+                return BadRequest(new { error = "WeakPassword", message = pwdError });
+            }
+
+            var normalizedEmail = ApplicationUser.NormalizeEmailAddress(request.Email);
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail, ct);
+
+            // ── User must exist AND be active ─────────────────────────────────
+            if (user == null || !user.IsActive)
+            {
+                return NotFound(new { error = "UserNotFound", message = "No active user account was found for this email address." });
+            }
+
+            // ── Resolve latest active OTP ─────────────────────────────────────
+            var now = DateTime.UtcNow;
+            var activeOtp = await _db.VerificationOtps
+                .Where(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAtUtc > now)
+                .OrderByDescending(o => o.CreatedAtUtc)
+                .FirstOrDefaultAsync(ct);
+
+            if (activeOtp == null)
+            {
+                return BadRequest(new { error = "NoActiveOtp", message = "No active reset code found or it has expired. Please request a new code." });
+            }
+
+            var isValid = _otpService.ValidateCode(activeOtp, request.OtpCode, out var failureReason);
+            if (!isValid)
+            {
+                await _db.SaveChangesAsync(ct); // persist incremented AttemptCount
+                return BadRequest(new
+                {
+                    error = "InvalidOtp",
+                    message = failureReason,
+                    attemptsRemaining = VerificationOtp.MaxAttemptsAllowed - activeOtp.AttemptCount
+                });
+            }
+
+            // ── All checks passed — update password and rotate SecurityStamp ──
+            user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
+            user.SecurityStamp = Guid.NewGuid().ToString("N"); // invalidates existing sessions
+            await _db.SaveChangesAsync(ct);
+
+            _logger.LogInformation("[AUTH] Password reset completed for user: {UserId}", user.Id);
+
+            return Ok(new { message = "Password has been successfully reset. Please sign in with your new password." });
+        });
     }
 
     private async Task SignInUserAsync(ApplicationUser user, string displayName)

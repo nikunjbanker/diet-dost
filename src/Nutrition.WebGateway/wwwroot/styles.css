@@ -3580,6 +3580,16 @@ body {
   line-height: 1.4;
 }
 
+.auth-success-alert {
+  background: rgba(39, 195, 128, 0.12);
+  border: 1px solid rgba(39, 195, 128, 0.35);
+  color: #6ee7b7;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .auth-submit-btn {
   width: 100%;
   padding: 0.75rem;

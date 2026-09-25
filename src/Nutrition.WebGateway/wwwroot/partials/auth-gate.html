@@ -5,7 +5,7 @@
     <div class="auth-brand-header">
       <div class="brand-badge-large">DD</div>
       <h1 class="auth-title">Diet Dost</h1>
-      <p class="auth-subtitle">Medical-Grade South Asian Nutrition & Weight Loss Intelligence</p>
+      <p class="auth-subtitle">Medical-Grade South Asian Nutrition &amp; Weight Loss Intelligence</p>
     </div>
 
     <!-- Navigation Tabs -->
@@ -13,6 +13,7 @@
       <button type="button" id="btn-tab-signin" class="auth-tab-btn active">Sign In</button>
       <button type="button" id="btn-tab-register" class="auth-tab-btn">Create Account</button>
       <button type="button" id="btn-tab-verify" class="auth-tab-btn" style="display: none;">Verify OTP</button>
+      <button type="button" id="btn-tab-reset" class="auth-tab-btn" style="display: none;">Reset Password</button>
     </div>
 
     <!-- Tab 1: Sign In -->
@@ -27,6 +28,7 @@
       <div class="form-group">
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <label for="signin-password">Password</label>
+          <a href="javascript:void(0)" id="link-goto-forgot-password" class="btn-link" style="font-size: 0.78rem;">Forgot password?</a>
         </div>
         <input type="password" id="signin-password" class="text-input" placeholder="••••••••••••" required autocomplete="current-password">
       </div>
@@ -61,8 +63,23 @@
       </div>
 
       <div class="form-group">
-        <label for="reg-password">Password (Minimum 8 characters) *</label>
-        <input type="password" id="reg-password" class="text-input" placeholder="Create strong password" required minlength="8" autocomplete="new-password">
+        <label for="reg-password">Password *
+          <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400;"> (10–30 chars · upper · lower · digit · special)</span>
+        </label>
+        <input type="password" id="reg-password" class="text-input" placeholder="Create a strong password"
+               required minlength="10" maxlength="30" autocomplete="new-password">
+        <!-- Password strength meter -->
+        <div id="reg-pwd-strength-bar" style="height:3px; border-radius:2px; margin-top:5px; background:var(--border-color); overflow:hidden;">
+          <div id="reg-pwd-strength-fill" style="height:100%; width:0%; transition:width 0.25s, background 0.25s;"></div>
+        </div>
+        <div id="reg-pwd-strength-label" style="font-size:0.72rem; margin-top:3px; color:var(--text-muted);"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="reg-confirm-password">Confirm Password *</label>
+        <input type="password" id="reg-confirm-password" class="text-input" placeholder="Re-enter your password"
+               required minlength="10" maxlength="30" autocomplete="new-password">
+        <div id="reg-confirm-match-label" style="font-size:0.72rem; margin-top:3px;"></div>
       </div>
 
       <!-- Legal Dual-Consent Framework (DPDPA 2023 §6 Compliant) -->
@@ -79,13 +96,13 @@
         <label class="legal-checkbox-label">
           <input type="checkbox" id="reg-consent-health" required>
           <span>
-            I provide explicit consent for <a href="/clinical-health-consent.html" id="link-open-health-consent" target="_blank">Clinical Health & Nutrition Processing</a> of my biometrics, medical conditions, and medications under the Digital Personal Data Protection Act (DPDPA 2023).
+            I provide explicit consent for <a href="/clinical-health-consent.html" id="link-open-health-consent" target="_blank">Clinical Health &amp; Nutrition Processing</a> of my biometrics, medical conditions, and medications under the Digital Personal Data Protection Act (DPDPA 2023).
           </span>
         </label>
       </div>
 
       <button type="submit" id="btn-submit-register" class="btn btn-primary auth-submit-btn">
-        <span class="btn-text">Create Account & Send Code ➔</span>
+        <span class="btn-text">Create Account &amp; Send Code ➔</span>
         <span class="btn-spinner" style="display: none;">⏳ Creating Account...</span>
       </button>
 
@@ -118,7 +135,7 @@
       </div>
 
       <button type="submit" id="btn-submit-verify" class="btn btn-primary auth-submit-btn">
-        <span class="btn-text">Verify & Activate Account ➔</span>
+        <span class="btn-text">Verify &amp; Activate Account ➔</span>
         <span class="btn-spinner" style="display: none;">⏳ Verifying...</span>
       </button>
 
@@ -128,9 +145,86 @@
         <span id="resend-countdown" style="display: none; color: var(--text-muted); font-size: 0.8rem;">(wait 60s)</span>
       </div>
     </form>
+
+    <!-- Tab 4: Reset Password (2-step: Request OTP → Enter OTP + New Password) -->
+    <div id="form-reset-password" class="auth-form" style="display: none;">
+      <div id="reset-error" class="auth-error-alert" style="display: none;"></div>
+      <div id="reset-success" class="auth-success-alert" style="display: none;"></div>
+
+      <!-- Step A: Enter email to receive reset OTP -->
+      <div id="reset-step-email">
+        <div class="otp-instruction-box">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔑</div>
+          <div style="font-weight: 600; font-size: 0.95rem;">Reset Your Password</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+            Enter your registered email address. We'll send a 6-digit reset code if an active account exists.
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="reset-email">Registered Email Address *</label>
+          <input type="email" id="reset-email" class="text-input" placeholder="name@domain.com" autocomplete="email">
+        </div>
+        <!-- Dev OTP helper for reset flow -->
+        <div id="dev-reset-otp-helper" class="dev-otp-banner" style="display: none;">
+          <span>🛠️ Local Dev Code:</span>
+          <strong id="dev-reset-otp-code" style="letter-spacing: 2px;">------</strong>
+          <button type="button" id="btn-fill-dev-reset-otp" class="btn btn-xs btn-outline">Auto-Fill</button>
+        </div>
+        <button type="button" id="btn-send-reset-otp" class="btn btn-primary auth-submit-btn">
+          <span class="btn-text">Send Reset Code ➔</span>
+          <span class="btn-spinner" style="display: none;">⏳ Sending...</span>
+        </button>
+        <div class="auth-footer-prompt">
+          Remember your password? <a href="javascript:void(0)" id="link-back-to-signin-from-reset">Sign In</a>
+        </div>
+      </div>
+
+      <!-- Step B: Enter OTP + new password + confirm -->
+      <div id="reset-step-newpwd" style="display: none;">
+        <div class="otp-instruction-box">
+          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔒</div>
+          <div style="font-weight: 600; font-size: 0.95rem;">Enter Reset Code &amp; New Password</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+            Code sent to <span id="reset-otp-email-display" style="color: var(--text-primary); font-weight: 600;"></span>
+          </div>
+        </div>
+        <div class="form-group" style="text-align: center;">
+          <label for="reset-otp-code">6-Digit Reset Code</label>
+          <input type="text" id="reset-otp-code" class="text-input otp-digits-input" placeholder="123456"
+                 maxlength="6" pattern="[0-9]{6}" autocomplete="one-time-code">
+        </div>
+        <div class="form-group">
+          <label for="reset-new-password">New Password *
+            <span style="font-size:0.72rem; color:var(--text-muted); font-weight:400;"> (10–30 chars · upper · lower · digit · special)</span>
+          </label>
+          <input type="password" id="reset-new-password" class="text-input" placeholder="Create a strong password"
+                 minlength="10" maxlength="30" autocomplete="new-password">
+          <!-- Strength meter for reset flow -->
+          <div id="reset-pwd-strength-bar" style="height:3px; border-radius:2px; margin-top:5px; background:var(--border-color); overflow:hidden;">
+            <div id="reset-pwd-strength-fill" style="height:100%; width:0%; transition:width 0.25s, background 0.25s;"></div>
+          </div>
+          <div id="reset-pwd-strength-label" style="font-size:0.72rem; margin-top:3px; color:var(--text-muted);"></div>
+        </div>
+        <div class="form-group">
+          <label for="reset-confirm-password">Confirm New Password *</label>
+          <input type="password" id="reset-confirm-password" class="text-input" placeholder="Re-enter new password"
+                 minlength="10" maxlength="30" autocomplete="new-password">
+          <div id="reset-confirm-match-label" style="font-size:0.72rem; margin-top:3px;"></div>
+        </div>
+        <button type="button" id="btn-submit-reset" class="btn btn-primary auth-submit-btn">
+          <span class="btn-text">Reset Password ➔</span>
+          <span class="btn-spinner" style="display: none;">⏳ Resetting...</span>
+        </button>
+        <div class="otp-resend-row">
+          <span>Didn't receive the code?</span>
+          <button type="button" id="btn-resend-reset-otp" class="btn-link">Resend Code</button>
+          <span id="reset-resend-countdown" style="display: none; color: var(--text-muted); font-size: 0.8rem;">(wait 60s)</span>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
-
 <!-- Legal Agreement Sub-Modal: Terms of Service & AI Training License -->
 <div id="legal-terms-modal" class="review-modal-overlay" style="display: none;">
   <div class="legal-modal-card">
