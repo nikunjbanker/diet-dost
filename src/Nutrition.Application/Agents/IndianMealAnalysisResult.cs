@@ -117,6 +117,8 @@ public interface IFoodVisionAgent
         string? regionalContext = null,
         UserProfile? userContext = null,
         List<Nutrition.Domain.Model.Meal.UserCorrectionRecord>? userLearnedCorrections = null,
+        string? mealType = null,
+        string? fileName = null,
         CancellationToken ct = default);
 
     Task<IndianMealAnalysisResult> AnalyzeMealDescriptionAsync(

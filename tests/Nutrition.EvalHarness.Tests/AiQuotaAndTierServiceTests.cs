@@ -7,6 +7,7 @@ using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
 
+[Collection("TierConfigTests")]
 public class AiQuotaAndTierServiceTests : IDisposable
 {
     private readonly SqliteConnection _connection;
@@ -173,19 +174,30 @@ public class AiQuotaAndTierServiceTests : IDisposable
     [Fact]
     public async Task TierConfigurationService_UpdatesRuntimeLimitsAndInvalidatesCache()
     {
-        // Get initial Free tier config (limit: 1)
-        var initial = await _tierConfigService.GetConfigurationAsync(UserTier.Free);
-        Assert.Equal(1, initial.DailyAiDetectionLimit);
+        try
+        {
+            // Get initial Free tier config (limit: 1)
+            var initial = await _tierConfigService.GetConfigurationAsync(UserTier.Free);
+            Assert.Equal(1, initial.DailyAiDetectionLimit);
 
-        // Update limit dynamically to 5
-        initial.DailyAiDetectionLimit = 5;
-        initial.AllowPhotoCompare = true;
-        await _tierConfigService.UpdateConfigurationAsync(initial);
+            // Update limit dynamically to 5
+            initial.DailyAiDetectionLimit = 5;
+            initial.AllowPhotoCompare = true;
+            await _tierConfigService.UpdateConfigurationAsync(initial);
 
-        // Query again - should reflect updated configuration
-        var updated = await _tierConfigService.GetConfigurationAsync(UserTier.Free);
-        Assert.Equal(5, updated.DailyAiDetectionLimit);
-        Assert.True(updated.AllowPhotoCompare);
+            // Query again - should reflect updated configuration
+            var updated = await _tierConfigService.GetConfigurationAsync(UserTier.Free);
+            Assert.Equal(5, updated.DailyAiDetectionLimit);
+            Assert.True(updated.AllowPhotoCompare);
+        }
+        finally
+        {
+            var config = await _tierConfigService.GetConfigurationAsync(UserTier.Free);
+            config.DailyAiDetectionLimit = 1;
+            config.AllowPhotoCompare = false;
+            await _tierConfigService.UpdateConfigurationAsync(config);
+            TierConfigurationService.ClearCache();
+        }
     }
 
     [Fact]

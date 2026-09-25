@@ -59,7 +59,10 @@ export class MealLoggerController {
 
     // Dropzone Click & Drag/Drop
     if (el.dropzone && el.fileInput) {
-      el.dropzone.addEventListener('click', () => el.fileInput.click());
+      el.dropzone.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-sample-thali') || e.target === el.fileInput) return;
+        el.fileInput.click();
+      });
       el.dropzone.addEventListener('dragover', (e) => {
         e.preventDefault();
         el.dropzone.classList.add('dragover');
@@ -68,13 +71,15 @@ export class MealLoggerController {
       el.dropzone.addEventListener('drop', (e) => {
         e.preventDefault();
         el.dropzone.classList.remove('dragover');
-        if (e.dataTransfer.files.length > 0) {
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
           this.handleImageUpload(e.dataTransfer.files[0]);
         }
       });
       el.fileInput.addEventListener('change', (e) => {
-        if (e.target.files.length > 0) {
-          this.handleImageUpload(e.target.files[0]);
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          e.target.value = '';
+          this.handleImageUpload(file);
         }
       });
     }
@@ -213,69 +218,89 @@ export class MealLoggerController {
     }
 
     return new Promise((resolve) => {
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
+      // Safety timeout: never let canvas optimization block user execution
+      const timeoutId = setTimeout(() => {
+        resolve(file);
+      }, 3500);
 
-      img.onload = () => {
-        URL.revokeObjectURL(objectUrl);
-        let { width, height } = img;
+      try {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
 
-        // If file is already lightweight (< 250KB) and dimensions <= maxDimension, don't recompress
-        if (file.size <= 250 * 1024 && width <= maxDimension && height <= maxDimension) {
-          resolve(file);
-          return;
-        }
+        img.onload = () => {
+          clearTimeout(timeoutId);
+          URL.revokeObjectURL(objectUrl);
+          try {
+            let { width, height } = img;
 
-        // Maintain exact aspect ratio
-        if (width > maxDimension || height > maxDimension) {
-          const ratio = Math.min(maxDimension / width, maxDimension / height);
-          width = Math.max(1, Math.round(width * ratio));
-          height = Math.max(1, Math.round(height * ratio));
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-
-        if (!ctx) {
-          resolve(file);
-          return;
-        }
-
-        // High-quality downsampling
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, width, height);
-
-        const outputFormat = 'image/jpeg';
-        canvas.toBlob(
-          (blob) => {
-            if (!blob || blob.size >= file.size) {
+            // If file is already lightweight (< 250KB) and dimensions <= maxDimension, don't recompress
+            if (file.size <= 250 * 1024 && width <= maxDimension && height <= maxDimension) {
               resolve(file);
               return;
             }
 
-            const optimizedFile = new File(
-              [blob],
-              file.name.replace(/\.[^/.]+$/, "") + ".jpg",
-              { type: outputFormat, lastModified: Date.now() }
+            // Maintain exact aspect ratio
+            if (width > maxDimension || height > maxDimension) {
+              const ratio = Math.min(maxDimension / width, maxDimension / height);
+              width = Math.max(1, Math.round(width * ratio));
+              height = Math.max(1, Math.round(height * ratio));
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+              resolve(file);
+              return;
+            }
+
+            // High-quality downsampling
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const outputFormat = 'image/jpeg';
+            canvas.toBlob(
+              (blob) => {
+                if (!blob || blob.size >= file.size) {
+                  resolve(file);
+                  return;
+                }
+
+                const baseName = (file.name || 'meal_photo').replace(/\.[^/.]+$/, "");
+                const optimizedFile = new File(
+                  [blob],
+                  baseName + ".jpg",
+                  { type: outputFormat, lastModified: Date.now() }
+                );
+
+                console.log(`[ImageOptimizer] Reduced ${(file.size / 1024).toFixed(1)} KB -> ${(optimizedFile.size / 1024).toFixed(1)} KB (${width}x${height}, Q: ${quality})`);
+                resolve(optimizedFile);
+              },
+              outputFormat,
+              quality
             );
+          } catch (innerErr) {
+            console.warn('[ImageOptimizer] Canvas processing failed, falling back to original file:', innerErr);
+            resolve(file);
+          }
+        };
 
-            console.log(`[ImageOptimizer] Reduced ${(file.size / 1024).toFixed(1)} KB -> ${(optimizedFile.size / 1024).toFixed(1)} KB (${width}x${height}, Q: ${quality})`);
-            resolve(optimizedFile);
-          },
-          outputFormat,
-          quality
-        );
-      };
+        img.onerror = (err) => {
+          clearTimeout(timeoutId);
+          URL.revokeObjectURL(objectUrl);
+          console.warn('[ImageOptimizer] Image loading error, using original file:', err);
+          resolve(file);
+        };
 
-      img.onerror = () => {
-        URL.revokeObjectURL(objectUrl);
+        img.src = objectUrl;
+      } catch (outerErr) {
+        clearTimeout(timeoutId);
+        console.warn('[ImageOptimizer] Optimizer initialization failed, using original file:', outerErr);
         resolve(file);
-      };
-
-      img.src = objectUrl;
+      }
     });
   }
 

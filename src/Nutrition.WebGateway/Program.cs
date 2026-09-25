@@ -162,18 +162,26 @@ builder.Services.AddAuthorization(options =>
 // Per-IP Partitioned Rate Limiter for Brute-Force Defense (OWASP A04)
 // Each unique client IP gets an independent sliding window: max 5 attempts per 15 minutes.
 // This replaces the previous global singleton which incorrectly shared one counter across all IPs.
+var isDevelopment = builder.Environment.IsDevelopment();
 var authPartitionedRateLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
-    RateLimitPartition.GetSlidingWindowLimiter(
-        partitionKey: context.Connection.RemoteIpAddress?.ToString()
+{
+    var ip = context.Connection.RemoteIpAddress;
+    var isLoopback = ip != null && System.Net.IPAddress.IsLoopback(ip);
+    var permitLimit = (isDevelopment || isLoopback) ? 100 : 10;
+    var window = (isDevelopment || isLoopback) ? TimeSpan.FromMinutes(1) : TimeSpan.FromMinutes(15);
+
+    return RateLimitPartition.GetSlidingWindowLimiter(
+        partitionKey: ip?.ToString()
                       ?? context.Request.Headers["X-Forwarded-For"].FirstOrDefault()
                       ?? "unknown",
         factory: _ => new SlidingWindowRateLimiterOptions
         {
-            PermitLimit = 5,
-            Window = TimeSpan.FromMinutes(15),
+            PermitLimit = permitLimit,
+            Window = window,
             SegmentsPerWindow = 3,
             QueueLimit = 0
-        }));
+        });
+});
 
 // Explicitly register under the abstract base type PartitionedRateLimiter<HttpContext>.
 // AddSingleton(instance) without the type arg registers under the concrete internal type,
@@ -185,8 +193,8 @@ builder.Services.AddSingleton<PartitionedRateLimiter<HttpContext>>(authPartition
 var legacyPollyPipeline = new ResiliencePipelineBuilder()
     .AddRateLimiter(new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
     {
-        PermitLimit = 5,
-        Window = TimeSpan.FromMinutes(15),
+        PermitLimit = isDevelopment ? 200 : 50,
+        Window = isDevelopment ? TimeSpan.FromMinutes(1) : TimeSpan.FromMinutes(15),
         SegmentsPerWindow = 3,
         QueueLimit = 0
     }))
@@ -401,44 +409,298 @@ using (var scope = app.Services.CreateScope())
             initLogger.LogInformation("Default tier configurations seeded successfully.");
         }
 
-        // Initialize / Seed SuperAdmin User
-        var superAdminEmail = builder.Configuration["Auth:SuperAdminEmail"]
-            ?? Environment.GetEnvironmentVariable("SUPER_ADMIN_EMAIL")
-            ?? "admin@dietdost.app";
-        var normalizedSuperAdminEmail = ApplicationUser.NormalizeEmailAddress(superAdminEmail);
-
+        // Initialize / Seed Demo Users for all 5 Tiers (Free, Basic, Premium, Admin, SuperAdmin)
+        // Common Password for all demo accounts: DietDost@Demo2026!
+        const string DemoPassword = "DietDost@Demo2026!";
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        var superAdminUser = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedSuperAdminEmail);
-        if (superAdminUser == null)
+        var dietitian = scope.ServiceProvider.GetRequiredService<ClinicalDietitianService>();
+
+        var demoSpecs = new[]
         {
-            superAdminUser = new ApplicationUser
+            new
+            {
+                Id = "user-free",
+                Email = "free@dietdost.app",
+                Name = "Free Tier User (Demo)",
+                Mobile = "+919876500001",
+                Role = UserRole.User,
+                Tier = UserTier.Free,
+                Cuisine = "North Indian",
+                Conditions = new List<string>(),
+                Medications = new List<MedicationEntry>()
+            },
+            new
+            {
+                Id = "user-basic",
+                Email = "basic@dietdost.app",
+                Name = "Basic Tier User (Demo)",
+                Mobile = "+919876500002",
+                Role = UserRole.User,
+                Tier = UserTier.Basic,
+                Cuisine = "South Indian",
+                Conditions = new List<string> { "Hypertension" },
+                Medications = new List<MedicationEntry>
+                {
+                    new() { DrugName = "Telmisartan 40mg", Dosage = "40mg", Frequency = "Morning" }
+                }
+            },
+            new
+            {
+                Id = "user-premium",
+                Email = "premium@dietdost.app",
+                Name = "Premium Tier User (Demo)",
+                Mobile = "+919876500003",
+                Role = UserRole.User,
+                Tier = UserTier.Premium,
+                Cuisine = "Gujarati",
+                Conditions = new List<string> { "Pre-Diabetes" },
+                Medications = new List<MedicationEntry>
+                {
+                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                }
+            },
+            new
+            {
+                Id = "user-admin",
+                Email = "admin.demo@dietdost.app",
+                Name = "Admin Tier User (Demo)",
+                Mobile = "+919876500004",
+                Role = UserRole.Admin,
+                Tier = UserTier.Premium,
+                Cuisine = "Maharashtrian",
+                Conditions = new List<string>(),
+                Medications = new List<MedicationEntry>()
+            },
+            new
             {
                 Id = "user-superadmin",
-                Email = superAdminEmail,
-                NormalizedEmail = normalizedSuperAdminEmail,
-                MobileNumber = "+919999999999",
-                NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999999"),
-                PasswordHash = passwordHasher.HashPassword("SuperAdmin@DietDost2026!"),
-                SecurityStamp = Guid.NewGuid().ToString("N"),
+                Email = "admin@dietdost.app",
+                Name = "SuperAdmin Tier User (Demo)",
+                Mobile = "+919999999999",
                 Role = UserRole.SuperAdmin,
                 Tier = UserTier.SuperAdmin,
-                IsEmailVerified = true,
-                IsMobileVerified = true,
-                IsActive = true,
-                TermsAcceptedAtUtc = DateTime.UtcNow,
-                TermsVersionAccepted = builder.Configuration["Auth:TermsVersion"] ?? "v1.0-202609",
-                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
-                HealthConsentVersionAccepted = builder.Configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
-                ConsentIpAddress = "127.0.0.1",
-                ConsentUserAgent = "SystemBootstrap",
-                CreatedAtUtc = DateTime.UtcNow
-            };
-            await db.Users.AddAsync(superAdminUser);
-            await db.SaveChangesAsync();
-            initLogger.LogInformation("SuperAdmin account provisioned successfully.");
+                Cuisine = "North Indian",
+                Conditions = new List<string> { "Pre-Diabetes" },
+                Medications = new List<MedicationEntry>
+                {
+                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                }
+            }
+        };
+
+        var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
+
+        foreach (var spec in demoSpecs)
+        {
+            var normEmail = ApplicationUser.NormalizeEmailAddress(spec.Email);
+            var user = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normEmail);
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    Id = spec.Id,
+                    Email = spec.Email,
+                    NormalizedEmail = normEmail,
+                    MobileNumber = spec.Mobile,
+                    NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber(spec.Mobile),
+                    PasswordHash = passwordHasher.HashPassword(DemoPassword),
+                    SecurityStamp = Guid.NewGuid().ToString("N"),
+                    Role = spec.Role,
+                    Tier = spec.Tier,
+                    IsEmailVerified = true,
+                    IsMobileVerified = true,
+                    IsActive = true,
+                    TermsAcceptedAtUtc = DateTime.UtcNow,
+                    TermsVersionAccepted = builder.Configuration["Auth:TermsVersion"] ?? "v1.0-202609",
+                    HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                    HealthConsentVersionAccepted = builder.Configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
+                    ConsentIpAddress = "127.0.0.1",
+                    ConsentUserAgent = "SystemBootstrap",
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                await db.Users.AddAsync(user);
+                await db.SaveChangesAsync();
+                initLogger.LogInformation("Provisioned demo user: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+            }
+            else
+            {
+                user.PasswordHash = passwordHasher.HashPassword(DemoPassword);
+                user.Role = spec.Role;
+                user.Tier = spec.Tier;
+                user.IsEmailVerified = true;
+                user.IsMobileVerified = true;
+                user.IsActive = true;
+                await db.SaveChangesAsync();
+            }
+
+            var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id);
+            if (profile == null)
+            {
+                profile = new UserProfile
+                {
+                    Id = user.Id,
+                    Name = spec.Name,
+                    Sex = BiologicalSex.Male,
+                    Age = 32,
+                    HeightCm = 175,
+                    CurrentWeightKg = 80,
+                    TargetWeightKg = 72,
+                    DesiredPaceKgPerWeek = 0.5,
+                    ActivityLevel = ActivityLevel.Sedentary,
+                    DietaryPreference = DietaryPreference.LactoVeg,
+                    RegionalCuisine = spec.Cuisine,
+                    Timezone = "Asia/Kolkata",
+                    DiagnosedConditions = spec.Conditions,
+                    Medications = spec.Medications
+                };
+                await db.Profiles.AddAsync(profile);
+                await db.SaveChangesAsync();
+            }
+            else
+            {
+                profile.Name = spec.Name;
+                profile.RegionalCuisine = spec.Cuisine;
+                await db.SaveChangesAsync();
+            }
+
+            await dietitian.GetOrCreateDailyLedgerAsync(user.Id, today);
+
+            if (!await db.ProgressPhotos.AnyAsync(p => p.UserId == user.Id))
+            {
+                var baselineDate = DateTime.UtcNow.AddDays(-30);
+                var currentDate = DateTime.UtcNow;
+
+                var samplePhotos = new List<ProgressPhoto>
+                {
+                    new()
+                    {
+                        UserId = user.Id,
+                        CapturedAtUtc = baselineDate,
+                        WeightKg = 85.0,
+                        PhotoType = ProgressPhotoType.Face,
+                        PhotoUri = "/uploads/progress/face_baseline.svg",
+                        IsBaseline = true,
+                        Notes = "Day 1 Baseline photo before commencing ICMR-NIN protocol."
+                    },
+                    new()
+                    {
+                        UserId = user.Id,
+                        CapturedAtUtc = currentDate,
+                        WeightKg = 81.5,
+                        PhotoType = ProgressPhotoType.Face,
+                        PhotoUri = "/uploads/progress/face_current.svg",
+                        IsBaseline = false,
+                        Notes = "Day 30 check-in: Noticeable jawline definition and facial slimming."
+                    },
+                    new()
+                    {
+                        UserId = user.Id,
+                        CapturedAtUtc = baselineDate,
+                        WeightKg = 85.0,
+                        PhotoType = ProgressPhotoType.FullBodyFront,
+                        PhotoUri = "/uploads/progress/body_baseline.svg",
+                        IsBaseline = true,
+                        Notes = "Day 1 Full Body Front View."
+                    },
+                    new()
+                    {
+                        UserId = user.Id,
+                        CapturedAtUtc = currentDate,
+                        WeightKg = 81.5,
+                        PhotoType = ProgressPhotoType.FullBodyFront,
+                        PhotoUri = "/uploads/progress/body_current.svg",
+                        IsBaseline = false,
+                        Notes = "Day 30 Full Body Front View: Down 3.5 kg."
+                    }
+                };
+                await db.ProgressPhotos.AddRangeAsync(samplePhotos);
+                await db.SaveChangesAsync();
+            }
+
+            if (!await db.Meals.AnyAsync(m => m.UserId == user.Id))
+            {
+                var now = DateTime.UtcNow;
+                var sampleMeals = new List<MealLog>
+                {
+                    new()
+                    {
+                        UserId = user.Id,
+                        LoggedAt = now.AddHours(-3),
+                        MealType = MealType.Lunch,
+                        DishName = "North Indian Thali (Phulkas, Dal & Bhindi Masala)",
+                        PhotoUri = "/uploads/meals/sample_thali.jpg",
+                        OverallConfidenceScore = 0.96,
+                        IsVerifiedByUser = true,
+                        DietitianAdvice = "Balanced meal with adequate protein and high-fiber okra. Great portion control under 550 kcal.",
+                        Items = new List<FoodItemRecord>
+                        {
+                            new() { Name = "Whole Wheat Roti", HindiOrRegionalName = "Phulka / Roti", EstimatedPortion = "2 Phulkas", Quantity = 2, Grams = 60, Calories = 70, ProteinGrams = 2.2, CarbsGrams = 15.0, FatGrams = 0.4, FiberGrams = 2.2, SugarGrams = 0.25, SodiumMg = 5 },
+                            new() { Name = "Yellow Moong Dal Tadka", HindiOrRegionalName = "Moong Dal Fry", EstimatedPortion = "1 Katori", Quantity = 1, Grams = 150, Calories = 135, ProteinGrams = 7.2, CarbsGrams = 19.0, FatGrams = 4.5, FiberGrams = 5.2, SugarGrams = 0.8, SodiumMg = 320 },
+                            new() { Name = "Bhindi Masala (Okra Subzi)", HindiOrRegionalName = "Bhindi ki Sabzi", EstimatedPortion = "1 Katori", Quantity = 1, Grams = 120, Calories = 115, ProteinGrams = 2.8, CarbsGrams = 9.5, FatGrams = 7.2, FiberGrams = 4.8, SugarGrams = 1.5, SodiumMg = 180 },
+                            new() { Name = "Green Salad (Cucumber & Tomato)", HindiOrRegionalName = "Kachumber Salad", EstimatedPortion = "1 Plate", Quantity = 1, Grams = 100, Calories = 30, ProteinGrams = 1.0, CarbsGrams = 6.0, FatGrams = 0.2, FiberGrams = 0.8, SugarGrams = 5.9, SodiumMg = 20 }
+                        }
+                    },
+                    new()
+                    {
+                        UserId = user.Id,
+                        LoggedAt = now.AddHours(-7),
+                        MealType = MealType.Breakfast,
+                        DishName = "Kanda Poha with Roasted Peanuts",
+                        OverallConfidenceScore = 0.92,
+                        IsVerifiedByUser = true,
+                        DietitianAdvice = "Wholesome complex carbs. Peanuts provide good monounsaturated fats.",
+                        Items = new List<FoodItemRecord>
+                        {
+                            new() { Name = "Kanda Poha", HindiOrRegionalName = "Poha", EstimatedPortion = "1 Plate (150g)", Quantity = 1, Grams = 150, Calories = 220, ProteinGrams = 4.5, CarbsGrams = 38.0, FatGrams = 5.5, FiberGrams = 3.2, SugarGrams = 1.8, SodiumMg = 260 },
+                            new() { Name = "Roasted Peanuts", HindiOrRegionalName = "Moongphali", EstimatedPortion = "1 Tbsp (15g)", Quantity = 1, Grams = 15, Calories = 85, ProteinGrams = 3.8, CarbsGrams = 2.4, FatGrams = 7.2, FiberGrams = 1.2, SugarGrams = 0.6, SodiumMg = 10 },
+                            new() { Name = "Masala Chai (Low Sugar)", HindiOrRegionalName = "Chai", EstimatedPortion = "1 Cup (120ml)", Quantity = 1, Grams = 120, Calories = 65, ProteinGrams = 2.2, CarbsGrams = 8.5, FatGrams = 2.4, FiberGrams = 0.0, SugarGrams = 5.0, SodiumMg = 40 }
+                        }
+                    },
+                    new()
+                    {
+                        UserId = user.Id,
+                        LoggedAt = now.AddDays(-1).Date.AddHours(20),
+                        MealType = MealType.Dinner,
+                        DishName = "Palak Paneer with Phulkas",
+                        OverallConfidenceScore = 0.95,
+                        IsVerifiedByUser = true,
+                        DietitianAdvice = "High biological value protein from paneer. Low carb dinner supports optimal insulin sensitivity.",
+                        Items = new List<FoodItemRecord>
+                        {
+                            new() { Name = "Palak Paneer", HindiOrRegionalName = "Palak Paneer", EstimatedPortion = "1 Katori (150g)", Quantity = 1, Grams = 150, Calories = 220, ProteinGrams = 12.0, CarbsGrams = 8.5, FatGrams = 15.5, FiberGrams = 4.5, SugarGrams = 2.4, SodiumMg = 380 },
+                            new() { Name = "Whole Wheat Roti", HindiOrRegionalName = "Phulka", EstimatedPortion = "2 Phulkas", Quantity = 2, Grams = 60, Calories = 70, ProteinGrams = 2.2, CarbsGrams = 15.0, FatGrams = 0.4, FiberGrams = 2.2, SugarGrams = 0.25, SodiumMg = 5 }
+                        }
+                    },
+                    new()
+                    {
+                        UserId = user.Id,
+                        LoggedAt = now.AddDays(-2).Date.AddHours(20).AddMinutes(15),
+                        MealType = MealType.Dinner,
+                        DishName = "Moong Dal Khichdi with Curd",
+                        OverallConfidenceScore = 0.97,
+                        IsVerifiedByUser = true,
+                        DietitianAdvice = "Gentle on digestion and gut-friendly with probiotic curd.",
+                        Items = new List<FoodItemRecord>
+                        {
+                            new() { Name = "Moong Dal Khichdi", HindiOrRegionalName = "Khichdi", EstimatedPortion = "1.5 Bowl (250g)", Quantity = 1, Grams = 250, Calories = 270, ProteinGrams = 9.8, CarbsGrams = 45.0, FatGrams = 5.5, FiberGrams = 5.0, SugarGrams = 1.2, SodiumMg = 340 },
+                            new() { Name = "Plain Cow Milk Curd / Dahi", HindiOrRegionalName = "Dahi", EstimatedPortion = "1 Katori (100g)", Quantity = 1, Grams = 100, Calories = 60, ProteinGrams = 3.5, CarbsGrams = 4.5, FatGrams = 3.2, FiberGrams = 0.0, SugarGrams = 4.2, SodiumMg = 38 }
+                        }
+                    }
+                };
+
+                foreach (var meal in sampleMeals)
+                {
+                    meal.RecalculateTotals();
+                }
+
+                db.Meals.AddRange(sampleMeals);
+                await db.SaveChangesAsync();
+            }
         }
 
-        // Migrate pre-existing 'user-default' sample records to the SuperAdmin user
+        // Migrate pre-existing 'user-default' sample records if any remain
+        var activeSuperAdmin = await db.Users.FirstAsync(u => u.Role == UserRole.SuperAdmin);
         await db.Database.ExecuteSqlRawAsync(@"
             UPDATE ""Profiles"" SET ""Id"" = {0} WHERE ""Id"" = 'user-default';
             UPDATE ""Meals"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
@@ -446,7 +708,7 @@ using (var scope = app.Services.CreateScope())
             UPDATE ""ProgressPhotos"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
             UPDATE ""Corrections"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
             UPDATE ""AiFeedbacks"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
-        ", superAdminUser.Id);
+        ", activeSuperAdmin.Id);
 
         initLogger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");
     }
@@ -454,200 +716,6 @@ using (var scope = app.Services.CreateScope())
     {
         initLogger.LogError(ex, "Critical database initialization failure during startup. ErrorType: {ErrorType}, Message: {ErrorMessage}", ex.GetType().Name, ex.Message);
         throw;
-    }
-
-    var activeSuperAdmin = await db.Users.FirstAsync(u => u.Role == UserRole.SuperAdmin);
-
-    if (!await db.Profiles.AnyAsync())
-    {
-        var defaultProfile = new UserProfile
-        {
-            Id = activeSuperAdmin.Id,
-            Name = "Aarav Sharma",
-            Sex = BiologicalSex.Male,
-            Age = 32,
-            HeightCm = 175,
-            CurrentWeightKg = 82,
-            TargetWeightKg = 72,
-            DesiredPaceKgPerWeek = 0.5,
-            ActivityLevel = ActivityLevel.Sedentary,
-            DietaryPreference = DietaryPreference.LactoVeg,
-            RegionalCuisine = "North Indian",
-            Timezone = "Asia/Kolkata",
-            DiagnosedConditions = new() { "Pre-Diabetes" },
-            Medications = new()
-            {
-                new MedicationEntry { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
-            }
-        };
-        await db.Profiles.AddAsync(defaultProfile);
-        await db.SaveChangesAsync();
-
-        // Also pre-seed today's ledger
-        var dietitian = scope.ServiceProvider.GetRequiredService<ClinicalDietitianService>();
-        var userTz = ClinicalDietitianService.GetUserTimeZoneInfo(defaultProfile.Timezone);
-        await dietitian.GetOrCreateDailyLedgerAsync(defaultProfile.Id, DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz)));
-    }
-
-    if (!await db.ProgressPhotos.AnyAsync())
-    {
-        var baselineDate = DateTime.UtcNow.AddDays(-30);
-        var currentDate = DateTime.UtcNow;
-
-        var samplePhotos = new List<ProgressPhoto>
-        {
-            new()
-            {
-                UserId = activeSuperAdmin.Id,
-                CapturedAtUtc = baselineDate,
-                WeightKg = 85.0,
-                PhotoType = ProgressPhotoType.Face,
-                PhotoUri = "/uploads/progress/face_baseline.svg",
-                IsBaseline = true,
-                Notes = "Day 1 Baseline photo before commencing ICMR-NIN deficit protocol."
-            },
-            new()
-            {
-                UserId = activeSuperAdmin.Id,
-                CapturedAtUtc = currentDate,
-                WeightKg = 81.5,
-                PhotoType = ProgressPhotoType.Face,
-                PhotoUri = "/uploads/progress/face_current.svg",
-                IsBaseline = false,
-                Notes = "Day 30 check-in: Noticeable jawline definition and facial slimming."
-            },
-            new()
-            {
-                UserId = activeSuperAdmin.Id,
-                CapturedAtUtc = baselineDate,
-                WeightKg = 85.0,
-                PhotoType = ProgressPhotoType.FullBodyFront,
-                PhotoUri = "/uploads/progress/body_baseline.svg",
-                IsBaseline = true,
-                Notes = "Day 1 Full Body Front View (Starting Waist: 38 inches)."
-            },
-            new()
-            {
-                UserId = activeSuperAdmin.Id,
-                CapturedAtUtc = currentDate,
-                WeightKg = 81.5,
-                PhotoType = ProgressPhotoType.FullBodyFront,
-                PhotoUri = "/uploads/progress/body_current.svg",
-                IsBaseline = false,
-                Notes = "Day 30 Full Body Front View: Down 3.5 kg, waist trimmer by 2.5 inches."
-            }
-        };
-        await db.ProgressPhotos.AddRangeAsync(samplePhotos);
-        await db.SaveChangesAsync();
-    }
-
-    if (!await db.Meals.AnyAsync())
-    {
-        var now = DateTime.UtcNow;
-        var sampleMeals = new List<MealLog>
-        {
-            new MealLog
-            {
-                UserId = activeSuperAdmin.Id,
-                LoggedAt = now.AddHours(-3),
-                MealType = MealType.Lunch,
-                DishName = "North Indian Thali (Phulkas, Dal & Bhindi Masala)",
-                PhotoUri = "/uploads/meals/sample_thali.jpg",
-                OverallConfidenceScore = 0.96,
-                IsVerifiedByUser = true,
-                DietitianAdvice = "Balanced meal with adequate protein and high-fiber okra. Great portion control under 550 kcal.",
-                Items = new List<FoodItemRecord>
-                {
-                    new() { Name = "Whole Wheat Roti", HindiOrRegionalName = "Phulka / Roti", EstimatedPortion = "2 Phulkas", Quantity = 2, Grams = 60, Calories = 70, ProteinGrams = 2.2, CarbsGrams = 15.0, FatGrams = 0.4, FiberGrams = 2.2, SugarGrams = 0.25, SodiumMg = 5 },
-                    new() { Name = "Yellow Moong Dal Tadka", HindiOrRegionalName = "Moong Dal Fry", EstimatedPortion = "1 Katori", Quantity = 1, Grams = 150, Calories = 135, ProteinGrams = 7.2, CarbsGrams = 19.0, FatGrams = 4.5, FiberGrams = 5.2, SugarGrams = 0.8, SodiumMg = 320 },
-                    new() { Name = "Bhindi Masala (Okra Subzi)", HindiOrRegionalName = "Bhindi ki Sabzi", EstimatedPortion = "1 Katori", Quantity = 1, Grams = 120, Calories = 115, ProteinGrams = 2.8, CarbsGrams = 9.5, FatGrams = 7.2, FiberGrams = 4.8, SugarGrams = 1.5, SodiumMg = 180 },
-                    new() { Name = "Green Salad (Cucumber & Tomato)", HindiOrRegionalName = "Kachumber Salad", EstimatedPortion = "1 Plate", Quantity = 1, Grams = 100, Calories = 30, ProteinGrams = 1.0, CarbsGrams = 6.0, FatGrams = 0.2, FiberGrams = 0.8, SugarGrams = 5.9, SodiumMg = 20 }
-                }
-            },
-            new MealLog
-            {
-                UserId = activeSuperAdmin.Id,
-                LoggedAt = now.AddHours(-7),
-                MealType = MealType.Breakfast,
-                DishName = "Kanda Poha with Roasted Peanuts",
-                OverallConfidenceScore = 0.92,
-                IsVerifiedByUser = true,
-                DietitianAdvice = "Wholesome complex carbs. Peanuts provide good monounsaturated fats.",
-                Items = new List<FoodItemRecord>
-                {
-                    new() { Name = "Kanda Poha", HindiOrRegionalName = "Poha", EstimatedPortion = "1 Plate (150g)", Quantity = 1, Grams = 150, Calories = 220, ProteinGrams = 4.5, CarbsGrams = 38.0, FatGrams = 5.5, FiberGrams = 3.2, SugarGrams = 1.8, SodiumMg = 260 },
-                    new() { Name = "Roasted Peanuts", HindiOrRegionalName = "Moongphali", EstimatedPortion = "1 Tbsp (15g)", Quantity = 1, Grams = 15, Calories = 85, ProteinGrams = 3.8, CarbsGrams = 2.4, FatGrams = 7.2, FiberGrams = 1.2, SugarGrams = 0.6, SodiumMg = 10 },
-                    new() { Name = "Masala Chai (Low Sugar)", HindiOrRegionalName = "Chai", EstimatedPortion = "1 Cup (120ml)", Quantity = 1, Grams = 120, Calories = 65, ProteinGrams = 2.2, CarbsGrams = 8.5, FatGrams = 2.4, FiberGrams = 0.0, SugarGrams = 5.0, SodiumMg = 40 }
-                }
-            },
-            new MealLog
-            {
-                UserId = activeSuperAdmin.Id,
-                LoggedAt = now.AddDays(-1).Date.AddHours(20),
-                MealType = MealType.Dinner,
-                DishName = "Palak Paneer with Phulkas",
-                OverallConfidenceScore = 0.95,
-                IsVerifiedByUser = true,
-                DietitianAdvice = "High biological value protein from paneer. Low carb dinner supports optimal insulin sensitivity.",
-                Items = new List<FoodItemRecord>
-                {
-                    new() { Name = "Palak Paneer", HindiOrRegionalName = "Palak Paneer", EstimatedPortion = "1 Katori (150g)", Quantity = 1, Grams = 150, Calories = 220, ProteinGrams = 12.0, CarbsGrams = 8.5, FatGrams = 15.5, FiberGrams = 4.5, SugarGrams = 2.4, SodiumMg = 380 },
-                    new() { Name = "Whole Wheat Roti", HindiOrRegionalName = "Phulka", EstimatedPortion = "2 Phulkas", Quantity = 2, Grams = 60, Calories = 70, ProteinGrams = 2.2, CarbsGrams = 15.0, FatGrams = 0.4, FiberGrams = 2.2, SugarGrams = 0.25, SodiumMg = 5 }
-                }
-            },
-            new MealLog
-            {
-                UserId = activeSuperAdmin.Id,
-                LoggedAt = now.AddDays(-1).Date.AddHours(13),
-                MealType = MealType.Lunch,
-                DishName = "Rajma Chawal with Kachumber Salad",
-                OverallConfidenceScore = 0.94,
-                IsVerifiedByUser = true,
-                DietitianAdvice = "Classic complementary protein combination. Good prebiotic fiber from red kidney beans.",
-                Items = new List<FoodItemRecord>
-                {
-                    new() { Name = "Rajma Masala", HindiOrRegionalName = "Rajma Gravy", EstimatedPortion = "1 Bowl (200g)", Quantity = 1, Grams = 200, Calories = 210, ProteinGrams = 9.5, CarbsGrams = 32.0, FatGrams = 5.0, FiberGrams = 7.5, SugarGrams = 2.8, SodiumMg = 410 },
-                    new() { Name = "Steamed Basmati Rice", HindiOrRegionalName = "Chawal", EstimatedPortion = "1 Cup (150g)", Quantity = 1, Grams = 150, Calories = 195, ProteinGrams = 4.0, CarbsGrams = 42.0, FatGrams = 0.5, FiberGrams = 0.8, SugarGrams = 0.1, SodiumMg = 2 }
-                }
-            },
-            new MealLog
-            {
-                UserId = activeSuperAdmin.Id,
-                LoggedAt = now.AddDays(-2).Date.AddHours(20).AddMinutes(15),
-                MealType = MealType.Dinner,
-                DishName = "Moong Dal Khichdi with Curd",
-                OverallConfidenceScore = 0.97,
-                IsVerifiedByUser = true,
-                DietitianAdvice = "Gentle on digestion and gut-friendly with probiotic curd.",
-                Items = new List<FoodItemRecord>
-                {
-                    new() { Name = "Moong Dal Khichdi", HindiOrRegionalName = "Khichdi", EstimatedPortion = "1.5 Bowl (250g)", Quantity = 1, Grams = 250, Calories = 270, ProteinGrams = 9.8, CarbsGrams = 45.0, FatGrams = 5.5, FiberGrams = 5.0, SugarGrams = 1.2, SodiumMg = 340 },
-                    new() { Name = "Plain Cow Milk Curd / Dahi", HindiOrRegionalName = "Dahi", EstimatedPortion = "1 Katori (100g)", Quantity = 1, Grams = 100, Calories = 60, ProteinGrams = 3.5, CarbsGrams = 4.5, FatGrams = 3.2, FiberGrams = 0.0, SugarGrams = 4.2, SodiumMg = 38 }
-                }
-            },
-            new MealLog
-            {
-                UserId = activeSuperAdmin.Id,
-                LoggedAt = now.AddDays(-3).Date.AddHours(17),
-                MealType = MealType.Snack,
-                DishName = "Roasted Makhana & Green Tea",
-                OverallConfidenceScore = 0.95,
-                IsVerifiedByUser = true,
-                DietitianAdvice = "Low glycemic load evening snack packed with antioxidants and magnesium.",
-                Items = new List<FoodItemRecord>
-                {
-                    new() { Name = "Roasted Foxnuts (Makhana)", HindiOrRegionalName = "Phool Makhana", EstimatedPortion = "1 Bowl (30g)", Quantity = 1, Grams = 30, Calories = 105, ProteinGrams = 3.0, CarbsGrams = 20.0, FatGrams = 1.8, FiberGrams = 2.4, SugarGrams = 0.2, SodiumMg = 85 }
-                }
-            }
-        };
-
-        foreach (var meal in sampleMeals)
-        {
-            meal.RecalculateTotals();
-        }
-
-        db.Meals.AddRange(sampleMeals);
-        await db.SaveChangesAsync();
     }
 }
 

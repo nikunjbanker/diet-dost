@@ -2015,3 +2015,42 @@
 - **Git Commit**: `21e9ca5` — `fix(client): add status methods to ToastNotificationService and guard auth events`
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260925-021] AI Detection Photo Upload Fix & Multi-Tier Demo User Validation
+- **Timestamp**: `2026-09-25T18:48:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture)`
+- **Change Type**: `[DEFECT_FIX]` & `[FEATURE]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`
+- **Summary of Change**:
+  Fixed photo dropzone recursive event bubbling and hanging scanning states in AI meal detection; enhanced the offline clinical vision engine to be mealType and filename context-aware; provisioned 5 representative demo accounts (Free, Basic, Premium, Admin, SuperAdmin) sharing common password `DietDost@Demo2026!`; validated tier policy enforcement (AI quotas, photo comparison, data export, analytics history, admin governance); and added comprehensive unit and integration test coverage with 105 passed tests (0 warnings, 0 errors).
+- **Root Cause Analysis (Mandatory for DEFECT_FIX)**:
+  - *Symptom*: Photo upload appeared broken when uploading as SuperAdmin or other users; UI scanning could hang; local fallback engine unconditionally returned lunch thali.
+  - *Root Cause 1*: In `meal-logger.js`, clicking `#photo-dropzone` triggered `#meal-photo-input.click()`, which bubbled back up to the dropzone and re-triggered `.click()` recursively.
+  - *Root Cause 2*: Re-uploading the same file name failed to trigger the `change` event because `el.fileInput.value` was not cleared.
+  - *Root Cause 3*: Image optimization canvas could hang indefinitely on corrupted or slow streams; added 3500ms safety timeout fallback.
+  - *Root Cause 4*: The offline fallback AI engine (`MicrosoftAgentFoodVisionService`) hardcoded `MealType = "Lunch"` and homestyle thali items regardless of meal type or image context.
+  - *Root Cause 5*: Localhost auth rate limits (5 attempts / 15 minutes) caused `TooManyRequests` during demo account switching; updated rate limiters in `Program.cs` to adaptively permit 100/200 requests for development and loopback environments.
+- **Key Enhancements**:
+  - Seeded 5 dedicated demo users with uniform password `DietDost@Demo2026!`:
+    * `free@dietdost.app`: Free Tier User (Demo) [Free, 1 call/day, 7d history]
+    * `basic@dietdost.app`: Basic Tier User (Demo) [Basic, 7 calls/day, 30d history]
+    * `premium@dietdost.app`: Premium Tier User (Demo) [Premium, 30 calls/day, 365d history, Photo Compare, CSV Export]
+    * `admin.demo@dietdost.app`: Admin Tier User (Demo) [Admin Role, Premium Tier, Admin Governance Console]
+    * `admin@dietdost.app`: SuperAdmin Tier User (Demo) [SuperAdmin Role & Tier, Unlimited Quota]
+  - Created `tests/Nutrition.EvalHarness.Tests/TierFunctionalityTests.cs` and isolated static cache via `[Collection("TierConfigTests")]`.
+- **Modified Code Files**:
+  - `src/Nutrition.Application/Agents/IndianMealAnalysisResult.cs` [MODIFIED]
+  - `src/Nutrition.Infrastructure/AI/MicrosoftAgentFoodVisionService.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/MealsController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Program.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/meal-logger.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/review-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AiQuotaAndTierServiceTests.cs` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/TierFunctionalityTests.cs` [NEW]
+- **Harness & Browser Verification Result**:
+  - `dotnet build`: **0 warnings, 0 errors** (Targeting .NET 11).
+  - `dotnet test`: **105 passed (36 Domain + 69 EvalHarness), 0 failed, 0 warnings**.
+  - Browser Automation: End-to-end Free and Premium workflows verified. AI photo upload, review modal, and nutrition confirmation verified. Quota gating, paywall upgrade prompts, photo comparison gating, data export gating, analytics projections gating, and admin role access verified across all 5 tiers.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+

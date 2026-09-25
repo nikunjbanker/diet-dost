@@ -97,7 +97,8 @@ public class MealsController : ControllerBase
         }
 
         stream.Position = 0;
-        var analysis = await _visionAgent.AnalyzeMealPhotoAsync(stream, mimeType!, regionalContext, userProfile, userCorrections, ct);
+        var effectiveMealType = !string.IsNullOrWhiteSpace(mealType) ? mealType : GetClockMealType(userProfile?.Timezone);
+        var analysis = await _visionAgent.AnalyzeMealPhotoAsync(stream, mimeType!, regionalContext, userProfile, userCorrections, effectiveMealType, image.FileName, ct);
 
         // Record AI Usage Telemetry
         await _quotaService.RecordUsageAsync(
@@ -117,7 +118,7 @@ public class MealsController : ControllerBase
         }
         else if (string.IsNullOrWhiteSpace(analysis.MealType))
         {
-            analysis.MealType = GetClockMealType(userProfile?.Timezone);
+            analysis.MealType = effectiveMealType;
         }
 
         // Persist photo to wwwroot/uploads/meals for visual review & diary history
