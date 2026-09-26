@@ -2516,8 +2516,12 @@
      - Formulated strict DIP and SRP design: `MobileBffController` in `Nutrition.WebGateway` acts solely as an aggregation facade, delegating 100% of queries and commands to existing `Nutrition.Application` CQRS handlers (`IDispatcher`).
      - Zero duplication of clinical calculators (ICMR-NIN 2024 algorithms, TDEE, macro formulas in `Nutrition.Domain`).
      - Defined contract sharing: Option 1 uses direct C# project reference to `Nutrition.Domain`; Option 2 uses automated TypeScript code-generation via `openapi-typescript` against ASP.NET Core OpenAPI.
-  2. *Detailed Implementation Plan for Option 1 (.NET MAUI / C#)*:
-     - Documented Windows-only / No-Mac roadmap: Android local emulator/device debugging, Apple Hot Restart for physical iPhone over USB without a local Mac, and cloud CI/CD runners (`macos-latest` in GitHub Actions / Azure DevOps) for App Store `.ipa` builds.
+  2. *Detailed Implementation Plan for Option 1 (.NET MAUI / C#) — First-Class Android & Cross-Platform Roadmap*:
+     - Comprehensive Android platform engineering: Target SDK 35 (Android 15) down to Min SDK 24 (Android 7.0), `AndroidManifest.xml` permissions (Camera, `READ_MEDIA_IMAGES`), and `FileProvider` (`file_paths.xml`) to eliminate `FileUriExposedException` during native camera capture.
+     - Android network security & emulator loopback gotchas: documented `10.0.2.2:5240` host loopback routing and `network_security_config.xml` cleartext rules for local development vs strict production HTTPS.
+     - Android hardware token security: `SecureStorage` backed by `AndroidKeyStore` and `EncryptedSharedPreferences` (AES-256 GCM) with hardware TEE/StrongBox.
+     - Production Android release: Native Ahead-Of-Time (AOT) compilation and R8 code shrinking for high-performance `.aab` (Android App Bundle) with Google Play signing.
+     - Windows-only / No-Mac iOS roadmap: Local Android emulator/device debugging, Apple Hot Restart for physical iPhone over USB without a local Mac, and cloud CI/CD runners (`macos-latest` in GitHub Actions / Azure DevOps) for App Store `.ipa` builds.
      - Provided project setup, package manifests (`CommunityToolkit.Mvvm`, `LiveChartsCore.SkiaSharpView.Maui`, `SkiaSharp`), SkiaSharp 1080p image compression utility, and hardware `SecureStorage` implementation.
   3. *Detailed Implementation Plan for Option 2 (React Native + Expo) — The Zero-Mac Fast Track*:
      - Documented zero-Mac physical testing via the **Expo Go app** on iPhone (Wi-Fi hot-reload by scanning terminal QR code with zero macOS or Xcode required).

@@ -276,41 +276,133 @@ graph TD
 
 ---
 
-## 6. Implementation Plan: Option 1 (.NET MAUI / C#)
+## 6. Implementation Plan: Option 1 (.NET MAUI / C#) — First-Class Android & Cross-Platform Roadmap
 
-> **Ideal For**: Teams that want to write 100% C# across backend and mobile, reuse existing .NET domain models, and utilize Visual Studio on Windows.
+> **Ideal For**: Teams that want to write 100% C# across backend and mobile, reuse existing .NET domain models, and leverage the Windows PC's native Android development ecosystem.
 
-### 6.1 The Windows-Only / "No-Mac" Strategy for .NET MAUI
-As a Windows developer without a Mac, building for iOS traditionally requires a physical Mac on your local network. However, with modern .NET 11 and cloud DevOps, you can build and test without buying a Mac:
+### 6.1 Dual-Platform Architecture: Android First-Class Citizen & Windows-Only iOS Strategy
+For a Windows developer, **Android is the home-court advantage**: you have first-class, zero-latency local tooling without any cloud or Mac dependencies. Meanwhile, iOS is supported without owning a Mac via Apple Hot Restart over USB and cloud CI runners:
 
 ```mermaid
-graph LR
-    subgraph LOCAL_WIN ["Your Windows PC (No Mac)"]
-        VS["Visual Studio 2026 / VS Code"]
-        AND_EMU["Android Emulator (Pixel 8)"]
-        IPHONE["Physical iPhone (Plugged in via USB)"]
+graph TD
+    subgraph WIN_DEV ["Your Windows PC (Visual Studio 2026 / VS Code)"]
+        direction TB
+        DEV_ENV[".NET 11 MAUI Solution (C# 13)<br/>src/Nutrition.Mobile.Maui"]
         
-        VS -->|"Local F5 Debug"| AND_EMU
-        VS -->|"Apple Hot Restart (USB)"| IPHONE
+        subgraph ANDROID_LOCAL ["Android Inner-Loop (100% Local on Windows)"]
+            AND_EMU["Android Emulator (Pixel 8, API 34/35)<br/>Hardware Hyper-V / HAXM Accelerated"]
+            AND_PHYS["Physical Android Phone<br/>USB or Wireless ADB (adb connect)"]
+            DEV_ENV -->|"F5 Local Debug (Zero Latency)"| AND_EMU
+            DEV_ENV -->|"Instant F5 Deployment"| AND_PHYS
+        end
+
+        subgraph IOS_WIN ["iOS Inner-Loop (Zero Mac Hardware Needed)"]
+            IPHONE["Physical iPhone (Plugged via USB)"]
+            DEV_ENV -->|"Apple Hot Restart (Direct Windows Signing)"| IPHONE
+        end
     end
 
-    subgraph CLOUD_CI ["Cloud CI/CD (Zero Local Mac Needed)"]
-        GHA["GitHub Actions / Azure DevOps<br/>(runs-on: macos-latest)"]
-        TF["Apple TestFlight / App Store"]
-        
-        VS -->|"git push"| GHA
-        GHA -->|"Automated dotnet publish -f net11.0-ios"| TF
+    subgraph PROD_DIST ["Production App Store Distribution"]
+        direction TB
+        WIN_DEV -->|"dotnet publish (Local Windows)"| GP["Google Play Store<br/>Signed Android App Bundle (.aab)<br/>R8 Shrinking & Native AOT"]
+        WIN_DEV -->|"git push (Cloud CI Runner)"| GHA["GitHub Actions / Azure DevOps<br/>(runs-on: macos-latest)"]
+        GHA -->|"Automated dotnet publish -f net11.0-ios"| TF["Apple TestFlight & App Store (.ipa)"]
     end
 ```
 
-1. **Development & Testing on Android**: Runs 100% locally on Windows using the Visual Studio Android SDK emulator or any Android phone via USB debugging.
-2. **Local iOS Testing via Apple Hot Restart (No Mac Required)**:
-   - Visual Studio on Windows includes **Apple Hot Restart**, which deploys, runs, and debugs .NET MAUI apps directly to a physical iPhone plugged into your Windows PC over USB.
-   - Requirements: A free or paid Apple Developer account and iTunes for Windows. Visual Studio signs the executable directly on Windows.
-3. **Production iOS Release via Cloud Mac Runners**:
-   - For generating production `.ipa` binaries and App Store deployment, use **GitHub Actions** (`runs-on: macos-14`) or **Azure DevOps** (`vmImage: 'macOS-latest'`). The cloud runner compiles and signs the iOS binary with zero local Mac hardware required.
+---
 
-### 6.2 Step-by-Step Implementation Roadmap (Option 1)
+### 6.2 Android Platform-Specific Architecture & Invariants
+
+#### 1. Target Framework & SDK Level Matrix
+In `src/Nutrition.Mobile.Maui/Nutrition.Mobile.Maui.csproj`:
+```xml
+<PropertyGroup>
+  <TargetFrameworks>net11.0-android;net11.0-ios</TargetFrameworks>
+  <!-- Android Target: API 35 (Android 15) with backward compatibility to Android 7.0 -->
+  <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</SupportedOSPlatformVersion>
+  <TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">24.0</TargetPlatformMinVersion>
+  <TargetPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">35.0</TargetPlatformVersion>
+</PropertyGroup>
+```
+
+#### 2. Android Manifest & Permissions (`Platforms/Android/AndroidManifest.xml`)
+Android requires explicit permission declarations in the manifest, combined with runtime permission requests in C# for dangerous permissions (Camera and Media):
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="app.dietdost.mobile"
+          android:versionCode="1"
+          android:versionName="1.0.0">
+
+    <!-- Camera Hardware & Permissions for Meal Snapping -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="true" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
+
+    <!-- Storage Permissions (Android 13+ Granular Media vs Legacy Android 12-) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+
+    <!-- Network Connectivity for Mobile BFF Calls -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application android:allowBackup="false"
+                 android:icon="@mipmap/appicon"
+                 android:roundIcon="@mipmap/appicon_round"
+                 android:supportsRtl="true"
+                 android:label="Diet-Dost"
+                 android:networkSecurityConfig="@xml/network_security_config">
+        
+        <!-- FileProvider to prevent FileUriExposedException on Android 7.0+ during camera capture -->
+        <provider android:name="androidx.core.content.FileProvider"
+                  android:authorities="${applicationId}.fileprovider"
+                  android:exported="false"
+                  android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                       android:resource="@xml/file_paths" />
+        </provider>
+    </application>
+</manifest>
+```
+
+#### 3. Android FileProvider Configuration (`Platforms/Android/Resources/xml/file_paths.xml`)
+To prevent `FileUriExposedException` when sharing snapped photos with the native camera app:
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-files-path name="diet_dost_photos" path="Pictures" />
+    <cache-path name="diet_dost_cache" path="." />
+</paths>
+```
+
+#### 4. Android Network Security & Emulator Loopback (`10.0.2.2`) Gotcha
+- **The Pitfall**: On the Android emulator, `localhost` (or `127.0.0.1`) refers to the *emulator's internal loopback*, not your Windows development machine!
+- **The Host Alias**: The Android emulator accesses the Windows host via `http://10.0.2.2:5240`.
+- **Cleartext HTTP Config (`Platforms/Android/Resources/xml/network_security_config.xml`)**:
+  Android 9+ (API 28+) blocks plain HTTP by default. For local development, allow cleartext traffic only to the host emulator loopback (`10.0.2.2`) and local subnet, while strictly enforcing HTTPS for production:
+  ```xml
+  <?xml version="1.0" encoding="utf-8"?>
+  <network-security-config>
+      <domain-config cleartextTrafficPermitted="true">
+          <domain includeSubdomains="true">10.0.2.2</domain>
+          <domain includeSubdomains="true">192.168.1.0/24</domain>
+          <domain includeSubdomains="true">localhost</domain>
+      </domain-config>
+  </network-security-config>
+  ```
+
+#### 5. Android Keystore Hardware Token Security
+On Android, MAUI's `SecureStorage` automatically utilizes the **Android KeyStore** provider:
+- Backed by hardware **TEE (Trusted Execution Environment)** or **StrongBox Keymaster** chip.
+- Cryptographic keys are stored in hardware; values are encrypted with AES-256 GCM using `EncryptedSharedPreferences`.
+- Even if an Android device is rooted or attached to a debugger, tokens in the hardware enclave cannot be extracted in plaintext.
+
+---
+
+### 6.3 Step-by-Step Implementation Roadmap (Option 1)
 
 #### Step 1: Solution Integration & Project Creation
 In the root `diet-dost` repository on Windows:
@@ -331,23 +423,25 @@ dotnet sln diet-dost.sln add src/Nutrition.Mobile.Maui/Nutrition.Mobile.Maui.csp
 <ItemGroup>
   <!-- MVVM Architecture (CommunityToolkit) -->
   <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-  <!-- Hardware-accelerated Nutrition Charts -->
+  <!-- Hardware-accelerated Nutrition Charts (SkiaSharp rendering on Android SurfaceView) -->
   <PackageReference Include="LiveChartsCore.SkiaSharpView.Maui" Version="2.0.0-rc2" />
   <!-- Client-side Image Manipulation & Compression -->
   <PackageReference Include="SkiaSharp" Version="2.88.8" />
-  <!-- Typed HTTP Client -->
+  <!-- Typed HTTP Client for Mobile BFF -->
   <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
 </ItemGroup>
 ```
 
-#### Step 3: Project Directory Structure (MVVM & Clean Architecture)
+#### Step 3: Project Directory Structure (Clean Architecture & Android Assets)
 ```
 src/Nutrition.Mobile.Maui/
 ├── Models/              # UI-specific display wrappers (binds to Nutrition.Domain entities)
 ├── Services/            # Decoupled Port/Adapter Services
-│   ├── IAuthService.cs          # Hardware SecureStorage wrapper for JWT Bearer
+│   ├── IAuthService.cs          # Hardware SecureStorage wrapper (Android Keystore / iOS Keychain)
 │   ├── IMobileBffClient.cs      # Typed Refit interface to /api/mobile/v1/*
-│   └── ImageCompressor.cs       # SkiaSharp 1080p resize & WebP/JPEG compression
+│   ├── IPhotoService.cs         # Native Camera & Gallery capture abstraction
+│   ├── ImageCompressor.cs       # SkiaSharp 1080p resize & WebP/JPEG compression
+│   └── NetworkEndpointResolver.cs # Resolves 10.0.2.2 on Android vs localhost on iOS/Windows
 ├── ViewModels/          # CommunityToolkit ObservableObject ViewModels
 │   ├── AuthViewModel.cs         # Handles login, error banners, and token storage
 │   ├── SnapViewModel.cs         # Controls camera capture, resize, and AI analysis
@@ -356,10 +450,84 @@ src/Nutrition.Mobile.Maui/
 │   ├── AuthPage.xaml
 │   ├── SnapPage.xaml
 │   └── DashboardPage.xaml
+├── Platforms/
+│   ├── Android/         # Android Native Manifest, Resources, and Security Config
+│   │   ├── AndroidManifest.xml
+│   │   ├── MainActivity.cs
+│   │   └── Resources/xml/
+│   │       ├── file_paths.xml
+│   │       └── network_security_config.xml
+│   └── iOS/             # iOS Info.plist and Entitlements
+│       └── Info.plist
 └── Resources/Styles/    # Obsidian Dark design tokens (#0B0D13, #1A1D27, #4F46E5)
 ```
 
-#### Step 4: Client-Side Image Compression Implementation (`ImageCompressor.cs`)
+#### Step 4: Android-Aware Base URL Resolver (`NetworkEndpointResolver.cs`)
+```csharp
+namespace Nutrition.Mobile.Maui.Services;
+
+public static class NetworkEndpointResolver
+{
+    public static string GetMobileBffBaseUrl()
+    {
+#if DEBUG
+        // Android emulator loopback alias to Windows host
+        if (DeviceInfo.Platform == DevicePlatform.Android)
+        {
+            return DeviceInfo.DeviceType == DeviceType.Virtual
+                ? "http://10.0.2.2:5240"        // Android Emulator
+                : "http://192.168.1.150:5240";   // Physical Android phone on local Wi-Fi
+        }
+        
+        // iOS Simulator or Windows Desktop
+        return "http://localhost:5240";
+#else
+        // Production Azure Container Apps Endpoint
+        return "https://dietdost.app";
+#endif
+    }
+}
+```
+
+#### Step 5: Android Runtime Permission & Native Photo Capture Service (`PhotoService.cs`)
+```csharp
+namespace Nutrition.Mobile.Maui.Services;
+
+public class PhotoService : IPhotoService
+{
+    public async Task<FileResult?> CaptureMealPhotoAsync()
+    {
+        // 1. Verify and request Camera runtime permission (Mandatory on Android 6.0+)
+        var cameraStatus = await Permissions.CheckStatusAsync<Permissions.Camera>();
+        if (cameraStatus != PermissionStatus.Granted)
+        {
+            cameraStatus = await Permissions.RequestAsync<Permissions.Camera>();
+            if (cameraStatus != PermissionStatus.Granted)
+                return null; // User denied camera access
+        }
+
+        // 2. Verify media storage permission (Android 13+ READ_MEDIA_IMAGES)
+        var storageStatus = await Permissions.CheckStatusAsync<Permissions.StorageRead>();
+        if (storageStatus != PermissionStatus.Granted)
+        {
+            storageStatus = await Permissions.RequestAsync<Permissions.StorageRead>();
+        }
+
+        // 3. Launch native camera via MediaPicker
+        if (MediaPicker.Default.IsCaptureSupported)
+        {
+            return await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+            {
+                Title = "Snap your meal for AI nutrition analysis"
+            });
+        }
+
+        return null;
+    }
+}
+```
+
+#### Step 6: Client-Side Image Compression Implementation (`ImageCompressor.cs`)
 ```csharp
 using SkiaSharp;
 
@@ -385,7 +553,7 @@ public class ImageCompressor
 }
 ```
 
-#### Step 5: Hardware Secure Storage for Mobile JWT
+#### Step 7: Hardware Secure Storage for Mobile JWT (`MobileAuthService.cs`)
 ```csharp
 namespace Nutrition.Mobile.Maui.Services;
 
@@ -393,6 +561,7 @@ public class MobileAuthService : IAuthService
 {
     private const string TokenKey = "diet_dost_mobile_jwt";
 
+    // Uses AndroidKeyStore on Android / Apple Keychain on iOS
     public async Task SaveTokenAsync(string token) =>
         await SecureStorage.Default.SetAsync(TokenKey, token);
 
@@ -403,6 +572,42 @@ public class MobileAuthService : IAuthService
         SecureStorage.Default.Remove(TokenKey);
 }
 ```
+
+#### Step 8: Android Ahead-Of-Time (AOT) Compilation & Production Packaging
+To achieve sub-second cold starts and minimal APK size on Android, configure **R8 Code Shrinking** and **Native AOT** in `Nutrition.Mobile.Maui.csproj`:
+```xml
+<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)' == 'Release|net11.0-android'">
+  <!-- Native AOT compilation eliminates JIT overhead on Android devices -->
+  <RunAOTCompilation>true</RunAOTCompilation>
+  <!-- R8 code shrinker removes unused Java/Kotlin runtime bytecode -->
+  <AndroidEnableShrinker>true</AndroidEnableShrinker>
+  <AndroidPackageFormat>aab</AndroidPackageFormat> <!-- Google Play App Bundle -->
+</PropertyGroup>
+```
+
+**Generate Production Signed `.aab` for Google Play Store from Windows**:
+```powershell
+# Publish optimized Android App Bundle (.aab)
+dotnet publish src/Nutrition.Mobile.Maui/Nutrition.Mobile.Maui.csproj `
+  -f net11.0-android `
+  -c Release `
+  -p:AndroidPackageFormat=aab `
+  -p:AndroidKeyStore=true `
+  -p:AndroidSigningKeyStore=dietdost-release.keystore `
+  -p:AndroidSigningKeyAlias=dietdost `
+  -p:AndroidSigningKeyPass=env:KEYSTORE_PASS `
+  -p:AndroidSigningStorePass=env:KEYSTORE_PASS
+```
+
+---
+
+### 6.4 The No-Mac iOS Strategy for .NET MAUI
+If and when iOS builds are needed from your Windows machine:
+1. **Local iOS Debugging via Apple Hot Restart (No Mac Required)**:
+   - Visual Studio on Windows includes **Apple Hot Restart**: plug your physical iPhone into your Windows PC over USB. Visual Studio compiles and signs the app directly on Windows.
+   - Requirements: A free or paid Apple Developer account and iTunes for Windows.
+2. **Production iOS Release via Cloud Mac Runners**:
+   - For generating production `.ipa` binaries and App Store deployment, use **GitHub Actions** (`runs-on: macos-14`) or **Azure DevOps** (`vmImage: 'macOS-latest'`). The cloud runner compiles and signs the iOS binary with zero local Mac hardware required.
 
 ---
 
@@ -593,13 +798,16 @@ The following matrix provides guidance for selecting between Option 1 and Option
 
 | Evaluation Criteria | Option 1: .NET MAUI / C# | Option 2: React Native + Expo |
 | :--- | :--- | :--- |
+| **Android Development & Tooling** | **100% Native on Windows**: Local Hyper-V Android Emulator (API 34/35) or physical Android device via USB/Wireless ADB. Full F5 inner-loop debugging in Visual Studio. | **Turnkey on Windows**: Instant physical Android device testing via Expo Go over Wi-Fi, or local Android emulator via Android Studio. |
+| **Android Packaging & Performance** | **Native AOT & R8 Shrinking**: Direct production `.aab` (Android App Bundle) compilation from Windows CLI with Google Play Keystore signing. Sub-second cold starts. | **EAS Cloud or Local Build**: Cloud `.aab` generation via EAS Build or local Gradle. High performance via Hermes JS engine. |
+| **Android Security & Permissions** | Hardware-backed **AndroidKeyStore** via `SecureStorage` (AES-256 GCM). Manifest permissions + runtime `Permissions.Camera` / `StorageRead`. | Hardware-backed **AndroidKeyStore** via `expo-secure-store`. Permissions configured via `app.json` plugins. |
 | **Mac Machine Requirement** | &bull; **Dev**: None if using Android or iPhone USB Hot Restart.<br/>&bull; **Release**: Requires Cloud Mac CI runner (GitHub Actions). | **100% Zero-Mac Requirement**.<br/>Develop on iPhone via Expo Go; build release via EAS Cloud. |
 | **Language Continuity** | **100% C# across Solution** (Web, AppHost, Domain, Mobile). | Mixed (C# Backend + TypeScript Mobile Client). |
 | **Code & DTO Duplication** | **0% Duplication** (Direct C# Project Reference to `Nutrition.Domain`). | **0% Duplication** (Automated TypeScript generation via `openapi-typescript`). |
 | **Iteration Velocity on Windows** | Fast on Android; slightly slower on iOS via Hot Restart. | **Instantaneous** across both iPhone & Android via Expo Go Wi-Fi Hot Reload. |
 | **Camera & Photo Compression** | High performance via `SkiaSharp` or `Microsoft.Maui.Graphics`. | Turnkey 1-liner via `expo-image-manipulator`. |
 | **UI Aesthetic Matching** | Manual XAML styling to match Obsidian Dark theme. | Rapid styling using React Native Flexbox & SVG. |
-| **Best Choice When...** | You prioritize unified C# language skills and deep .NET 11 integration. | **You do NOT own a Mac**, want to test on your iPhone today, and want the fastest path to app stores. |
+| **Best Choice When...** | You prioritize unified C# language skills and deep .NET 11 integration across Android and iOS. | **You do NOT own a Mac**, want to test on your iPhone today, and want the fastest path to app stores. |
 
 ---
 
