@@ -286,3 +286,46 @@ graph TD
 3. **Decoupled Ports & Adapters**: File storage is abstracted behind `IPhotoStorageService` (allowing transparent swaps between local disk, Azure Blob, AWS S3, or Google Cloud Storage). Identity is abstracted behind `ICurrentUserService`.
 4. **Universal Result Envelope**: `Result<T>` and `Result` encapsulate operation outcome, typed data payloads, error messages, and HTTP status codes, decoupling application use cases from ASP.NET Core presentation contracts.
 
+---
+
+### 2.7 Cross-Platform Mobile Backend for Frontend (BFF) Topology
+
+To extend Diet-Dost to cross-platform mobile devices (iOS & Android) without duplicating business logic or burdening cellular clients with chatty desktop payloads, the architecture introduces a **Mobile Backend for Frontend (Mobile BFF)** facade:
+
+```mermaid
+graph TD
+    subgraph MOBILE_CLIENTS ["Cross-Platform Mobile Clients (iOS & Android)"]
+        direction TB
+        UI_Mobile["Mobile Client (Option 1: .NET MAUI / Option 2: React Native Expo)<br/>Obsidian Dark Theme, Native Camera, Hardware Enclave Token Storage"]
+        UI_Compress["Client-Side Image Resizer<br/>(1080px WebP/JPEG, &lt; 500KB constraint)"]
+        UI_Mobile --> UI_Compress
+    end
+
+    subgraph WEB_GATEWAY ["Presentation Gateway (Nutrition.WebGateway)"]
+        direction TB
+        BFF_Mobile["Mobile BFF Facade (/api/mobile/v1/*)<br/>(Aggregates Dashboard, Enforces Mobile Tier DTOs)"]
+        TC_Web["Web Desktop Controllers (/api/*)<br/>(Thin Controllers for PWA)"]
+        MW_Auth["Dual SmartScheme Auth & Rate Limiter<br/>(RFC 7519 Bearer Tokens for Mobile / Cookies for Web)"]
+        
+        UI_Compress -->|"POST /api/mobile/v1/meals/snap (Bearer JWT)"| BFF_Mobile
+        UI_Mobile -->|"GET /api/mobile/v1/dashboard (Bearer JWT)"| BFF_Mobile
+        BFF_Mobile --> MW_Auth
+        TC_Web --> MW_Auth
+    end
+
+    subgraph APPLICATION_CQRS ["Application CQRS Layer (Nutrition.Application)"]
+        DISPATCHER["Native CQRS Dispatcher (IDispatcher)"]
+        BFF_Mobile --> DISPATCHER
+        TC_Web --> DISPATCHER
+        
+        HANDLERS_REUSED["Shared CQRS Handlers (100% Reused)<br/>UploadAndAnalyzeMealCommand, GetDailyLedgerQuery,<br/>GetProjectionsQuery, LoginCommand"]
+        DISPATCHER --> HANDLERS_REUSED
+    end
+```
+
+#### 2.7.1 Key Mobile BFF Tenets
+1. **Single-Roundtrip Aggregation**: Mobile dashboard queries combine user profile, daily calorie ledger, remaining AI detection quota, and tier projection history into a single compact JSON response (`/api/mobile/v1/dashboard`), avoiding battery and latency drain on 4G/5G connections.
+2. **Client-Side Image Guardrail**: Mobile clients must resize photos to a maximum width of 1080px and compress to under 500KB before transmission, reducing network transit time from ~10s to <1s.
+3. **Hardware Enclave Token Storage**: Mobile clients persist the RFC 7519 JWT in native secure storage (iOS Keychain and Android Keystore) rather than unencrypted browser local storage.
+
+
