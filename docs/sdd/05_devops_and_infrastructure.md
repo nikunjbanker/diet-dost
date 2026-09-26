@@ -197,39 +197,42 @@ To maintain production stability and adherence to the Zero Documentation Drift M
 
 ## 6. Azure Production Cloud Deployment Architectures (SQLite & Custom Domain)
 
-### 6.1 Deployment Options Evaluation
+### 6.1 Deployment Options Evaluation (No-VM Architecture Focus)
 
 ```mermaid
 graph TD
     Client[End User Browser / PWA] -->|Custom Domain HTTPS| Cloud[Azure Cloud Platform]
     
-    subgraph Option1 ["Option 1: Azure Container Apps (ACA) - Recommended Serverless"]
-        Cloud --> ACA_Ingress[ACA Ingress & Free Managed TLS 1.3]
-        ACA_Ingress --> ACA_Pod[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
-        ACA_Pod -->|Volume Mount: /app/data| AzureFiles[Azure Files SMB Volume<br/>sqlite-data-share<br/>PRAGMA journal_mode=DELETE]
+    subgraph OptionA ["Option A: ACA + Azure Files (DB) & Azure Blob (Media) - Recommended Hybrid"]
+        Cloud --> ACA_IngressA[ACA Ingress & Free Managed TLS 1.3]
+        ACA_IngressA --> ACA_PodA[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
+        ACA_PodA -->|Volume Mount: /app/data| AzureFilesA[Azure Files SMB Volume<br/>diet_dost.db<br/>PRAGMA journal_mode=DELETE]
+        ACA_PodA -->|Azure Storage SDK| AzureBlobA[Azure Blob Storage<br/>uploads/meals & progress<br/>Daily Hot Backups]
     end
     
-    subgraph Option2 ["Option 2: Azure App Service Linux (PaaS)"]
+    subgraph OptionB ["Option B: ACA + Azure Files Alone (All-in-One Share)"]
+        Cloud --> ACA_IngressB[ACA Ingress & Free Managed TLS 1.3]
+        ACA_IngressB --> ACA_PodB[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
+        ACA_PodB -->|Single Volume Mount: /app/data| AzureFilesB[Azure Files SMB Share<br/>- diet_dost.db<br/>- wwwroot/uploads/]
+    end
+    
+    subgraph OptionC ["Option C: Azure App Service Linux (PaaS)"]
         Cloud --> AppService[App Service Plan Linux<br/>F1 Free / B1 Basic]
         AppService --> AppServiceStorage[WEBSITES_ENABLE_APP_SERVICE_STORAGE=true<br/>Mounted at /home]
     end
-    
-    subgraph Option3 ["Option 3: Azure B1s Virtual Machine (IaaS)"]
-        Cloud --> NginxCertbot[Nginx + Certbot Let's Encrypt]
-        NginxCertbot --> DockerApp[Docker Container<br/>Local SSD Volume Mount<br/>PRAGMA journal_mode=WAL]
-    end
 ```
 
-| Dimension | Option 1: Azure Container Apps (ACA) + Azure Files (Recommended) | Option 2: Azure App Service Linux (F1 Free / B1 Basic) | Option 3: Azure B1s Linux VM (Docker + Nginx + Certbot) |
+| Dimension | Option A: ACA + Azure Files (DB) & Blob (Media) (Recommended) | Option B: ACA + Azure Files Alone (All-in-One) | Option C: Azure App Service Linux (B1 Basic / F1 Free) |
 | :--- | :--- | :--- | :--- |
-| **Compute Model** | Serverless MicroVM Containers | Managed PaaS Web App | IaaS Virtual Machine (Ubuntu 24.04 LTS) |
-| **Cost Profile** | **Monthly Free Grant**: 180k vCPU-s + 360k GiB-s + 2M requests/mo free. Standard Azure File Share: ~$0.10–$0.30/mo. | **F1 Tier**: 100% Free (60 CPU-min/day, sleeps). **B1 Tier**: ~$13/mo (AlwaysOn, dedicated core). | **12 Months 100% Free**: Standard_B1s (1 vCPU, 1GB RAM, 750 hrs/mo) + 2x 64GB Managed SSDs. |
-| **Persistence Mechanism** | Azure Storage Account File Share mounted to `/app/data` via ACA Environment Volume. | Built-in `/home` persistent storage (`WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`). | Local SSD ext4 volume mounted to container `/data` (`-v /var/lib/dietdost/data:/app/data`). |
-| **Zero Data Loss Guarantee** | **Guaranteed**: Data lives in Azure File Share outside container lifecycle. | **Guaranteed**: Data lives in `/home` persistent storage. | **Guaranteed**: Data lives on durable Azure Managed OS/Data Disk. |
-| **SQLite Concurrency & Locking** | **Single Replica Mandate (`maxReplicas: 1`)**. SMB does not support POSIX `mmap` WAL mode; must use `journal_mode=DELETE`. | **Single Instance Mandate**. Backed by Azure Files SMB under the hood. Must use `journal_mode=DELETE`. | **Best SQLite Performance**: Native POSIX file locks, full `journal_mode=WAL` support, concurrent readers, 0 network lag. |
-| **Custom Domain & SSL** | **100% Free Azure Managed Certificates** (`Microsoft.App/managedEnvironments/managedCertificates`) with auto-renewal. | **Free Managed Cert on B1+**. F1 does **NOT** support free Azure SSL (requires Cloudflare proxy workaround). | **100% Free via Let's Encrypt / Certbot** with automated cron renewal. |
-| **Security Posture** | Managed Identity, Azure Key Vault references, internal/external ingress, DDoS basic. | Managed Identity, Key Vault references, HTTPS only, IP access restrictions. | OS hardening required (UFW firewall, SSH key pairs, fail2ban, unattended-upgrades). |
-| **CI/CD Integration** | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/webapps-deploy`). | GitHub Actions via SSH or Container Registry webhook / Watchtower. |
+| **Compute Model** | Serverless MicroVM (Azure Container Apps) | Serverless MicroVM (Azure Container Apps) | Managed Web App PaaS (App Service Plan) |
+| **Database Storage** | Azure Files SMB Share mounted to `/app/data` | Azure Files SMB Share mounted to `/app/data` | Persistent `/home` (Azure Files backed) |
+| **Media / Photo Storage** | Azure Blob Storage (`dietdost-media`) | Azure Files SMB Share (`/app/data/uploads`) | Persistent `/home/data/uploads` |
+| **Cost Profile** | **Monthly Free Grant**: 180k vCPU-s + 360k GiB-s + 2M requests/mo free.<br/>Files + Blob: **<$0.50/mo**. | **Monthly Free Grant**: 180k vCPU-s + 360k GiB-s + 2M requests/mo free.<br/>Files: **<$0.30/mo**. | **F1 Tier**: 100% Free (60 CPU-min/day, sleeps, no custom SSL).<br/>**B1 Tier**: ~$13/mo (AlwaysOn, dedicated core). |
+| **Zero Data Loss Guarantee** | **100% Guaranteed**: SQLite transactions commit synchronously to Azure Files. | **100% Guaranteed**: SQLite transactions commit synchronously to Azure Files. | **100% Guaranteed**: Data lives in persistent `/home` volume. |
+| **SQLite Concurrency & Locking** | **Single Replica Mandate (`maxReplicas: 1`)**.<br/>`PRAGMA journal_mode = DELETE`. | **Single Replica Mandate (`maxReplicas: 1`)**.<br/>`PRAGMA journal_mode = DELETE`. | **Single Instance Mandate (`AlwaysOn = true`)**.<br/>`PRAGMA journal_mode = DELETE`. |
+| **Custom Domain & SSL** | **100% Free Azure Managed Certificates** (`Microsoft.App/managedEnvironments/managedCertificates`) with auto-renewal. | **100% Free Azure Managed Certificates** with auto-renewal. | **Free Managed Cert on B1+**.<br/>F1 requires Cloudflare Free Proxy workaround. |
+| **Security Posture** | Managed Identity, Azure Key Vault references, internal/external ingress, DDoS basic. | Managed Identity, Azure Key Vault references, internal/external ingress, DDoS basic. | Managed Identity, Key Vault references, HTTPS only, IP access restrictions. |
+| **CI/CD Integration** | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/webapps-deploy`). |
 
 ### 6.2 SQLite Zero-Data-Loss Invariants on Azure
 1. **The Single-Replica Invariant (`maxReplicas: 1`)**: Auto-scaling across multiple container instances accessing the same SQLite database file will corrupt the database. All container deployments must constrain scaling to exactly 1 replica.

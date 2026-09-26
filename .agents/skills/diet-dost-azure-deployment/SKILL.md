@@ -12,25 +12,35 @@ description: Authoritative Azure cloud deployment, SQLite zero-data-loss persist
 
 ---
 
-## 1. Executive Summary & Architecture Decision Matrix
+## 1. Executive Summary: Azure Files vs. Azure Blob Storage for SQLite
 
-When deploying a .NET 11 web application with an **embedded SQLite database** to Azure, the biggest engineering trap is **ephemeral container filesystems** and **network file share concurrency**. 
+When deploying Diet-Dost (.NET 11, SQLite) to Azure without virtual machines, understanding the difference between **Azure Files** and **Azure Blob Storage** is critical to preventing silent database corruption or data loss:
 
-By default, Docker/OCI containers in Azure Container Apps or App Service discard all local filesystem changes when a container restarts, crashes, scales, or deploys a new revision. Furthermore, SQLite relies on POSIX byte-range file locking and shared memory (`.shm` / `mmap`), which behave differently across cloud network file shares (SMB vs. NFS vs. Local Block SSD).
+### 1.1 The Critical Distinction: Block Storage (Blob) vs. File System (Files)
+- **Azure Blob Storage (Anti-Pattern for Live SQLite Database)**:
+  - Azure Blob Storage is an **object store** accessed via REST HTTP APIs (GetBlob, PutBlock). It does **NOT** provide a POSIX-compliant file system with random-access byte-range file locking (`fcntl` / `flock`).
+  - Running SQLite directly on Azure Blob Storage is an anti-pattern. If you download the database on startup and re-upload on shutdown, **any container crash, restart, or scale event causes catastrophic data loss** of all writes since startup. BlobFuse also lacks the synchronous POSIX advisory locking required by SQLite transactions.
+  - **Where Azure Blob Storage Shines**: Storing user-uploaded photos (`uploads/meals`, `uploads/progress`) and archiving automated transaction-safe database backups (`sqlite3 .backup`).
+- **Azure Files (Mandatory for Live SQLite Database)**:
+  - Azure Files provides a true **network file share (SMB 3.0 / NFS 4.1)**. It can be mounted directly into Azure Container Apps (`/app/data`) and is the underlying storage for Azure App Service (`/home`).
+  - SQLite can open real OS file descriptors, seek arbitrary byte offsets, and commit ACID transactions directly to disk.
+  - **Guaranteed Persistence**: When the container restarts, crashes, or updates to a new container image revision, the database and uploads in Azure Files remain completely untouched.
 
-The following matrix evaluates the three viable deployment architectures for Diet-Dost:
+### 1.2 Architecture Comparison Matrix (No-VM Options)
 
-| Architecture Dimension | Option 1: Azure Container Apps (ACA) + Azure Files SMB (Recommended Serverless) | Option 2: Azure App Service Linux (F1 Free / B1 Basic) | Option 3: Azure B1s Linux VM (Docker + Nginx + Certbot) |
+| Architecture Dimension | Option A: ACA + Azure Files (DB) & Azure Blob (Media) (Recommended Hybrid) | Option B: ACA + Azure Files Alone (All-in-One Share) | Option C: Azure App Service Linux (B1 Basic / F1 Free) |
 | :--- | :--- | :--- | :--- |
-| **Compute Type** | Serverless MicroVM (Container Apps) | Managed Web App PaaS | IaaS Virtual Machine (Ubuntu 24.04 LTS) |
-| **Pricing & Free Tier** | **Monthly Free Grant**: 180,000 vCPU-s + 360,000 GiB-s + 2M requests/mo free. Storage share: ~$0.10–$0.30/mo. | **F1 Tier**: 100% Free (60 CPU-min/day, sleeps). **B1 Tier**: ~$13/mo (AlwaysOn, dedicated core). | **12 Months 100% Free**: Standard_B1s (1 vCPU, 1GB RAM, 750 hrs/mo) + 2x 64GB Managed SSDs. |
-| **Persistence Mechanism** | Azure Storage Account File Share mounted to `/app/data` via ACA Environment Volume. | Built-in `/home` persistent storage (`WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`). | Local SSD ext4 volume mounted to container `/data` (`-v /var/lib/dietdost/data:/app/data`). |
-| **Zero Data Loss on Restart** | **Guaranteed**: Data lives in Azure File Share outside container lifecycle. | **Guaranteed**: Data lives in `/home` persistent storage. | **Guaranteed**: Data lives on durable Azure Managed OS/Data Disk. |
-| **SQLite Concurrency & Locking** | **Single Replica Mandate (`maxReplicas: 1`)**. SMB does not support POSIX `mmap` WAL mode; must use `journal_mode=DELETE`. | **Single Instance Mandate**. Backed by Azure Files SMB under the hood. Must use `journal_mode=DELETE`. | **Best SQLite Performance**: Native POSIX file locks, full `journal_mode=WAL` support, concurrent readers, 0 network lag. |
-| **Custom Domain & SSL** | **100% Free Azure Managed Certificates** (`Microsoft.App/managedEnvironments/managedCertificates`) with auto-renewal. | **Free Managed Cert on B1+**. F1 does **NOT** support free Azure SSL (requires Cloudflare proxy workaround). | **100% Free via Let's Encrypt / Certbot** with automated cron renewal. |
-| **Security Posture** | Managed Identity, Azure Key Vault references, internal/external ingress, DDoS basic. | Managed Identity, Key Vault references, HTTPS only, IP access restrictions. | OS hardening required (UFW firewall, SSH key pairs, fail2ban, unattended-upgrades). |
-| **CI/CD Integration** | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/webapps-deploy`). | GitHub Actions via SSH or Container Registry webhook / Watchtower. |
-| **Verdict** | **Best Serverless Cloud-Native**: Modern, pay-per-use, free managed TLS, zero OS maintenance. | **Simplest Traditional PaaS**: Good if using B1, but F1 free tier is too restricted for production. | **Best Free Tier & Speed**: 100% free for 1 year, fastest SQLite I/O, but requires Linux admin. |
+| **Compute Engine** | Serverless MicroVM (Azure Container Apps) | Serverless MicroVM (Azure Container Apps) | Managed Web App PaaS (App Service Plan) |
+| **Database Storage** | Azure Files SMB Share mounted to `/app/data` | Azure Files SMB Share mounted to `/app/data` | Persistent `/home` (Azure Files backed) |
+| **Media / Photo Storage** | Azure Blob Storage (`dietdost-media`) | Azure Files SMB Share (`/app/data/uploads`) | Persistent `/home/data/uploads` |
+| **Pricing & Free Tier** | **ACA Free Grant**: 180k vCPU-s + 360k GiB-s + 2M req/mo free.<br/>Files + Blob: **<$0.50/mo**. | **ACA Free Grant**: 180k vCPU-s + 360k GiB-s + 2M req/mo free.<br/>Files: **<$0.30/mo**. | **F1**: Free (60 CPU-min/day, sleeps, no custom SSL).<br/>**B1**: ~$13/mo (AlwaysOn, custom SSL). |
+| **Zero Data Loss on Restart** | **100% Guaranteed**: SQLite transactions commit synchronously to Azure Files. | **100% Guaranteed**: SQLite transactions commit synchronously to Azure Files. | **100% Guaranteed**: Data lives in persistent `/home` volume. |
+| **SQLite Concurrency & Locking** | **Single Replica (`maxReplicas: 1`)**.<br/>`PRAGMA journal_mode = DELETE`. | **Single Replica (`maxReplicas: 1`)**.<br/>`PRAGMA journal_mode = DELETE`. | **Single Instance (`AlwaysOn = true`)**.<br/>`PRAGMA journal_mode = DELETE`. |
+| **Custom Domain & SSL** | **100% Free Azure Managed Certificates** (`Microsoft.App/managedEnvironments/managedCertificates`) with auto-renewal. | **100% Free Azure Managed Certificates** with auto-renewal. | **Free Managed Cert on B1+**.<br/>F1 requires Cloudflare Free Proxy workaround. |
+| **Security Posture** | Managed Identity, Azure Key Vault, TLS 1.3, internal/external ingress, DDoS basic. | Managed Identity, Azure Key Vault, TLS 1.3, internal/external ingress, DDoS basic. | Managed Identity, Key Vault references, HTTPS only, IP access restrictions. |
+| **CI/CD Integration** | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/webapps-deploy`). |
+| **Verdict** | **Best Practice Cloud-Native**: Separates transactional DB from bulk media; cheapest (<$0.50/mo), free managed TLS. | **Simplest Serverless**: Zero code changes to photo service; single share mount (<$0.30/mo), free managed TLS. | **Traditional PaaS**: Simple `/home` persistence, but F1 free tier lacks AlwaysOn & SSL; B1 costs ~$13/mo. |
+
 
 ---
 
