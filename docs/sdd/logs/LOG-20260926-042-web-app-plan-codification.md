@@ -1,0 +1,15 @@
+# [LOG-20260926-042] Agentic Memory Persistence: Web App Plan Codification Standard
+- **Timestamp**: 2026-09-26T13:57:00+05:30
+- **Driver / Agent**: AI Assistant (Agentic Infrastructure & Token Economics) & User Pair-Programming
+- **Change Type**: `[MEMORY_PERSISTENCE]`, `[TOKEN_ECONOMICS]`, `[GOVERNANCE]`
+- **Affected Subsystems**: Governance / Memory (`AGENTS.md`), Solution Skill (`indian-diet-calorie-tracker`)
+- **Summary of Change**:
+  - Added Standard 11 to `AGENTS.md` and Rule 12 to `indian-diet-calorie-tracker/SKILL.md`.
+  - Explicitly mapped the Web App development plan to `diet-dost-clean-architecture` and `references/web_bff_clean_architecture_playbook.md`.
+  - Enforced the Zero-Skill-Sprawl rule prohibiting agents from creating a separate `diet-dost-web-architecture` skill.
+- **Associated PR & Stack**: PR #20 (Base: `feature/azure-deployment-strategy-and-skill`)
+- **Relevant SDDs & CFTs**: `docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`, `docs/cft/cft_web_bff_and_clean_architecture.md`
+- **Verification Result**:
+  - `dotnet test`: 129 passed, 0 failed, 0 warnings
+  - Solution memory: 100% codified across primary solution skill and `AGENTS.md`
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`

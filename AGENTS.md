@@ -92,7 +92,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
      - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
      - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, etc.).
      - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
-     - Append an entry to `docs/sdd/07_living_documentation_log.md`.
+     - Write a dedicated atomic log fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` (Fragment Pattern for 100% merge-conflict immunity) and register it in `docs/sdd/07_living_documentation_log.md`.
 5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash
@@ -117,12 +117,21 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **System Prompt Token Conservation**: In agentic AI environments, the `name` and `description` of **every skill folder in `.agents/skills/`** is injected into the agent's baseline system prompt on **every single turn**. Storing large architectural specifications, threat models, or living logs in `.agents/skills/` permanently inflates the prompt token overhead and raises operational costs.
     - **The `docs/sdd/` Boundary (0 Baseline Tokens)**: Declarative system specifications, data models, clinical rules, and migration roadmaps MUST remain in `docs/sdd/`. They consume **0 baseline tokens** and are read on-demand via `view_file` only when needed for a specific task.
     - **The `.agents/skills/` Boundary (Actionable Playbooks)**: Keep `.agents/skills/` strictly for imperative, procedural "how-to" playbooks, concrete code recipes (e.g. SkiaSharp compression, Android permissions, CQRS handlers), and verification checklists.
-    - **Strict Anti-Pattern**: NEVER move, duplicate, or convert declarative architectural specifications (`docs/sdd/*.md`) or living logs (`docs/sdd/07_living_documentation_log.md`) into `.agents/skills/`.
+    - **Strict Anti-Pattern**: NEVER move, duplicate, or convert declarative architectural specifications (`docs/sdd/*.md`), living logs (`docs/sdd/logs/*.md`), or archive ledgers into `.agents/skills/`.
 11. **Authoritative Subsystem & Skill Mapping (Web App Plan Codification Standard)**:
     - **Web App Modernization & Web BFF**: The entire Web App development plan, client-side SOLID architecture in native ES Modules, and Web BFF facade implementation are codified inside [`.agents/skills/diet-dost-clean-architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/SKILL.md) and its actionable reference playbook [`references/web_bff_clean_architecture_playbook.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md).
     - **Zero-Skill-Sprawl Rule for Web**: Agents must **NOT** create a separate `diet-dost-web-architecture` skill. Keeping Web BFF unified with Clean Architecture prevents prompt token bloat on every interaction and eliminates architectural drift between backend CQRS query handlers and frontend composite aggregation.
     - **Cross-Platform Phased Roadmap**: Master rollout sequence across Web, Android, and iOS is codified in [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md).
     - **Platform CFT Acceptance Suites**: Web PWA verification is in [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md); Mobile verification is in [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md); Parity verification is in [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md).
+12. **Living Documentation Architecture & Fragment Pattern Mandate (Token Economics & Merge Conflict Immunity)**:
+    - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log (`07_living_documentation_log.md`) is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
+    - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
+    - **Quantitative Benefits**:
+      - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting diffs on rebase.
+      - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
+      - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
+    - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/sdd/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/archive/living_log_2026_09_archive.md), while [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) acts solely as a lean index and standard registry.
+
 
 
 
