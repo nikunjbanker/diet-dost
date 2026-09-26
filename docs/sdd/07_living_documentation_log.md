@@ -2768,3 +2768,29 @@
   - Automated tests: **129 passed, 0 failed, 0 warnings**.
   - Skill inventory: **5 focused, non-overlapping skills**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260926-042] Agentic Memory Persistence: Web App Plan Codification Standard
+- **Timestamp**: `2026-09-26T13:57:00+05:30`
+- **Driver / Agent**: `AI Assistant (Agentic Infrastructure & Token Economics) & User Pair-Programming`
+- **Change Type**: `[MEMORY_PERSISTENCE]`, `[TOKEN_ECONOMICS]`, `[GOVERNANCE]`
+- **Affected Components**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Summary of Change**:
+  1. *Solution Memory Persistence*:
+     - Added **Standard 11** to `AGENTS.md` and **Rule 12** to `.agents/skills/indian-diet-calorie-tracker/SKILL.md`.
+     - Explicitly codified the exact subsystem-to-skill catalog mapping:
+       - **Web App Modernization & Web BFF**: Unified within `.agents/skills/diet-dost-clean-architecture/` and `references/web_bff_clean_architecture_playbook.md`.
+       - **Zero-Skill-Sprawl Rule**: Prohibits agents from creating a separate `diet-dost-web-architecture` skill to avoid redundant system prompt tokens on every turn.
+       - **Cross-Platform Roadmap**: Managed in `docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`.
+       - **Acceptance Suites**: Mapped to `docs/cft/cft_web_bff_and_clean_architecture.md`, `cft_mobile_mvp_cross_platform.md`, and `cft_cross_platform_functional_parity_matrix.md`.
+  2. *Token Economy Guarantee*:
+     - Prevents future agents from getting confused about where the Web App development plan lives or creating redundant skills that inflate baseline prompt costs.
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Solution memory: **100% codified across primary solution skill and AGENTS.md**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
