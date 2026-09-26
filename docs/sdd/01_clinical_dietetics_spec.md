@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # Clinical Dietetics Specification (Indian Population)
 > **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Standards Basis**: ICMR-NIN 2024 Dietary Guidelines for Indians & WHO South Asian Consultation  

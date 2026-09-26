@@ -4,7 +4,7 @@
 [![.NET Aspire](https://img.shields.io/badge/.NET_Aspire-Orchestrated-blue?logo=dotnet)](https://learn.microsoft.com/dotnet/aspire/)
 [![ICMR-NIN 2024](https://img.shields.io/badge/Clinical_Standards-ICMR--NIN_2024_%26_WHO-10b981)](https://www.nin.res.in/)
 [![Design System](https://img.shields.io/badge/Aesthetic-Linear.app_Dark_Glassmorphism-6366f1)](https://linear.app)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPLv3 / SSPL v1](https://img.shields.io/badge/License-AGPLv3%20%2F%20SSPL%20v1-blue.svg)](LICENSE)
 
 > **Diet Dost** (डाइट दोस्त / ડાયેટ દોસ્ત) is an enterprise-grade nutrition companion engineered specifically for the Indian population and South Asian metabolic phenotypes. It bridges clinical dietetics (ICMR-NIN 2024 and WHO guidelines) with modern multimodal AI meal vision (Microsoft Agent Framework powered by Google AI Gemini models).
 
@@ -212,7 +212,7 @@ dotnet run --project src/Nutrition.AppHost
 
 ## 🧪 Running Tests & Validation
 
-### 1. Automated Test Suite (122 Tests, 0 Warnings, 0 Errors)
+### 1. Automated Test Suite (129 Tests, 0 Warnings, 0 Errors)
 Execute the comprehensive domain, clinical, security, and AI evaluation suite:
 
 ```bash
@@ -225,7 +225,7 @@ Test coverage includes:
   - WHO Asian-Indian BMI boundaries and cardiometabolic cutoffs.
   - ICMR-NIN 2024 starvation caloric floors (1,200 kcal F / 1,500 kcal M).
   - Health condition macro adjustments (Diabetes, HTN, Thyroid, NAFLD).
-- **Security & Infrastructure (`Nutrition.EvalHarness.Tests` - 86 tests)**:
+- **Security & Infrastructure (`Nutrition.EvalHarness.Tests` - 93 tests)**:
   - Multimodal AI food vision prompt defense, confidence gating ($\ge 70\%$), and fallback cascade.
   - PBKDF2 password hashing (HMAC-SHA512) and strict password policy validation.
   - RFC 7519 JWT Bearer authentication and HttpOnly session validation.
@@ -260,6 +260,6 @@ Diet Dost strictly adheres to living documentation practices. Every architectura
 
 ---
 
-## 📄 License
+## 📄 License & Governance
 
-This project is licensed under the [MIT License](LICENSE).
+This project is dual-licensed under the **GNU Affero General Public License v3.0 only (AGPLv3)** and the **Server Side Public License, v 1 (SSPL)**. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md) for full terms. License governance and automated header verification are maintained via `.agents/skills/diet-dost-license-governance/`.

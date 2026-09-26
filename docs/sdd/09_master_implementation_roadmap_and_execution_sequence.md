@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # SDD 09: Master Implementation Roadmap & Skill-by-Skill Execution Sequence
 > **Specification Version**: `v1.0.0 (Authoritative Implementation Roadmap)`  
 > **Classification**: Solution Execution Sequence, Skill Dependency Graph, and Phased Delivery Plan  

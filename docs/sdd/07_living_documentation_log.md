@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # SDD 07: Living Documentation Index & Agentic Fragment Ledger
 > **Specification Version**: `v2.0.0 (Agentic Fragment Architecture)`  
 > **Pattern**: Distributed Changeset / Fragment Pattern (Zero Merge Conflicts & Zero Token Waste)  
@@ -52,6 +60,7 @@ Every new fragment in [`docs/sdd/logs/`](file:///c:/Users/nikunj.banker/source/r
 | **LOG-043** | Transition to Distributed Fragment Pattern for Living SDD | `[ARCHITECTURE]` | [`LOG-20260926-043-living-doc-fragment-pattern.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/logs/LOG-20260926-043-living-doc-fragment-pattern.md) |
 | **LOG-044** | Enterprise Database Architecture & Cloud Persistence Skill | `[ARCHITECTURE]` | [`LOG-20260926-044-enterprise-database-architecture-skill.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/logs/LOG-20260926-044-enterprise-database-architecture-skill.md) |
 | **LOG-045** | Master Implementation Roadmap & Skill-by-Skill Execution Sequence | `[ROADMAP]` | [`LOG-20260926-045-master-implementation-roadmap.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/logs/LOG-20260926-045-master-implementation-roadmap.md) |
+| **LOG-046** | License Governance, Dual AGPLv3/SSPL v1 Compliance & Solution-Wide Header Enforcement | `[GOVERNANCE]` | [`LOG-20260926-046-license-governance-and-header-enforcement.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/logs/LOG-20260926-046-license-governance-and-header-enforcement.md) |
 
 ---
 

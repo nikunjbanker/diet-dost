@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # User Management & Security Architecture Plan: Diet Dost
 > **Specification Version**: `v1.6.0-APPROVED-SPEC` (JWT Bearer RFC 7519 & Dual SmartScheme Enhanced)  
 > **Target Framework**: `.NET 11 RC` (`net11.0`) with Standalone `.NET Aspire 13.5.4`  

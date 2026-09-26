@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # Data Models, DDD Aggregates & Contracts
 > **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Persistence**: Swappable SQLite V1 / PostgreSQL  

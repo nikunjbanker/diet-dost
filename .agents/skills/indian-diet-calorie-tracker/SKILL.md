@@ -1,4 +1,4 @@
----
+﻿---
 name: indian-diet-calorie-tracker
 version: 1.4.0
 status: Final Approved Production Specification & SDD Development Rulebook
@@ -8,6 +8,14 @@ description: >-
   Domain-Driven Design (DDD), OWASP security principles, Linear.app design aesthetic, and
   mandatory living SDD markdown documentation artifacts with full-lifecycle architecture diagrams.
 ---
+
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
 
 # Indian Diet Calorie & Weight Loss Tracker - Architecture & Implementation Skill
 > **Specification Version**: `v1.4.0 (Production & Living SDD)`  

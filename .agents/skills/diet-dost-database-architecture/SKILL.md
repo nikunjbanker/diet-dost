@@ -1,4 +1,4 @@
----
+﻿---
 name: diet-dost-database-architecture
 version: 1.0.0
 status: Approved Enterprise Architecture & Cloud Persistence Playbook
@@ -11,6 +11,14 @@ description: >-
   Use this skill whenever evaluating, provisioning, migrating, or configuring database persistence,
   EF Core providers, mobile local caching, or Azure cloud data services.
 ---
+
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
 
 # Diet-Dost — Enterprise Database Architecture & Cloud Persistence Guide
 > **Specification Version**: `v1.0.0-ENTERPRISE-DB`  
