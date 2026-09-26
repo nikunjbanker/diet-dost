@@ -2433,3 +2433,45 @@
   - Test suites: **129/129 tests passing**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260926-033] Azure Cloud Deployment Strategy, SQLite Zero-Data-Loss Persistence & Dedicated Agent Skill
+- **Timestamp**: `2026-09-26T10:30:00+05:30`
+- **Driver / Agent**: `AI Assistant (Azure Cloud Architecture & Agentic Engineering) & User Pair-Programming`
+- **Change Type**: `[DEVOPS]`, `[ARCHITECTURE]`, `[SKILL]`, `[SECURITY]`
+- **Affected Microservices / Components**: `.agents/skills/diet-dost-azure-deployment`, `Dockerfile`, `.dockerignore`, `docs/sdd/05_devops_and_infrastructure.md`
+- **Summary of Change**:
+  1. *Architectural Evaluation of Azure Deployment Options for Embedded SQLite*:
+     - Formulated 3 deployment models comparing compute models, cost profiles (free grant / 12-month free / paid), storage persistence, SQLite locking behavior, and custom domain SSL.
+     - **Option 1: Azure Container Apps (ACA) + Azure Files SMB Volume (Recommended Serverless)**:
+       - Cost: Monthly free grant (180k vCPU-s, 360k GiB-s, 2M requests/mo free); standard storage share ~$0.10–$0.30/mo.
+       - Persistence: Azure Files SMB share mounted to `/app/data` for `diet_dost.db` and `/app/data/wwwroot/uploads`.
+       - Locking & Concurrency: Single-replica invariant (`minReplicas: 1, maxReplicas: 1`); `PRAGMA journal_mode = DELETE` to prevent SMB shared memory `.shm` mmap issues.
+       - Custom Domain & SSL: Free Azure Managed Certificates with automated renewal via `Microsoft.App/managedEnvironments/managedCertificates`.
+     - **Option 2: Azure App Service Linux (F1 Free / B1 Basic)**:
+       - Cost: F1 is 100% free (60 CPU-min/day, sleeps); B1 is ~$13/mo (AlwaysOn, dedicated core).
+       - Persistence: Built-in `/home` persistent storage (`WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`).
+       - Custom Domain: F1 requires external Cloudflare free SSL proxy (no native free certs); B1 includes free managed certs.
+     - **Option 3: Azure B1s Virtual Machine (Docker + Nginx + Certbot)**:
+       - Cost: 100% Free for 12 months (Standard_B1s 750 hrs/mo + 2x 64GB SSD).
+       - Persistence & Speed: Native local SSD ext4 volume with POSIX shared memory, enabling full high-speed `PRAGMA journal_mode = WAL;`.
+       - Custom Domain & SSL: 100% free automated Let's Encrypt certificates via Certbot sidecar.
+  2. *Dedicated Agent Skill*:
+     - Created `.agents/skills/diet-dost-azure-deployment/SKILL.md` containing full Azure CLI provisioning scripts, Dockerfile blueprints, GitHub Actions CI/CD workflows, custom domain CNAME/TXT verification guides, and backup runbooks.
+  3. *Containerization Assets*:
+     - Created root `Dockerfile` targeting multi-stage .NET 11 build with `/app/data` volume mount points.
+     - Created `.dockerignore` eliminating repository noise, binaries, and local databases.
+  4. *Living SDD Synchronization*:
+     - Updated `docs/sdd/05_devops_and_infrastructure.md` with Section 6 covering evaluation matrices and SQLite cloud persistence invariants.
+- **Modified & New Files**:
+  - `.agents/skills/diet-dost-azure-deployment/SKILL.md` [NEW]
+  - `Dockerfile` [NEW]
+  - `.dockerignore` [NEW]
+  - `docs/sdd/05_devops_and_infrastructure.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - `dotnet test`: **129 passed, 0 failed, 0 warnings**.
+  - Skill and SDD synchronization: **100% consistent with zero drift**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+

@@ -193,3 +193,51 @@ To maintain production stability and adherence to the Zero Documentation Drift M
   2. All automated tests in `tests/` pass with 100% success rate.
   3. Living documentation in `docs/sdd/*.md` is updated, including an entry in `docs/sdd/07_living_documentation_log.md`.
 
+---
+
+## 6. Azure Production Cloud Deployment Architectures (SQLite & Custom Domain)
+
+### 6.1 Deployment Options Evaluation (No-VM Architecture Focus)
+
+```mermaid
+graph TD
+    Client[End User Browser / PWA] -->|Custom Domain HTTPS| Cloud[Azure Cloud Platform]
+    
+    subgraph OptionA ["Option A: ACA + Azure Files (DB) & Azure Blob (Media) - Recommended Hybrid"]
+        Cloud --> ACA_IngressA[ACA Ingress & Free Managed TLS 1.3]
+        ACA_IngressA --> ACA_PodA[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
+        ACA_PodA -->|Volume Mount: /app/data| AzureFilesA[Azure Files SMB Volume<br/>diet_dost.db<br/>PRAGMA journal_mode=DELETE]
+        ACA_PodA -->|Azure Storage SDK| AzureBlobA[Azure Blob Storage<br/>uploads/meals & progress<br/>Daily Hot Backups]
+    end
+    
+    subgraph OptionB ["Option B: ACA + Azure Files Alone (All-in-One Share)"]
+        Cloud --> ACA_IngressB[ACA Ingress & Free Managed TLS 1.3]
+        ACA_IngressB --> ACA_PodB[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
+        ACA_PodB -->|Single Volume Mount: /app/data| AzureFilesB[Azure Files SMB Share<br/>- diet_dost.db<br/>- wwwroot/uploads/]
+    end
+    
+    subgraph OptionC ["Option C: Azure App Service Linux (PaaS)"]
+        Cloud --> AppService[App Service Plan Linux<br/>F1 Free / B1 Basic]
+        AppService --> AppServiceStorage[WEBSITES_ENABLE_APP_SERVICE_STORAGE=true<br/>Mounted at /home]
+    end
+```
+
+| Dimension | Option A: ACA + Azure Files (DB) & Blob (Media) (Recommended) | Option B: ACA + Azure Files Alone (All-in-One) | Option C: Azure App Service Linux (B1 Basic / F1 Free) |
+| :--- | :--- | :--- | :--- |
+| **Compute Model** | Serverless MicroVM (Azure Container Apps) | Serverless MicroVM (Azure Container Apps) | Managed Web App PaaS (App Service Plan) |
+| **Database Storage** | Azure Files SMB Share mounted to `/app/data` | Azure Files SMB Share mounted to `/app/data` | Persistent `/home` (Azure Files backed) |
+| **Media / Photo Storage** | Azure Blob Storage (`dietdost-media`) | Azure Files SMB Share (`/app/data/uploads`) | Persistent `/home/data/uploads` |
+| **Cost Profile** | **Monthly Free Grant**: 180k vCPU-s + 360k GiB-s + 2M requests/mo free.<br/>Files + Blob: **<$0.50/mo**. | **Monthly Free Grant**: 180k vCPU-s + 360k GiB-s + 2M requests/mo free.<br/>Files: **<$0.30/mo**. | **F1 Tier**: 100% Free (60 CPU-min/day, sleeps, no custom SSL).<br/>**B1 Tier**: ~$13/mo (AlwaysOn, dedicated core). |
+| **Zero Data Loss Guarantee** | **100% Guaranteed**: SQLite transactions commit synchronously to Azure Files. | **100% Guaranteed**: SQLite transactions commit synchronously to Azure Files. | **100% Guaranteed**: Data lives in persistent `/home` volume. |
+| **SQLite Concurrency & Locking** | **Single Replica Mandate (`maxReplicas: 1`)**.<br/>`PRAGMA journal_mode = DELETE`. | **Single Replica Mandate (`maxReplicas: 1`)**.<br/>`PRAGMA journal_mode = DELETE`. | **Single Instance Mandate (`AlwaysOn = true`)**.<br/>`PRAGMA journal_mode = DELETE`. |
+| **Custom Domain & SSL** | **100% Free Azure Managed Certificates** (`Microsoft.App/managedEnvironments/managedCertificates`) with auto-renewal. | **100% Free Azure Managed Certificates** with auto-renewal. | **Free Managed Cert on B1+**.<br/>F1 requires Cloudflare Free Proxy workaround. |
+| **Security Posture** | Managed Identity, Azure Key Vault references, internal/external ingress, DDoS basic. | Managed Identity, Azure Key Vault references, internal/external ingress, DDoS basic. | Managed Identity, Key Vault references, HTTPS only, IP access restrictions. |
+| **CI/CD Integration** | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/container-apps-deploy-action`). | GitHub Actions / Azure DevOps (`azure/webapps-deploy`). |
+
+### 6.2 SQLite Zero-Data-Loss Invariants on Azure
+1. **The Single-Replica Invariant (`maxReplicas: 1`)**: Auto-scaling across multiple container instances accessing the same SQLite database file will corrupt the database. All container deployments must constrain scaling to exactly 1 replica.
+2. **Rollback Journal Mode for Network SMB Mounts**: Because SMB/CIFS network storage does not support POSIX shared memory (`.shm` mapping) reliably, `PRAGMA journal_mode = DELETE;` (or `TRUNCATE`) must be used when deploying against Azure Files.
+3. **Write-Ahead Logging (WAL) for Local SSD Mounts**: When deploying to a Linux VM (Option 3), native block storage allows `PRAGMA journal_mode = WAL;`, enabling concurrent reads without blocking writes.
+4. **Volume Mount Separation**: Container images must mount external persistent storage to `/app/data`, with the connection string pointing to `/app/data/diet_dost.db` and static uploads directed to `/app/data/wwwroot/uploads`.
+
+
