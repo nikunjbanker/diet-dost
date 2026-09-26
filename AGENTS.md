@@ -8,15 +8,43 @@ This solution-level instruction file defines mandatory engineering and Git workf
 
 > [!IMPORTANT]
 > **Zero Direct-to-Main Policy**: Direct commits or direct pushes to the `main` (or default production) branch are **strictly prohibited**.
+> **Mandatory Remote Fetch Before Branching**: Branches must NEVER be created from stale or dirty local working branches. Always fetch from `origin` first to prevent dragged pre-squash commits and merge conflicts.
+> **GitHub Stacked PR Workflow for Consecutive Features**: When work builds upon an in-flight unmerged PR, stack the child PR against the parent feature branch instead of `main`.
+> **Zero-Unilateral-Decision Mandate**: In case of ANY doubt, ambiguity, or architectural decision, ALWAYS ask questions and seek confirmation from the user using interactive modal tools (`ask_question`). NEVER assume or decide unilaterally.
 
 ### Step-by-Step Workflow:
-1. **Step 0: Always Create a Branch First**:
-   Before modifying any code, configuration, or documentation, create and check out a dedicated branch:
-   ```bash
-   git checkout -b feature/<descriptive-name>   # For new features or enhancements
-   git checkout -b fix/<defect-name>           # For bug or defect fixes
-   git checkout -b docs/<topic-name>           # For documentation changes
-   ```
+1. **Step 0: Pre-Flight Remote Fetch & Dedicated Branch Creation**:
+   Before modifying any code, configuration, or documentation, ensure your branch lineage is pristine:
+   a. **Fetch Remote Changes First**:
+      ```bash
+      git fetch origin
+      ```
+   b. **For Independent Work (Branching off `main`)**:
+      Always branch explicitly from `origin/main`:
+      ```bash
+      git checkout -b feature/<descriptive-name> origin/main   # For new features or enhancements
+      git checkout -b fix/<defect-name> origin/main           # For bug or defect fixes
+      git checkout -b docs/<topic-name> origin/main           # For documentation changes
+      ```
+      *Strict Prohibition*: NEVER run `git checkout -b <branch>` from a local working branch without specifying `origin/main` (or the intended parent feature branch for stacked PRs). Doing so drags old pre-squash commit history and causes severe merge conflicts on GitHub PRs.
+
+   c. **GitHub Stacked PR Protocol (For Consecutive / Dependent PRs)**:
+      When a new feature, defect fix, or documentation task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
+      - **Branch Directly from Parent Feature Branch**:
+        ```bash
+        git fetch origin
+        git checkout -b feature/<child-feature> origin/feature/<parent-feature>
+        ```
+      - **Set GitHub PR Base Branch to Parent Branch**:
+        When opening the Pull Request in GitHub, set the **Base branch** to `feature/<parent-feature>` (NOT `main`).
+      - **GitHub Stacked PR Mechanics**:
+        - GitHub displays ONLY the diff introduced by the child feature against the parent branch.
+        - When the parent PR merges into `main`, GitHub automatically updates the child PR's base branch to `main`.
+        - Stacked PRs keep review sizes small, eliminate merge conflicts between dependent features, and prevent duplicate commits across PRs.
+
+   d. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
+      - In case of ANY ambiguity, doubt, conflicting options (such as whether a branch should be stacked vs independent, or resolving structural conflicts), **STOP and ask the user for confirmation** using the interactive question tool (`ask_question`).
+      - **Never make unilateral decisions or assumptions** on git branching topology, architectural boundaries, or data contracts without user alignment.
 2. **Step 1: Perform All Changes Strictly on the Branch**:
    - Implement the required changes, domain logic, and tests within this isolated branch.
    - Run local validation: `dotnet test` and build checks (targeting .NET 11 with 0 warnings).
@@ -53,3 +81,4 @@ This solution-level instruction file defines mandatory engineering and Git workf
 4. **Clinical Dietetics Governance**: Adhere strictly to the Indian Medical Standards (ICMR-NIN 2024 & WHO guidelines) and the Zero-Assumption Rule specified in the solution skill.
 5. **Mandatory End-to-End Tier Verification**: No refactoring, new feature implementation, or bug fix is complete without verifying actual product behavior across all user tiers using the seeded demo accounts.
 6. **Zero Documentation Drift Standard**: Never omit synchronizing README, Mermaid diagrams, SDD docs, and agent skills after implementing major architectural or security enhancements.
+7. **Mandatory Confirmation Protocol**: In case of ANY doubt, ambiguity, or multiple implementation paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.

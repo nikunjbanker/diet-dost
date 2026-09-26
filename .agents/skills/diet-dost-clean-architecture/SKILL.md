@@ -27,7 +27,7 @@ description: >-
 
 > [!IMPORTANT]
 > Adhere strictly to the **Zero Direct-to-Main Policy** and Solution Rules in `AGENTS.md`:
-> 1. **Branch First**: All refactoring must occur on a dedicated feature branch (`feature/<name>`). Never commit directly to `main`. First pull latest source of `main` before creating feature branch.
+> 1. **Branch First (Pre-Flight Remote Fetch)**: All refactoring must occur on a dedicated feature branch (`feature/<name>`). Never commit directly to `main`. Always execute `git fetch origin` and branch strictly from `origin/main` (or parent feature branch for GitHub Stacked PRs). Never branch from stale/dirty local branches.
 > 2. **Target Framework**: All projects must target `<TargetFramework>net11.0</TargetFramework>`.
 > 3. **Zero-Warning Standard**: 0 warnings, 0 errors across the solution.
 > 4. **Zero Third-Party CQRS Dependencies**: Do NOT use `MediatR`. MediatR v13+ moved to a commercial / RPL-1.5 reciprocal license requiring paid license keys. Implement CQRS using native .NET 11 BCL abstractions.
@@ -35,6 +35,7 @@ description: >-
 > 6. **Living SDD Synchronization**: Synchronize `docs/sdd/*.md` and append an entry to `docs/sdd/07_living_documentation_log.md`.
 > 7. **Mandatory End-to-End User Tier Validation**: After any refactoring, new feature implementation, or bug fix, execute comprehensive end-to-end verification of the running application across all 5 user tiers using seeded demo accounts (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Ensure zero runtime exceptions, accurate quota enforcement, correct tier gating (e.g. photo comparison and data export paywalls), and zero browser console errors.
 > 8. **Major Change Auto-Detection & Artifact Synchronization**: Continuously detect major changes (CQRS commands/queries, ports, entities, secret store, environment gates). Auto-synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, `docs/sdd/*.md`, and relevant skills without manual prompting.
+> 9. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol**: In case of ANY ambiguity, doubt, or multiple architectural paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
 
 ---
 
