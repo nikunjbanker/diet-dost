@@ -2710,6 +2710,38 @@
   - Living documentation & link integrity: **100% synchronized with zero dead links**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260926-040] Token Economics & Agentic Memory Rule: SDD vs. Skill Separation Standard
+- **Timestamp**: `2026-09-26T13:51:00+05:30`
+- **Driver / Agent**: `AI Assistant (Agentic Infrastructure & Token Economics) & User Pair-Programming`
+- **Change Type**: `[TOKEN_ECONOMICS]`, `[GOVERNANCE]`, `[SKILL]`, `[MEMORY]`
+- **Affected Components**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Summary of Change**:
+  1. *Token Economics & System Prompt Optimization Rule Codified*:
+     - Codified why SDDs MUST remain in `docs/sdd/` and NOT be moved to `.agents/skills/`:
+       - **System Prompt Token Conservation**: Every skill folder in `.agents/skills/` has its metadata injected into the agent's baseline system prompt on every interaction. Moving large specifications or living logs into `.agents/skills/` permanently inflates baseline token overhead and raises operational costs.
+       - **Zero-Baseline Token Overhead**: Keeping declarative architectural specifications, schemas, clinical rules, and living audit logs in `docs/sdd/` consumes 0 baseline tokens, reading them on-demand via `view_file` only when needed for a specific task.
+     - Documented explicit decision criteria table for SDD vs. Skill creation:
+       - `docs/sdd/`: Declarative architecture blueprints, contracts, clinical rules, roadmaps, and audit logs.
+       - `.agents/skills/`: Imperative procedural "how-to" playbooks, concrete code recipes, and verification checklists.
+     - Mandated the strict anti-pattern prohibition: NEVER convert declarative architectural specifications (`docs/sdd/*.md`) or living logs (`docs/sdd/07_living_documentation_log.md`) into `.agents/skills/`.
+  2. *Solution Memory Persistence*:
+     - Added Standard 10 to `AGENTS.md`.
+     - Added Rule 11 to primary solution skill `indian-diet-calorie-tracker/SKILL.md`.
+- **Modified Files**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Solution memory: **100% codified across primary solution skill and AGENTS.md**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 
 

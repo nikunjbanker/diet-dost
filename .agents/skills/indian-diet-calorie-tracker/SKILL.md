@@ -105,6 +105,11 @@ This skill guides the design, architecture, documentation, and development of a 
       - [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) for Web PWA.
       - [`cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) for Android and iOS.
       - [`cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md) to guarantee 100% mathematical, clinical, and feature parity between Web and Mobile.
+11. **Token Economics & Agentic Architecture Standard (SDDs vs. Skills Separation)**:
+    - **System Prompt Token Conservation**: The `name` and `description` of every skill in `.agents/skills/` is injected into the agent's system prompt on **every interaction**. Placing large specifications or living logs in `.agents/skills/` increases per-turn token consumption and costs.
+    - **The `docs/sdd/` Boundary (0 Baseline Tokens)**: Declarative specifications, data models, clinical rules, and strategic migration roadmaps MUST remain in `docs/sdd/`. They consume **0 baseline tokens** and are read on-demand via `view_file` only when required.
+    - **The `.agents/skills/` Boundary (Actionable Playbooks)**: Keep `.agents/skills/` exclusively for procedural "how-to" playbooks, concrete code recipes, and verification checklists.
+    - **Strict Anti-Pattern**: NEVER move or convert declarative architectural specifications (`docs/sdd/*.md`) or living logs (`docs/sdd/07_living_documentation_log.md`) into `.agents/skills/`.
 
 ---
 
