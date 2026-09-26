@@ -2583,3 +2583,51 @@
   - Living documentation: **100% synchronized with zero drift**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260926-037] Unified Cross-Platform (Web & Mobile) Clean Architecture, Dual BFF & Mandatory CFT Suite
+- **Timestamp**: `2026-09-26T13:20:00+05:30`
+- **Driver / Agent**: `AI Assistant (Cross-Platform Architecture & System Governance) & User Pair-Programming`
+- **Change Type**: `[CROSS_PLATFORM]`, `[WEB_BFF]`, `[MOBILE_BFF]`, `[CFT]`, `[SKILL]`, `[SDD]`
+- **Affected Components**:
+  - `docs/sdd/08_web_bff_clean_architecture_migration_plan.md` [MODIFIED & EXPANDED]
+  - `docs/cft/cft_web_bff_and_clean_architecture.md` [NEW]
+  - `docs/cft/cft_mobile_mvp_cross_platform.md` [NEW]
+  - `docs/cft/cft_cross_platform_functional_parity_matrix.md` [NEW]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Summary of Change**:
+  1. *Unified Cross-Platform (Web & Mobile) Phased Migration Plan (`SDD 08`)*:
+     - Expanded SDD 08 from web-only into a comprehensive master blueprint for both Web (PWA) and Mobile (Android & iOS).
+     - Defined Dual BFF Architecture: `WebBffController` (`/api/web/v1/*`) and `MobileBffController` (`/api/mobile/v1/*`) sharing the single unified .NET 11 Application & Domain CQRS core.
+     - Codified 4 distinct tracks and 10 small, non-big-bang GitHub Stacked PRs (Track 1: Backend BFF Foundation, Track 2: Web Platform Modernization, Track 3: Mobile Platform Implementation, Track 4: Cross-Platform Parity).
+  2. *Mandatory CFT (Customer & Functional Acceptance Test) Suite Created in `docs/cft/`*:
+     - Created `docs/cft/cft_web_bff_and_clean_architecture.md` for Web PWA verification.
+     - Created `docs/cft/cft_mobile_mvp_cross_platform.md` for Android & iOS mobile verification.
+     - Created `docs/cft/cft_cross_platform_functional_parity_matrix.md` cross-checking Web vs Android vs iOS across all features, tiers, and clinical invariants.
+  3. *Main Solution Skills & Engineering Governance Enriched*:
+     - Updated primary skill `indian-diet-calorie-tracker/SKILL.md` with Rules 9 & 10 (Mandatory Cross-Platform Phased Migration via Stacked PRs and Mandatory CFT Verification).
+     - Updated `AGENTS.md` with Technical & Architecture Standards 8 & 9.
+     - Cross-linked companion skills (`diet-dost-clean-architecture` and `diet-dost-mobile-architecture`).
+     - Enforced strict user instruction: **Zero application code changes committed in this turn**.
+- **Modified & New Files**:
+  - `docs/sdd/08_web_bff_clean_architecture_migration_plan.md` [MODIFIED]
+  - `docs/cft/cft_web_bff_and_clean_architecture.md` [NEW]
+  - `docs/cft/cft_mobile_mvp_cross_platform.md` [NEW]
+  - `docs/cft/cft_cross_platform_functional_parity_matrix.md` [NEW]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Living documentation & CFTs: **100% synchronized with zero drift**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+

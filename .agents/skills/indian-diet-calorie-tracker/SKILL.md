@@ -67,7 +67,16 @@ This skill guides the design, architecture, documentation, and development of a 
 8. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
    - In case of ANY ambiguity, doubt, conflicting options (such as whether a branch should be stacked vs independent, or resolving structural conflicts), **STOP and ask the user for confirmation** using interactive modal tools (`ask_question`).
    - **Never make unilateral decisions or assumptions** on git branching topology, architectural boundaries, or data contracts without user alignment.
-
+9. **Mandatory Cross-Platform (Web & Mobile) Phased Migration & GitHub Stacked PR Protocol (Zero Big Bang)**:
+   - Any architectural refactoring, Backend for Frontend (BFF) implementation, or cross-platform modernization across Web PWA, Android, and iOS **MUST NEVER be implemented as a big-bang release or massive PR**.
+   - Work must proceed in small, platform-by-platform, independently reviewable increments following the **GitHub Stacked PR Protocol** as codified in [`docs/sdd/08_web_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_web_bff_clean_architecture_migration_plan.md).
+   - Zero duplicate domain code guarantee: 100% of clinical calculations and food estimation must reside in `Nutrition.Domain` / `Nutrition.Application`. Zero domain math in client JavaScript or mobile code.
+10. **Mandatory Platform-Specific CFT Documentation & Cross-Platform Parity Verification**:
+    - Every platform capability (Web, Android, iOS) must have an associated Customer & Functional Acceptance Test (CFT) document in [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/).
+    - Before merging any feature or refactoring, contributors and agents must cross-check and execute the relevant CFT documents in [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/) across all platforms:
+      - [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) for Web PWA.
+      - [`cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) for Android and iOS.
+      - [`cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md) to guarantee 100% mathematical, clinical, and feature parity between Web and Mobile.
 
 ---
 

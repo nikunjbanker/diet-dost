@@ -811,15 +811,22 @@ The following matrix provides guidance for selecting between Option 1 and Option
 
 ---
 
-## 9. Mobile MVP Execution Checklist (Living Quality Gates)
+## 9. Mobile MVP Execution Checklist & Mandatory CFT Verification Gates
 
-Before signing off on the mobile MVP implementation, verify the following gates:
+> [!IMPORTANT]
+> **Mandatory CFT Execution**: Before signing off on any mobile PR, contributors and agents must execute and check off the platform CFT specifications in `docs/cft/`:
+> - Mobile CFT: [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md)
+> - Cross-Platform Parity Matrix: [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md)
+> - Unified Cross-Platform Roadmap: [`docs/sdd/08_web_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_web_bff_clean_architecture_migration_plan.md)
 
+Verify the following gates:
 - [ ] **BFF Gate**: `MobileBffController` handles `GET /api/mobile/v1/dashboard` in `< 300ms` by executing CQRS queries in parallel.
 - [ ] **Zero Duplication Gate**: Zero clinical calculations (ICMR-NIN calories, macros, deficits) written in client mobile code.
-- [ ] **Compression Gate**: Food photos snapped on high-resolution smartphone cameras are verified to upload at `< 500KB`.
-- [ ] **Keychain Gate**: Auth JWT Bearer token is stored in Apple Keychain / Android Keystore, not in plain storage.
+- [ ] **Compression Gate**: Food photos snapped on high-resolution smartphone cameras are verified to upload at `< 500KB` (target <400 KB via 1080p SkiaSharp / Manipulator).
+- [ ] **Keychain Gate**: Auth JWT Bearer token is stored in Apple Keychain / AndroidKeyStore TEE, not in plain storage.
 - [ ] **Tier Gating Gate**: Free tier users see 7-day trend history; Basic users see 30-day history; Premium users see 90-day history.
 - [ ] **Disclaimer Gate**: Apple Guideline 1.4.1 clinical disclaimer displays on first launch before viewing nutritional projections.
 - [ ] **Account Deletion Gate**: Apple Guideline 5.1.1(v) deletion button functions correctly via `DeleteAccountCommand`.
+- [ ] **Cross-Platform Parity Gate**: 100% parity verified between Web and Mobile across all 5 demo user tiers via [`cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md).
+
 

@@ -447,7 +447,11 @@ Even within a vanilla JavaScript / HTML5 PWA architecture, SOLID principles must
 ## 7. Phased Non-Big-Bang Step-by-Step Implementation Roadmap
 
 > [!IMPORTANT]
-> **No Big-Bang Release Mandate**: To eliminate regression risk and ensure each step is cleanly reviewable, the Web BFF and Clean Architecture migration is divided into **4 small, independently testable Pull Requests** using the **GitHub Stacked PR Protocol**.
+> **No Big-Bang Release Mandate**: To eliminate regression risk and ensure each step is cleanly reviewable, the Cross-Platform Web & Mobile Clean Architecture migration is divided into **phased, platform-by-platform Pull Requests** using the **GitHub Stacked PR Protocol** as specified in master SDD [`docs/sdd/08_web_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_web_bff_clean_architecture_migration_plan.md).
+> All implementations must execute their respective platform CFT checklists before merge:
+> - Web CFT: [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md)
+> - Mobile CFT: [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md)
+> - Cross-Platform Parity Matrix: [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md)
 > Complete reference code and scripts are maintained in [web_bff_clean_architecture_playbook.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md).
 
 ```mermaid
