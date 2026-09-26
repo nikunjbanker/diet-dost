@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # Master Solution Architecture & Multi-Dimensional Diagrams
 > **Specification Version**: `v1.3.1 (Production & Living SDD)`  
 > **Architecture Topology**: Distributed Clean Architecture & .NET 11 RC Aspire AppHost  

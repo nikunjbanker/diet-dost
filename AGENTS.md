@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # Solution Engineering Rules & Instructions: Diet-Dost
 
 This solution-level instruction file defines mandatory engineering and Git workflows for any AI agent or human contributor working on the **Diet-Dost** repository.
@@ -124,6 +132,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Cross-Platform Phased Roadmap**: Master rollout sequence across Web, Android, and iOS is codified in [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md).
     - **Platform CFT Acceptance Suites**: Web PWA verification is in [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md); Mobile verification is in [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md); Parity verification is in [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md).
     - **Enterprise Database & Cloud Persistence**: Governed by [`.agents/skills/diet-dost-database-architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-database-architecture/SKILL.md) (Azure SQL Serverless Free Tier, Azure Cosmos DB Free Tier, PostgreSQL Flexible Server, DPDPA 2023, and mobile offline SQLite sync).
+    - **License Governance & Header Enforcement**: Governed by [`.agents/skills/diet-dost-license-governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-license-governance/SKILL.md) (dual AGPLv3 / SSPL v1 compliance, block comment formatting, and automated validation scripts).
 12. **Living Documentation Architecture & Fragment Pattern Mandate (Token Economics & Merge Conflict Immunity)**:
     - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log (`07_living_documentation_log.md`) is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
     - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.

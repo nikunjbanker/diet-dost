@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # SDD 08: Unified Cross-Platform (Web & Mobile) Clean Architecture, Dual BFF & Phased Migration Plan
 > **Specification Version**: `v2.0.0 (Unified Living SDD & Multi-Platform Playbook)`  
 > **Classification**: Cross-Platform Architecture Review, Dual BFF Design, SOLID Governance & Phased Execution Plan  

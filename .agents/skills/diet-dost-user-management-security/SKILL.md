@@ -1,4 +1,4 @@
----
+﻿---
 name: diet-dost-user-management-security
 version: 1.6.0
 status: Final Approved Production Specification & Security Rulebook
@@ -13,6 +13,14 @@ description: >-
   authorization, user management, security middleware, tier enforcement, AI quota
   tracking, or legal consent handling in the Diet Dost solution.
 ---
+
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
 
 # Diet Dost — User Management & Security Architecture Rulebook
 > **Specification Version**: `v1.6.0-APPROVED-SPEC`
