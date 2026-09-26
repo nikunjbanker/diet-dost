@@ -27,11 +27,28 @@ export class AdminModalController {
     this.searchUsers = document.getElementById('admin-search-users');
     this.filterTier = document.getElementById('admin-filter-tier');
     this.btnRefreshUsers = document.getElementById('btn-admin-refresh-users');
+    this.btnCreateUser = document.getElementById('btn-admin-create-user');
     this.usersTableBody = document.getElementById('admin-users-table-body');
+
+    // Create User Modal Elements
+    this.createUserModal = document.getElementById('admin-create-user-modal');
+    this.createUserForm = document.getElementById('admin-create-user-form');
+    this.createUserError = document.getElementById('admin-create-user-error');
+    this.btnCloseCreateUser = document.getElementById('btn-close-create-user-modal');
+    this.btnCancelCreateUser = document.getElementById('btn-cancel-create-user');
+
+    // Edit User Modal Elements
+    this.editUserModal = document.getElementById('admin-edit-user-modal');
+    this.editUserForm = document.getElementById('admin-edit-user-form');
+    this.editUserError = document.getElementById('admin-edit-user-error');
+    this.btnCloseEditUser = document.getElementById('btn-close-edit-user-modal');
+    this.btnCancelEditUser = document.getElementById('btn-cancel-edit-user');
 
     this.tierCardsContainer = document.getElementById('admin-tier-cards-container');
     this.btnRefreshLogs = document.getElementById('btn-admin-refresh-logs');
     this.logsTableBody = document.getElementById('admin-logs-table-body');
+
+    this.usersMap = new Map();
   }
 
   bindEvents() {
@@ -46,6 +63,17 @@ export class AdminModalController {
     this.filterTier?.addEventListener('change', () => this.loadUsers());
 
     this.btnRefreshLogs?.addEventListener('click', () => this.loadLogs());
+
+    // Create User Modal Wiring
+    this.btnCreateUser?.addEventListener('click', () => this.openCreateUserModal());
+    this.btnCloseCreateUser?.addEventListener('click', () => this.closeCreateUserModal());
+    this.btnCancelCreateUser?.addEventListener('click', () => this.closeCreateUserModal());
+    this.createUserForm?.addEventListener('submit', (e) => this.handleCreateUserSubmit(e));
+
+    // Edit User Modal Wiring
+    this.btnCloseEditUser?.addEventListener('click', () => this.closeEditUserModal());
+    this.btnCancelEditUser?.addEventListener('click', () => this.closeEditUserModal());
+    this.editUserForm?.addEventListener('submit', (e) => this.handleEditUserSubmit(e));
   }
 
   open() {
@@ -93,6 +121,9 @@ export class AdminModalController {
         this.usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No matching users found.</td></tr>`;
         return;
       }
+
+      this.usersMap.clear();
+      users.forEach(u => this.usersMap.set(u.id, u));
 
       this.usersTableBody.innerHTML = users.map(u => {
         const isSuper = u.role === 2 || u.role === 'SuperAdmin';
@@ -143,10 +174,13 @@ export class AdminModalController {
             <td style="padding: 8px 10px;">
               ${statusBadge}
             </td>
-            <td style="padding: 8px 10px;">
-              ${isSuper ? '<span style="font-size: 0.72rem; color: var(--text-muted);">Protected</span>' : `
-                <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-active="${u.isActive}">
-                  ${u.isActive ? 'Lock' : 'Unlock'}
+            <td style="padding: 8px 10px; white-space: nowrap;">
+              <button type="button" class="btn btn-xs btn-outline btn-edit-user" data-user-id="${u.id}" style="margin-right: 4px;">
+                ✏️ Edit
+              </button>
+              ${isSuper ? '<span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 4px;">Protected</span>' : `
+                <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-user-id="${u.id}" data-active="${u.isActive}">
+                  ${u.isActive ? '🔒 Lock' : '🔓 Unlock'}
                 </button>
               `}
             </td>
@@ -195,22 +229,145 @@ export class AdminModalController {
       });
     });
 
+    this.usersTableBody?.querySelectorAll('.btn-edit-user').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const userId = btn.dataset.userId;
+        if (userId) this.openEditUserModal(userId);
+      });
+    });
+
     this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        const row = e.target.closest('tr');
-        const userId = row?.dataset.userId;
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.userId;
         const isCurrentlyActive = btn.dataset.active === 'true';
         if (!userId) return;
 
         try {
-          await this.adminService.updateUserStatus(userId, !isCurrentlyActive);
-          this.toastService?.success(`User ${!isCurrentlyActive ? 'unlocked' : 'locked'} successfully.`);
+          await this.adminService.lockUser(userId, isCurrentlyActive);
+          this.toastService?.success(`User ${isCurrentlyActive ? 'locked' : 'unlocked'} successfully.`);
           this.loadUsers();
         } catch (err) {
-          this.toastService?.error(err.data?.error || 'Failed to change user status.');
+          this.toastService?.error(err.data?.error || err.message || 'Failed to change user status.');
         }
       });
     });
+  }
+
+  openCreateUserModal() {
+    if (!this.createUserModal) return;
+    this.createUserForm?.reset();
+    if (this.createUserError) this.createUserError.style.display = 'none';
+    const activeCb = document.getElementById('admin-new-user-active');
+    const verifiedCb = document.getElementById('admin-new-user-verified');
+    if (activeCb) activeCb.checked = true;
+    if (verifiedCb) verifiedCb.checked = true;
+    this.createUserModal.style.display = 'flex';
+  }
+
+  closeCreateUserModal() {
+    if (this.createUserModal) this.createUserModal.style.display = 'none';
+  }
+
+  async handleCreateUserSubmit(e) {
+    e.preventDefault();
+    if (this.createUserError) this.createUserError.style.display = 'none';
+
+    const email = document.getElementById('admin-new-user-email')?.value.trim();
+    const name = document.getElementById('admin-new-user-name')?.value.trim();
+    const mobileNumber = document.getElementById('admin-new-user-mobile')?.value.trim();
+    const password = document.getElementById('admin-new-user-password')?.value;
+    const role = Number(document.getElementById('admin-new-user-role')?.value ?? 0);
+    const tier = Number(document.getElementById('admin-new-user-tier')?.value ?? 0);
+    const isActive = document.getElementById('admin-new-user-active')?.checked ?? true;
+    const isEmailVerified = document.getElementById('admin-new-user-verified')?.checked ?? true;
+
+    try {
+      await this.adminService.createUser({
+        email,
+        name,
+        mobileNumber,
+        password,
+        role,
+        tier,
+        isActive,
+        isEmailVerified
+      });
+      this.toastService?.success(`User ${email} created successfully.`);
+      this.closeCreateUserModal();
+      this.loadUsers();
+    } catch (err) {
+      const msg = err.data?.message || err.data?.error || err.message || 'Failed to create user.';
+      if (this.createUserError) {
+        this.createUserError.textContent = msg;
+        this.createUserError.style.display = 'block';
+      } else {
+        this.toastService?.error(msg);
+      }
+    }
+  }
+
+  openEditUserModal(userId) {
+    const user = this.usersMap.get(userId);
+    if (!user || !this.editUserModal) return;
+
+    if (this.editUserError) this.editUserError.style.display = 'none';
+    document.getElementById('admin-edit-user-id').value = user.id;
+    document.getElementById('admin-edit-user-email').value = user.email;
+    document.getElementById('admin-edit-user-mobile').value = user.mobileNumber || '';
+
+    const roleVal = typeof user.role === 'number' ? user.role : (user.role === 'SuperAdmin' ? 2 : user.role === 'Admin' ? 1 : 0);
+    const tierVal = typeof user.tier === 'number' ? user.tier : (user.tier === 'SuperAdmin' ? 3 : user.tier === 'Premium' ? 2 : user.tier === 'Basic' ? 1 : 0);
+    document.getElementById('admin-edit-user-role').value = roleVal;
+    document.getElementById('admin-edit-user-tier').value = tierVal;
+    document.getElementById('admin-edit-user-password').value = '';
+    document.getElementById('admin-edit-user-active').checked = !!user.isActive;
+    document.getElementById('admin-edit-user-verified').checked = !!user.isEmailVerified;
+
+    const isSuper = roleVal === 2;
+    document.getElementById('admin-edit-user-role').disabled = isSuper;
+    document.getElementById('admin-edit-user-tier').disabled = isSuper;
+    document.getElementById('admin-edit-user-active').disabled = isSuper;
+
+    this.editUserModal.style.display = 'flex';
+  }
+
+  closeEditUserModal() {
+    if (this.editUserModal) this.editUserModal.style.display = 'none';
+  }
+
+  async handleEditUserSubmit(e) {
+    e.preventDefault();
+    if (this.editUserError) this.editUserError.style.display = 'none';
+
+    const userId = document.getElementById('admin-edit-user-id')?.value;
+    const mobileNumber = document.getElementById('admin-edit-user-mobile')?.value.trim();
+    const role = Number(document.getElementById('admin-edit-user-role')?.value ?? 0);
+    const tier = Number(document.getElementById('admin-edit-user-tier')?.value ?? 0);
+    const newPassword = document.getElementById('admin-edit-user-password')?.value || null;
+    const isActive = document.getElementById('admin-edit-user-active')?.checked ?? true;
+    const isEmailVerified = document.getElementById('admin-edit-user-verified')?.checked ?? true;
+
+    try {
+      await this.adminService.updateUser(userId, {
+        mobileNumber,
+        role,
+        tier,
+        isActive,
+        isEmailVerified,
+        newPassword: newPassword || undefined
+      });
+      this.toastService?.success('User updated successfully.');
+      this.closeEditUserModal();
+      this.loadUsers();
+    } catch (err) {
+      const msg = err.data?.message || err.data?.error || err.message || 'Failed to update user.';
+      if (this.editUserError) {
+        this.editUserError.textContent = msg;
+        this.editUserError.style.display = 'block';
+      } else {
+        this.toastService?.error(msg);
+      }
+    }
   }
 
   async loadTiers() {

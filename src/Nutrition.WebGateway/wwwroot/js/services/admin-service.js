@@ -28,6 +28,18 @@ export class AdminService {
     return await this.api.put(`/api/admin/users/${userId}/status`, { isActive });
   }
 
+  async createUser(userData) {
+    return await this.api.post('/api/admin/users', userData);
+  }
+
+  async updateUser(userId, userData) {
+    return await this.api.put(`/api/admin/users/${userId}`, userData);
+  }
+
+  async lockUser(userId, isLocked) {
+    return await this.api.put(`/api/admin/users/${userId}/lock`, { isLocked });
+  }
+
   async getTierConfigs() {
     return await this.api.get('/api/admin/tier-configs');
   }

@@ -2367,6 +2367,46 @@
   - All test suites: **122 passed, 0 failed**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260926-031] SuperAdmin User Governance Actions (Create, Update, Lock/Unlock) & Dedicated CFT Scratchpad
+- **Timestamp**: `2026-09-26T10:15:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[FEATURE]`, `[SECURITY]`, `[CLEAN_ARCHITECTURE]`, `[TESTING]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`, `docs/cft`
+- **Summary of Change**:
+  1. *Application CQRS Layer*:
+     - Created `AdminCreateUserCommand` & handler: allows SuperAdmin to provision user accounts with custom Tier, Role, initial password, active status, email verification, and baseline clinical profile.
+     - Created `AdminUpdateUserCommand` & handler: allows SuperAdmin to update mobile number, role, tier, active status, email verification, and reset password.
+     - Enhanced `UpdateUserStatusCommand` & `AdminLockUserCommand`: toggles user active status. When a user is locked, their `SecurityStamp` is cryptographically regenerated, invalidating active JWT and cookie sessions immediately.
+     - Guarded SuperAdmin accounts against demotion or locking.
+  2. *Presentation Layer (WebGateway)*:
+     - Added endpoints in `AdminController`: `POST /api/admin/users`, `PUT /api/admin/users/{id}`, `PUT /api/admin/users/{id}/lock`.
+     - Extended `admin-service.js` with `createUser`, `updateUser`, and `lockUser`.
+     - Updated `admin-modal.html` with `➕ Create User` toolbar button, `➕ Create New User` modal dialog, and `✏️ Update User` modal dialog.
+     - Enhanced `admin-modal.js` with interactive row action buttons (`✏️ Edit`, `🔒 Lock` / `🔓 Unlock`), form submission handlers, and instant table refreshes.
+  3. *Test Harness & Unit Tests*:
+     - Added `AdminUserManagementTests.cs` (7 test cases): validates user creation, weak password rejection, duplicate email conflict, SuperAdmin creation restrictions for non-SuperAdmins, user updates with password reset, SuperAdmin demotion/lock guards, and lock/unlock session invalidation.
+     - Total tests across solution: **129 passed, 0 failed, 0 warnings**.
+  4. *CFT Verification Scratchpad*:
+     - Created `docs/cft/scratchpad_superadmin_user_management_verification.md` containing end-to-end verification checklist for all SuperAdmin user governance actions.
+     - Updated baseline `docs/cft/scratchpad_e2e_user_tier_verification_checklist.md` linking to the dedicated scratchpad.
+     - Verified interactively via browser subagent with real live product execution, capturing screenshot `superadmin_user_governance_verified_1790398131524.png` and recording `superadmin_actions_verification_1790397435743.webp`.
+- **Modified & New Files**:
+  - `src/Nutrition.Application/Features/Admin/Commands/UserManagement/AdminUserCommands.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AdminController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/admin-service.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/admin-modal.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/admin-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AdminUserManagementTests.cs` [NEW]
+  - `docs/cft/scratchpad_superadmin_user_management_verification.md` [NEW]
+  - `docs/cft/scratchpad_e2e_user_tier_verification_checklist.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - `dotnet test`: **129 passed (36 Domain + 93 EvalHarness), 0 failed, 0 warnings**.
+  - Browser E2E verification: **100% passed across all Create, Update, Lock, and Unlock actions with 0 console errors**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
 
 
 
