@@ -37,6 +37,10 @@ The project operates under a protective dual-licensing regime:
    - For agent skills (`SKILL.md`), preserved mandatory YAML frontmatter at line 1 and cleanly injected the license comment immediately following the closing delimiter.
    - Verification check passed with 100% compliance (`198/198 files compliant`).
 
-4. **Zero Regression & Build Validation**:
+4. **GitHub Code Ownership (`.github/CODEOWNERS`)**:
+   - Established `.github/CODEOWNERS` assigning global and subsystem code ownership to repository owner `@nikunjbanker`.
+   - Ensures any future external pull requests trigger review requests for `@nikunjbanker` while allowing full operational freedom for repository maintenance.
+
+5. **Zero Regression & Build Validation**:
    - `dotnet build --configuration Release`: Build succeeded with **0 warnings and 0 errors**.
    - `dotnet test --configuration Release`: 100% test pass rate (**129/129 tests passed**).
