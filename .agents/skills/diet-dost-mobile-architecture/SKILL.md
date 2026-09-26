@@ -209,24 +209,409 @@ Apple App Store and Google Play enforce strict review guidelines for health and 
 
 ---
 
-## 5. Mobile MVP Implementation Plan (3-Phase Execution)
+## 5. Zero-Duplicate-Code Standard: SOLID & Clean Architecture via Mobile BFF
 
-### Phase 1: Mobile BFF Controller in WebGateway (Backend Readiness)
-1. Add `MobileController.cs` in `src/Nutrition.WebGateway/Controllers/Mobile/`:
-   - Endpoint 1: `GET /api/mobile/v1/dashboard` (aggregating profile, quota, ledger, and projections).
-   - Endpoint 2: `POST /api/mobile/v1/meals/snap` (accepting compressed image + note).
-   - Endpoint 3: `GET /api/mobile/v1/config` (versioning, disclaimers, tier definitions).
-2. Reuse existing Application CQRS handlers with zero duplication of business logic.
+To guarantee that mobile development does not introduce divergent business logic, duplicate DTOs, or repeated clinical calculations, the entire mobile subsystem strictly adheres to **SOLID principles** and **Clean Architecture**:
 
-### Phase 2: Cross-Platform Mobile Client Setup
-1. Initialize chosen framework (e.g. Expo TypeScript or .NET MAUI).
-2. Configure theme tokens matching Diet-Dost Obsidian Dark (`#0B0D13` background, `#1A1D27` cards, `#4F46E5` primary).
-3. Implement 3 screens:
-   - `LoginScreen`: Email/Mobile + Password -> saves JWT to SecureStorage.
-   - `SnapScreen`: Native camera shutter -> client resize to 1080p -> upload -> portion confirmation.
-   - `DashboardScreen`: Daily Calorie ring gauge, 6-macro mini-bars, and 7D/30D chart points.
+```mermaid
+graph TD
+    subgraph PRESENTATION_LAYER ["Presentation Layer (Clients & Gateway)"]
+        direction TB
+        subgraph MOBILE_CLIENTS ["Mobile Clients (Choose Option 1 or 2)"]
+            MAUI["Option 1: .NET MAUI App<br/>(References Shared C# Contracts)"]
+            EXPO["Option 2: React Native Expo App<br/>(Auto-Generated TypeScript from OpenAPI)"]
+        end
+        
+        subgraph GATEWAY ["Nutrition.WebGateway"]
+            MBFF["MobileBffController (/api/mobile/v1/*)<br/>- Thin Controller (SRP)<br/>- Injects IDispatcher (DIP)<br/>- 0 Business Logic<br/>- Aggregates Single-Roundtrip DTOs"]
+        end
+    end
 
-### Phase 3: Build, Testing & Closed Alpha
-1. Test on physical iOS and Android devices over cellular data.
-2. Verify tier limits (e.g. Free user sees 7D chart, Basic sees 30D, Premium sees 90D).
-3. Verify zero data loss and seamless synchronization between web PWA and mobile app.
+    subgraph APPLICATION_LAYER ["Application Core (Nutrition.Application)"]
+        direction TB
+        DISPATCHER["IDispatcher / CQRS Handlers"]
+        Q_LEDGER["GetDailyLedgerQueryHandler"]
+        Q_PROJ["GetHistoricalAnalyticsQueryHandler"]
+        Q_QUOTA["GetAiQuotaQueryHandler"]
+        Q_PROF["GetUserProfileQueryHandler"]
+        C_SNAP["UploadAndAnalyzeMealCommandHandler"]
+        
+        DISPATCHER --> Q_LEDGER
+        DISPATCHER --> Q_PROJ
+        DISPATCHER --> Q_QUOTA
+        DISPATCHER --> Q_PROF
+        DISPATCHER --> C_SNAP
+    end
+
+    subgraph DOMAIN_LAYER ["Domain Core (Nutrition.Domain)"]
+        CLINICAL["Clinical Dietetics Engine (ICMR-NIN 2024 / WHO)<br/>- Zero-Assumption Rule<br/>- BMR/TDEE & Safe Deficits<br/>- Tier Quotas & Feature Gating"]
+    end
+
+    MAUI -->|"HTTPS / JWT Bearer"| MBFF
+    EXPO -->|"HTTPS / JWT Bearer"| MBFF
+    MBFF -->|"Dispatches Native Queries/Commands"| DISPATCHER
+    APPLICATION_LAYER --> DOMAIN_LAYER
+```
+
+### 5.1 Architectural Invariants (SOLID & Clean Architecture)
+1. **Single Responsibility Principle (SRP)**:
+   - The Mobile BFF Controller (`MobileBffController.cs`) has **one and only one responsibility**: translating between mobile network payloads and internal application CQRS commands/queries.
+   - It performs **zero database access**, **zero clinical math**, and **zero image file system writes**.
+2. **Open/Closed Principle (OCP)**:
+   - New mobile features (e.g. barcode scanning, hydration tracking) extend the system by adding new CQRS handlers in `Nutrition.Application` without modifying existing web controllers or core domain models.
+3. **Liskov Substitution & Interface Segregation (LSP / ISP)**:
+   - Mobile and Web controllers consume the same focused CQRS interfaces (`IDispatcher` / `IQueryHandler<TQuery, TResult>` / `ICommandHandler<TCommand, TResult>`).
+4. **Dependency Inversion Principle (DIP)**:
+   - High-level mobile features depend upon abstractions (`IDispatcher`, `IPhotoStorageService`), never on concrete SQLite, Azure Blob, or external AI implementations.
+5. **Zero Clinical Duplication Law**:
+   - Calorie limits, macronutrient thresholds, ICMR-NIN 2024 cereal-to-pulse ratios, and WHO Asian-Indian BMI cutoffs **NEVER exist in mobile client code**. They reside exclusively in `Nutrition.Domain`. The mobile client simply renders the computed values and visual status badges supplied by the BFF.
+
+### 5.2 Zero-Duplicate Contract Sharing Between Server & Client
+- **Option 1 (.NET MAUI)**: Directly references the existing `Nutrition.Domain` or a shared contracts library (`Nutrition.Contracts.Mobile`). C# records and DTOs are compiled into the MAUI app with **0 lines of duplicated code**.
+- **Option 2 (React Native + Expo)**: Eliminates manual TypeScript interface creation by executing automated type generation against the running WebGateway's Swagger/OpenAPI endpoint:
+  ```bash
+  npx openapi-typescript http://localhost:5240/swagger/v1/swagger.json -o src/api/types.ts
+  ```
+  Every C# DTO change is immediately reflected in TypeScript types with compile-time checking.
+
+---
+
+## 6. Implementation Plan: Option 1 (.NET MAUI / C#)
+
+> **Ideal For**: Teams that want to write 100% C# across backend and mobile, reuse existing .NET domain models, and utilize Visual Studio on Windows.
+
+### 6.1 The Windows-Only / "No-Mac" Strategy for .NET MAUI
+As a Windows developer without a Mac, building for iOS traditionally requires a physical Mac on your local network. However, with modern .NET 11 and cloud DevOps, you can build and test without buying a Mac:
+
+```mermaid
+graph LR
+    subgraph LOCAL_WIN ["Your Windows PC (No Mac)"]
+        VS["Visual Studio 2026 / VS Code"]
+        AND_EMU["Android Emulator (Pixel 8)"]
+        IPHONE["Physical iPhone (Plugged in via USB)"]
+        
+        VS -->|"Local F5 Debug"| AND_EMU
+        VS -->|"Apple Hot Restart (USB)"| IPHONE
+    end
+
+    subgraph CLOUD_CI ["Cloud CI/CD (Zero Local Mac Needed)"]
+        GHA["GitHub Actions / Azure DevOps<br/>(runs-on: macos-latest)"]
+        TF["Apple TestFlight / App Store"]
+        
+        VS -->|"git push"| GHA
+        GHA -->|"Automated dotnet publish -f net11.0-ios"| TF
+    end
+```
+
+1. **Development & Testing on Android**: Runs 100% locally on Windows using the Visual Studio Android SDK emulator or any Android phone via USB debugging.
+2. **Local iOS Testing via Apple Hot Restart (No Mac Required)**:
+   - Visual Studio on Windows includes **Apple Hot Restart**, which deploys, runs, and debugs .NET MAUI apps directly to a physical iPhone plugged into your Windows PC over USB.
+   - Requirements: A free or paid Apple Developer account and iTunes for Windows. Visual Studio signs the executable directly on Windows.
+3. **Production iOS Release via Cloud Mac Runners**:
+   - For generating production `.ipa` binaries and App Store deployment, use **GitHub Actions** (`runs-on: macos-14`) or **Azure DevOps** (`vmImage: 'macOS-latest'`). The cloud runner compiles and signs the iOS binary with zero local Mac hardware required.
+
+### 6.2 Step-by-Step Implementation Roadmap (Option 1)
+
+#### Step 1: Solution Integration & Project Creation
+In the root `diet-dost` repository on Windows:
+```powershell
+# Create dedicated MAUI project targeting .NET 11
+dotnet new maui -n Nutrition.Mobile.Maui -o src/Nutrition.Mobile.Maui --framework net11.0
+
+# Add project reference to shared Domain models (Zero Duplication)
+dotnet add src/Nutrition.Mobile.Maui/Nutrition.Mobile.Maui.csproj reference src/Nutrition.Domain/Nutrition.Domain.csproj
+
+# Add to solution
+dotnet sln diet-dost.sln add src/Nutrition.Mobile.Maui/Nutrition.Mobile.Maui.csproj
+```
+
+#### Step 2: Essential NuGet Packages
+```xml
+<!-- In src/Nutrition.Mobile.Maui/Nutrition.Mobile.Maui.csproj -->
+<ItemGroup>
+  <!-- MVVM Architecture (CommunityToolkit) -->
+  <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  <!-- Hardware-accelerated Nutrition Charts -->
+  <PackageReference Include="LiveChartsCore.SkiaSharpView.Maui" Version="2.0.0-rc2" />
+  <!-- Client-side Image Manipulation & Compression -->
+  <PackageReference Include="SkiaSharp" Version="2.88.8" />
+  <!-- Typed HTTP Client -->
+  <PackageReference Include="Refit.HttpClientFactory" Version="8.0.0" />
+</ItemGroup>
+```
+
+#### Step 3: Project Directory Structure (MVVM & Clean Architecture)
+```
+src/Nutrition.Mobile.Maui/
+├── Models/              # UI-specific display wrappers (binds to Nutrition.Domain entities)
+├── Services/            # Decoupled Port/Adapter Services
+│   ├── IAuthService.cs          # Hardware SecureStorage wrapper for JWT Bearer
+│   ├── IMobileBffClient.cs      # Typed Refit interface to /api/mobile/v1/*
+│   └── ImageCompressor.cs       # SkiaSharp 1080p resize & WebP/JPEG compression
+├── ViewModels/          # CommunityToolkit ObservableObject ViewModels
+│   ├── AuthViewModel.cs         # Handles login, error banners, and token storage
+│   ├── SnapViewModel.cs         # Controls camera capture, resize, and AI analysis
+│   └── DashboardViewModel.cs    # Binds daily calories, 6 macros, and chart series
+├── Views/               # XAML Pages with Obsidian Dark Linear Theme
+│   ├── AuthPage.xaml
+│   ├── SnapPage.xaml
+│   └── DashboardPage.xaml
+└── Resources/Styles/    # Obsidian Dark design tokens (#0B0D13, #1A1D27, #4F46E5)
+```
+
+#### Step 4: Client-Side Image Compression Implementation (`ImageCompressor.cs`)
+```csharp
+using SkiaSharp;
+
+namespace Nutrition.Mobile.Maui.Services;
+
+public class ImageCompressor
+{
+    public static async Task<byte[]> CompressAsync(Stream inputPhotoStream, int maxDimension = 1080, int quality = 75)
+    {
+        using var originalBitmap = SKBitmap.Decode(inputPhotoStream);
+        
+        // Calculate proportional scale to ensure longest edge <= 1080px
+        float ratio = Math.Min((float)maxDimension / originalBitmap.Width, (float)maxDimension / originalBitmap.Height);
+        int targetWidth = (int)(originalBitmap.Width * Math.Min(ratio, 1.0f));
+        int targetHeight = (int)(originalBitmap.Height * Math.Min(ratio, 1.0f));
+
+        using var resizedBitmap = originalBitmap.Resize(new SKImageInfo(targetWidth, targetHeight), SKFilterQuality.Medium);
+        using var image = SKImage.FromBitmap(resizedBitmap);
+        using var data = image.Encode(SKEncodedImageFormat.Jpeg, quality);
+        
+        return data.ToArray(); // Returns < 400KB byte array
+    }
+}
+```
+
+#### Step 5: Hardware Secure Storage for Mobile JWT
+```csharp
+namespace Nutrition.Mobile.Maui.Services;
+
+public class MobileAuthService : IAuthService
+{
+    private const string TokenKey = "diet_dost_mobile_jwt";
+
+    public async Task SaveTokenAsync(string token) =>
+        await SecureStorage.Default.SetAsync(TokenKey, token);
+
+    public async Task<string?> GetTokenAsync() =>
+        await SecureStorage.Default.GetAsync(TokenKey);
+
+    public void Logout() =>
+        SecureStorage.Default.Remove(TokenKey);
+}
+```
+
+---
+
+## 7. Implementation Plan: Option 2 (React Native + Expo) [Recommended for No-Mac Windows Users]
+
+> **Ideal For**: Developers who do **not** own a Mac and want to test on physical iPhones immediately, iterate with hot-reloading over local Wi-Fi, and build production iOS/Android binaries in the cloud.
+
+### 7.1 Why Option 2 is the Ultimate "No-Mac" Solution
+React Native with Expo completely eliminates the need for macOS hardware during both development and production:
+
+```mermaid
+graph TD
+    subgraph DEV_PHASE ["Local Windows Development (Zero Mac, Zero Xcode)"]
+        WIN_IDE["Windows PC (VS Code)<br/>npm run start"]
+        QR["Terminal Displays QR Code"]
+        IPHONE_DEV["Physical iPhone (or Android)<br/>Running 'Expo Go' App from App Store"]
+        
+        WIN_IDE --> QR
+        QR -->|"Scan with Camera"| IPHONE_DEV
+        WIN_IDE -.->|"Live Hot-Reload over Wi-Fi"| IPHONE_DEV
+    end
+
+    subgraph BUILD_PHASE ["Production Build & Release (Zero Mac, Zero Cable)"]
+        EAS["Expo Application Services (EAS Build)<br/>Free Cloud macOS Apple Silicon Runners"]
+        APPLE_TF["Apple TestFlight & App Store"]
+        GOOG_PLAY["Google Play Store"]
+        
+        WIN_IDE -->|"eas build -p ios --profile preview"| EAS
+        EAS -->|"Generates Signed .ipa"| APPLE_TF
+        EAS -->|"Generates Signed .aab"| GOOG_PLAY
+    end
+```
+
+1. **Instant Physical Device Testing via Expo Go**:
+   - Download the free **Expo Go** app from the iOS App Store onto your personal iPhone.
+   - Run `npx expo start` on Windows.
+   - Scan the terminal QR code with your iPhone's standard Camera app.
+   - The app instantly opens inside Expo Go on your iPhone with full access to the native camera, hardware sensors, and secure keychain. Every time you save a file in VS Code on Windows, the iPhone updates via hot-reload in milliseconds!
+2. **Cloud Binaries via EAS Build (Expo Application Services)**:
+   - Expo runs high-end Mac build servers in the cloud.
+   - You execute `eas build -p ios` from Windows PowerShell.
+   - EAS handles Apple Developer certificates, provisions profiles, compiles native Swift/Objective-C/C++ code, and produces an `.ipa` file ready for TestFlight.
+   - **Cost**: Generous free tier included.
+
+### 7.2 Step-by-Step Implementation Roadmap (Option 2)
+
+#### Step 1: Project Initialization
+In a sibling or `apps/mobile/` directory:
+```bash
+# Initialize clean TypeScript Expo app with tabs
+npx -y create-expo-app@latest apps/mobile --template tabs
+
+# Change directory
+cd apps/mobile
+
+# Install core native modules (Camera, Secure Store, Image Manipulator, SVG)
+npx expo install expo-camera expo-image-picker expo-image-manipulator expo-secure-store react-native-svg
+```
+
+#### Step 2: Automated Contract Generation (Zero Duplicate DTOs)
+Ensure backend `Nutrition.WebGateway` is running locally (`http://localhost:5240`):
+```bash
+# Install openapi-typescript dev dependency
+npm install -D openapi-typescript
+
+# Generate fully-typed TypeScript definitions from ASP.NET Core OpenAPI
+npx openapi-typescript http://localhost:5240/swagger/v1/swagger.json -o src/api/contracts.ts
+```
+*Result*: All C# DTOs (`MobileDashboardDto`, `MealAnalysisResultDto`, `UserTier`, etc.) are converted to compile-time TypeScript types with 0 lines of manually duplicated models.
+
+#### Step 3: Mobile Project Architecture
+```
+apps/mobile/
+├── src/
+│   ├── api/
+│   │   ├── contracts.ts          # Auto-generated from C# Swagger (Zero Duplication)
+│   │   ├── client.ts             # Axios/fetch instance with JWT Bearer interceptor
+│   │   └── mobileBffService.ts   # Calls /api/mobile/v1/dashboard & /meals/snap
+│   ├── components/               # Obsidian Linear Reusable UI Elements
+│   │   ├── CalorieRingGauge.tsx  # SVG Circular Progress Ring
+│   │   ├── MacroMiniBar.tsx      # Protein/Carbs/Fat breakdown bar
+│   │   ├── ObsidianCard.tsx      # Dark frosted container (#1A1D27 with subtle border)
+│   │   └── TierBadge.tsx         # Free / Basic / Premium tier badge
+│   ├── hooks/
+│   │   ├── useAuth.ts            # Manages JWT in expo-secure-store & auto-login
+│   │   └── useDashboard.ts       # React Query / SWR fetching /api/mobile/v1/dashboard
+│   ├── screens/                  # The 3 Core MVP Screens
+│   │   ├── AuthScreen.tsx        # Email/Mobile + Password Auth Gate
+│   │   ├── SnapScreen.tsx        # Camera viewfinder + 1080p client compression
+│   │   └── DashboardScreen.tsx   # Tier-gated dials, quota status, and trend charts
+│   └── theme/
+│       └── colors.ts             # Matches WebGateway Obsidian Palette (#0B0D13, #4F46E5)
+├── app.json                      # Expo application manifest & bundle identifier
+└── eas.json                      # Cloud build configuration profiles
+```
+
+#### Step 4: Client-Side Image Resizer & Compression (`src/utils/imageCompressor.ts`)
+```typescript
+import * as ImageManipulator from 'expo-image-manipulator';
+
+export interface CompressedPhotoResult {
+  uri: string;
+  width: number;
+  height: number;
+  fileSizeKb: number;
+}
+
+export async function compressMealPhoto(originalUri: string): Promise<CompressedPhotoResult> {
+  // Resize longest edge to 1080px and compress JPEG to 75% quality
+  const manipulated = await ImageManipulator.manipulateAsync(
+    originalUri,
+    [{ resize: { width: 1080 } }],
+    {
+      compress: 0.75,
+      format: ImageManipulator.SaveFormat.JPEG,
+      base64: false
+    }
+  );
+
+  return {
+    uri: manipulated.uri,
+    width: manipulated.width,
+    height: manipulated.height,
+    fileSizeKb: Math.round((manipulated.width * manipulated.height * 0.15) / 1024) // Typical 250-400KB
+  };
+}
+```
+
+#### Step 5: Hardware Secure Storage for Tokens (`src/services/tokenStorage.ts`)
+```typescript
+import * as SecureStore from 'expo-secure-store';
+
+const TOKEN_KEY = 'diet_dost_jwt_bearer';
+
+export async function saveAuthToken(token: string): Promise<void> {
+  // Uses Apple Keychain on iOS and Android Keystore on Android
+  await SecureStore.setItemAsync(TOKEN_KEY, token, {
+    keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY
+  });
+}
+
+export async function getAuthToken(): Promise<string | null> {
+  return await SecureStore.getItemAsync(TOKEN_KEY);
+}
+
+export async function clearAuthToken(): Promise<void> {
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+```
+
+#### Step 6: EAS Cloud Build Configuration (`eas.json`)
+```json
+{
+  "cli": {
+    "version": ">= 12.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
+```
+*Execution from Windows PowerShell*:
+```bash
+# Build standalone preview for physical iOS without owning a Mac
+npx eas-cli build --platform ios --profile preview
+```
+
+---
+
+## 8. Architectural Comparison & Decision Rubric
+
+The following matrix provides guidance for selecting between Option 1 and Option 2 based on developer setup:
+
+| Evaluation Criteria | Option 1: .NET MAUI / C# | Option 2: React Native + Expo |
+| :--- | :--- | :--- |
+| **Mac Machine Requirement** | &bull; **Dev**: None if using Android or iPhone USB Hot Restart.<br/>&bull; **Release**: Requires Cloud Mac CI runner (GitHub Actions). | **100% Zero-Mac Requirement**.<br/>Develop on iPhone via Expo Go; build release via EAS Cloud. |
+| **Language Continuity** | **100% C# across Solution** (Web, AppHost, Domain, Mobile). | Mixed (C# Backend + TypeScript Mobile Client). |
+| **Code & DTO Duplication** | **0% Duplication** (Direct C# Project Reference to `Nutrition.Domain`). | **0% Duplication** (Automated TypeScript generation via `openapi-typescript`). |
+| **Iteration Velocity on Windows** | Fast on Android; slightly slower on iOS via Hot Restart. | **Instantaneous** across both iPhone & Android via Expo Go Wi-Fi Hot Reload. |
+| **Camera & Photo Compression** | High performance via `SkiaSharp` or `Microsoft.Maui.Graphics`. | Turnkey 1-liner via `expo-image-manipulator`. |
+| **UI Aesthetic Matching** | Manual XAML styling to match Obsidian Dark theme. | Rapid styling using React Native Flexbox & SVG. |
+| **Best Choice When...** | You prioritize unified C# language skills and deep .NET 11 integration. | **You do NOT own a Mac**, want to test on your iPhone today, and want the fastest path to app stores. |
+
+---
+
+## 9. Mobile MVP Execution Checklist (Living Quality Gates)
+
+Before signing off on the mobile MVP implementation, verify the following gates:
+
+- [ ] **BFF Gate**: `MobileBffController` handles `GET /api/mobile/v1/dashboard` in `< 300ms` by executing CQRS queries in parallel.
+- [ ] **Zero Duplication Gate**: Zero clinical calculations (ICMR-NIN calories, macros, deficits) written in client mobile code.
+- [ ] **Compression Gate**: Food photos snapped on high-resolution smartphone cameras are verified to upload at `< 500KB`.
+- [ ] **Keychain Gate**: Auth JWT Bearer token is stored in Apple Keychain / Android Keystore, not in plain storage.
+- [ ] **Tier Gating Gate**: Free tier users see 7-day trend history; Basic users see 30-day history; Premium users see 90-day history.
+- [ ] **Disclaimer Gate**: Apple Guideline 1.4.1 clinical disclaimer displays on first launch before viewing nutritional projections.
+- [ ] **Account Deletion Gate**: Apple Guideline 5.1.1(v) deletion button functions correctly via `DeleteAccountCommand`.
+

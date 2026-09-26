@@ -2504,7 +2504,31 @@
 - **Verification Result**:
   - Automated tests: **129 passed, 0 failed, 0 warnings**.
   - Living documentation: **100% synchronized with zero drift**.
+---
+
+### [LOG-20260926-035] Mobile Architecture Skill: Option 1 (.NET MAUI) & Option 2 (Expo Zero-Mac) Implementation Plans
+- **Timestamp**: `2026-09-26T12:51:00+05:30`
+- **Driver / Agent**: `AI Assistant (Enterprise Mobile Architecture & Agentic Engineering) & User Pair-Programming`
+- **Change Type**: `[MOBILE]`, `[ARCHITECTURE]`, `[SKILL]`, `[SDD]`
+- **Affected Components**: `.agents/skills/diet-dost-mobile-architecture/SKILL.md`, `docs/sdd/07_living_documentation_log.md`
+- **Summary of Change**:
+  1. *Zero-Duplicate-Code Architecture (SOLID & Clean Architecture via Mobile BFF)*:
+     - Formulated strict DIP and SRP design: `MobileBffController` in `Nutrition.WebGateway` acts solely as an aggregation facade, delegating 100% of queries and commands to existing `Nutrition.Application` CQRS handlers (`IDispatcher`).
+     - Zero duplication of clinical calculators (ICMR-NIN 2024 algorithms, TDEE, macro formulas in `Nutrition.Domain`).
+     - Defined contract sharing: Option 1 uses direct C# project reference to `Nutrition.Domain`; Option 2 uses automated TypeScript code-generation via `openapi-typescript` against ASP.NET Core OpenAPI.
+  2. *Detailed Implementation Plan for Option 1 (.NET MAUI / C#)*:
+     - Documented Windows-only / No-Mac roadmap: Android local emulator/device debugging, Apple Hot Restart for physical iPhone over USB without a local Mac, and cloud CI/CD runners (`macos-latest` in GitHub Actions / Azure DevOps) for App Store `.ipa` builds.
+     - Provided project setup, package manifests (`CommunityToolkit.Mvvm`, `LiveChartsCore.SkiaSharpView.Maui`, `SkiaSharp`), SkiaSharp 1080p image compression utility, and hardware `SecureStorage` implementation.
+  3. *Detailed Implementation Plan for Option 2 (React Native + Expo) — The Zero-Mac Fast Track*:
+     - Documented zero-Mac physical testing via the **Expo Go app** on iPhone (Wi-Fi hot-reload by scanning terminal QR code with zero macOS or Xcode required).
+     - Defined cloud compilation via **EAS Build** (free cloud macOS Apple Silicon runners) and automated TestFlight delivery via **EAS Submit**.
+     - Provided project structure, `expo-image-manipulator` client compression routine (<400KB), `expo-secure-store` Keychain storage, and `eas.json` profiles.
+  4. *Architectural Comparison & Decision Matrix*:
+     - Provided scorecard contrasting developer velocity, Mac hardware dependencies, C# code reuse, and iteration speed for Windows-based enterprise architects.
+- **Modified Files**:
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Living documentation: **100% synchronized with zero drift**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
-
-
-
