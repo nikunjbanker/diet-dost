@@ -76,9 +76,9 @@ graph TD
 
 ---
 
-## 2. Comprehensive Azure Database Evaluation Matrix
+## 2. Comprehensive Azure Database Evaluation & Deep Comparison
 
-To balance enterprise security, scalability, and zero startup cost, the following platforms are evaluated:
+To balance enterprise security, clinical data flexibility, scalability, and zero startup cost, four architectural database options are evaluated:
 
 | Dimension | Option 1: SQLite (Current MVP) | Option 2: Azure SQL Database (Serverless Free Tier) | Option 3: Azure Cosmos DB (NoSQL Free Tier) | Option 4: Azure PostgreSQL (Flexible Server) |
 | :--- | :---: | :---: | :---: | :---: |
@@ -90,6 +90,132 @@ To balance enterprise security, scalability, and zero startup cost, the followin
 | **DPDPA 2023 & Security** | File-level OS encryption | 🏆 **Always Encrypted**, TDE, Row-Level Security | 🏆 RBAC, Entra ID, Customer Managed Keys | RLS, SCRAM-SHA-256, Entra ID |
 | **Mobile Offline Sync** | Native (Same engine on phone) | Sync via Mobile BFF REST APIs | Sync via Mobile BFF or Cosmos Change Feed | Sync via Mobile BFF REST APIs |
 | **Initial Cloud Hosting Cost** | **$0.00 / month** | **$0.00 / month** | **$0.00 / month** | **$0.00 / month (Year 1)**, then ~$12/mo |
+
+---
+
+### 2.1 Option 1: SQLite (Embedded Relational — Current MVP)
+
+- **WHAT It Is**:
+  - An in-process, serverless C-library relational database. Data is stored entirely in a single file on disk (`dietdost.db`), which in cloud container environments mounts via an Azure Files SMB persistent volume.
+- **WHY Consider It**:
+  - Unmatched simplicity for initial MVP development, local automated testing (`dotnet test`), and as the native offline storage engine embedded on Android and iOS client devices.
+- **HOW It Works**:
+  - Configured in EF Core via `options.UseSqlite(connectionString)`.
+  - In Azure Container Apps, it uses a persistent storage volume mount (`/app/data/dietdost.db`).
+- **PROS**:
+  - **Zero Cloud Infrastructure Cost**: Runs completely within the existing container memory.
+  - **Zero Network Latency**: In-process function calls with zero TCP/socket overhead.
+  - **Cross-Platform Symmetry**: The exact same database engine runs natively on Android and iOS devices.
+  - **Trivial Backups**: A snapshot backup is as simple as copying the `.db` file.
+- **CONS**:
+  - **Database-Level Write Locking**: SQLite locks the entire database file during writes (`SQLITE_BUSY`), preventing multi-replica horizontal scaling on Azure Container Apps.
+  - **SMB Network Latency in Cloud**: Azure Files network latency can cause timeout exceptions under concurrent write traffic.
+  - **Zero Native Row-Level Security (RLS)**: Cannot enforce database-engine tenant isolation or advanced DPDPA cryptographic masking.
+  - **Verdict**: Exceptional for **Phase 1 local testing and client-side mobile caching**, but strictly disqualifying for multi-user enterprise cloud production.
+
+---
+
+### 2.2 Option 2: Azure SQL Database Serverless (Relational + Native JSON — The Recommended Free Tier)
+
+- **WHAT It Is**:
+  - A fully managed, cloud-native Microsoft SQL Server with serverless compute that auto-scales between 0.5 and 4 vCores and automatically pauses during idle periods. Includes **32,000 vCore-seconds and 32 GB storage completely free every month for life**.
+- **WHY Consider It**:
+  - Combines enterprise ACID relational guarantees for Identity, Subscriptions, and DPDPA consent with modern EF Core JSON columns (`ToJson()`) for flexible Indian food recipes and AI vision metadata.
+- **HOW It Works**:
+  - Configured in .NET 11 via `options.UseSqlServer(connectionString)`.
+  - Authenticates securely via **Microsoft Entra ID (Azure AD) Managed Identity** with zero passwords in code.
+  - Maps complex meal ingredient arrays directly to native `nvarchar(max)` JSON columns with sub-50ms query projections.
+- **PROS**:
+  - **Free Tier Forever**: 32,000 vCore-seconds + 32 GB storage free every month ($0.00 cloud bill).
+  - **First-Class .NET 11 & EF Core Integration**: Zero migration friction from SQLite; identical LINQ semantics.
+  - **Hybrid Data Superpower**: Eliminates 6-table joins for Indian meals by storing ingredients in native JSON columns.
+  - **Enterprise Security Suite**: Transparent Data Encryption (TDE), Always Encrypted, Row-Level Security (RLS), and Dynamic Data Masking out of the box.
+  - **Seamless Scalability**: Effortlessly handles thousands of concurrent Web and Mobile connections.
+- **CONS**:
+  - **Cold-Start Pause Latency**: When auto-paused after 60 minutes of inactivity, resuming takes ~20 to 40 seconds on the first request (can be warmed with synthetic health-check pings).
+  - **32 GB Free Cap**: High-volume photo binary storage must be offloaded to Azure Blob Storage rather than DB tables.
+  - **Proprietary Engine**: Relies on Microsoft T-SQL syntax and ecosystem.
+  - **Verdict**: **The #1 Best Overall Choice for Diet-Dost Enterprise Cloud Launch**.
+
+---
+
+### 2.3 Option 3: Azure Cosmos DB (NoSQL Document — Cloud-Native Vision & Food Store)
+
+- **WHAT It Is**:
+  - A globally distributed, multi-model NoSQL document database offering guaranteed single-digit millisecond read/write latency at any scale. Includes **1,000 RU/s throughput and 25 GB storage free forever** per Azure subscription.
+- **WHY Consider It**:
+  - Nutrition meal logs, Indian food composition tables (IFCT 2017), and multimodal AI vision bounding boxes are naturally hierarchical JSON documents.
+- **HOW It Works**:
+  - Managed via `Microsoft.EntityFrameworkCore.Cosmos` or the `@azure/cosmos` SDK.
+  - Containers partitioned by `/userId` for optimal point-read performance and predictable Request Unit (RU) consumption.
+  - Uses the integrated Cosmos DB Change Feed to reactively trigger background AI analysis and sync to mobile clients.
+- **PROS**:
+  - **Free Tier Forever**: 1,000 RU/s + 25 GB free forever ($0.00/month).
+  - **Schema-Less Agility**: Add new spices, regional slang, or AI model confidence scores without running database migrations.
+  - **Blazing Performance**: Guaranteed sub-10ms read and write latencies globally.
+  - **Turnkey Global Replication**: Instant multi-region replication with a single click.
+  - **Event-Driven Change Feed**: Native reactive stream perfect for notifying mobile apps when meal vision analysis finishes.
+- **CONS**:
+  - **Relational Impedance Mismatch**: Enforcing ACID foreign keys, user role hierarchies, and complex financial/legal audit joins is difficult and expensive.
+  - **Cross-Partition Query Overhead**: Unindexed cross-partition queries burn Request Units (RUs) rapidly.
+  - **Steeper Learning Curve**: Requires strict partition-key modeling discipline compared to traditional relational SQL.
+  - **Verdict**: **The Best Specialized Store for High-Scale Food Catalogs and AI Vision Logs** when paired with a relational identity store.
+
+---
+
+### 2.4 Option 4: Azure Database for PostgreSQL Flexible Server (The Open-Source Hybrid)
+
+- **WHAT It Is**:
+  - A fully managed enterprise PostgreSQL 16+ instance on Linux featuring native **JSONB** (binary JSON) storage, GIN/GiST indexing, and rich extensions like PostGIS. Includes a **12-month free trial** (750 hours/month on B1ms instance + 32 GB storage).
+- **WHY Consider It**:
+  - Provides the ultimate open-source hybrid architecture: strict relational tables for Auth and Consent, plus high-performance JSONB columns for nutrition logs that can be indexed and queried internally with sub-millisecond speed.
+- **HOW It Works**:
+  - Configured in .NET 11 via `Npgsql.EntityFrameworkCore.PostgreSQL`.
+  - Maps meal logs via `builder.Property(m => m.Items).HasColumnType("jsonb")`.
+  - Indexes nested ingredients using PostgreSQL Generalized Inverted Indexes (`CREATE INDEX idx_meals_gin ON MealLogs USING GIN (Items);`).
+- **PROS**:
+  - **Unrivaled Hybrid Power**: Combines ACID relational tables with the industry's most advanced JSONB query engine.
+  - **GIN Indexing on Nested Ingredients**: Search for any Indian spice or allergen inside JSON arrays in sub-milliseconds (e.g. `WHERE Items @> '[{"FoodName": "Turmeric"}]'`).
+  - **Zero Vendor Lock-In**: 100% open-source PostgreSQL; can run on Azure, AWS, GCP, or on-premises Docker containers.
+  - **PostGIS Geospatial Support**: Ready for location-based features (e.g. finding nearby verified clinical dietitians or organic food vendors).
+- **CONS**:
+  - **Not Free Forever**: Free trial lasts **12 months**, after which it converts to standard burstable pricing (~$12 to $15/month).
+  - **Connection Pooling Required**: High mobile concurrency requires configuring PgBouncer to prevent connection exhaustion.
+  - **Migration Friction**: Requires switching from SQLite to Npgsql provider and writing PostgreSQL-specific migrations.
+  - **Verdict**: **The Best Long-Term Open-Source Choice** if moving away from proprietary Microsoft database engines.
+
+---
+
+### 2.5 What, Why, How Decision Tree for Architects & Agents
+
+```
+START: What is the current operational phase and priority?
+│
+├── Phase 1: Local Development, CI/CD Pipeline & In-Memory Unit Testing
+│   └── ➔ USE: Option 1 (SQLite Embedded)
+│       ├── WHAT: In-process single-file database.
+│       ├── WHY: 0 infrastructure, 0 cost, instant test teardown.
+│       └── HOW: UseSqlite("Data Source=dietdost.db") with EF Core.
+│
+├── Phase 2: Enterprise Cloud Launch on Azure (ZERO Startup Cost Mandate)
+│   └── ➔ USE: Option 2 (Azure SQL Database Serverless Free Tier) [RECOMMENDED]
+│       ├── WHAT: Managed SQL Serverless with 32,000 vCore-s + 32 GB free forever.
+│       ├── WHY: $0.00/mo forever, 0 migration friction from EF Core SQLite, Always Encrypted & RLS.
+│       └── HOW: UseSqlServer() + Entra ID Managed Identity + builder.OwnsMany().ToJson().
+│
+├── Phase 3: High-Scale AI Multimodal Vision & Global Food Catalog Offload
+│   └── ➔ USE: Option 2 (Azure SQL) + Option 3 (Azure Cosmos DB Free Tier) [POLYGLOT]
+│       ├── WHAT: Relational Auth/Consent in Azure SQL; Meal documents & Vision in Cosmos DB.
+│       ├── WHY: 1,000 RU/s free forever, sub-10ms reads, schema-less recipe flexibility.
+│       └── HOW: UseCosmos() partitioned on /userId + Change Feed for mobile push notifications.
+│
+└── Phase 4: Long-Term Multi-Cloud / Open-Source Migration
+    └── ➔ USE: Option 4 (Azure PostgreSQL Flexible Server)
+        ├── WHAT: Managed PostgreSQL 16 with native JSONB and GIN indexing.
+        ├── WHY: Zero vendor lock-in, deep JSONB ingredient indexing, PostGIS geolocation.
+        └── HOW: UseNpgsql() + PgBouncer connection pooling + GIN index on meal JSONB.
+```
+
 
 ---
 
