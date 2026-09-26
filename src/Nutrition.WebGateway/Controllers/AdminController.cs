@@ -12,6 +12,25 @@ namespace Nutrition.WebGateway.Controllers;
 public record UpdateUserTierRequest(UserTier Tier);
 public record UpdateUserRoleRequest(UserRole Role);
 public record UpdateUserStatusRequest(bool IsActive);
+public record AdminLockUserRequest(bool IsLocked);
+public record AdminCreateUserRequest(
+    string Email,
+    string? Name,
+    string MobileNumber,
+    string Password,
+    UserRole Role,
+    UserTier Tier,
+    bool IsActive = true,
+    bool IsEmailVerified = true
+);
+public record AdminUpdateUserRequest(
+    string? MobileNumber,
+    UserRole? Role,
+    UserTier? Tier,
+    bool? IsActive,
+    bool? IsEmailVerified,
+    string? NewPassword
+);
 public record UpdateTierConfigRequest(
     int DailyAiDetectionLimit,
     bool AllowPhotoCompare,
@@ -121,6 +140,88 @@ public class AdminController : ControllerBase
             message = result.Data!.Message,
             userId = result.Data.UserId,
             isActive = result.Data.IsActive
+        });
+    }
+
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser(
+        [FromBody] AdminCreateUserRequest request,
+        CancellationToken ct = default)
+    {
+        var adminUserId = User.GetUserId() ?? "System";
+        var currentRole = User.GetRole() ?? string.Empty;
+        var command = new AdminCreateUserCommand(
+            request.Email,
+            request.Name,
+            request.MobileNumber,
+            request.Password,
+            request.Role,
+            request.Tier,
+            request.IsActive,
+            request.IsEmailVerified,
+            adminUserId,
+            currentRole
+        );
+        var result = await _dispatcher.SendAsync(command, ct);
+
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+
+        return StatusCode(201, result.Data);
+    }
+
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(
+        [FromRoute] string id,
+        [FromBody] AdminUpdateUserRequest request,
+        CancellationToken ct = default)
+    {
+        var adminUserId = User.GetUserId() ?? "System";
+        var currentRole = User.GetRole() ?? string.Empty;
+        var command = new AdminUpdateUserCommand(
+            id,
+            request.MobileNumber,
+            request.Role,
+            request.Tier,
+            request.IsActive,
+            request.IsEmailVerified,
+            request.NewPassword,
+            adminUserId,
+            currentRole
+        );
+        var result = await _dispatcher.SendAsync(command, ct);
+
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+
+        return Ok(result.Data);
+    }
+
+    [HttpPut("users/{id}/lock")]
+    public async Task<IActionResult> LockUser(
+        [FromRoute] string id,
+        [FromBody] AdminLockUserRequest request,
+        CancellationToken ct = default)
+    {
+        var adminUserId = User.GetUserId() ?? "System";
+        var command = new AdminLockUserCommand(id, request.IsLocked, adminUserId);
+        var result = await _dispatcher.SendAsync(command, ct);
+
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+
+        return Ok(new
+        {
+            message = result.Data!.Message,
+            userId = result.Data.UserId,
+            isActive = result.Data.IsActive,
+            isLocked = !result.Data.IsActive
         });
     }
 

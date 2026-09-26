@@ -26,13 +26,14 @@ description: >-
 
 > [!IMPORTANT]
 > Before writing **any** auth, authorization, or user-management code, verify all of the following:
-> 1. You are on a **feature branch** — never commit directly to `main`.
+> 1. You are on a **dedicated branch created via pre-flight `git fetch origin`** directly from `origin/main` (or parent branch for GitHub Stacked PRs) — never commit directly to `main` or branch from stale local branches.
 > 2. All C# projects target `<TargetFramework>net11.0</TargetFramework>`.
 > 3. Build must produce **0 warnings, 0 errors**.
 > 4. After implementation, run `dotnet test` and confirm 100% pass before pushing.
 > 5. Synchronize Living SDD (`docs/sdd/*.md`) and append a log entry to `docs/sdd/07_living_documentation_log.md`.
 > 6. **Mandatory End-to-End User Tier Validation**: After any change, refactoring, new feature implementation, or bug fix, execute live end-to-end verification of the running application across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Verify actual product behavior: token issuance, quota meters, feature gating (photo compare, meal export paywalls), admin role authorization, and ensure 0 runtime/console errors.
 > 7. **Major Change Auto-Detection & Living Artifact Synchronization**: Proactively detect major changes (secret storage, auth gates, environment isolation, demo account restrictions, tier quotas) and automatically synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, and `docs/sdd/*.md` without requiring manual prompts.
+> 8. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol**: In case of ANY ambiguity, doubt, or multiple implementation paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
 
 ---
 

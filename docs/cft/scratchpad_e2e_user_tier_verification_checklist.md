@@ -21,5 +21,10 @@
 - [ ] 5. SuperAdmin Tier (`superadmin@dietdost.app` / `DietDost@Demo2026!`)
   - [ ] SuperAdmin role, badge shows '👑 Super', quota unlimited (-1)
   - [ ] Governance Console inspected (User Directory, Tier Configs, AI Telemetry)
+  - [ ] User Governance Actions verified:
+    - [ ] `➕ Create User`: provision new user with custom Tier/Role
+    - [ ] `✏️ Edit`: update user contact, Tier, Role, or reset password
+    - [ ] `🔒 Lock` / `🔓 Unlock`: toggle active status & session invalidation
+  - [ ] Dedicated Deep-Dive Checklist: [`docs/cft/scratchpad_superadmin_user_management_verification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/scratchpad_superadmin_user_management_verification.md)
   - [ ] Screenshot captured (`superadmin_governance_console`)
 - [ ] Check browser console logs for errors across all steps.

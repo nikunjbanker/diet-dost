@@ -2367,7 +2367,69 @@
   - All test suites: **122 passed, 0 failed**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
 
+### [LOG-20260926-031] SuperAdmin User Governance Actions (Create, Update, Lock/Unlock) & Dedicated CFT Scratchpad
+- **Timestamp**: `2026-09-26T10:15:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[FEATURE]`, `[SECURITY]`, `[CLEAN_ARCHITECTURE]`, `[TESTING]`
+- **Affected Microservices / Components**: `Nutrition.Application`, `Nutrition.WebGateway`, `Nutrition.EvalHarness.Tests`, `docs/cft`
+- **Summary of Change**:
+  1. *Application CQRS Layer*:
+     - Created `AdminCreateUserCommand` & handler: allows SuperAdmin to provision user accounts with custom Tier, Role, initial password, active status, email verification, and baseline clinical profile.
+     - Created `AdminUpdateUserCommand` & handler: allows SuperAdmin to update mobile number, role, tier, active status, email verification, and reset password.
+     - Enhanced `UpdateUserStatusCommand` & `AdminLockUserCommand`: toggles user active status. When a user is locked, their `SecurityStamp` is cryptographically regenerated, invalidating active JWT and cookie sessions immediately.
+     - Guarded SuperAdmin accounts against demotion or locking.
+  2. *Presentation Layer (WebGateway)*:
+     - Added endpoints in `AdminController`: `POST /api/admin/users`, `PUT /api/admin/users/{id}`, `PUT /api/admin/users/{id}/lock`.
+     - Extended `admin-service.js` with `createUser`, `updateUser`, and `lockUser`.
+     - Updated `admin-modal.html` with `➕ Create User` toolbar button, `➕ Create New User` modal dialog, and `✏️ Update User` modal dialog.
+     - Enhanced `admin-modal.js` with interactive row action buttons (`✏️ Edit`, `🔒 Lock` / `🔓 Unlock`), form submission handlers, and instant table refreshes.
+  3. *Test Harness & Unit Tests*:
+     - Added `AdminUserManagementTests.cs` (7 test cases): validates user creation, weak password rejection, duplicate email conflict, SuperAdmin creation restrictions for non-SuperAdmins, user updates with password reset, SuperAdmin demotion/lock guards, and lock/unlock session invalidation.
+     - Total tests across solution: **129 passed, 0 failed, 0 warnings**.
+  4. *CFT Verification Scratchpad*:
+     - Created `docs/cft/scratchpad_superadmin_user_management_verification.md` containing end-to-end verification checklist for all SuperAdmin user governance actions.
+     - Updated baseline `docs/cft/scratchpad_e2e_user_tier_verification_checklist.md` linking to the dedicated scratchpad.
+     - Verified interactively via browser subagent with real live product execution, capturing screenshot `superadmin_user_governance_verified_1790398131524.png` and recording `superadmin_actions_verification_1790397435743.webp`.
+- **Modified & New Files**:
+  - `src/Nutrition.Application/Features/Admin/Commands/UserManagement/AdminUserCommands.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/Controllers/AdminController.cs` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/services/admin-service.js` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/partials/admin-modal.html` [MODIFIED]
+  - `src/Nutrition.WebGateway/wwwroot/js/ui/admin-modal.js` [MODIFIED]
+  - `tests/Nutrition.EvalHarness.Tests/AdminUserManagementTests.cs` [NEW]
+  - `docs/cft/scratchpad_superadmin_user_management_verification.md` [NEW]
+  - `docs/cft/scratchpad_e2e_user_tier_verification_checklist.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - `dotnet test`: **129 passed (36 Domain + 93 EvalHarness), 0 failed, 0 warnings**.
+  - Browser E2E verification: **100% passed across all Create, Update, Lock, and Unlock actions with 0 console errors**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+---
 
-
+### [LOG-20260926-032] Solution Governance: Pre-Flight Remote Fetch, GitHub Stacked PR Workflow & Zero-Unilateral-Decision Mandate
+- **Timestamp**: `2026-09-26T12:20:00+05:30`
+- **Driver / Agent**: `AI Assistant (Advanced Agentic Architecture) & User Pair-Programming`
+- **Change Type**: `[GOVERNANCE]`, `[WORKFLOW]`, `[SKILLS]`, `[SDD]`
+- **Affected Components**: `AGENTS.md`, `.agents/skills/indian-diet-calorie-tracker/SKILL.md`, `.agents/skills/diet-dost-clean-architecture/SKILL.md`, `.agents/skills/diet-dost-user-management-security/SKILL.md`, `docs/sdd/07_living_documentation_log.md`
+- **Summary of Change**:
+  1. *Root Cause Elimination for PR Merge Conflicts*:
+     - Codified mandatory Step 0 pre-flight remote fetch: `git fetch origin`.
+     - Mandated that all independent branches MUST explicitly originate from `origin/main` (`git checkout -b <branch> origin/main`). Strictly prohibited branching from stale local working branches to eliminate pre-squash commit dragging and duplicate commit history.
+  2. *GitHub Stacked PR Protocol*:
+     - Codified standard for consecutive and dependent pull requests: branch directly from parent feature branch (`git checkout -b feature/<child> origin/feature/<parent>`) and set the GitHub PR base branch to `feature/<parent>` instead of `main`.
+     - Preserves isolated PR diffs, prevents commit collisions, and leverages GitHub's automatic retargeting to `main` upon parent PR merge.
+  3. *Zero-Unilateral-Decision Mandate (Strict Ask Rule)*:
+     - Codified strict requirement across solution rules and skills: in case of ANY doubt, ambiguity, conflicting branching topology, or architectural decisions, agents MUST halt and prompt the user for confirmation via interactive modal tools (`ask_question`). Unilateral decisions and assumptions are strictly forbidden.
+- **Modified Files**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-user-management-security/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Solution build verified: **0 warnings, 0 errors**.
+  - Test suites: **129/129 tests passing**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 

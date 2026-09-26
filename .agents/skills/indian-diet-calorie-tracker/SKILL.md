@@ -30,7 +30,26 @@ This skill guides the design, architecture, documentation, and development of a 
 4. **Standalone Aspire AppHost SDK**: Aspire AppHost projects must use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">` directly instead of deprecated workload-dependent project SDKs.
 5. **Mandatory Git Branching & PR-Only Merge Mandate**:
    - **Never commit directly to the `main` (or default production) branch**.
-   - **Step 0: Always Create a Dedicated Branch First**: Before making any code, configuration, or documentation modifications, always create and switch to a new descriptive branch (e.g., `git checkout -b feature/<feature-name>`, `git checkout -b fix/<defect-name>`, or `git checkout -b docs/<topic>`).
+   - **Step 0 Pre-Flight Remote Fetch**: Before modifying any file, always fetch remote state:
+     ```bash
+     git fetch origin
+     ```
+   - **Independent Branching from Remote Main**: Always branch explicitly from `origin/main` for independent work:
+     ```bash
+     git checkout -b feature/<feature-name> origin/main
+     git checkout -b fix/<defect-name> origin/main
+     git checkout -b docs/<topic> origin/main
+     ```
+     *Strict Prohibition*: NEVER run `git checkout -b <branch>` from a local working branch without specifying `origin/main` (or the intended parent branch for stacked PRs). Doing so drags old pre-squash commits and causes severe merge conflicts on GitHub PRs.
+   - **GitHub Stacked PR Workflow for Consecutive / Dependent Work**:
+     When a new feature or task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
+     1. Branch from the parent feature branch:
+        ```bash
+        git fetch origin
+        git checkout -b feature/<child-feature> origin/feature/<parent-feature>
+        ```
+     2. Set the GitHub PR **Base branch** to `feature/<parent-feature>` (NOT `main`).
+     3. Benefit from Stacked PR mechanics: GitHub isolates the child feature's diff, prevents commit pollution, and automatically retargets the child PR to `main` when the parent PR merges.
    - **Perform All Work in the Branch**: Apply targeted changes, run builds, execute test harnesses, and synchronize living documentation strictly within this branch.
    - **PR-Only Merge Enforcement**: Changes **MUST** be merged into `main` exclusively via a Pull Request (PR) after passing all CI validation checks and review gates. Direct commits or direct pushes to `main` are strictly forbidden.
 6. **Mandatory End-to-End User Tier Validation**:
@@ -45,6 +64,9 @@ This skill guides the design, architecture, documentation, and development of a 
      4. `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
      5. `docs/sdd/07_living_documentation_log.md` (append-only ledger entry).
      6. End-to-end verification across all 5 demo user tiers and automated test harnesses.
+8. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
+   - In case of ANY ambiguity, doubt, conflicting options (such as whether a branch should be stacked vs independent, or resolving structural conflicts), **STOP and ask the user for confirmation** using interactive modal tools (`ask_question`).
+   - **Never make unilateral decisions or assumptions** on git branching topology, architectural boundaries, or data contracts without user alignment.
 
 
 ---
