@@ -68,11 +68,55 @@ graph TD
 1. **Relational / ACID Core**:
    - Identity, DPDPA consent logs, subscriptions, tier quotas, and payment receipts require strict relational integrity, ACID transactions, and foreign key cascades.
 2. **Semi-Structured Nutrition Logs**:
-   - An Indian meal log is inherently dynamic. A *"Gujarati Thali"* or *"Hyderabadi Biryani"* contains nested sub-dishes (roti, dal, sabzi, curd, salad), variable portion scaling, custom oil/ghee adjustments, and AI vision confidence scores. Forcing this into rigid relational tables causes 6-table joins for every meal scan.
+   - An Indian meal log is inherently dynamic. A *"Gujarati Thali"* or *"Hyderabadi Biryani"* contains nested sub-dishes (roti, dal, sabzi, curd, salad), variable portion scaling, custom oil/ghee adjustments, and AI vision confidence scores.
 3. **Reference Food Composition Tables (IFCT 2017 / ICMR-NIN 2024)**:
    - Contains 528+ Indian foods with 150+ nutritional parameters (macronutrients, micronutrients, fatty acids, carotenoids, phytates). A flexible schema or native JSON/JSONB column is exponentially faster and more maintainable than a 150-column wide relational table.
 4. **Mobile Offline Synchronization**:
    - Mobile users frequently log meals in poor connectivity (restaurants, basements, flights). The database strategy must support local offline caching on the device with optimistic cloud sync upon reconnection.
+
+---
+
+### 1.2 Concrete Diet-Dost Entity Schema Audit (The 12 Core Tables)
+
+A strict audit of the active [`DietTrackerDbContext.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Infrastructure/Persistence/DietTrackerDbContext.cs) and Domain Models reveals the following 12 database tables:
+
+| # | Entity Class | Table Name | Storage Pattern & Characteristics | Foreign Keys & Indexing |
+|---|---|---|---|---|
+| **1** | `ApplicationUser` | `Users` | Relational Entity. String GUID PK. Contains password hashes, security stamps, tier enums, and forensic DPDPA 2023 legal consent fields (`TermsAcceptedAtUtc`, `HealthConsentAcceptedAtUtc`, `ConsentIpAddress`, `ConsentUserAgent`). | `NormalizedEmail` (Unique Index), `NormalizedMobileNumber`, `Role`, `Tier`. |
+| **2** | `UserProfile` | `Profiles` | Relational Entity. String GUID PK matching `UserId`. Contains physical metrics (`Age`, `HeightCm`, `CurrentWeightKg`, `TargetWeightKg`, `Timezone`). Uses EF Core `ValueConverter` with `ValueComparer` to serialize `DiagnosedConditions` (`List<string>`) and `Medications` (`List<MedicationEntry>`) as JSON strings. | PK = `UserId`. |
+| **3** | `MealLog` | `Meals` | Relational Aggregate Root. String GUID PK. Contains meal metadata (`DishName`, `PhotoUri`, `OverallConfidenceScore`, `AddedGheeKcal`, `AddedTadkaKcal`, `TotalCalories`, `TotalProteinGrams`, `TotalCarbsGrams`, `TotalFatGrams`). Stores `WhoComplianceFlags` and `MedicationWarnings` as JSON strings. | FK `UserId`. Auto-includes `Items` navigation. |
+| **4** | `FoodItemRecord` | `FoodItems` | Relational Child Entity. String GUID PK. Represents individual food items in a meal with portion grams, macro totals, `CookingMediumEstimate`, and `ConfidenceScore`. | FK `MealLogId` with `DeleteBehavior.Cascade`. |
+| **5** | `DailyCalorieLedger` | `Ledgers` | Relational Entity. String GUID PK. Tracks target vs. consumed calories, protein, carbs, fat, fiber, sugar, sodium for a given calendar date. Serializes `EarnedBadges` (`List<string>`) as JSON string. | Index on `(UserId, Date)`. |
+| **6** | `ProgressPhoto` | `ProgressPhotos` | Relational Entity. String GUID PK. Stores photo URIs, weight snapshots, photo type enum (`Face`, `FullBodyFront`, `FullBodySide`), and baseline flags. | Composite indexes on `(UserId, CapturedAtUtc)` and `(UserId, PhotoType)`. |
+| **7** | `UserCorrectionRecord` | `Corrections` | Relational Entity. String GUID PK. Continuous AI retraining feedback loop storing user corrections to detected foods. | Composite index on `(UserId, OriginalDetectedItem)`. |
+| **8** | `AiDetectionFeedbackRecord` | `AiFeedbacks` | Relational Entity. String GUID PK. AI vision benchmark and user feedback log. | Indexes on `(UserId, CreatedAtUtc)` and `Rating`. |
+| **9** | `TierFeatureConfiguration` | `TierConfigurations` | Relational Entity. String GUID PK. Gating limits for Free, Basic, Premium, SuperAdmin tiers (`DailyAiDetectionLimit`, `AllowPhotoCompare`, `AllowDataExport`, `AnalyticsHistoryDays`). | `Tier` (Unique Index). |
+| **10** | `AiUsageLog` | `AiUsageLogs` | Relational Entity. String GUID PK. Records every AI call with token consumption, latency ms, model ID, and operation type for quota enforcement. | Composite indexes on `(UserId, TimestampUtc)` and `(UserId, OperationType)`. |
+| **11** | `AppSecret` | `AppSecrets` | Key/Value Relational Store. String Key PK. Stores runtime secrets (`Jwt:Key`, `AI:GoogleAI:ApiKey`, `AI:AzureOpenAI:ApiKey`, `Auth:DemoPassword`) injected into `IConfiguration`. | Key (PK, MaxLength 128). |
+| **12** | `VerificationOtp` | `VerificationOtps` | Relational Entity. String GUID PK. Stores cryptographic OTP hashes for email and SMS verification. | Composite indexes on `(UserId, Target)`, `(Target, Channel, IsUsed)`, and `ExpiresAtUtc`. |
+
+---
+
+### 1.3 Actual Seeded Data & Storage Footprint (`diettracker.db`)
+
+An inspection of the active SQLite database ([`src/Nutrition.WebGateway/diettracker.db`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/diettracker.db)) reveals:
+1. **Seeded Demo Accounts**:
+   - 5 seeded accounts representing all user tiers: `free@dietdost.app` (Free), `basic@dietdost.app` (Basic), `premium@dietdost.app` (Premium), `admin.demo@dietdost.app` (Admin), and `superadmin@dietdost.app` (SuperAdmin) with password `DietDost@Demo2026!`.
+2. **Seeded Clinical Profiles & Conditions**:
+   - Basic user is seeded with *"Hypertension"* and *"Telmisartan 40mg"*.
+   - Premium user is seeded with *"Pre-Diabetes"* and *"Metformin 500mg"*.
+3. **Seeded Representative Indian Meals**:
+   - Pre-populated meals with rich ingredient breakdowns:
+     - *"North Indian Thali (Phulkas, Dal & Bhindi Masala)"* (4 child food items).
+     - *"Kanda Poha with Roasted Peanuts"* (3 child food items).
+     - *"Palak Paneer with Phulkas"* (2 child food items).
+     - *"Moong Dal Khichdi with Curd"* (2 child food items).
+4. **Seeded Baseline Progress Photos**:
+   - Seeded face and body comparison photos (`/uploads/progress/face_baseline.svg` vs `face_current.svg`).
+5. **Seeded Configuration Secrets**:
+   - `Jwt:Key` and `Auth:DemoPassword` seeded directly in `AppSecrets`.
+6. **Key Finding on Identifiers**:
+   - **All entities use string GUIDs (`Guid.NewGuid().ToString()`) rather than auto-incrementing integers**. This is a massive architectural advantage: GUIDs guarantee zero ID collision when synchronizing between local mobile SQLite and cloud databases.
 
 ---
 
@@ -336,7 +380,7 @@ public static IServiceCollection AddNutritionPersistence(this IServiceCollection
                 options.UseSqlServer(sqlConnection, sqlOpts =>
                 {
                     sqlOpts.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
-                    sqlOpts.MigrationsAssembly(typeof(NutritionDbContext).Assembly.FullName);
+                    sqlOpts.MigrationsAssembly(typeof(DietTrackerDbContext).Assembly.FullName);
                 });
                 break;
 
@@ -345,13 +389,13 @@ public static IServiceCollection AddNutritionPersistence(this IServiceCollection
                 options.UseNpgsql(pgConnection, pgOpts =>
                 {
                     pgOpts.EnableRetryOnFailure(5);
-                    pgOpts.MigrationsAssembly(typeof(NutritionDbContext).Assembly.FullName);
+                    pgOpts.MigrationsAssembly(typeof(DietTrackerDbContext).Assembly.FullName);
                 });
                 break;
 
             case "sqlite":
             default:
-                var sqliteConnection = configuration.GetConnectionString("SqliteConnection") ?? "Data Source=dietdost.db";
+                var sqliteConnection = configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
                 options.UseSqlite(sqliteConnection);
                 break;
         }
@@ -377,8 +421,8 @@ public class MealLogConfiguration : IEntityTypeConfiguration<MealLog>
         builder.OwnsMany(m => m.Items, item =>
         {
             item.ToJson();
-            item.Property(i => i.FoodName).IsRequired();
-            item.Property(i => i.PortionGrams).HasPrecision(10, 2);
+            item.Property(i => i.Name).IsRequired();
+            item.Property(i => i.Grams).HasPrecision(10, 2);
             item.Property(i => i.Calories).HasPrecision(10, 2);
         });
 

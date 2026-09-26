@@ -5,6 +5,7 @@
 - **Affected Subsystems**: Database Architecture (`.agents/skills/diet-dost-database-architecture/`), Governance (`AGENTS.md`)
 - **Summary of Change**:
   - Authored authoritative enterprise database architecture skill `.agents/skills/diet-dost-database-architecture/SKILL.md`.
+  - Audited actual production data models and active database (`DietTrackerDbContext.cs` with 12 entities and `diettracker.db` with seeded accounts, meals, ledgers, photos, and secrets).
   - Formulated comprehensive SQL, NoSQL, and Hybrid evaluation for nutrition and clinical dietetics applications with dedicated What, Why, How and Pros & Cons deep dives across SQLite, Azure SQL Serverless, Azure Cosmos DB, and PostgreSQL Flexible Server.
   - Recommended zero-cost cloud starting architecture:
     1. **Azure SQL Database Serverless Free Tier** (32,000 vCore-s + 32 GB storage free for life) for relational core + native JSON food mapping.
