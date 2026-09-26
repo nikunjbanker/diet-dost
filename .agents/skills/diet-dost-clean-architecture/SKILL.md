@@ -1,25 +1,26 @@
 ---
 name: diet-dost-clean-architecture
-version: 1.1.0
+version: 1.2.0
 status: Approved Production Specification & Restructuring Playbook
 description: >-
   Complete .NET 11 Clean Architecture, Native Zero-Dependency CQRS (Command Query
-  Responsibility Segregation), Thin Controllers, Domain-Driven Design (DDD), and
-  Dependency Inversion specification for Diet Dost. Defines layer boundaries, Native
-  Command and Query handlers using Microsoft.Extensions.DependencyInjection,
-  zero-dependency pipeline decorators (Validation, Logging, Performance, Exception Handling),
-  Port/Adapter abstractions, and a migration roadmap from fat controllers to decoupled
-  application use-cases with zero commercial/RPL-1.5 licensing complications.
+  Responsibility Segregation), Web Backend for Frontend (Web BFF), Thin Controllers,
+  Domain-Driven Design (DDD), and Dependency Inversion specification for Diet Dost.
+  Defines layer boundaries, Native Command and Query handlers using
+  Microsoft.Extensions.DependencyInjection, Web BFF composite endpoints, client-side
+  SOLID principles for native HTML5/ES Modules, zero duplicate domain code guarantees,
+  and a phased non-big-bang GitHub Stacked PR migration roadmap.
   Use this skill whenever implementing, refactoring, or reviewing domain models,
-  application use-cases, commands, queries, controllers, or service boundaries.
+  application use-cases, commands, queries, controllers, Web BFF, or frontend services.
 ---
 
-# Diet Dost — Clean Architecture & Native CQRS Implementation Rulebook
-> **Specification Version**: `v1.1.0-NATIVE-SPEC`  
-> **Architecture Pattern**: Clean Architecture (Onion / Hexagonal / Ports & Adapters) with Native .NET 11 CQRS  
+# Diet Dost — Clean Architecture, Native CQRS & Web BFF Rulebook
+> **Specification Version**: `v1.2.0-WEB-BFF-SPEC`  
+> **Architecture Pattern**: Clean Architecture (Hexagonal / Ports & Adapters) + Web BFF + Native .NET 11 CQRS  
 > **Target Framework**: `.NET 11 RC` (`net11.0`) · Standalone `.NET Aspire 13.5.4`  
 > **Framework Primitives**: Pure `Microsoft.Extensions.DependencyInjection` (Zero MediatR / Zero Commercial License)  
-> **Standards Compliance**: SOLID Principles, OWASP ASVS v4.0, RFC 7807 (ProblemDetails), ICMR-NIN 2024  
+> **Standards Compliance**: SOLID Principles, Zero Duplicate Domain Code, OWASP ASVS v4.0, ICMR-NIN 2024  
+
 
 ---
 
@@ -27,7 +28,7 @@ description: >-
 
 > [!IMPORTANT]
 > Adhere strictly to the **Zero Direct-to-Main Policy** and Solution Rules in `AGENTS.md`:
-> 1. **Branch First (Pre-Flight Remote Fetch)**: All refactoring must occur on a dedicated feature branch (`feature/<name>`). Never commit directly to `main`. Always execute `git fetch origin` and branch strictly from `origin/main` (or parent feature branch for GitHub Stacked PRs). Never branch from stale/dirty local branches.
+> 1. **Branch First (Pre-Flight Remote Fetch & Stale-Branch Prevention)**: All work must occur on a dedicated feature branch (`feature/<name>`). Never commit directly to `main`. Always execute `git fetch origin` first and branch strictly from `origin/main` (`git checkout -b feature/<name> origin/main`) or parent feature branch for GitHub Stacked PRs. Immediately verify lineage via `git rev-parse HEAD` == `git rev-parse origin/main`. Never branch from local `main` (which is stale) or from dirty local branches.
 > 2. **Target Framework**: All projects must target `<TargetFramework>net11.0</TargetFramework>`.
 > 3. **Zero-Warning Standard**: 0 warnings, 0 errors across the solution.
 > 4. **Zero Third-Party CQRS Dependencies**: Do NOT use `MediatR`. MediatR v13+ moved to a commercial / RPL-1.5 reciprocal license requiring paid license keys. Implement CQRS using native .NET 11 BCL abstractions.
@@ -347,43 +348,173 @@ src/Nutrition.Application/
 
 ---
 
-## 6. Implementation & Refactoring Roadmap
+---
 
-When executing the Clean Architecture restructuring:
-1. **Slice 1: Application CQRS Engine & Port Abstractions**:
-   - Add CQRS contracts (`ICommand`, `IQuery`, `ICommandHandler`, `IQueryHandler`, `IDispatcher`, `NativeDispatcher`) in `Nutrition.Application/Common/CQRS/`.
-   - Add Port interfaces: `IPhotoStorageService`, `ICurrentUserService`.
-   - Implement `LocalPhotoStorageService` in `Nutrition.Infrastructure/Services/`.
-   - Implement `CurrentUserService` in `Nutrition.WebGateway/Services/`.
-   - Wire `AddApplicationServices()` in `Nutrition.Application/DependencyInjection.cs`.
-2. **Slice 2: Auth Feature Vertical Slice**:
-   - Implement `RegisterUserCommand`, `LoginCommand`, `VerifyOtpCommand`, `ForgotPasswordCommand`, `ResetPasswordCommand`.
-   - Implement `GetCurrentUserQuery`.
-   - Refactor `AuthController.cs` into a thin controller delegating to `_dispatcher`.
-3. **Slice 3: Meals & Vision Vertical Slice**:
-   - Implement `UploadAndAnalyzeMealCommand`, `ConfirmMealCommand`, `LogManualMealCommand`, `SubmitAiFeedbackCommand`.
-   - Implement `GetMealHistoryQuery`.
-   - Move all photo file writing, quota gating, and AI vision coordination into handlers.
-   - Refactor `MealsController.cs` into a thin controller delegating to `_dispatcher`.
-4. **Slice 4: Analytics, Profile & Admin Vertical Slice**:
-   - Implement `GetDailyLedgerQuery`, `GetProjectionsQuery`, `GetProfileQuery`, `SaveProfileCommand`, `GetAdminUsersQuery`, `UpdateUserTierCommand`.
-   - Refactor `AnalyticsController.cs`, `ProfileController.cs`, and `AdminController.cs`.
-   - Eliminate direct `DietTrackerDbContext` references in all controllers.
-5. **Slice 5: Verification & Living SDD Update**:
-   - Run `dotnet test` to confirm 100% test pass rate across all projects.
-   - Update `docs/sdd/02_solution_architecture.md` and append an entry to `docs/sdd/07_living_documentation_log.md`.
-6. **Slice 6: End-to-End User Tier Validation on Live Product**:
-   - Launch application on `http://localhost:5240`.
-   - Execute the end-to-end tier validation protocol defined in Section 7 across all 5 demo accounts.
-   - Run browser automation / UI verification to ensure zero regressions in visual presentation, paywall modals, and navigation.
+## 6. Web Backend for Frontend (Web BFF) & Client Clean Architecture Specification
+
+### 6.1 Architectural Review of Existing Web App & Critical Deficiencies
+A strict architectural audit of `src/Nutrition.WebGateway/wwwroot/` revealed four structural anti-patterns that must be systematically remediated:
+
+```mermaid
+graph TD
+    subgraph CURRENT_STATE ["Current State (Anti-Patterns)"]
+        F1["Finding 1: Domain Duplication<br/>1,001-line static food dictionary<br/>in nutrition-estimator.js"]
+        F2["Finding 2: Chatty Client Boundary<br/>5-6 sequential/parallel HTTP calls<br/>on initial page load"]
+        F3["Finding 3: Fat UI Controllers<br/>analytics-chart.js is 792 lines<br/>violating Single Responsibility"]
+        F4["Finding 4: Leaky DIP Coupling<br/>Controllers directly depend on<br/>5 separate REST endpoints"]
+    end
+
+    subgraph TARGET_STATE ["Target Clean & BFF Architecture"]
+        BFF["Web BFF Endpoint (/api/web/v1/dashboard)<br/>1 Single Roundtrip via Task.WhenAll"]
+        DOMAIN["Centralized Domain Core<br/>ICMR-NIN 2024 & EstimateFoodItemQuery<br/>Zero Client Domain Logic"]
+        FOCUSED_UI["Focused UI Modules (< 150 Lines)<br/>ChartRenderer + MealDiaryView + ExcelExport"]
+        DI_STORE["Centralized DI & Reactive Store<br/>di-container.js + appState.js"]
+    end
+
+    CURRENT_STATE -->|4-Phase Stacked PR Migration| TARGET_STATE
+```
+
+1. **Domain Logic Leakage & Duplication (`nutrition-estimator.js`)**:
+   - Contains a hardcoded 1,001-line static JavaScript dictionary (`INDIAN_FOOD_DICTIONARY`) with calories, protein, carbs, fat, fiber, and sodium for 150+ Indian dishes.
+   - Duplicates portion multipliers (`scaleNutritionByPortion`) and dietitian advice (`generateDietitianAdvice`).
+   - Violates the **Single Source of Truth** principle: clinical updates in `Nutrition.Domain` or `ICMR-NIN 2024` do not reflect in the client, creating clinical drift and downloading 31 KB of dead weight on every mobile session.
+2. **Chatty Client-Server Boundary (Lack of Web BFF)**:
+   - On initial authenticated page load (`main.js` `initApp`), the browser executes **5 to 6 discrete HTTP roundtrips**:
+     `GET /api/auth/me`, `GET /api/analytics/daily`, `GET /api/analytics/projections`, `GET /api/meals/history`, `GET /api/progressphotos/comparison`, and `GET /api/meals/quota`.
+   - Results in high Time-to-Interactive (TTI), connection exhaustion on mobile cellular networks, and UI layout shifts as components hydrate asynchronously.
+3. **Violations of Single Responsibility Principle (Fat UI Controllers)**:
+   - `analytics-chart.js` (792 lines) manages SVG coordinate calculations, timeline tab state, click filter handlers, meal diary card/grid rendering, and Excel/CSV serialization.
+   - High defect coupling: altering chart tooltip formatting risks breaking Excel export or diary table rendering.
+4. **Leaky DIP Coupling**:
+   - UI controllers are tightly coupled to the REST routing and payload shapes of 5 distinct backend controllers rather than depending on a presentation-tailored abstraction.
 
 ---
 
-## 7. Mandatory End-to-End User Tier Verification Protocol
+### 6.2 The Web BFF Pattern & Server-Side Aggregation
+The Web BFF pattern introduces a dedicated presentation facade (`WebBffController` at `/api/web/v1/*`) that aggregates domain queries on the server:
+
+1. **Single Composite Endpoint (`GET /api/web/v1/dashboard`)**:
+   Returns `WebDashboardCompositeDto` containing:
+   - `User`: Identity, Tier, Role, Avatar.
+   - `TodayLedger`: Daily budget, calories consumed, remaining allowance, macro distribution.
+   - `Projections`: Historical trend points for the requested timeline period (default 7D), deficit total, weight loss forecast.
+   - `RecentMeals`: Today's logged meals for immediate diary rendering.
+   - `Quota`: Daily AI scans remaining, quota ceiling, upgrade recommendations.
+   - `FeatureFlags`: Tier gating flags (`CanComparePhotos`, `CanExportData`, `HistoryDayLimit`, `IsAdmin`).
+2. **Concurrent Execution via `Task.WhenAll`**:
+   The controller dispatches 4 independent CQRS queries concurrently via `IDispatcher`, completing aggregation in sub-50ms with 0 database access inside the controller:
+   ```csharp
+   var ledgerTask = _dispatcher.QueryAsync(new GetDailyLedgerQuery(userId, null, isAdminOrSuper), ct);
+   var projectionsTask = _dispatcher.QueryAsync(new GetHistoricalAnalyticsQuery(userId, period), ct);
+   var mealsTask = _dispatcher.QueryAsync(new GetMealHistoryQuery(userId, 7), ct);
+   var quotaTask = _dispatcher.QueryAsync(new GetAiQuotaQuery(userId), ct);
+
+   await Task.WhenAll(ledgerTask, projectionsTask, mealsTask, quotaTask);
+   ```
+
+---
+
+### 6.3 Zero-Duplicate-Code Guarantee
+1. **Clinical Dietetics Exclusivity**:
+   - All nutritional calculations, Mifflin-St Jeor BMR, TDEE, macronutrient distributions, and Asian-Indian BMI cutoffs **MUST reside strictly in `Nutrition.Domain.Clinical`**.
+   - No calorie or macro arithmetic may be implemented in client-side JavaScript.
+2. **Centralized Food Item Estimation**:
+   - Food estimation, portion scaling, and dietitian tips are routed exclusively through `EstimateFoodItemQueryHandler.cs` via `POST /api/meals/estimate`.
+   - `nutrition-estimator.js` is completely excised, eliminating 1,001 lines of duplicate static dictionary.
+   - Client review modal uses a 300ms input debounce when requesting real-time estimation from the backend.
+
+---
+
+### 6.4 Client-Side SOLID Principles in Native HTML5 & ES Modules
+Even within a vanilla JavaScript / HTML5 PWA architecture, SOLID principles must be strictly enforced:
+
+1. **Single Responsibility Principle (SRP)**:
+   - Every JavaScript class or module must have exactly one reason to change.
+   - UI Controllers are strictly coordinators (<150 lines) that bind DOM events and delegate to dedicated components:
+     - `ChartRenderer.js`: SVG coordinate math, bar rendering, and tooltips only.
+     - `MealDiaryView.js`: Card and Grid DOM generation only.
+     - `ExcelExportService.js`: CSV/XLSX serialization and file download triggering only.
+2. **Open/Closed Principle (OCP)**:
+   - Timeline period filters (`1D`, `7D`, `30D`, `90D`, `365D`) and meal types are defined as registry configurations rather than hardcoded `switch` statements across multiple files.
+3. **Liskov Substitution & Interface Segregation (LSP / ISP)**:
+   - Client services expose focused, segregated methods (e.g. `IWebBffService` provides read-only aggregation, `IMealsService` provides mutations).
+4. **Dependency Inversion Principle (DIP)**:
+   - Components receive dependencies via constructor injection from `di-container.js`.
+   - Components never instantiate network clients or query remote APIs directly.
+
+---
+
+## 7. Phased Non-Big-Bang Step-by-Step Implementation Roadmap
+
+> [!IMPORTANT]
+> **No Big-Bang Release Mandate**: To eliminate regression risk and ensure each step is cleanly reviewable, the Cross-Platform Web & Mobile Clean Architecture migration is divided into **phased, platform-by-platform Pull Requests** using the **GitHub Stacked PR Protocol** as specified in master SDD [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md).
+> All implementations must execute their respective platform CFT checklists before merge:
+> - Web CFT: [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md)
+> - Mobile CFT: [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md)
+> - Cross-Platform Parity Matrix: [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md)
+> Complete reference code and scripts are maintained in [web_bff_clean_architecture_playbook.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md).
+
+```mermaid
+graph LR
+    subgraph STACKED_PR_SERIES ["GitHub Stacked PR Workflow (Small & Independent)"]
+        PR1["Phase 1 (PR 1)<br/>Backend Web BFF Facade<br/>~200 lines C#<br/>Base: main"]
+        PR2["Phase 2 (PR 2)<br/>Client BFF Service & Startup<br/>~180 lines JS<br/>Base: PR 1"]
+        PR3["Phase 3 (PR 3)<br/>Centralize Food Estimation<br/>-1,000 lines JS<br/>Base: PR 2"]
+        PR4["Phase 4 (PR 4)<br/>Modularize Fat Controllers<br/>Split to 3 SRP Modules<br/>Base: PR 3"]
+
+        PR1 --> PR2 --> PR3 --> PR4
+    end
+```
+
+### Phase 1 (PR 1): Backend Web BFF Facade Endpoint (`/api/web/v1/dashboard`)
+- **Objective**: Create the composite endpoint and DTO without altering any running client code.
+- **Scope**: ~200 lines C#. 100% additive, zero breaking changes.
+- **Tasks**:
+  1. Add `WebDashboardCompositeDto.cs` in `Nutrition.Application/Features/WebBff/DTOs/`.
+  2. Implement `WebBffController.cs` in `Nutrition.WebGateway/Controllers/Web/` using `IDispatcher` and `Task.WhenAll`.
+  3. Add unit & integration tests in `Nutrition.EvalHarness.Tests`.
+  4. Validate `dotnet test` (0 errors, 0 warnings).
+
+### Phase 2 (PR 2): Client Web BFF Service & Startup Consolidation
+- **Objective**: Update client startup (`main.js`) to consume the composite endpoint, collapsing 5 network roundtrips into 1.
+- **Scope**: ~180 lines JS.
+- **Tasks**:
+  1. Add `web-bff-service.js` in `src/Nutrition.WebGateway/wwwroot/js/services/`.
+  2. Register `webBffService` in `di-container.js`.
+  3. Refactor `initApp` in `main.js` to call `webBffService.getDashboard('7D')` and hydrate `DailyHud` and `AnalyticsChart` directly from memory.
+  4. Verify in browser Network tab: 1 request replaces 5 requests on startup.
+
+### Phase 3 (PR 3): Centralize Food Estimation & Safely Excise `nutrition-estimator.js`
+- **Objective**: Eliminate 1,001-line client food dictionary and wire review modal to backend estimation.
+- **Scope**: +80 lines modified, -1,001 lines deleted.
+- **Tasks**:
+  1. Wire `review-modal.js` to call `mealsService.estimateFoodItem` with a 300ms debounce.
+  2. Safely delete `src/Nutrition.WebGateway/wwwroot/js/services/nutrition-estimator.js`.
+  3. Verify manual meal logging, portion steppers, and macro calculations across all meal types.
+
+### Phase 4 (PR 4): Modularize Monolithic UI Controllers into Single Responsibility Components
+- **Objective**: Deconstruct `analytics-chart.js` (792 lines) into focused, single-responsibility components.
+- **Scope**: ~300 lines refactored into 3 small modules.
+- **Tasks**:
+  1. Extract `ChartRenderer.js` (<150 lines) for pure SVG coordinate math and rendering.
+  2. Extract `MealDiaryView.js` (<150 lines) for card and grid table rendering.
+  3. Extract `ExcelExportService.js` (<80 lines) for CSV/XLSX generation and file download.
+  4. Reduce `AnalyticsChartController.js` to a thin coordinator (<120 lines).
+
+### Phase 5 (PR 5): End-to-End Verification & Living Documentation Sync
+- **Objective**: Full end-to-end verification across all 5 demo user tiers and living documentation synchronization.
+- **Tasks**:
+  1. Execute verification protocol in Section 8 across all 5 demo accounts.
+  2. Confirm 0 console errors, 0 runtime exceptions, and accurate tier gating.
+  3. Update `docs/sdd/07_living_documentation_log.md` and related SDDs.
+
+---
+
+## 8. Mandatory End-to-End User Tier Verification Protocol
 
 Whenever code in the solution is modified, refactored, or introduced, the following validation matrix **MUST** be verified against the live application:
 
-### 7.1 Deterministic Demo User Credentials Matrix
+### 8.1 Deterministic Demo User Credentials Matrix
 All seeded demo accounts share the common demo password: `DietDost@Demo2026!`
 
 | Demo User Identifier | User Tier | User Role | Daily AI Quota | Photo Compare Gating | Data Export Gating | Analytics History | Admin Console |
@@ -394,7 +525,7 @@ All seeded demo accounts share the common demo password: `DietDost@Demo2026!`
 | `admin.demo@dietdost.app` | `Premium` (2) | `Admin` | 30 / day | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days | **Unlocked (200 OK)** |
 | `superadmin@dietdost.app` | `SuperAdmin` (3) | `SuperAdmin` | Unlimited (-1) | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days | **Unlocked (200 OK & Full Governance)** |
 
-### 7.2 Validation Workflow Steps
+### 8.2 Validation Workflow Steps
 1. **API Protocol Validation**:
    - `POST /api/auth/login`: Authenticate and obtain JWT bearer token / cookie.
    - `GET /api/auth/me`: Confirm authenticated user profile, claims, tier, and role.

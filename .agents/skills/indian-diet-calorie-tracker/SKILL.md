@@ -28,28 +28,56 @@ This skill guides the design, architecture, documentation, and development of a 
    - Known transitive vulnerabilities (such as older `SQLitePCLRaw.lib.e_sqlite3 2.1.10`) must be explicitly resolved by referencing modern, patched versions (`SQLitePCLRaw.bundle_e_sqlite3 3.0.5+`).
    - Any compiler nullability warnings (e.g. `CS8602`) must be eliminated with defensive null-checks.
 4. **Standalone Aspire AppHost SDK**: Aspire AppHost projects must use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">` directly instead of deprecated workload-dependent project SDKs.
-5. **Mandatory Git Branching & PR-Only Merge Mandate**:
+5. **Mandatory Git Branching & PR-Only Merge Mandate (Stale-Branch Prevention)**:
    - **Never commit directly to the `main` (or default production) branch**.
-   - **Step 0 Pre-Flight Remote Fetch**: Before modifying any file, always fetch remote state:
-     ```bash
-     git fetch origin
-     ```
-   - **Independent Branching from Remote Main**: Always branch explicitly from `origin/main` for independent work:
-     ```bash
-     git checkout -b feature/<feature-name> origin/main
-     git checkout -b fix/<defect-name> origin/main
-     git checkout -b docs/<topic> origin/main
-     ```
-     *Strict Prohibition*: NEVER run `git checkout -b <branch>` from a local working branch without specifying `origin/main` (or the intended parent branch for stacked PRs). Doing so drags old pre-squash commits and causes severe merge conflicts on GitHub PRs.
-   - **GitHub Stacked PR Workflow for Consecutive / Dependent Work**:
-     When a new feature or task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
-     1. Branch from the parent feature branch:
+   - **Step 0 Pre-Flight Remote Fetch & Dedicated Branch Creation**:
+     > [!CRITICAL]
+     > **Why PR Merge Conflicts Happen**:
+     > 1. Running `git checkout -b <branch>` without a starting point branches from whatever local commit is checked out (often an old commit or another feature branch).
+     > 2. Running `git checkout -b <branch> main` branches from your **local** `main` branch, which is almost always **stale** because local `main` does not auto-update when PRs merge on GitHub.
+     > 3. Branching before running `git fetch origin` means your local repository does not know about newly merged commits on remote `origin/main`.
+     >
+     > **The Ironclad Golden Rule**: Every new branch MUST be created directly from freshly fetched remote tracking branches (`origin/main` or `origin/<parent-feature>`), and the starting commit hash MUST be verified before writing any code.
+
+     a. **Fetch Remote Changes First**:
         ```bash
         git fetch origin
-        git checkout -b feature/<child-feature> origin/feature/<parent-feature>
         ```
-     2. Set the GitHub PR **Base branch** to `feature/<parent-feature>` (NOT `main`).
-     3. Benefit from Stacked PR mechanics: GitHub isolates the child feature's diff, prevents commit pollution, and automatically retargets the child PR to `main` when the parent PR merges.
+     b. **Independent Branching from Remote Main**: Always branch explicitly from `origin/main` using one of these bulletproof commands:
+        ```bash
+        git checkout -b feature/<feature-name> origin/main
+        git checkout -b fix/<defect-name> origin/main
+        git checkout -b docs/<topic> origin/main
+        ```
+     c. **Mandatory Lineage Verification Guard (Assert Commit Match)**:
+        Immediately after creating the branch, verify that HEAD points to the exact same commit as `origin/main`:
+        ```bash
+        git rev-parse HEAD
+        git rev-parse origin/main
+        ```
+        *Failure Condition*: If `git rev-parse HEAD` does NOT equal `git rev-parse origin/main`, your branch is stale or dirty. **STOP immediately**, delete the branch (`git checkout main && git branch -D <branch>`), and recreate it cleanly from `origin/main`.
+     d. **GitHub Stacked PR Workflow for Consecutive / Dependent Work**:
+        When a new feature or task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
+        1. Fetch and branch directly from parent feature branch:
+           ```bash
+           git fetch origin
+           git checkout -b feature/<child-feature> origin/feature/<parent-feature>
+           ```
+        2. Verify Stacked Lineage:
+           ```bash
+           git rev-parse HEAD
+           git rev-parse origin/feature/<parent-feature>
+           ```
+           *Assert*: Both hashes must match identically.
+        3. Set the GitHub PR **Base branch** to `feature/<parent-feature>` (NOT `main`).
+        4. Benefit from Stacked PR mechanics: GitHub isolates the child feature's diff, prevents commit pollution, and automatically retargets the child PR to `main` when the parent PR merges.
+     e. **Strict Anti-Patterns (NEVER DO THESE)**:
+        | Forbidden Command / Action | Why It Is Strictly Forbidden | Consequence on GitHub PR |
+        | :--- | :--- | :--- |
+        | `git checkout -b <branch>` | Branches from whatever commit is currently checked out locally. | Drags old unrelated commits; causes merge conflicts. |
+        | `git checkout -b <branch> main` | Branches from local `main` which is STALE unless manually pulled. | Missing latest upstream commits; severe merge conflicts. |
+        | Branching without `git fetch origin` | Local Git has no knowledge of recent merges on GitHub. | Silent commit drift and divergent Git tree. |
+        | Working on a dirty tree | Uncommitted/untracked files accidentally bleed into the new branch. | Accidental commit of unrelated files into PR diff. |
    - **Perform All Work in the Branch**: Apply targeted changes, run builds, execute test harnesses, and synchronize living documentation strictly within this branch.
    - **PR-Only Merge Enforcement**: Changes **MUST** be merged into `main` exclusively via a Pull Request (PR) after passing all CI validation checks and review gates. Direct commits or direct pushes to `main` are strictly forbidden.
 6. **Mandatory End-to-End User Tier Validation**:
@@ -62,12 +90,40 @@ This skill guides the design, architecture, documentation, and development of a 
      2. `docs/architecture/diagrams/*.mermaid` (all affected system and flow diagrams).
      3. `docs/sdd/*.md` (Living SDD system specifications, security threat matrix, and data models).
      4. `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
-     5. `docs/sdd/07_living_documentation_log.md` (append-only ledger entry).
+     5. Write a dedicated atomic log fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` and register in `docs/sdd/07_living_documentation_log.md` (Fragment Pattern for 100% merge-conflict immunity).
      6. End-to-end verification across all 5 demo user tiers and automated test harnesses.
 8. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
    - In case of ANY ambiguity, doubt, conflicting options (such as whether a branch should be stacked vs independent, or resolving structural conflicts), **STOP and ask the user for confirmation** using interactive modal tools (`ask_question`).
    - **Never make unilateral decisions or assumptions** on git branching topology, architectural boundaries, or data contracts without user alignment.
-
+9. **Mandatory Cross-Platform (Web & Mobile) Phased Migration & GitHub Stacked PR Protocol (Zero Big Bang)**:
+   - Any architectural refactoring, Backend for Frontend (BFF) implementation, or cross-platform modernization across Web PWA, Android, and iOS **MUST NEVER be implemented as a big-bang release or massive PR**.
+   - Work must proceed in small, platform-by-platform, independently reviewable increments following the **GitHub Stacked PR Protocol** as codified in [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md).
+   - Zero duplicate domain code guarantee: 100% of clinical calculations and food estimation must reside in `Nutrition.Domain` / `Nutrition.Application`. Zero domain math in client JavaScript or mobile code.
+10. **Mandatory Platform-Specific CFT Documentation & Cross-Platform Parity Verification**:
+    - Every platform capability (Web, Android, iOS) must have an associated Customer & Functional Acceptance Test (CFT) document in [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/).
+    - Before merging any feature or refactoring, contributors and agents must cross-check and execute the relevant CFT documents in [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/) across all platforms:
+      - [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) for Web PWA.
+      - [`cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) for Android and iOS.
+      - [`cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md) to guarantee 100% mathematical, clinical, and feature parity between Web and Mobile.
+11. **Token Economics & Agentic Architecture Standard (SDDs vs. Skills Separation)**:
+    - **System Prompt Token Conservation**: The `name` and `description` of every skill in `.agents/skills/` is injected into the agent's system prompt on **every interaction**. Placing large specifications or living logs in `.agents/skills/` increases per-turn token consumption and costs.
+    - **The `docs/sdd/` Boundary (0 Baseline Tokens)**: Declarative specifications, data models, clinical rules, and strategic migration roadmaps MUST remain in `docs/sdd/`. They consume **0 baseline tokens** and are read on-demand via `view_file` only when required.
+    - **The `.agents/skills/` Boundary (Actionable Playbooks)**: Keep `.agents/skills/` exclusively for procedural "how-to" playbooks, concrete code recipes, and verification checklists.
+    - **Strict Anti-Pattern**: NEVER move or convert declarative architectural specifications (`docs/sdd/*.md`), living logs (`docs/sdd/logs/*.md`), or archive ledgers into `.agents/skills/`.
+12. **Authoritative Subsystem & Skill Mapping (Web App Plan Codification Standard)**:
+    - **Web App Modernization & Web BFF**: The entire Web App development plan, client-side SOLID architecture in native ES Modules, and Web BFF facade implementation are codified inside [`.agents/skills/diet-dost-clean-architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/SKILL.md) and its actionable reference playbook [`references/web_bff_clean_architecture_playbook.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md).
+    - **Zero-Skill-Sprawl Rule for Web**: Agents must **NOT** create a separate `diet-dost-web-architecture` skill. Keeping Web BFF unified with Clean Architecture prevents prompt token bloat on every interaction and eliminates architectural drift between backend CQRS query handlers and frontend composite aggregation.
+    - **Cross-Platform Phased Roadmap**: Master rollout sequence across Web, Android, and iOS is codified in [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md).
+    - **Platform CFT Acceptance Suites**: Web PWA verification is in [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md); Mobile verification is in [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md); Parity verification is in [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md).
+    - **Enterprise Database & Cloud Persistence**: Governed by [`.agents/skills/diet-dost-database-architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-database-architecture/SKILL.md) (Azure SQL Serverless Free Tier, Azure Cosmos DB Free Tier, PostgreSQL Flexible Server, DPDPA 2023, and mobile offline SQLite sync).
+13. **Living Documentation Architecture & Fragment Pattern Mandate (Token Economics & Merge Conflict Immunity)**:
+    - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log (`07_living_documentation_log.md`) is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
+    - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
+    - **Quantitative Benefits**:
+      - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting diffs on rebase.
+      - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
+      - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
+    - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/sdd/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/archive/living_log_2026_09_archive.md), while [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) acts solely as a lean index and standard registry.
 
 ---
 
