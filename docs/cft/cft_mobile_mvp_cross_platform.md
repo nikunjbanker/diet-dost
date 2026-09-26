@@ -3,7 +3,7 @@
 > **Classification**: Customer & Functional Acceptance Test (CFT) Specification  
 > **Target Subsystem**: Cross-Platform Mobile Client (.NET MAUI / Expo) & Mobile BFF (`/api/mobile/v1/*`)  
 > **Target Platforms**: Android (SDK 35 down to 24) & iOS (iOS 15+)  
-> **Related SDD**: [`docs/sdd/08_web_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_web_bff_clean_architecture_migration_plan.md)  
+> **Related SDD**: [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md)  
 > **Related Skill**: [`.agents/skills/diet-dost-mobile-architecture/SKILL.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-mobile-architecture/SKILL.md)  
 > **Baseline Checklist**: [`docs/cft/scratchpad_e2e_user_tier_verification_checklist.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/scratchpad_e2e_user_tier_verification_checklist.md)  
 

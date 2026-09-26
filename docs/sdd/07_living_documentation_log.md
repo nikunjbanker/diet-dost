@@ -2668,5 +2668,48 @@
   - Solution memory: **100% synchronized across all skill manifests and instructions**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260926-039] Architecture Cleanliness: SDD vs Skill Boundary Separation & SDD 08 Cross-Platform Renaming
+- **Timestamp**: `2026-09-26T13:40:00+05:30`
+- **Driver / Agent**: `AI Assistant (Solution Architecture & Repository Governance) & User Pair-Programming`
+- **Change Type**: `[REFACTOR]`, `[SDD]`, `[ARCHITECTURE]`, `[ORGANIZATION]`
+- **Affected Components**:
+  - `docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md` [RENAMED from `08_web_bff_clean_architecture_migration_plan.md`]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/cft/cft_web_bff_and_clean_architecture.md` [MODIFIED]
+  - `docs/cft/cft_mobile_mvp_cross_platform.md` [MODIFIED]
+  - `docs/cft/cft_cross_platform_functional_parity_matrix.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Summary of Change**:
+  1. *Architectural Separation of Concerns (SDDs vs Skills)*:
+     - Formally established the repository boundary between SDDs and Agent Skills for optimal token economics and agentic development:
+       - **SDDs (`docs/sdd/`)**: Solution-level architectural contracts, specifications, and phased release roadmaps (read on-demand with zero system prompt token overhead).
+       - **Skills (`.agents/skills/`)**: Lightweight, on-demand operational playbooks containing tactical implementation recipes, code snippets, templates (e.g. MAUI/Expo zero-Mac setup, Android `FileProvider`, SkiaSharp compression, C# CQRS handlers), and verification checklists.
+     - Confirmed complementary relationship between `SDD 08` (strategic cross-platform migration roadmap) and `diet-dost-mobile-architecture` (tactical mobile developer implementation skill).
+  2. *Renaming SDD 08 to Reflect Cross-Platform Scope*:
+     - Renamed `docs/sdd/08_web_bff_clean_architecture_migration_plan.md` to `docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md` via `git mv`.
+     - Synchronized all inbound links across `00_sdd_index.md`, CFT suite, skills, and root `AGENTS.md`.
+- **Modified & Renamed Files**:
+  - `docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md` [RENAMED]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/cft/cft_web_bff_and_clean_architecture.md` [MODIFIED]
+  - `docs/cft/cft_mobile_mvp_cross_platform.md` [MODIFIED]
+  - `docs/cft/cft_cross_platform_functional_parity_matrix.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Living documentation & link integrity: **100% synchronized with zero dead links**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 
 

@@ -2,7 +2,7 @@
 
 > **Classification**: Customer & Functional Acceptance Test (CFT) Specification  
 > **Target Subsystem**: Web PWA Client (`src/Nutrition.WebGateway/wwwroot/`) & Web BFF (`/api/web/v1/*`)  
-> **Related SDD**: [`docs/sdd/08_web_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_web_bff_clean_architecture_migration_plan.md)  
+> **Related SDD**: [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md)  
 > **Related Reference**: [`.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md)  
 > **Baseline Checklist**: [`docs/cft/scratchpad_e2e_user_tier_verification_checklist.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/scratchpad_e2e_user_tier_verification_checklist.md)  
 
