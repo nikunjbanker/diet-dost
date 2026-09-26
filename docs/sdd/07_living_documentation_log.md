@@ -2536,3 +2536,50 @@
   - Automated tests: **129 passed, 0 failed, 0 warnings**.
   - Living documentation: **100% synchronized with zero drift**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+---
+
+### [LOG-20260926-036] Web App Architecture Review, Web BFF Strategy & Phased Non-Big-Bang Migration Playbook
+- **Timestamp**: `2026-09-26T13:13:00+05:30`
+- **Driver / Agent**: `AI Assistant (Clean Architecture & Web Engineering) & User Pair-Programming`
+- **Change Type**: `[REVIEW]`, `[WEB_BFF]`, `[CLEAN_ARCHITECTURE]`, `[SOLID]`, `[SKILL]`, `[SDD]`
+- **Affected Components**:
+  - `docs/sdd/08_web_bff_clean_architecture_migration_plan.md` [NEW]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md` [NEW]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Summary of Change**:
+  1. *Comprehensive Web App Architectural Review & Findings*:
+     - Conducted strict architectural audit of `src/Nutrition.WebGateway/wwwroot/` (native HTML5 + JavaScript ES Modules bundle).
+     - **Finding 1 (Domain Logic Duplication)**: Identified a 1,001-line static food dictionary (`INDIAN_FOOD_DICTIONARY`) in `nutrition-estimator.js` duplicating nutritional metrics, portion scaling, and dietitian advice, violating Single Source of Truth against `Nutrition.Domain.Clinical` and `EstimateFoodItemQuery`.
+     - **Finding 2 (Chatty Client-Server Boundary)**: Identified 5 to 6 parallel/sequential REST roundtrips during initial authenticated page load (`/api/auth/me`, `/api/analytics/daily`, `/api/analytics/projections`, `/api/meals/history`, `/api/progressphotos/comparison`, `/api/meals/quota`) causing high mobile latency and visible layout shifts.
+     - **Finding 3 (Fat UI Controllers & SRP Violations)**: Identified monolithic `AnalyticsChartController.js` (792 lines) managing SVG coordinate math, click filtering, diary rendering, Excel export, and tab state.
+     - **Finding 4 (Leaky DIP Coupling)**: UI controllers directly coupled to distinct endpoint routes and DTO structures across 5 backend controllers.
+  2. *Clean Architecture & SOLID Frontend Standards Codified*:
+     - **Single Responsibility Principle (SRP)**: UI controllers restricted to thin coordinators (<150 lines), delegating to dedicated renderers (`ChartRenderer.js`), diary components (`MealDiaryView.js`), and file export utilities (`ExcelExportService.js`).
+     - **Dependency Inversion Principle (DIP)**: UI modules depend exclusively on abstractions registered via `di-container.js`.
+     - **Zero Duplicate Domain Code Guarantee**: Mandated that all clinical, nutritional, and portion calculations reside strictly in `Nutrition.Domain.Clinical` and `Nutrition.Application`. Zero domain math in client JavaScript.
+  3. *Phased Non-Big-Bang Step-by-Step Implementation Roadmap (GitHub Stacked PR Workflow)*:
+     - Formulated 4-phase, small, independently reviewable PR plan:
+       - **Phase 1 (PR 1)**: Backend Web BFF Facade (`/api/web/v1/dashboard` returning `WebDashboardCompositeDto` via parallel `Task.WhenAll` query dispatch; ~200 lines C#, 100% additive, 0 client changes).
+       - **Phase 2 (PR 2)**: Client Web BFF Service & Bootstrap Consolidation (`WebBffService.js`, `main.js` `initApp` consolidation; ~180 lines JS, 5 roundtrips -> 1 roundtrip).
+       - **Phase 3 (PR 3)**: Centralize Food Estimation & Safely Excise `nutrition-estimator.js` (wire `review-modal.js` to `POST /api/meals/estimate` with 300ms debounce; delete 1,000-line static dictionary).
+       - **Phase 4 (PR 4)**: Modularize Monolithic UI Controllers into Single Responsibility Components (`chart-renderer.js`, `meal-diary-view.js`, `excel-export-service.js`; slim controller to <120 lines).
+       - **Phase 5 (PR 5)**: Verification across all 5 demo user tiers & Living SDD synchronization.
+  4. *Reference Playbook & Artifacts Created*:
+     - Authored reference playbook `.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md` containing complete C# controller, composite DTO, JS client service, and modularized UI component scripts.
+     - Upgraded Clean Architecture rulebook to `v1.2.0-WEB-BFF-SPEC`.
+     - Created master migration SDD `docs/sdd/08_web_bff_clean_architecture_migration_plan.md` and registered in `00_sdd_index.md`.
+     - Enforced strict user instruction: **Zero application code changes committed in this turn**.
+- **Modified & New Files**:
+  - `docs/sdd/08_web_bff_clean_architecture_migration_plan.md` [NEW]
+  - `.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md` [NEW]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `docs/sdd/00_sdd_index.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Living documentation: **100% synchronized with zero drift**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
