@@ -2630,4 +2630,43 @@
   - Living documentation & CFTs: **100% synchronized with zero drift**.
 - **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
 
+---
+
+### [LOG-20260926-038] Stale-Branch Prevention, Remote-First Lineage Guard & Solution Memory Enforcement
+- **Timestamp**: `2026-09-26T13:25:00+05:30`
+- **Driver / Agent**: `AI Assistant (Git Infrastructure & Governance Engineering) & User Pair-Programming`
+- **Change Type**: `[GOVERNANCE]`, `[GIT_WORKFLOW]`, `[SKILL]`, `[MEMORY]`
+- **Affected Components**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Summary of Change**:
+  1. *Stale-Branch Prevention Root Cause Analysis & Invariant*:
+     - Identified root cause of recurring PR merge conflicts: contributors and agents creating branches via `git checkout -b <branch>` (branching from arbitrary local HEAD) or `git checkout -b <branch> main` (branching from local `main` which is stale and lacks upstream commits merged into GitHub `main`).
+     - Established the **Ironclad Remote-First Protocol**: every new branch MUST be created directly from freshly fetched remote tracking branches (`origin/main` or `origin/<parent-feature>`).
+  2. *Mandatory Lineage Verification Guard*:
+     - Enforced commit hash verification immediately after branch creation:
+       ```bash
+       git rev-parse HEAD
+       git rev-parse origin/main
+       ```
+       Both commands must produce the exact same 40-character commit SHA. If hashes differ, branch creation is invalid and must be deleted and recreated.
+  3. *Solution Memory & Skill System Updates*:
+     - Synchronized root engineering rules in `AGENTS.md` with explicit anti-patterns table.
+     - Synchronized primary solution skill `indian-diet-calorie-tracker/SKILL.md` (Rule 5).
+     - Synchronized companion skills `diet-dost-clean-architecture/SKILL.md` (Section 0 Rule 1) and `diet-dost-mobile-architecture/SKILL.md` (Section 0).
+- **Modified Files**:
+  - `AGENTS.md` [MODIFIED]
+  - `.agents/skills/indian-diet-calorie-tracker/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-clean-architecture/SKILL.md` [MODIFIED]
+  - `.agents/skills/diet-dost-mobile-architecture/SKILL.md` [MODIFIED]
+  - `docs/sdd/07_living_documentation_log.md` [MODIFIED]
+- **Verification Result**:
+  - Automated tests: **129 passed, 0 failed, 0 warnings**.
+  - Solution memory: **100% synchronized across all skill manifests and instructions**.
+- **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`
+
+
 

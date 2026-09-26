@@ -28,28 +28,56 @@ This skill guides the design, architecture, documentation, and development of a 
    - Known transitive vulnerabilities (such as older `SQLitePCLRaw.lib.e_sqlite3 2.1.10`) must be explicitly resolved by referencing modern, patched versions (`SQLitePCLRaw.bundle_e_sqlite3 3.0.5+`).
    - Any compiler nullability warnings (e.g. `CS8602`) must be eliminated with defensive null-checks.
 4. **Standalone Aspire AppHost SDK**: Aspire AppHost projects must use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">` directly instead of deprecated workload-dependent project SDKs.
-5. **Mandatory Git Branching & PR-Only Merge Mandate**:
+5. **Mandatory Git Branching & PR-Only Merge Mandate (Stale-Branch Prevention)**:
    - **Never commit directly to the `main` (or default production) branch**.
-   - **Step 0 Pre-Flight Remote Fetch**: Before modifying any file, always fetch remote state:
-     ```bash
-     git fetch origin
-     ```
-   - **Independent Branching from Remote Main**: Always branch explicitly from `origin/main` for independent work:
-     ```bash
-     git checkout -b feature/<feature-name> origin/main
-     git checkout -b fix/<defect-name> origin/main
-     git checkout -b docs/<topic> origin/main
-     ```
-     *Strict Prohibition*: NEVER run `git checkout -b <branch>` from a local working branch without specifying `origin/main` (or the intended parent branch for stacked PRs). Doing so drags old pre-squash commits and causes severe merge conflicts on GitHub PRs.
-   - **GitHub Stacked PR Workflow for Consecutive / Dependent Work**:
-     When a new feature or task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
-     1. Branch from the parent feature branch:
+   - **Step 0 Pre-Flight Remote Fetch & Dedicated Branch Creation**:
+     > [!CRITICAL]
+     > **Why PR Merge Conflicts Happen**:
+     > 1. Running `git checkout -b <branch>` without a starting point branches from whatever local commit is checked out (often an old commit or another feature branch).
+     > 2. Running `git checkout -b <branch> main` branches from your **local** `main` branch, which is almost always **stale** because local `main` does not auto-update when PRs merge on GitHub.
+     > 3. Branching before running `git fetch origin` means your local repository does not know about newly merged commits on remote `origin/main`.
+     >
+     > **The Ironclad Golden Rule**: Every new branch MUST be created directly from freshly fetched remote tracking branches (`origin/main` or `origin/<parent-feature>`), and the starting commit hash MUST be verified before writing any code.
+
+     a. **Fetch Remote Changes First**:
         ```bash
         git fetch origin
-        git checkout -b feature/<child-feature> origin/feature/<parent-feature>
         ```
-     2. Set the GitHub PR **Base branch** to `feature/<parent-feature>` (NOT `main`).
-     3. Benefit from Stacked PR mechanics: GitHub isolates the child feature's diff, prevents commit pollution, and automatically retargets the child PR to `main` when the parent PR merges.
+     b. **Independent Branching from Remote Main**: Always branch explicitly from `origin/main` using one of these bulletproof commands:
+        ```bash
+        git checkout -b feature/<feature-name> origin/main
+        git checkout -b fix/<defect-name> origin/main
+        git checkout -b docs/<topic> origin/main
+        ```
+     c. **Mandatory Lineage Verification Guard (Assert Commit Match)**:
+        Immediately after creating the branch, verify that HEAD points to the exact same commit as `origin/main`:
+        ```bash
+        git rev-parse HEAD
+        git rev-parse origin/main
+        ```
+        *Failure Condition*: If `git rev-parse HEAD` does NOT equal `git rev-parse origin/main`, your branch is stale or dirty. **STOP immediately**, delete the branch (`git checkout main && git branch -D <branch>`), and recreate it cleanly from `origin/main`.
+     d. **GitHub Stacked PR Workflow for Consecutive / Dependent Work**:
+        When a new feature or task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
+        1. Fetch and branch directly from parent feature branch:
+           ```bash
+           git fetch origin
+           git checkout -b feature/<child-feature> origin/feature/<parent-feature>
+           ```
+        2. Verify Stacked Lineage:
+           ```bash
+           git rev-parse HEAD
+           git rev-parse origin/feature/<parent-feature>
+           ```
+           *Assert*: Both hashes must match identically.
+        3. Set the GitHub PR **Base branch** to `feature/<parent-feature>` (NOT `main`).
+        4. Benefit from Stacked PR mechanics: GitHub isolates the child feature's diff, prevents commit pollution, and automatically retargets the child PR to `main` when the parent PR merges.
+     e. **Strict Anti-Patterns (NEVER DO THESE)**:
+        | Forbidden Command / Action | Why It Is Strictly Forbidden | Consequence on GitHub PR |
+        | :--- | :--- | :--- |
+        | `git checkout -b <branch>` | Branches from whatever commit is currently checked out locally. | Drags old unrelated commits; causes merge conflicts. |
+        | `git checkout -b <branch> main` | Branches from local `main` which is STALE unless manually pulled. | Missing latest upstream commits; severe merge conflicts. |
+        | Branching without `git fetch origin` | Local Git has no knowledge of recent merges on GitHub. | Silent commit drift and divergent Git tree. |
+        | Working on a dirty tree | Uncommitted/untracked files accidentally bleed into the new branch. | Accidental commit of unrelated files into PR diff. |
    - **Perform All Work in the Branch**: Apply targeted changes, run builds, execute test harnesses, and synchronize living documentation strictly within this branch.
    - **PR-Only Merge Enforcement**: Changes **MUST** be merged into `main` exclusively via a Pull Request (PR) after passing all CI validation checks and review gates. Direct commits or direct pushes to `main` are strictly forbidden.
 6. **Mandatory End-to-End User Tier Validation**:

@@ -13,28 +13,49 @@ This solution-level instruction file defines mandatory engineering and Git workf
 > **Zero-Unilateral-Decision Mandate**: In case of ANY doubt, ambiguity, or architectural decision, ALWAYS ask questions and seek confirmation from the user using interactive modal tools (`ask_question`). NEVER assume or decide unilaterally.
 
 ### Step-by-Step Workflow:
-1. **Step 0: Pre-Flight Remote Fetch & Dedicated Branch Creation**:
-   Before modifying any code, configuration, or documentation, ensure your branch lineage is pristine:
-   a. **Fetch Remote Changes First**:
+1. **Step 0: Pre-Flight Remote Fetch & Dedicated Branch Creation (Stale-Branch Prevention)**:
+   > [!CRITICAL]
+   > **Why PR Merge Conflicts Happen**:
+   > 1. Running `git checkout -b <branch>` without a starting point branches from whatever local commit you currently have checked out (often an old commit or another feature branch).
+   > 2. Running `git checkout -b <branch> main` branches from your **local** `main` branch, which is almost always **stale** because local `main` does not auto-update when PRs merge on GitHub.
+   > 3. Branching before running `git fetch origin` means your local repository does not know about newly merged commits on remote `origin/main`.
+   >
+   > **The Ironclad Golden Rule**: Every new branch MUST be created directly from freshly fetched remote tracking branches (`origin/main` or `origin/<parent-feature>`), and the starting commit hash MUST be verified before writing any code.
+
+   **Standard Execution Protocol**:
+   a. **Fetch Latest Remote State First**:
       ```bash
       git fetch origin
       ```
    b. **For Independent Work (Branching off `main`)**:
-      Always branch explicitly from `origin/main`:
+      Always branch explicitly from `origin/main` using one of these bulletproof commands:
       ```bash
       git checkout -b feature/<descriptive-name> origin/main   # For new features or enhancements
       git checkout -b fix/<defect-name> origin/main           # For bug or defect fixes
       git checkout -b docs/<topic-name> origin/main           # For documentation changes
       ```
-      *Strict Prohibition*: NEVER run `git checkout -b <branch>` from a local working branch without specifying `origin/main` (or the intended parent feature branch for stacked PRs). Doing so drags old pre-squash commit history and causes severe merge conflicts on GitHub PRs.
+   c. **Mandatory Lineage Verification Guard (Assert Commit Match)**:
+      Immediately after creating the branch, verify that HEAD points to the exact same commit as `origin/main`:
+      ```bash
+      # Both commands MUST output the exact same 40-character commit hash:
+      git rev-parse HEAD
+      git rev-parse origin/main
+      ```
+      *Failure Condition*: If `git rev-parse HEAD` does NOT equal `git rev-parse origin/main`, your branch is stale or dirty. **STOP immediately**, delete the branch (`git checkout main && git branch -D <branch>`), and recreate it cleanly from `origin/main`.
 
-   c. **GitHub Stacked PR Protocol (For Consecutive / Dependent PRs)**:
-      When a new feature, defect fix, or documentation task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
-      - **Branch Directly from Parent Feature Branch**:
+   d. **GitHub Stacked PR Protocol (For Consecutive / Dependent PRs)**:
+      When a new feature or defect fix depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
+      - **Fetch remote parent branch**:
         ```bash
         git fetch origin
         git checkout -b feature/<child-feature> origin/feature/<parent-feature>
         ```
+      - **Verify Stacked Lineage**:
+        ```bash
+        git rev-parse HEAD
+        git rev-parse origin/feature/<parent-feature>
+        ```
+        *Assert*: Both hashes must match identically.
       - **Set GitHub PR Base Branch to Parent Branch**:
         When opening the Pull Request in GitHub, set the **Base branch** to `feature/<parent-feature>` (NOT `main`).
       - **GitHub Stacked PR Mechanics**:
@@ -42,7 +63,15 @@ This solution-level instruction file defines mandatory engineering and Git workf
         - When the parent PR merges into `main`, GitHub automatically updates the child PR's base branch to `main`.
         - Stacked PRs keep review sizes small, eliminate merge conflicts between dependent features, and prevent duplicate commits across PRs.
 
-   d. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
+   e. **Strict Anti-Patterns (NEVER DO THESE)**:
+      | Forbidden Command / Action | Why It Is Strictly Forbidden | Consequence on GitHub PR |
+      | :--- | :--- | :--- |
+      | `git checkout -b <branch>` | Branches from whatever commit is currently checked out locally. | Drags old unrelated commits; causes merge conflicts. |
+      | `git checkout -b <branch> main` | Branches from local `main` which is STALE unless manually pulled. | Missing latest upstream commits; severe merge conflicts. |
+      | Branching without `git fetch origin` | Local Git has no knowledge of recent merges on GitHub. | Silent commit drift and divergent Git tree. |
+      | Working on a dirty tree | Uncommitted/untracked files accidentally bleed into the new branch. | Accidental commit of unrelated files into PR diff. |
+
+   f. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
       - In case of ANY ambiguity, doubt, conflicting options (such as whether a branch should be stacked vs independent, or resolving structural conflicts), **STOP and ask the user for confirmation** using the interactive question tool (`ask_question`).
       - **Never make unilateral decisions or assumptions** on git branching topology, architectural boundaries, or data contracts without user alignment.
 2. **Step 1: Perform All Changes Strictly on the Branch**:

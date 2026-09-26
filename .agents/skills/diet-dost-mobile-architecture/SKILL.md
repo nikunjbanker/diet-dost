@@ -12,6 +12,20 @@ description: Authoritative cross-platform mobile architecture, SMART MVP specifi
 
 ---
 
+## 0. Mandatory Solution Rules & Stale-Branch Prevention
+
+> [!IMPORTANT]
+> **Strict Git Branching Mandate**:
+> 1. **Remote Fetch First**: Always run `git fetch origin` before creating any branch.
+> 2. **Never Branch from Local Main**: Local `main` does not auto-update when GitHub PRs merge. Branching from local `main` drags stale history and causes severe merge conflicts. Always branch explicitly from remote:
+>    ```bash
+>    git checkout -b feature/<name> origin/main
+>    ```
+> 3. **Lineage Verification Guard**: Immediately verify that `git rev-parse HEAD` equals `git rev-parse origin/main`. If hashes differ, delete the branch and recreate it.
+> 4. **Stacked PRs**: For dependent child features, branch directly from remote parent branch (`git checkout -b feature/<child> origin/feature/<parent>`) and set the PR base to the parent branch.
+
+---
+
 ## 1. SMART & MVP Framework for Mobile Diet-Dost
 
 Building a mobile client for a fitness and nutrition application is fundamentally different from building a web app. Mobile users snap photos on the go, often on cellular networks with battery and latency constraints. To ensure delivery without scope creep, we enforce the **SMART & Lean MVP Framework**:

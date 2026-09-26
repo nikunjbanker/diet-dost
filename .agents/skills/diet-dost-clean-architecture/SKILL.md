@@ -28,7 +28,7 @@ description: >-
 
 > [!IMPORTANT]
 > Adhere strictly to the **Zero Direct-to-Main Policy** and Solution Rules in `AGENTS.md`:
-> 1. **Branch First (Pre-Flight Remote Fetch)**: All refactoring must occur on a dedicated feature branch (`feature/<name>`). Never commit directly to `main`. Always execute `git fetch origin` and branch strictly from `origin/main` (or parent feature branch for GitHub Stacked PRs). Never branch from stale/dirty local branches.
+> 1. **Branch First (Pre-Flight Remote Fetch & Stale-Branch Prevention)**: All work must occur on a dedicated feature branch (`feature/<name>`). Never commit directly to `main`. Always execute `git fetch origin` first and branch strictly from `origin/main` (`git checkout -b feature/<name> origin/main`) or parent feature branch for GitHub Stacked PRs. Immediately verify lineage via `git rev-parse HEAD` == `git rev-parse origin/main`. Never branch from local `main` (which is stale) or from dirty local branches.
 > 2. **Target Framework**: All projects must target `<TargetFramework>net11.0</TargetFramework>`.
 > 3. **Zero-Warning Standard**: 0 warnings, 0 errors across the solution.
 > 4. **Zero Third-Party CQRS Dependencies**: Do NOT use `MediatR`. MediatR v13+ moved to a commercial / RPL-1.5 reciprocal license requiring paid license keys. Implement CQRS using native .NET 11 BCL abstractions.
