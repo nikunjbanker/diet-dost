@@ -1,6 +1,20 @@
 ---
 name: diet-dost-issue-driven-workflow
 description: Authoritative autonomous issue-driven development (IDD) skill for Diet-Dost. Implements the Detect-Act-Implement-Validate-Test/Retest lifecycle, local state checkpointing & offline resilience, GitHub issue lifecycle automation, zero-unilateral-decision governance, CFT synchronization, and draft PR generation.
+trigger:
+  mode: auto
+  type: scheduled
+  schedule: "0 * * * *" # Hourly execution (every 1 hour at minute 0)
+  interval_seconds: 3600
+  events:
+    - issues.opened
+    - issues.reopened
+    - issues.edited
+    - issues.labeled
+  runner:
+    engine: powershell
+    script: scripts/issue_workflow_runner.ps1
+    state_file: ../../state/issue_workflow_state.json
 ---
 
 <!--
@@ -30,6 +44,32 @@ Because automated GitHub-hosted AI agent credits may be unavailable or cost-proh
 1. **Online State**: While the workstation is powered on and connected, the local runner monitors GitHub repository events (new issues created, updated, closed, or deleted) via GitHub CLI (`gh`).
 2. **Offline / Suspended State**: When the workstation is powered down or network drops, all in-flight tasks are held safely in durable local memory (`.agents/state/issue_workflow_state.json`).
 3. **Resumption Protocol**: Upon system reboot or agent reactivation, the workflow inspects the state registry and resumes execution from the exact phase where it was held—preventing duplicated effort or lost context.
+
+### 1.1 Automated Hourly Trigger & Harness Interpretation
+The skill declares a native scheduled trigger in its frontmatter:
+```yaml
+trigger:
+  mode: auto
+  type: scheduled
+  schedule: "0 * * * *" # Hourly execution (every 1 hour at minute 0)
+  interval_seconds: 3600
+  events: [issues.opened, issues.reopened, issues.edited, issues.labeled]
+```
+
+#### How the Agent Harness & IDE Executes the Hourly Auto-Trigger:
+1. **Agent Scheduled Cron Activation**:
+   - The agent harness interprets the declarative `trigger.schedule: "0 * * * *"` and registers a recurring background cron task via the IDE scheduler:
+     ```json
+     {
+       "CronExpression": "0 * * * *",
+       "Prompt": "Execute diet-dost-issue-driven-workflow: inspect repository issues via issue_workflow_runner.ps1, detect new/modified issues, and process them through the DETECT -> ACT -> IMPLEMENT -> VALIDATE -> TEST/RETEST -> DRAFT PR pipeline.",
+       "IsDaemon": true
+     }
+     ```
+2. **Standing Daemon Execution**:
+   - Marking `IsDaemon: true` guarantees that the hourly schedule continues firing as an independent standing job across agent turns while the developer workstation is active.
+3. **Graceful Suspension**:
+   - If the system is powered down or the network drops during an hourly run, the runner checkpoints progress to `.agents/state/issue_workflow_state.json` as `ON_HOLD`. When the workstation is powered back on, the next trigger resumes from the checkpoint.
 
 ---
 
