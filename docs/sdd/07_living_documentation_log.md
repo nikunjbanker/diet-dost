@@ -117,6 +117,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-045** | Master Implementation Roadmap & Skill-by-Skill Execution Sequencing | `ACCEPTED` | [`ADR-20260926-045-master-implementation-roadmap.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260926-045-master-implementation-roadmap.md) |
 | **ADR-046** | License Governance, Dual AGPLv3/SSPL v1 Compliance & Header Enforcement | `ACCEPTED` | [`ADR-20260926-046-license-governance-and-header-enforcement.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260926-046-license-governance-and-header-enforcement.md) |
 | **ADR-047** | Dedicated ADR Directory & Single Unified ADR Architecture | `ACCEPTED` | [`ADR-20260928-047-dedicated-adr-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-047-dedicated-adr-architecture.md) |
+| **ADR-048** | Autonomous Issue-Driven Development (IDD) Skill & Resumable Local State Engine | `ACCEPTED` | [`ADR-20260928-048-issue-driven-agentic-workflow-skill.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-048-issue-driven-agentic-workflow-skill.md) |
 
 ---
 

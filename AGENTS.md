@@ -141,6 +141,12 @@ This solution-level instruction file defines mandatory engineering and Git workf
       - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
       - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
     - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/adr/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/archive/living_log_2026_09_archive.md), while [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) act as lean indexes and standard registries.
+13. **Autonomous Issue-Driven Development (IDD) & Local State Resumption Standard**:
+    - **Local Workstation Execution**: Due to cloud agent credit limits, autonomous issue handling executes locally on the developer workstation via GitHub CLI (`gh`).
+    - **Closed-Loop Lifecycle**: Every issue follows the strict `DETECT -> ACT -> IMPLEMENT -> VALIDATE -> TEST / RETEST -> DRAFT PR` sequence codified in [`.agents/skills/diet-dost-issue-driven-workflow/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-issue-driven-workflow/SKILL.md).
+    - **Fault-Tolerant State Checkpointing**: All in-flight issue workflows persist checkpoint state in `.agents/state/issue_workflow_state.json`. If execution is interrupted by system power-down or network drops, tasks are safely held in memory and resume from the exact last saved phase upon system restart.
+    - **Zero-Unilateral-Decision Enforcement**: If an issue contains any ambiguity, conflicting options, or unconfirmed requirements, the agent MUST pause and ask the user for confirmation via `ask_question` before proceeding to implementation.
+    - **CFT & ADR Synchronization**: Every issue resolution must create/update its corresponding platform CFT in `docs/cft/` and record an atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md`.
 
 
 

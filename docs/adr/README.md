@@ -51,6 +51,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-045** | Master Implementation Roadmap & Skill-by-Skill Execution Sequencing | `[ROADMAP]` | `ACCEPTED` | [`ADR-20260926-045-master-implementation-roadmap.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260926-045-master-implementation-roadmap.md) |
 | **ADR-046** | License Governance, Dual AGPLv3/SSPL v1 Compliance & Solution-Wide Header Enforcement | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20260926-046-license-governance-and-header-enforcement.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260926-046-license-governance-and-header-enforcement.md) |
 | **ADR-047** | Dedicated ADR Directory & Single Unified ADR Architecture | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20260928-047-dedicated-adr-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-047-dedicated-adr-architecture.md) |
+| **ADR-048** | Autonomous Issue-Driven Development (IDD) Skill & Resumable Local State Engine | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20260928-048-issue-driven-agentic-workflow-skill.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-048-issue-driven-agentic-workflow-skill.md) |
 
 ---
 
