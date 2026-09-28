@@ -13,7 +13,9 @@ param (
     [switch]$Poll,
     [int]$PollIntervalSeconds = 60,
     [switch]$Resume,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [int]$ParentPR = 0,
+    [string]$ParentBranch = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -101,6 +103,22 @@ function Invoke-IssueSync {
             if ($slug.Length -gt 35) { $slug = $slug.Substring(0, 35).Trim('-') }
             $branchName = "$issueType/issue-$($issue.number)-$slug"
 
+            $isStacked = $false
+            $depPr = 0
+            $depBranch = ""
+            if ($ParentPR -gt 0) {
+                $isStacked = $true
+                $depPr = $ParentPR
+                $depBranch = $ParentBranch
+            } elseif ($issue.body -match "(?i)(?:depends on|stacked on|parent pr)[:\s]+#?(\d+)") {
+                $isStacked = $true
+                $depPr = [int]$matches[1]
+                try {
+                    $parentInfo = gh pr view $depPr --json headRefName 2>$null | ConvertFrom-Json
+                    if ($parentInfo) { $depBranch = $parentInfo.headRefName }
+                } catch {}
+            }
+
             $newRecord = [PSCustomObject]@{
                 issueNumber = $issue.number
                 title = $issue.title
@@ -110,7 +128,10 @@ function Invoke-IssueSync {
                 updatedAt = $issue.updatedAt
                 detectedAt = (Get-Date).ToString("o")
                 checkpoints = @("DETECTED")
-                notes = "Auto-detected by issue_workflow_runner.ps1"
+                isStacked = $isStacked
+                parentPR = $depPr
+                parentBranch = $depBranch
+                notes = if ($isStacked) { "Auto-detected stacked issue depending on PR #$depPr ($depBranch)" } else { "Auto-detected independent issue" }
             }
 
             $State.activeIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force

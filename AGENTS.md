@@ -51,7 +51,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
       ```
       *Failure Condition*: If `git rev-parse HEAD` does NOT equal `git rev-parse origin/main`, your branch is stale or dirty. **STOP immediately**, delete the branch (`git checkout main && git branch -D <branch>`), and recreate it cleanly from `origin/main`.
 
-   d. **GitHub Stacked PR Protocol (For Consecutive / Dependent PRs)**:
+   d. **GitHub Stacked PR Protocol & Native Tooling (For Consecutive / Dependent PRs)**:
       When a new feature or defect fix depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
       - **Fetch remote parent branch**:
         ```bash
@@ -66,10 +66,31 @@ This solution-level instruction file defines mandatory engineering and Git workf
         *Assert*: Both hashes must match identically.
       - **Set GitHub PR Base Branch to Parent Branch**:
         When opening the Pull Request in GitHub, set the **Base branch** to `feature/<parent-feature>` (NOT `main`).
-      - **GitHub Stacked PR Mechanics**:
-        - GitHub displays ONLY the diff introduced by the child feature against the parent branch.
-        - When the parent PR merges into `main`, GitHub automatically updates the child PR's base branch to `main`.
-        - Stacked PRs keep review sizes small, eliminate merge conflicts between dependent features, and prevent duplicate commits across PRs.
+      - **Official GitHub CLI Stack Extension (`github/gh-stack`)**:
+        Ensure the official GitHub stack extension is installed:
+        ```bash
+        gh extension install github/gh-stack
+        ```
+      - **Mandatory Stack Linking & Synchronization (`gh stack link` & `gh stack sync`)**:
+        Immediately after creating the child PR, formally register and sync the stack on GitHub:
+        ```bash
+        gh stack link <parent-pr-number> <child-pr-number>
+        gh stack sync
+        ```
+        *Why*: Formally registers the chain in GitHub's native Stacked PR engine (e.g. `Stack #NNN`), eliminating unlinked PR drift and resolving the *"This pull request can be stacked with other pull requests"* unformalized prompt.
+      - **Mandatory Stack Navigation Callout Widget in PR Descriptions**:
+        Every PR in a stack MUST embed the standardized Markdown Stack Navigator Callout at the very top of its PR body:
+        ```markdown
+        > [!NOTE]
+        > ### 🥞 GitHub Stack #<stack-id> (Layer X of Y)
+        > 1. 🟢 **PR #<parent-pr>**: `<title>` (Base: `<base>`)
+        > 2. 🟡 **PR #<child-pr> (This PR)**: `<title>` (Base: `<parent-branch>`)
+        ```
+        This guarantees instant bidirectional navigation for human reviewers, CI runners, and AI agents across GitHub UI and CLI.
+      - **Sequential Bottom-Up Merging & Cascading Retargeting**:
+        - Merge the stack strictly bottoms-up: Layer 1 (Base PR) merges first into `main`.
+        - GitHub automatically updates the next layer's base branch to `main`.
+        - Run `gh stack sync` locally to update branch tracking and prune merged layers.
 
    e. **Strict Anti-Patterns (NEVER DO THESE)**:
       | Forbidden Command / Action | Why It Is Strictly Forbidden | Consequence on GitHub PR |
@@ -147,6 +168,11 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Fault-Tolerant State Checkpointing**: All in-flight issue workflows persist checkpoint state in `.agents/state/issue_workflow_state.json`. If execution is interrupted by system power-down or network drops, tasks are safely held in memory and resume from the exact last saved phase upon system restart.
     - **Zero-Unilateral-Decision Enforcement**: If an issue contains any ambiguity, conflicting options, or unconfirmed requirements, the agent MUST pause and ask the user for confirmation via `ask_question` before proceeding to implementation.
     - **CFT & ADR Synchronization**: Every issue resolution must create/update its corresponding platform CFT in `docs/cft/` and record an atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md`.
+14. **Native GitHub Stacked PR Protocol & Automation Standard**:
+    - **Native gh-stack Engine**: Contributors and AI agents must manage consecutive dependent PRs using the official `github/gh-stack` extension (`gh stack link <parent-pr> <child-pr>`, `gh stack sync`). Never leave stacked PRs in an unformalized state on GitHub.
+    - **Zero-Ambiguity PR Navigation**: All stacked PRs must prepend the standardized markdown Stack Navigator callout (`### 🥞 GitHub Stack #<id> (Layer X of Y)`) in the PR description with direct bidirectional links to parent and child PRs.
+    - **Cascading Bottom-Up Merge Order**: Stacks must be merged sequentially from base to top. Merging Layer 1 allows GitHub to auto-retarget Layer 2 to `main`, followed by local `gh stack sync`.
+
 
 
 

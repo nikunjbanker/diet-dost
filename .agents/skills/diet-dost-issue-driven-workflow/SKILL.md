@@ -121,14 +121,17 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
   2. **Acceptance Criteria & CFT Mapping**:
      - Identify which Customer & Functional Acceptance Test (CFT) in `docs/cft/` governs the feature.
      - If the issue introduces new functionality, outline the new CFT file to be created: `docs/cft/cft_issue_<number>_<slug>.md`.
-  3. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
+  3. **Dependency & Stack Detection**:
+     - Determine whether this issue depends upon or builds upon an active, unmerged Pull Request or feature branch.
+     - If dependent, identify `<parent-pr-number>` and `<parent-branch>`, and flag the issue as a stacked layer (`isStacked: true`).
+  4. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
      > [!IMPORTANT]
      > In case of ANY ambiguity, doubt, conflicting implementation options, or architectural trade-offs:
      > - **STOP immediately**.
      > - Use the interactive question tool (`ask_question`) to present options to the user.
      > - **NEVER assume or decide unilaterally**.
      > - Record the issue state as `WAITING_CONFIRMATION` until the user responds.
-  4. Record phase `ACT_ANALYZED` upon alignment.
+  5. Record phase `ACT_ANALYZED` upon alignment.
 
 ---
 
@@ -214,9 +217,19 @@ Before opening the Draft PR, the agent MUST update living documentation:
    git push -u origin <branch-name>
    ```
 2. **Create Draft PR via GitHub CLI**:
-   ```powershell
-   gh pr create --draft --base <base-branch> --head <branch-name> --title "<type>(issue-<num>): <title>" --body "## Summary`n`nCloses #<num>`n`n### Implementation Details`n- Completed via Autonomous Issue-Driven Workflow (IDD).`n`n### Verification Results`n- \`dotnet test\`: 100% passed`n- CFT Checklist: \`docs/cft/...\` updated`n- ADR Registered: \`docs/adr/ADR-...\`"
-   ```
+   - **For Independent PRs**:
+     ```powershell
+     gh pr create --draft --base main --head <branch-name> --title "<type>(issue-<num>): <title>" --body "## Summary`n`nCloses #<num>`n`n### Implementation Details`n- Completed via Autonomous Issue-Driven Workflow (IDD).`n`n### Verification Results`n- \`dotnet test\`: 100% passed`n- CFT Checklist: \`docs/cft/...\` updated`n- ADR Registered: \`docs/adr/ADR-...\`"
+     ```
+   - **For Stacked PRs (Consecutive / Dependent Features)**:
+     ```powershell
+     # 1. Open PR targeting parent feature branch as base
+     gh pr create --draft --base <parent-branch> --head <branch-name> --title "<type>(issue-<num>): <title>" --body "> [!NOTE]`n> ### 🥞 GitHub Stack (Layer X of Y)`n> 1. 🟢 **PR #<parent-pr>** (Base: <parent-base>)`n> 2. 🟡 **PR #<child-pr> (This PR)** (Base: <parent-branch>)`n`n## Summary`n`nCloses #<num>`n`n### Implementation Details`n- Completed via Autonomous Issue-Driven Workflow (IDD).`n`n### Verification Results`n- \`dotnet test\`: 100% passed`n- CFT Checklist: \`docs/cft/...\` updated`n- ADR Registered: \`docs/adr/ADR-...\`"
+
+     # 2. Formally link into GitHub Stack engine & synchronize
+     gh stack link <parent-pr-number> <child-pr-number>
+     gh stack sync
+     ```
 3. **Notify Issue Thread**:
    ```powershell
    gh issue comment <num> --body "Draft Pull Request opened for this issue: <pr-url>. All tests passed, CFT verified, and ADR synchronized."
