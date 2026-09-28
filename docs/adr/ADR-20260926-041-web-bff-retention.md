@@ -1,6 +1,15 @@
-# [LOG-20260926-041] Architectural Verification: Web App Plan Retention in Clean Architecture Skill
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
+# ADR-20260926-041: Architectural Verification: Web App Plan Retention in Clean Architecture Skill
 - **Timestamp**: 2026-09-26T13:54:30+05:30
 - **Driver / Agent**: AI Assistant (Agentic Infrastructure & Token Economics) & User Pair-Programming
+- **Status**: ACCEPTED
 - **Change Type**: `[ARCHITECTURE_VERIFICATION]`, `[TOKEN_ECONOMICS]`, `[GOVERNANCE]`
 - **Affected Subsystems**: Clean Architecture Skill (`diet-dost-clean-architecture`), Reference Playbook
 - **Summary of Change**:

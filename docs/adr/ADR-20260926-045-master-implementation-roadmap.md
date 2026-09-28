@@ -1,15 +1,26 @@
-# Living Documentation Fragment: LOG-20260926-045-master-implementation-roadmap
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
+# ADR-20260926-045: Master Implementation Roadmap & Skill-by-Skill Execution Sequencing
+
 > **Date**: 2026-09-26  
-> **Entry ID**: LOG-045  
-> **Status**: COMPLETED  
-> **Author**: Antigravity Living Documentation Engine  
-> **Classification**: Master Implementation Roadmap & Skill-by-Skill Execution Sequencing  
+> **Status**: ACCEPTED  
+> **Driver / Deciders**: Antigravity Living Documentation Engine & User Pair-Programming  
+> **Change Type**: `[ROADMAP]`, `[ARCHITECTURE]`, `[GOVERNANCE]`  
+> **Affected Subsystems**: WebGateway / Presentation / Domain / Infrastructure / Mobile  
+> **Associated PR & Stack**: PR #20 (Base: `feature/azure-deployment-strategy-and-skill`)  
+> **Relevant SDDs & CFTs**: [`docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md), [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/)  
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-Following the creation of comprehensive skills (`diet-dost-clean-architecture`, `diet-dost-mobile-architecture`, `diet-dost-database-architecture`, `diet-dost-azure-deployment`, `diet-dost-user-management-security`), this fragment records the establishment of [`docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md).
+Following the creation of comprehensive skills (`diet-dost-clean-architecture`, `diet-dost-mobile-architecture`, `diet-dost-database-architecture`, `diet-dost-azure-deployment`, `diet-dost-user-management-security`), this decision records the establishment of [`docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md).
 
 This durable future implementation plan formally codifies:
 1. **The Exact Implementation Sequence**:

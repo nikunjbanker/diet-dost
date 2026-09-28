@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -100,7 +100,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
      - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
      - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, etc.).
      - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
-     - Write a dedicated atomic log fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` (Fragment Pattern for 100% merge-conflict immunity) and register it in `docs/sdd/07_living_documentation_log.md`.
+     - Write a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (Fragment Pattern for 100% merge-conflict immunity) and register it in `docs/adr/README.md` and `docs/sdd/07_living_documentation_log.md`.
 5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash
@@ -117,15 +117,15 @@ This solution-level instruction file defines mandatory engineering and Git workf
 3. **Standalone Aspire AppHost**: Use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">`.
 4. **Clinical Dietetics Governance**: Adhere strictly to the Indian Medical Standards (ICMR-NIN 2024 & WHO guidelines) and the Zero-Assumption Rule specified in the solution skill.
 5. **Mandatory End-to-End Tier Verification**: No refactoring, new feature implementation, or bug fix is complete without verifying actual product behavior across all user tiers using the seeded demo accounts.
-6. **Zero Documentation Drift Standard**: Never omit synchronizing README, Mermaid diagrams, SDD docs, and agent skills after implementing major architectural or security enhancements.
+6. **Zero Documentation Drift Standard**: Never omit synchronizing README, Mermaid diagrams, SDD docs, ADRs, and agent skills after implementing major architectural or security enhancements.
 7. **Mandatory Confirmation Protocol**: In case of ANY doubt, ambiguity, or multiple implementation paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
 8. **Cross-Platform Phased Migration & No-Big-Bang Standard**: Web PWA and Mobile (Android & iOS) modernization and BFF implementation must never be implemented as massive all-in-one PRs. All work must follow the phased, platform-by-platform GitHub Stacked PR Protocol defined in [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md).
 9. **Mandatory Platform-Specific CFT Documentation & Cross-Platform Parity Verification**: Every platform feature must have an executable Customer & Functional Acceptance Test (CFT) checklist in [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/). Contributors and agents must execute the relevant CFT documents across all platforms to guarantee 100% functional parity and zero regressions before branch merge.
 10. **Token Economics & Agentic Architecture Standard (SDDs vs. Skills Separation)**:
     - **System Prompt Token Conservation**: In agentic AI environments, the `name` and `description` of **every skill folder in `.agents/skills/`** is injected into the agent's baseline system prompt on **every single turn**. Storing large architectural specifications, threat models, or living logs in `.agents/skills/` permanently inflates the prompt token overhead and raises operational costs.
-    - **The `docs/sdd/` Boundary (0 Baseline Tokens)**: Declarative system specifications, data models, clinical rules, and migration roadmaps MUST remain in `docs/sdd/`. They consume **0 baseline tokens** and are read on-demand via `view_file` only when needed for a specific task.
+    - **The `docs/` Boundary (0 Baseline Tokens)**: Declarative system specifications, data models, clinical rules, migration roadmaps, and ADRs MUST remain in `docs/sdd/` and `docs/adr/`. They consume **0 baseline tokens** and are read on-demand via `view_file` only when needed for a specific task.
     - **The `.agents/skills/` Boundary (Actionable Playbooks)**: Keep `.agents/skills/` strictly for imperative, procedural "how-to" playbooks, concrete code recipes (e.g. SkiaSharp compression, Android permissions, CQRS handlers), and verification checklists.
-    - **Strict Anti-Pattern**: NEVER move, duplicate, or convert declarative architectural specifications (`docs/sdd/*.md`), living logs (`docs/sdd/logs/*.md`), or archive ledgers into `.agents/skills/`.
+    - **Strict Anti-Pattern**: NEVER move, duplicate, or convert declarative architectural specifications (`docs/sdd/*.md`), ADRs (`docs/adr/*.md`), or archive ledgers into `.agents/skills/`.
 11. **Authoritative Subsystem & Skill Mapping (Web App Plan Codification Standard)**:
     - **Web App Modernization & Web BFF**: The entire Web App development plan, client-side SOLID architecture in native ES Modules, and Web BFF facade implementation are codified inside [`.agents/skills/diet-dost-clean-architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/SKILL.md) and its actionable reference playbook [`references/web_bff_clean_architecture_playbook.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md).
     - **Zero-Skill-Sprawl Rule for Web**: Agents must **NOT** create a separate `diet-dost-web-architecture` skill. Keeping Web BFF unified with Clean Architecture prevents prompt token bloat on every interaction and eliminates architectural drift between backend CQRS query handlers and frontend composite aggregation.
@@ -133,14 +133,14 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Platform CFT Acceptance Suites**: Web PWA verification is in [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md); Mobile verification is in [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md); Parity verification is in [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md).
     - **Enterprise Database & Cloud Persistence**: Governed by [`.agents/skills/diet-dost-database-architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-database-architecture/SKILL.md) (Azure SQL Serverless Free Tier, Azure Cosmos DB Free Tier, PostgreSQL Flexible Server, DPDPA 2023, and mobile offline SQLite sync).
     - **License Governance & Header Enforcement**: Governed by [`.agents/skills/diet-dost-license-governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-license-governance/SKILL.md) (dual AGPLv3 / SSPL v1 compliance, block comment formatting, and automated validation scripts).
-12. **Living Documentation Architecture & Fragment Pattern Mandate (Token Economics & Merge Conflict Immunity)**:
-    - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log (`07_living_documentation_log.md`) is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
-    - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic fragment in `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
+12. **Living Documentation & Architectural Decision Records (ADR) Architecture (Token Economics & Merge Conflict Immunity)**:
+    - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
+    - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
     - **Quantitative Benefits**:
       - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting diffs on rebase.
       - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
       - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
-    - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/sdd/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/archive/living_log_2026_09_archive.md), while [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) acts solely as a lean index and standard registry.
+    - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/adr/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/archive/living_log_2026_09_archive.md), while [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) act as lean indexes and standard registries.
 
 
 

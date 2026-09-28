@@ -1,15 +1,26 @@
-# Living Documentation Fragment: LOG-20260926-046-license-governance-and-header-enforcement
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
+# ADR-20260926-046: License Governance, Dual AGPLv3/SSPL v1 Compliance & Header Enforcement
+
 > **Date**: 2026-09-26  
-> **Entry ID**: LOG-046  
-> **Status**: COMPLETED  
-> **Author**: Antigravity Living Documentation Engine  
-> **Classification**: License Governance, Dual AGPLv3/SSPL v1 Compliance & Header Enforcement  
+> **Status**: ACCEPTED  
+> **Driver / Deciders**: Antigravity Living Documentation Engine & User Pair-Programming  
+> **Change Type**: `[GOVERNANCE]`, `[COMPLIANCE]`, `[LICENSING]`  
+> **Affected Subsystems**: Entire Solution (`.agents/skills/diet-dost-license-governance/`, `AGENTS.md`, `.github/CODEOWNERS`)  
+> **Associated PR & Stack**: PR #21 (Base: `main`)  
+> **Relevant SDDs & CFTs**: [`docs/sdd/00_sdd_index.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/00_sdd_index.md), [`.agents/skills/diet-dost-license-governance/SKILL.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-license-governance/SKILL.md)  
 
 ---
 
 ## 1. Executive Summary & Purpose
 
-In alignment with the repository's foundational [`LICENSE`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/LICENSE) and [`CONTRIBUTING.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/CONTRIBUTING.md), this fragment records the formal establishment of the **License Governance & Source Header Enforcement** standard across the Diet-Dost solution.
+In alignment with the repository's foundational [`LICENSE`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/LICENSE) and [`CONTRIBUTING.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/CONTRIBUTING.md), this decision records the formal establishment of the **License Governance & Source Header Enforcement** standard across the Diet-Dost solution.
 
 The project operates under a protective dual-licensing regime:
 1. **GNU Affero General Public License v3.0 only (AGPLv3)**
@@ -31,7 +42,7 @@ The project operates under a protective dual-licensing regime:
 3. **Solution-Wide Header Application**:
    - Evaluated 198 total candidate files across the entire workspace:
      - 164 source files (`.cs`, `.js`, `.css`, `.ps1`)
-     - 29 Markdown documentation and playbook files across `.agents/skills/`, `.agents/rules/`, `docs/cft/`, `docs/sdd/`, `docs/architecture/`, and `AGENTS.md` (explicitly excluding historical `docs/sdd/logs/` and `docs/sdd/archive/`)
+     - 29 Markdown documentation and playbook files across `.agents/skills/`, `.agents/rules/`, `docs/cft/`, `docs/sdd/`, `docs/architecture/`, and `AGENTS.md`
      - 5 Mermaid architectural diagram files (`docs/architecture/diagrams/*.mermaid`)
    - Applied the authoritative dual AGPLv3 / SSPL v1 header formatted appropriately for each target syntax (C-style block comments `/* ... */`, PowerShell `<# ... #>`, HTML `<!-- ... -->`, and Mermaid `%%`).
    - For agent skills (`SKILL.md`), preserved mandatory YAML frontmatter at line 1 and cleanly injected the license comment immediately following the closing delimiter.

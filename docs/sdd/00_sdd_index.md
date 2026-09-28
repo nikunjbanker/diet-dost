@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -33,7 +33,8 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | [`04_security_and_compliance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/04_security_and_compliance.md) | **Security & Compliance (OWASP)** | OWASP ASVS blueprint, magic-byte validation, prompt guardrails, rate limits | `APPROVED` |
 | [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 11 AppHost topology, OTel pipelines, Redis caching, Docker runbook | `APPROVED` |
 | [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, Aspire test harness, AI vision benchmarks, clinical unit tests | `APPROVED` |
-| [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Index & Fragment Ledger** | Distributed atomic change fragments (`docs/sdd/logs/`) with historical archive | `SYNCHRONIZED` |
+| [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Index** | Living documentation standard, index, and bridge to authoritative ADR registry | `SYNCHRONIZED` |
+| [`../adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) | **Architectural Decision Records (ADRs)** | Canonical repository of atomic MADR decisions (`docs/adr/`) and historical archive | `ACTIVE ADRs` |
 | [`08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md) | **Cross-Platform (Web & Mobile) Clean Architecture & Dual BFF Plan** | Unified Web & Mobile architecture review, Dual BFF design, zero duplicate clinical code, and phased Stacked PR tracks | `APPROVED` |
 | [`09_master_implementation_roadmap_and_execution_sequence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md) | **Master Implementation Roadmap & Skill Execution Sequence** | Sequential phased execution plan from Web Clean Architecture to Mobile MVP, Enterprise Cloud DB, and Azure Deployment | `APPROVED` |
 | [`../cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) | **CFT: Web BFF & Clean Architecture Verification** | Functional acceptance checklist for Web single-roundtrip hydration, zero client math, and modular UI controls | `ACTIVE CFT` |

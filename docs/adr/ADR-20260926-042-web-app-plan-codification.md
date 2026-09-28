@@ -1,6 +1,15 @@
-# [LOG-20260926-042] Agentic Memory Persistence: Web App Plan Codification Standard
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
+# ADR-20260926-042: Agentic Memory Persistence: Web App Plan Codification Standard
 - **Timestamp**: 2026-09-26T13:57:00+05:30
 - **Driver / Agent**: AI Assistant (Agentic Infrastructure & Token Economics) & User Pair-Programming
+- **Status**: ACCEPTED
 - **Change Type**: `[MEMORY_PERSISTENCE]`, `[TOKEN_ECONOMICS]`, `[GOVERNANCE]`
 - **Affected Subsystems**: Governance / Memory (`AGENTS.md`), Solution Skill (`indian-diet-calorie-tracker`)
 - **Summary of Change**:

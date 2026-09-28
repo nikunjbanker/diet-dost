@@ -1,6 +1,15 @@
-# [LOG-20260926-044] Enterprise Database Architecture & Azure Cloud Persistence Skill
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
+# ADR-20260926-044: Enterprise Database Architecture & Azure Cloud Persistence
 - **Timestamp**: 2026-09-26T16:37:30+05:30
 - **Driver / Agent**: AI Assistant (SQL/NoSQL Nutrition Specialist) & User Pair-Programming
+- **Status**: ACCEPTED
 - **Change Type**: `[ARCHITECTURE]`, `[SKILL]`, `[DATABASE]`, `[GOVERNANCE]`
 - **Affected Subsystems**: Database Architecture (`.agents/skills/diet-dost-database-architecture/`), Governance (`AGENTS.md`)
 - **Summary of Change**:
