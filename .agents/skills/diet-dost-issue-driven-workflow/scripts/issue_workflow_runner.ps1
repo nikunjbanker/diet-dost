@@ -64,6 +64,89 @@ function Save-WorkflowState {
     Set-Content -Path $Path -Value $json -Force
 }
 
+function Get-Codeowners {
+    param ([string]$RepoRoot)
+    $codeownersFile = Join-Path $RepoRoot ".github/CODEOWNERS"
+    $owners = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    if (Test-Path -Path $codeownersFile) {
+        $lines = Get-Content -Path $codeownersFile
+        foreach ($line in $lines) {
+            $trimmed = $line.Trim()
+            if ($trimmed.StartsWith("#") -or [string]::IsNullOrWhiteSpace($trimmed)) { continue }
+            $parts = $trimmed -split '\s+'
+            foreach ($p in $parts) {
+                if ($p.StartsWith("@")) {
+                    $owners.Add($p.TrimStart('@')) | Out-Null
+                }
+            }
+        }
+    }
+    if ($owners.Count -eq 0) {
+        $owners.Add("nikunjbanker") | Out-Null
+    }
+    return $owners
+}
+
+function Test-IssueCodeownerApproval {
+    param (
+        [PSCustomObject]$Issue,
+        [System.Collections.Generic.HashSet[string]]$Codeowners
+    )
+    $author = if ($Issue.author -and $Issue.author.login) { $Issue.author.login } else { "" }
+    
+    # 1. Author is a recognized CODEOWNER -> Pre-authorized
+    if ($Codeowners.Contains($author)) {
+        return [PSCustomObject]@{
+            IsApproved = $true
+            Approver = $author
+            Method = "AUTHOR_IS_CODEOWNER"
+            Reason = "Issue created by recognized CODEOWNER '@$author'."
+        }
+    }
+
+    # 2. Check comments by a CODEOWNER for /approve or /proceed
+    $commentsJson = gh issue view $Issue.number --json comments 2>$null
+    if ($commentsJson) {
+        $commentData = $commentsJson | ConvertFrom-Json
+        if ($commentData -and $commentData.comments) {
+            foreach ($c in $commentData.comments) {
+                $commentAuthor = if ($c.author -and $c.author.login) { $c.author.login } else { "" }
+                if ($Codeowners.Contains($commentAuthor)) {
+                    if ($c.body -match "(?i)/(?:approve|proceed|start|lgtm)") {
+                        return [PSCustomObject]@{
+                            IsApproved = $true
+                            Approver = $commentAuthor
+                            Method = "CODEOWNER_COMMENT"
+                            Reason = "Approved via comment by CODEOWNER '@$commentAuthor'."
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # 3. Check for 'approved-by-codeowner' or 'status:approved' label
+    if ($Issue.labels) {
+        foreach ($lbl in $Issue.labels) {
+            if ($lbl.name -eq "approved-by-codeowner" -or $lbl.name -eq "status:approved") {
+                return [PSCustomObject]@{
+                    IsApproved = $true
+                    Approver = "CODEOWNER_LABEL"
+                    Method = "CODEOWNER_LABEL"
+                    Reason = "Issue tagged with approval label '$($lbl.name)'."
+                }
+            }
+        }
+    }
+
+    return [PSCustomObject]@{
+        IsApproved = $false
+        Approver = $null
+        Method = "NONE"
+        Reason = "Created by non-codeowner '@$author'. Requires CODEOWNER approval via comment ('/approve') or label ('approved-by-codeowner')."
+    }
+}
+
 function Invoke-IssueSync {
     param (
         [PSCustomObject]$State,
@@ -76,8 +159,15 @@ function Invoke-IssueSync {
         return
     }
 
+    $repoRoot = try { (git rev-parse --show-toplevel 2>$null).Trim() } catch { "" }
+    if (-not $repoRoot -or -not (Test-Path -Path $repoRoot)) {
+        $repoRoot = [System.IO.Path]::GetFullPath((Join-Path (Split-Path -Parent $StateFile) "../../.."))
+    }
+    $codeowners = Get-Codeowners -RepoRoot $repoRoot
+    Write-Host "Resolved CODEOWNERS: @($($codeowners -join ', @'))" -ForegroundColor DarkCyan
+
     Write-Host "Querying repository issues via GitHub CLI..." -ForegroundColor Cyan
-    $issuesJson = gh issue list --limit 50 --json number,title,state,updatedAt,labels,body 2>$null
+    $issuesJson = gh issue list --limit 50 --json number,title,state,updatedAt,labels,body,author 2>$null
     if (-not $issuesJson) {
         Write-Host "No open issues found or GitHub returned empty set." -ForegroundColor Yellow
         return
@@ -85,13 +175,54 @@ function Invoke-IssueSync {
 
     $issues = $issuesJson | ConvertFrom-Json
 
+    # 1. Inspect currently HELD issues for newly granted CODEOWNER approval
+    $heldKeys = @($State.heldIssues.PSObject.Properties | ForEach-Object { $_.Name })
+    foreach ($hk in $heldKeys) {
+        $heldRec = $State.heldIssues.$hk
+        $matched = $issues | Where-Object { [string]$_.number -eq $hk }
+        if (-not $matched) {
+            $single = gh issue view $hk --json number,title,state,updatedAt,labels,body,author 2>$null | ConvertFrom-Json
+            if ($single -and $single.state -eq "CLOSED") {
+                Write-Host "==> Held issue #$hk was CLOSED on GitHub. Archiving." -ForegroundColor Magenta
+                $heldRec.phase = "COMPLETED"
+                $heldRec.completedAt = (Get-Date).ToString("o")
+                $State.completedIssues | Add-Member -NotePropertyName $hk -NotePropertyValue $heldRec -Force
+                $State.heldIssues.PSObject.Properties.Remove($hk)
+                Save-WorkflowState -Path $StateFile -State $State
+                continue
+            }
+            $matched = $single
+        }
+        if ($matched) {
+            $approval = Test-IssueCodeownerApproval -Issue $matched -Codeowners $codeowners
+            if ($approval.IsApproved) {
+                Write-Host "==> APPROVED: Held issue #$hk was approved by CODEOWNER '$($approval.Approver)' via $($approval.Method)! Moving to active development." -ForegroundColor Green
+                $heldRec.phase = "DETECTED"
+                $heldRec.approvalStatus = "AUTHORIZED"
+                $heldRec.approvedBy = $approval.Approver
+                $heldRec.approvedAt = (Get-Date).ToString("o")
+                $heldRec.checkpoints += "CODEOWNER_APPROVED"
+                $heldRec.notes = "Approved by CODEOWNER via $($approval.Method). Promoted to active development."
+                $State.activeIssues | Add-Member -NotePropertyName $hk -NotePropertyValue $heldRec -Force
+                $State.heldIssues.PSObject.Properties.Remove($hk)
+                Save-WorkflowState -Path $StateFile -State $State
+            } else {
+                Write-Host "    Issue #$hk remains on HOLD (Waiting for approval by CODEOWNER: @$($codeowners -join ', @'))." -ForegroundColor DarkGray
+            }
+        }
+    }
+
+    # 2. Inspect incoming / updated issues
     foreach ($issue in $issues) {
         $numStr = [string]$issue.number
         $currentRecord = $State.activeIssues.$numStr
+        $heldRecord = $State.heldIssues.$numStr
 
-        if ($null -eq $currentRecord) {
-            # New Issue Detected
-            Write-Host "==> DETECTED new issue #$($issue.number): '$($issue.title)'" -ForegroundColor Green
+        if ($null -eq $currentRecord -and $null -eq $heldRecord) {
+            # New Issue Intake
+            $author = if ($issue.author -and $issue.author.login) { $issue.author.login } else { "unknown" }
+            $approval = Test-IssueCodeownerApproval -Issue $issue -Codeowners $codeowners
+
             $issueType = "feature"
             foreach ($label in $issue.labels) {
                 if ($label.name -match "bug|defect|fix") { $issueType = "fix" }
@@ -119,25 +250,59 @@ function Invoke-IssueSync {
                 } catch {}
             }
 
-            $newRecord = [PSCustomObject]@{
-                issueNumber = $issue.number
-                title = $issue.title
-                issueType = $issueType
-                branchName = $branchName
-                phase = "DETECTED"
-                updatedAt = $issue.updatedAt
-                detectedAt = (Get-Date).ToString("o")
-                checkpoints = @("DETECTED")
-                isStacked = $isStacked
-                parentPR = $depPr
-                parentBranch = $depBranch
-                notes = if ($isStacked) { "Auto-detected stacked issue depending on PR #$depPr ($depBranch)" } else { "Auto-detected independent issue" }
-            }
+            if ($approval.IsApproved) {
+                Write-Host "==> DETECTED & AUTHORIZED issue #$($issue.number): '$($issue.title)' by '@$author'" -ForegroundColor Green
+                $newRecord = [PSCustomObject]@{
+                    issueNumber = $issue.number
+                    title = $issue.title
+                    author = $author
+                    isCodeownerAuthor = ($approval.Method -eq "AUTHOR_IS_CODEOWNER")
+                    approvalStatus = "AUTHORIZED"
+                    approvedBy = $approval.Approver
+                    approvedAt = (Get-Date).ToString("o")
+                    issueType = $issueType
+                    branchName = $branchName
+                    phase = "DETECTED"
+                    updatedAt = $issue.updatedAt
+                    detectedAt = (Get-Date).ToString("o")
+                    checkpoints = @("DETECTED")
+                    isStacked = $isStacked
+                    parentPR = $depPr
+                    parentBranch = $depBranch
+                    notes = "Authorized by CODEOWNER via $($approval.Method)."
+                }
 
-            $State.activeIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
-            Save-WorkflowState -Path $StateFile -State $State
-            Write-Host "    Checkpointed issue #$($issue.number) in phase DETECTED." -ForegroundColor Gray
-        } else {
+                $State.activeIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
+                Save-WorkflowState -Path $StateFile -State $State
+                Write-Host "    Checkpointed issue #$($issue.number) in phase DETECTED." -ForegroundColor Gray
+            } else {
+                Write-Host "==> HELD FOR APPROVAL: Issue #$($issue.number) created by non-codeowner '@$author'." -ForegroundColor Yellow
+                Write-Host "    $($approval.Reason)" -ForegroundColor DarkYellow
+                $newHeldRecord = [PSCustomObject]@{
+                    issueNumber = $issue.number
+                    title = $issue.title
+                    author = $author
+                    isCodeownerAuthor = $false
+                    approvalStatus = "AWAITING_CODEOWNER_APPROVAL"
+                    approvedBy = $null
+                    approvedAt = $null
+                    issueType = $issueType
+                    branchName = $branchName
+                    phase = "AWAITING_CODEOWNER_APPROVAL"
+                    updatedAt = $issue.updatedAt
+                    detectedAt = (Get-Date).ToString("o")
+                    checkpoints = @("DETECTED", "HELD_FOR_APPROVAL")
+                    isStacked = $isStacked
+                    parentPR = $depPr
+                    parentBranch = $depBranch
+                    notes = $approval.Reason
+                }
+
+                $State.heldIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newHeldRecord -Force
+                Save-WorkflowState -Path $StateFile -State $State
+                Write-Host "    Issue #$($issue.number) placed on HOLD until approved by CODEOWNER (@$($codeowners -join ', @'))." -ForegroundColor Gray
+            }
+        } elseif ($currentRecord) {
             # Issue updated in GitHub
             if ($currentRecord.updatedAt -ne $issue.updatedAt) {
                 Write-Host "==> DETECTED update on issue #$($issue.number): '$($issue.title)'" -ForegroundColor Yellow
@@ -152,12 +317,11 @@ function Invoke-IssueSync {
         }
     }
 
-    # Detect closed or deleted issues
+    # 3. Detect closed or deleted active issues
     $activeKeys = @($State.activeIssues.PSObject.Properties | ForEach-Object { $_.Name })
     foreach ($k in $activeKeys) {
         $matched = $issues | Where-Object { [string]$_.number -eq $k }
         if (-not $matched) {
-            # Check issue status individually
             $single = gh issue view $k --json state 2>$null | ConvertFrom-Json
             if ($single.state -eq "CLOSED") {
                 Write-Host "==> Issue #$k was CLOSED on GitHub. Archiving from active state." -ForegroundColor Magenta
@@ -179,17 +343,28 @@ if ($IssueNumber -gt 0) {
     Write-Host "Processing targeted single issue: #$IssueNumber" -ForegroundColor Cyan
     $numKey = [string]$IssueNumber
     $record = $state.activeIssues.$numKey
-    if ($null -eq $record) {
-        Write-Host "Issue #$IssueNumber not found in local active state. Querying GitHub..." -ForegroundColor Yellow
-        $issue = gh issue view $IssueNumber --json number,title,state,updatedAt,labels,body 2>$null | ConvertFrom-Json
+    $held = $state.heldIssues.$numKey
+
+    if ($null -eq $record -and $null -eq $held) {
+        Write-Host "Issue #$IssueNumber not found in local active or held state. Querying GitHub..." -ForegroundColor Yellow
+        $issue = gh issue view $IssueNumber --json number,title,state,updatedAt,labels,body,author 2>$null | ConvertFrom-Json
         if ($issue) {
             Invoke-IssueSync -State $state -StateFile $StateFilePath
             $state = Load-WorkflowState -Path $StateFilePath
+            $record = $state.activeIssues.$numKey
+            $held = $state.heldIssues.$numKey
         } else {
             Write-Error "Could not retrieve issue #$IssueNumber from GitHub."
             exit 1
         }
     }
+
+    if ($held) {
+        Write-Warning "Issue #$IssueNumber is ON HOLD awaiting CODEOWNER approval."
+        Write-Warning "Created by non-codeowner '@($held.author)'. A recognized CODEOWNER must comment '/approve' or apply 'approved-by-codeowner' label before development can begin."
+        exit 1
+    }
+
     Write-Host "Active State for Issue #$IssueNumber`: $($state.activeIssues.$numKey | ConvertTo-Json)" -ForegroundColor Green
     exit 0
 }

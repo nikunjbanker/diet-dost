@@ -93,21 +93,31 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
 
 ---
 
-### Phase 1: DETECT (Issue Intake & Classification)
-* **Objective**: Ingest issue event, classify intent, and initialize local state checkpoint.
+### Phase 1: DETECT (Issue Intake, CODEOWNER Authorization & Classification)
+* **Objective**: Ingest issue event, verify CODEOWNER authorization, classify intent, and initialize local state checkpoint.
 * **Actions**:
-  1. Fetch issue details using GitHub CLI:
+  1. Fetch issue details and author using GitHub CLI:
      ```powershell
-     gh issue view <issue-number> --json number,title,body,labels,state,updatedAt
+     gh issue view <issue-number> --json number,title,body,labels,state,updatedAt,author
      ```
-  2. Parse the issue category and branch naming prefix:
+  2. **CODEOWNER Gating Verification (Zero Unauthorized Auto-Trigger)**:
+     - Dynamically resolve codeowners from `.github/CODEOWNERS` (e.g. `@nikunjbanker`).
+     - **If Author is a CODEOWNER**: Pre-authorized! Proceed directly to classification.
+     - **If Author is a NON-CODEOWNER**:
+       - Automated development **MUST NOT** trigger automatically.
+       - Inspect issue for CODEOWNER approval:
+         a) **Comment Approval**: Any comment from a recognized CODEOWNER containing `/approve`, `/proceed`, `/start`, or `/lgtm`.
+         b) **Label Approval**: The issue is tagged with `approved-by-codeowner` or `status:approved`.
+       - If **NOT approved**: Place the issue on **HOLD** (`phase: "AWAITING_CODEOWNER_APPROVAL"`, stored in `heldIssues` in local state). Skip code implementation until a CODEOWNER grants approval.
+       - If **APPROVED by CODEOWNER**: Transition state to `approvalStatus: "AUTHORIZED"` and proceed to classification.
+  3. Parse the issue category and branch naming prefix:
      - Bug / Defect Fix -> Prefix: `fix/`
      - New Feature / Capability -> Prefix: `feature/`
      - Architectural Refactoring -> Prefix: `arch/`
      - Documentation / Governance -> Prefix: `docs/`
-  3. Generate sanitized branch slug:
+  4. Generate sanitized branch slug:
      `<prefix>/issue-<number>-<sanitized-title>`
-  4. Record entry in `.agents/state/issue_workflow_state.json` under phase `DETECTED`.
+  5. Record entry in `.agents/state/issue_workflow_state.json` under phase `DETECTED`.
 
 ---
 
