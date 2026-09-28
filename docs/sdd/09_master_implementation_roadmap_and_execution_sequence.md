@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -166,6 +166,6 @@ git push -u origin feature/<descriptive-name>
 ## 5. Living Documentation & Traceability
 
 Whenever any phase of this roadmap is executed:
-1. Create a dedicated atomic log fragment: `docs/sdd/logs/LOG-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
-2. Register the fragment in [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md).
+1. Create a dedicated atomic ADR fragment: `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
+2. Register the ADR in [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md).
 3. Execute the corresponding platform CFT checklist in [`docs/cft/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/).

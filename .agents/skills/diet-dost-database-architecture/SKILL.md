@@ -1,4 +1,4 @@
-﻿---
+---
 name: diet-dost-database-architecture
 version: 1.0.0
 status: Approved Enterprise Architecture & Cloud Persistence Playbook
@@ -37,7 +37,7 @@ description: >-
 > 2. **Target Framework**: All database adapters and migrations must target `<TargetFramework>net11.0</TargetFramework>`.
 > 3. **Zero-Warning Standard**: 0 warnings, 0 errors across the solution.
 > 4. **Token Economics Mandate**: Keep declarative specifications and schemas in [`docs/sdd/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/) (0 baseline tokens) and tactical code recipes in this skill.
-> 5. **Living SDD Synchronization**: Log changes using atomic fragments in `docs/sdd/logs/LOG-*.md` and register in [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md).
+> 5. **Living ADR Synchronization**: Log changes using atomic fragments in `docs/adr/ADR-*.md` and register in [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md).
 > 6. **Zero-Unilateral-Decision Protocol**: In case of any architectural ambiguity, ask confirmation via `ask_question`.
 
 ---
@@ -500,4 +500,4 @@ Before migrating any environment from SQLite to Azure Cloud persistence:
 - [ ] **5-Tier End-to-End User Verification**: Validate seeded accounts across all tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`).
 - [ ] **Quota & Feature Gating Enforcement**: Assert daily AI scan limits and photo comparison paywalls behave identically.
 - [ ] **Passwordless Connectivity**: Validate Microsoft Entra ID managed identity connection with zero hardcoded credentials.
-- [ ] **Living Documentation Log**: Register the implementation fragment in `docs/sdd/logs/LOG-*.md` and update [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md).
+- [ ] **Living ADR Log**: Register the implementation fragment in `docs/adr/ADR-*.md` and update [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md).
