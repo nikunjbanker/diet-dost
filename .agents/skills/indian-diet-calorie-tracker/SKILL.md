@@ -64,7 +64,7 @@ This skill guides the design, architecture, documentation, and development of a 
         git rev-parse origin/main
         ```
         *Failure Condition*: If `git rev-parse HEAD` does NOT equal `git rev-parse origin/main`, your branch is stale or dirty. **STOP immediately**, delete the branch (`git checkout main && git branch -D <branch>`), and recreate it cleanly from `origin/main`.
-     d. **GitHub Stacked PR Workflow for Consecutive / Dependent Work**:
+     d. **GitHub Stacked PR Protocol & Native Tooling (For Consecutive / Dependent Work)**:
         When a new feature or task depends upon an active, unmerged Pull Request (Parent PR A on `feature/<parent-feature>`):
         1. Fetch and branch directly from parent feature branch:
            ```bash
@@ -78,7 +78,23 @@ This skill guides the design, architecture, documentation, and development of a 
            ```
            *Assert*: Both hashes must match identically.
         3. Set the GitHub PR **Base branch** to `feature/<parent-feature>` (NOT `main`).
-        4. Benefit from Stacked PR mechanics: GitHub isolates the child feature's diff, prevents commit pollution, and automatically retargets the child PR to `main` when the parent PR merges.
+        4. **Official GitHub CLI Stack Extension (`github/gh-stack`)**: Ensure `gh extension install github/gh-stack` is installed.
+        5. **Formal Stack Linking & Synchronization (`gh stack link` & `gh stack sync`)**:
+           ```bash
+           gh stack link <parent-pr-number> <child-pr-number>
+           gh stack sync
+           ```
+           *Why*: Formally registers the stack in GitHub's native Stacked PR engine (e.g. `Stack #NNN`), eliminating unlinked PR drift and resolving the *"This pull request can be stacked with other pull requests"* unformalized prompt.
+        6. **Mandatory Stack Navigation Callout Widget in PR Descriptions**:
+           Prepend the standardized Markdown Stack Navigator Callout at the very top of each PR body:
+           ```markdown
+           > [!NOTE]
+           > ### 🥞 GitHub Stack #<stack-id> (Layer X of Y)
+           > 1. 🟢 **PR #<parent-pr>**: `<title>` (Base: `<base>`)
+           > 2. 🟡 **PR #<child-pr> (This PR)**: `<title>` (Base: `<parent-branch>`)
+           ```
+        7. **Sequential Bottom-Up Merging & Cascading Retargeting**:
+           Merge Layer 1 first. GitHub automatically retargets Layer 2 to `main`, followed by local `gh stack sync`.
      e. **Strict Anti-Patterns (NEVER DO THESE)**:
         | Forbidden Command / Action | Why It Is Strictly Forbidden | Consequence on GitHub PR |
         | :--- | :--- | :--- |

@@ -142,7 +142,7 @@ graph TD
 
 ## 4. Git Branching & Stacked PR Execution Protocol
 
-Contributors and AI agents must strictly follow the **Pre-Flight Remote Fetch & Dedicated Branch Creation** workflow defined in `AGENTS.md`:
+Contributors and AI agents must strictly follow the **Pre-Flight Remote Fetch & Dedicated Branch Creation** and **Native GitHub Stacked PR Protocol** defined in `AGENTS.md` and [`ADR-20260928-049`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-049-native-github-stacked-pr-protocol.md):
 
 ```bash
 # 1. Fetch remote tracking branches
@@ -157,8 +157,15 @@ git rev-parse origin/<parent-feature-or-main>
 # BOTH hashes must match identically.
 
 # 4. Implement changes, run tests (dotnet test targeting .NET 11, 0 warnings)
-# 5. Push branch and open Stacked PR on GitHub targeting the parent branch as base
+# 5. Push branch to remote
 git push -u origin feature/<descriptive-name>
+
+# 6. Open PR targeting parent feature branch as base (with Stack Navigation Callout at top of body)
+gh pr create --base <parent-branch> --head feature/<descriptive-name> ...
+
+# 7. Formally link into GitHub Stack engine and sync
+gh stack link <parent-pr-number> <child-pr-number>
+gh stack sync
 ```
 
 ---
