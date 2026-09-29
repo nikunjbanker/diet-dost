@@ -120,6 +120,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-048** | Autonomous Issue-Driven Development (IDD) Skill & Resumable Local State Engine | `ACCEPTED` | [`ADR-20260928-048-issue-driven-agentic-workflow-skill.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-048-issue-driven-agentic-workflow-skill.md) |
 | **ADR-049** | Native GitHub Stacked PR Protocol, gh-stack Automation & Bidirectional Navigation | `ACCEPTED` | [`ADR-20260928-049-native-github-stacked-pr-protocol.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-049-native-github-stacked-pr-protocol.md) |
 | **ADR-050** | CODEOWNER Gating & Approval Policy for Autonomous Issue-Driven Development | `ACCEPTED` | [`ADR-20260928-050-codeowner-approval-issue-workflow.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-050-codeowner-approval-issue-workflow.md) |
+| **ADR-051** | Product Owner MVP Market Roadmap Re-Prioritization & Phased Release Milestones | `ACCEPTED` | [`ADR-20260929-051-mvp-market-roadmap-reprioritization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md) |
 
 ---
 
