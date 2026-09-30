@@ -2,8 +2,37 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-09-30T19:01:11.9351636+05:30",
+  "lastUpdated": "2026-09-30T22:01:54.0449174+05:30",
   "activeIssues": {
+    "27": {
+      "issueNumber": 27,
+      "title": "feat(application): implement Phase 1 Layer 2 - shared CQRS query consolidation (ledger, analytics, history, quota)",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:01:11.9342263+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-27-feat-application-cqrs-queries",
+      "phase": "TESTED",
+      "updatedAt": "2026-10-01T00:37:00Z",
+      "detectedAt": "2026-09-30T19:01:11.9343174+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED",
+        "PROMOTED_FROM_QUEUE",
+        "ACT_ANALYZED",
+        "IMPLEMENTED",
+        "VALIDATED",
+        "TESTED"
+      ],
+      "isStacked": false,
+      "parentPR": 0,
+      "parentBranch": "main",
+      "notes": "Consolidated shared CQRS queries (GetDailyLedger, GetHistoricalAnalytics, GetMealHistory, GetAiQuota, GetProfile) and verified with 10 unit tests."
+    }
+  },
+  "completedIssues": {
     "26": {
       "issueNumber": 26,
       "title": "feat(web-bff): implement Phase 1 Layer 1 - Web BFF composite endpoint and shared CQRS queries",
@@ -14,7 +43,7 @@
       "approvedAt": "2026-09-30T15:01:04.2095971+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-26-feat-web-bff-composite-endpoint",
-      "phase": "ACT_ANALYZING",
+      "phase": "COMPLETED",
       "updatedAt": "2026-09-30T09:34:07Z",
       "detectedAt": "2026-09-30T15:01:04.2130565+05:30",
       "checkpoints": [
@@ -27,10 +56,10 @@
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "",
-      "notes": "Issue updated on GitHub: requires re-analysis (ACT phase)."
+      "notes": "Issue updated on GitHub: requires re-analysis (ACT phase).",
+      "completedAt": "2026-09-30T22:01:44.7271581+05:30"
     }
   },
-  "completedIssues": {},
   "heldIssues": {},
   "queuedIssues": {
     "31": {
@@ -89,7 +118,7 @@
       "branchName": "feature/issue-29-refactor-presentation-implement-pha",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
       "updatedAt": "2026-09-30T10:02:06Z",
-      "detectedAt": "2026-09-30T19:00:58.3003510+05:30",
+      "detectedAt": "2026-09-30T19:00:58.300351+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -118,28 +147,6 @@
       ],
       "isStacked": true,
       "parentPR": 27,
-      "parentBranch": "",
-      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-    },
-    "27": {
-      "issueNumber": 27,
-      "title": "feat(application): implement Phase 1 Layer 2 - shared CQRS query consolidation (ledger, analytics, history, quota)",
-      "author": "nikunjbanker",
-      "isCodeownerAuthor": true,
-      "approvalStatus": "AUTHORIZED",
-      "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-09-30T19:01:11.9342263+05:30",
-      "issueType": "feature",
-      "branchName": "feature/issue-27-feat-application-implement-phase-1",
-      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-09-30T10:00:57Z",
-      "detectedAt": "2026-09-30T19:01:11.9343174+05:30",
-      "checkpoints": [
-        "DETECTED",
-        "QUEUED"
-      ],
-      "isStacked": true,
-      "parentPR": 26,
       "parentBranch": "",
       "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
     }

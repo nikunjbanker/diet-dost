@@ -278,7 +278,7 @@ function Invoke-IssueSync {
             if ($single -and $single.state -eq "CLOSED") {
                 Write-Host "==> Held issue #$hk was CLOSED on GitHub. Archiving." -ForegroundColor Magenta
                 $heldRec.phase = "COMPLETED"
-                $heldRec.completedAt = (Get-Date).ToString("o")
+                $heldRec | Add-Member -NotePropertyName "completedAt" -NotePropertyValue (Get-Date).ToString("o") -Force
                 $State.completedIssues | Add-Member -NotePropertyName $hk -NotePropertyValue $heldRec -Force
                 $State.heldIssues.PSObject.Properties.Remove($hk)
                 Save-WorkflowState -Path $StateFile -State $State
@@ -462,7 +462,7 @@ function Invoke-IssueSync {
                 Write-Host "==> Issue #$k was CLOSED on GitHub. Archiving from active state." -ForegroundColor Magenta
                 $rec = $State.activeIssues.$k
                 $rec.phase = "COMPLETED"
-                $rec.completedAt = (Get-Date).ToString("o")
+                $rec | Add-Member -NotePropertyName "completedAt" -NotePropertyValue (Get-Date).ToString("o") -Force
                 $State.completedIssues | Add-Member -NotePropertyName $k -NotePropertyValue $rec -Force
                 $State.activeIssues.PSObject.Properties.Remove($k)
                 Save-WorkflowState -Path $StateFile -State $State
