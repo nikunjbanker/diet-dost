@@ -22,7 +22,7 @@ $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($StateFilePath)) {
     $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
-    $StateFilePath = [System.IO.Path]::GetFullPath((Join-Path $scriptDir "../../state/issue_workflow_state.json"))
+    $StateFilePath = [System.IO.Path]::GetFullPath((Join-Path $scriptDir "../../../state/issue_workflow_state.json"))
 }
 
 function Test-GitHubConnectivity {
@@ -38,6 +38,9 @@ function Load-WorkflowState {
     param ([string]$Path)
     if (Test-Path -Path $Path) {
         $json = Get-Content -Path $Path -Raw | ConvertFrom-Json
+        if (-not $json.queuedIssues) {
+            $json | Add-Member -NotePropertyName "queuedIssues" -NotePropertyValue ([PSCustomObject]@{}) -Force
+        }
         return $json
     }
     return [PSCustomObject]@{
@@ -45,6 +48,7 @@ function Load-WorkflowState {
         description = "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)"
         lastUpdated = (Get-Date).ToString("o")
         activeIssues = [PSCustomObject]@{}
+        queuedIssues = [PSCustomObject]@{}
         completedIssues = [PSCustomObject]@{}
         heldIssues = [PSCustomObject]@{}
     }
@@ -241,7 +245,7 @@ function Invoke-IssueSync {
                 $isStacked = $true
                 $depPr = $ParentPR
                 $depBranch = $ParentBranch
-            } elseif ($issue.body -match "(?i)(?:depends on|stacked on|parent pr)[:\s]+#?(\d+)") {
+            } elseif ($issue.body -match "(?i)(?:depends on|stacked on|parent pr|parent issue)[:\s]+#?(\d+)") {
                 $isStacked = $true
                 $depPr = [int]$matches[1]
                 try {
@@ -252,29 +256,57 @@ function Invoke-IssueSync {
 
             if ($approval.IsApproved) {
                 Write-Host "==> DETECTED & AUTHORIZED issue #$($issue.number): '$($issue.title)' by '@$author'" -ForegroundColor Green
-                $newRecord = [PSCustomObject]@{
-                    issueNumber = $issue.number
-                    title = $issue.title
-                    author = $author
-                    isCodeownerAuthor = ($approval.Method -eq "AUTHOR_IS_CODEOWNER")
-                    approvalStatus = "AUTHORIZED"
-                    approvedBy = $approval.Approver
-                    approvedAt = (Get-Date).ToString("o")
-                    issueType = $issueType
-                    branchName = $branchName
-                    phase = "DETECTED"
-                    updatedAt = $issue.updatedAt
-                    detectedAt = (Get-Date).ToString("o")
-                    checkpoints = @("DETECTED")
-                    isStacked = $isStacked
-                    parentPR = $depPr
-                    parentBranch = $depBranch
-                    notes = "Authorized by CODEOWNER via $($approval.Method)."
+                
+                # Single-Issue In-Flight Policy: Only 1 issue active at a time
+                $activeKeys = @($State.activeIssues.PSObject.Properties | ForEach-Object { $_.Name })
+                if ($activeKeys.Count -gt 0) {
+                    Write-Host "    [SINGLE-ISSUE POLICY] Issue #$($activeKeys[0]) is currently active. Queuing issue #$($issue.number)..." -ForegroundColor Yellow
+                    $newRecord = [PSCustomObject]@{
+                        issueNumber = $issue.number
+                        title = $issue.title
+                        author = $author
+                        isCodeownerAuthor = ($approval.Method -eq "AUTHOR_IS_CODEOWNER")
+                        approvalStatus = "AUTHORIZED"
+                        approvedBy = $approval.Approver
+                        approvedAt = (Get-Date).ToString("o")
+                        issueType = $issueType
+                        branchName = $branchName
+                        phase = "QUEUED_AWAITING_ACTIVE_ISSUE"
+                        updatedAt = $issue.updatedAt
+                        detectedAt = (Get-Date).ToString("o")
+                        checkpoints = @("DETECTED", "QUEUED")
+                        isStacked = $isStacked
+                        parentPR = $depPr
+                        parentBranch = $depBranch
+                        notes = "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #$($activeKeys[0]) to complete)."
+                    }
+                    $State.queuedIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
+                    Save-WorkflowState -Path $StateFile -State $State
+                    Write-Host "    Checkpointed issue #$($issue.number) in phase QUEUED_AWAITING_ACTIVE_ISSUE." -ForegroundColor Gray
+                } else {
+                    $newRecord = [PSCustomObject]@{
+                        issueNumber = $issue.number
+                        title = $issue.title
+                        author = $author
+                        isCodeownerAuthor = ($approval.Method -eq "AUTHOR_IS_CODEOWNER")
+                        approvalStatus = "AUTHORIZED"
+                        approvedBy = $approval.Approver
+                        approvedAt = (Get-Date).ToString("o")
+                        issueType = $issueType
+                        branchName = $branchName
+                        phase = "DETECTED"
+                        updatedAt = $issue.updatedAt
+                        detectedAt = (Get-Date).ToString("o")
+                        checkpoints = @("DETECTED")
+                        isStacked = $isStacked
+                        parentPR = $depPr
+                        parentBranch = $depBranch
+                        notes = "Authorized by CODEOWNER via $($approval.Method)."
+                    }
+                    $State.activeIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
+                    Save-WorkflowState -Path $StateFile -State $State
+                    Write-Host "    Checkpointed issue #$($issue.number) in phase DETECTED." -ForegroundColor Gray
                 }
-
-                $State.activeIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
-                Save-WorkflowState -Path $StateFile -State $State
-                Write-Host "    Checkpointed issue #$($issue.number) in phase DETECTED." -ForegroundColor Gray
             } else {
                 Write-Host "==> HELD FOR APPROVAL: Issue #$($issue.number) created by non-codeowner '@$author'." -ForegroundColor Yellow
                 Write-Host "    $($approval.Reason)" -ForegroundColor DarkYellow
@@ -331,6 +363,20 @@ function Invoke-IssueSync {
                 $State.completedIssues | Add-Member -NotePropertyName $k -NotePropertyValue $rec -Force
                 $State.activeIssues.PSObject.Properties.Remove($k)
                 Save-WorkflowState -Path $StateFile -State $State
+
+                # Single-Issue Policy: Auto-promote next queued issue if any
+                $queuedKeys = @($State.queuedIssues.PSObject.Properties | ForEach-Object { $_.Name } | Sort-Object { [int]$_ })
+                if ($queuedKeys.Count -gt 0) {
+                    $nextKey = $queuedKeys[0]
+                    $nextRec = $State.queuedIssues.$nextKey
+                    Write-Host "==> PROMOTING next queued issue #$nextKey to active execution!" -ForegroundColor Green
+                    $nextRec.phase = "DETECTED"
+                    $nextRec.checkpoints += "PROMOTED_FROM_QUEUE"
+                    $nextRec.notes = "Promoted from queue after issue #$k completed."
+                    $State.activeIssues | Add-Member -NotePropertyName $nextKey -NotePropertyValue $nextRec -Force
+                    $State.queuedIssues.PSObject.Properties.Remove($nextKey)
+                    Save-WorkflowState -Path $StateFile -State $State
+                }
             }
         }
     }
