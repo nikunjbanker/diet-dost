@@ -1,9 +1,35 @@
 {
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "version": "1.0.0",
-  "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-09-28T13:00:00+05:30",
-  "activeIssues": {},
-  "completedIssues": {},
-  "heldIssues": {}
+    "$schema":  "https://json-schema.org/draft/2020-12/schema",
+    "version":  "1.0.0",
+    "description":  "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
+    "lastUpdated":  "2026-09-30T15:01:04.2254885+05:30",
+    "activeIssues":  {
+                         "26":  {
+                                    "issueNumber":  26,
+                                    "title":  "feat(web-bff): implement Phase 1 Layer 1 - Web BFF composite endpoint and shared CQRS queries",
+                                    "author":  "nikunjbanker",
+                                    "isCodeownerAuthor":  true,
+                                    "approvalStatus":  "AUTHORIZED",
+                                    "approvedBy":  "nikunjbanker",
+                                    "approvedAt":  "2026-09-30T15:01:04.2095971+05:30",
+                                    "issueType":  "feature",
+                                    "branchName":  "feature/issue-26-feat-web-bff-implement-phase-1-laye",
+                                    "phase":  "DETECTED",
+                                    "updatedAt":  "2026-09-30T09:30:16Z",
+                                    "detectedAt":  "2026-09-30T15:01:04.2130565+05:30",
+                                    "checkpoints":  [
+                                                        "DETECTED"
+                                                    ],
+                                    "isStacked":  false,
+                                    "parentPR":  0,
+                                    "parentBranch":  "",
+                                    "notes":  "Authorized by CODEOWNER via AUTHOR_IS_CODEOWNER."
+                                }
+                     },
+    "completedIssues":  {
+
+                        },
+    "heldIssues":  {
+
+                   }
 }
