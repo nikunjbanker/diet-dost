@@ -312,8 +312,9 @@ function Invoke-IssueSync {
         $numStr = [string]$issue.number
         $currentRecord = $State.activeIssues.$numStr
         $heldRecord = $State.heldIssues.$numStr
+        $queuedRecord = $State.queuedIssues.$numStr
 
-        if ($null -eq $currentRecord -and $null -eq $heldRecord) {
+        if ($null -eq $currentRecord -and $null -eq $heldRecord -and $null -eq $queuedRecord) {
             # New Issue Intake
             $author = if ($issue.author -and $issue.author.login) { $issue.author.login } else { "unknown" }
             $approval = Test-IssueCodeownerApproval -Issue $issue -Codeowners $codeowners
@@ -438,6 +439,14 @@ function Invoke-IssueSync {
                     $currentRecord.phase = "ACT_ANALYZING"
                     $currentRecord.checkpoints += "ACT_RETRIGGERED"
                 }
+                Save-WorkflowState -Path $StateFile -State $State
+            }
+        } elseif ($queuedRecord) {
+            # Queued issue updated in GitHub
+            if ($queuedRecord.updatedAt -ne $issue.updatedAt) {
+                Write-Host "==> DETECTED update on queued issue #$($issue.number): '$($issue.title)'" -ForegroundColor DarkYellow
+                $queuedRecord.updatedAt = $issue.updatedAt
+                $queuedRecord.title = $issue.title
                 Save-WorkflowState -Path $StateFile -State $State
             }
         }
