@@ -1,4 +1,4 @@
-﻿<#
+<#
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -153,6 +153,20 @@ foreach ($u in $users) {
             Write-Host "    [FAIL] /api/admin/users: Unexpected response: $($_.Exception.Message)" -ForegroundColor Red
             $allPassed = $false
         }
+    }
+
+    # 9. Test Web BFF Dashboard Composite Endpoint (/api/web/v1/dashboard)
+    try {
+        $bffRes = Invoke-RestMethod -Uri "$BaseUrl/api/web/v1/dashboard?period=7D" -Method Get -Headers $headers
+        if ($bffRes.user -and $bffRes.todayLedger -and $bffRes.projections -and $bffRes.featureFlags) {
+            Write-Host "    [PASS] /api/web/v1/dashboard: Composite hydration successful (CanCompare: $($bffRes.featureFlags.canComparePhotos), CanExport: $($bffRes.featureFlags.canExportData), HistoryLimit: $($bffRes.featureFlags.historyDayLimit))" -ForegroundColor Green
+        } else {
+            Write-Host "    [FAIL] /api/web/v1/dashboard: Incomplete composite payload returned." -ForegroundColor Red
+            $allPassed = $false
+        }
+    } catch {
+        Write-Host "    [FAIL] /api/web/v1/dashboard failed: $($_.Exception.Message)" -ForegroundColor Red
+        $allPassed = $false
     }
 }
 

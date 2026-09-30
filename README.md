@@ -16,7 +16,8 @@
 - **🔐 Swappable Database Secret Store**: Zero hardcoded secrets in source code or `appsettings.json`. Secrets are persisted in the `AppSecrets` database table via `ISecretStore` with in-memory caching and projected directly into ASP.NET Core `IConfiguration` via a custom `DatabaseConfigurationProvider` during host startup.
 - **🛡️ Debug-Only Demo User Security Isolation**: Prevents production data breaches by restricting seeded demo accounts (`free@`, `basic@`, `premium@`, `admin.demo@`, `superadmin@dietdost.app`) strictly to Debug builds in Development hosting environments. In Release mode, demo user seeding is suppressed, login attempts are blocked with `HTTP 403 DemoAccessForbidden`, and any pre-existing demo accounts are proactively deactivated with revoked security stamps.
 - **⚡ Dual SmartScheme Auth & Tier Quota Engine**: RFC 7519 JWT Bearer + HttpOnly Cookie dual authentication with India DPDPA 2023 forensic consent audit logging. Features dynamic tier quotas (`Free`: 1/day, `Basic`: 7/day, `Premium`: 30/day, `SuperAdmin`: Unlimited) with automated feature gating (visual progress comparisons and meal data exports).
-- **🧪 Mandatory End-to-End Tier Verification Harness**: 122 automated unit/eval tests plus an automated live E2E PowerShell test harness (`pwsh -File tests/validate_e2e_tiers.ps1`) verifying all 5 demo user tiers, quotas, feature gating, and admin permissions on the running WebGateway.
+- **🌐 Web BFF Composite Hydration**: High-performance Backend for Frontend (`/api/web/v1/dashboard`) dispatching CQRS queries concurrently via `Task.WhenAll` across isolated DI scopes for sub-50ms execution.
+- **🧪 Mandatory End-to-End Tier Verification Harness**: 136 automated unit/eval tests plus an automated live E2E PowerShell test harness (`pwsh -File tests/validate_e2e_tiers.ps1`) verifying all 5 demo user tiers, quotas, feature gating, and admin permissions on the running WebGateway.
 - **🇮🇳 South Asian & Indian Phenotype Specific**: Tailored for Indian dietary realities—including dal, sabzi, roti, rice, street snacks, and regional preparations—calibrated with WHO Asian-Indian BMI cutoffs (Normal: 18.5–22.9, Overweight: 23–24.9, Obese: $\ge$ 25 kg/m²).
 - **🔬 Zero-Assumption Clinical Engine**: Zero hallucination or guesswork. Requires complete clinical profile metrics (age, biological sex, height, weight, activity multiplier, health conditions) before issuing caloric and macronutrient targets.
 - **📸 Multimodal AI Meal Vision**: Upload or take photos of Indian dishes. Powered by Microsoft Agent Framework + Google Gemini multimodal vision with a strict $\ge 70\%$ confidence gating floor and editable 1-tap review modals.
@@ -131,7 +132,7 @@ diet-dost/
 │           └── index.html           # Single Page App shell
 ├── tests/
 │   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & medical safeguards (36 tests)
-│   ├── Nutrition.EvalHarness.Tests/ # AI Vision evals, auth, rate limiting, and secret store tests (86 tests)
+│   ├── Nutrition.EvalHarness.Tests/ # AI Vision evals, auth, rate limiting, and secret store tests (100 tests)
 │   └── validate_e2e_tiers.ps1       # Automated live end-to-end user tier validation test harness
 ├── docs/
 │   ├── architecture/diagrams/       # Standalone synchronized Mermaid architecture diagrams
@@ -212,7 +213,7 @@ dotnet run --project src/Nutrition.AppHost
 
 ## 🧪 Running Tests & Validation
 
-### 1. Automated Test Suite (129 Tests, 0 Warnings, 0 Errors)
+### 1. Automated Test Suite (136 Tests, 0 Warnings, 0 Errors)
 Execute the comprehensive domain, clinical, security, and AI evaluation suite:
 
 ```bash
@@ -225,7 +226,7 @@ Test coverage includes:
   - WHO Asian-Indian BMI boundaries and cardiometabolic cutoffs.
   - ICMR-NIN 2024 starvation caloric floors (1,200 kcal F / 1,500 kcal M).
   - Health condition macro adjustments (Diabetes, HTN, Thyroid, NAFLD).
-- **Security & Infrastructure (`Nutrition.EvalHarness.Tests` - 93 tests)**:
+- **Security & Infrastructure (`Nutrition.EvalHarness.Tests` - 100 tests)**:
   - Multimodal AI food vision prompt defense, confidence gating ($\ge 70\%$), and fallback cascade.
   - PBKDF2 password hashing (HMAC-SHA512) and strict password policy validation.
   - RFC 7519 JWT Bearer authentication and HttpOnly session validation.
