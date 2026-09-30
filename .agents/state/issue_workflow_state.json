@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-09-30T22:01:54.0449174+05:30",
+  "lastUpdated": "2026-10-01T01:00:26.5954384+05:30",
   "activeIssues": {
     "27": {
       "issueNumber": 27,
@@ -14,8 +14,10 @@
       "approvedAt": "2026-09-30T19:01:11.9342263+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-27-feat-application-cqrs-queries",
-      "phase": "TESTED",
-      "updatedAt": "2026-10-01T00:37:00Z",
+      "phase": "PR_OPENED",
+      "prNumber": 34,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/34",
+      "updatedAt": "2026-09-30T19:10:02Z",
       "detectedAt": "2026-09-30T19:01:11.9343174+05:30",
       "checkpoints": [
         "DETECTED",
@@ -24,12 +26,13 @@
         "ACT_ANALYZED",
         "IMPLEMENTED",
         "VALIDATED",
-        "TESTED"
+        "TESTED",
+        "PR_OPENED"
       ],
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "main",
-      "notes": "Consolidated shared CQRS queries (GetDailyLedger, GetHistoricalAnalytics, GetMealHistory, GetAiQuota, GetProfile) and verified with 10 unit tests."
+      "notes": "PR #34 opened and verified with 146 passing tests. Awaiting review and merge into main."
     }
   },
   "completedIssues": {

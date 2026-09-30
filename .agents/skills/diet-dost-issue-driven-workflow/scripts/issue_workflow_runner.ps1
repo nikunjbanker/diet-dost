@@ -432,10 +432,12 @@ function Invoke-IssueSync {
         } elseif ($currentRecord) {
             # Issue updated in GitHub
             if ($currentRecord.updatedAt -ne $issue.updatedAt) {
-                Write-Host "==> DETECTED update on issue #$($issue.number): '$($issue.title)'" -ForegroundColor Yellow
                 $currentRecord.updatedAt = $issue.updatedAt
-                $currentRecord.notes = "Issue updated on GitHub: requires re-analysis (ACT phase)."
-                if ($currentRecord.phase -ne "COMPLETED") {
+                if ($currentRecord.phase -in @("PR_OPENED", "DRAFT_PR_CREATED", "TESTED", "COMPLETED")) {
+                    Write-Host "    Issue #$($issue.number) updated (Comment/activity in phase $($currentRecord.phase)). Maintaining current phase." -ForegroundColor DarkGray
+                } else {
+                    Write-Host "==> DETECTED requirement update on issue #$($issue.number): '$($issue.title)'" -ForegroundColor Yellow
+                    $currentRecord.notes = "Issue updated on GitHub: requires re-analysis (ACT phase)."
                     $currentRecord.phase = "ACT_ANALYZING"
                     $currentRecord.checkpoints += "ACT_RETRIGGERED"
                 }
