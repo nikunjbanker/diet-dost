@@ -1,148 +1,147 @@
 {
-    "$schema":  "https://json-schema.org/draft/2020-12/schema",
-    "version":  "1.0.0",
-    "description":  "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-    "lastUpdated":  "2026-09-30T15:33:51.4462992+05:30",
-    "activeIssues":  {
-                         "26":  {
-                                    "issueNumber":  26,
-                                    "title":  "feat(web-bff): implement Phase 1 Layer 1 - Web BFF composite endpoint and shared CQRS queries",
-                                    "author":  "nikunjbanker",
-                                    "isCodeownerAuthor":  true,
-                                    "approvalStatus":  "AUTHORIZED",
-                                    "approvedBy":  "nikunjbanker",
-                                    "approvedAt":  "2026-09-30T15:01:04.2095971+05:30",
-                                    "issueType":  "feature",
-                                    "branchName":  "feature/issue-26-feat-web-bff-implement-phase-1-laye",
-                                    "phase":  "ACT_ANALYZING",
-                                    "updatedAt":  "2026-09-30T09:34:07Z",
-                                    "detectedAt":  "2026-09-30T15:01:04.2130565+05:30",
-                                    "checkpoints":  [
-                                                        "DETECTED",
-                                                        "ACT_RETRIGGERED"
-                                                    ],
-                                    "isStacked":  false,
-                                    "parentPR":  0,
-                                    "parentBranch":  "",
-                                    "notes":  "Issue updated on GitHub: requires re-analysis (ACT phase)."
-                                }
-                     },
-    "completedIssues":  {
-
-                        },
-    "heldIssues":  {
-
-                   },
-    "queuedIssues":  {
-                         "31":  {
-                                    "issueNumber":  31,
-                                    "title":  "feat(devops): implement Phase 1 Layer 6 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",
-                                    "author":  "nikunjbanker",
-                                    "isCodeownerAuthor":  true,
-                                    "approvalStatus":  "AUTHORIZED",
-                                    "approvedBy":  "nikunjbanker",
-                                    "approvedAt":  "2026-09-30T15:33:41.6898159+05:30",
-                                    "issueType":  "feature",
-                                    "branchName":  "feature/issue-31-feat-devops-implement-phase-1-layer",
-                                    "phase":  "QUEUED_AWAITING_ACTIVE_ISSUE",
-                                    "updatedAt":  "2026-09-30T10:03:12Z",
-                                    "detectedAt":  "2026-09-30T15:33:41.6982985+05:30",
-                                    "checkpoints":  [
-                                                        "DETECTED",
-                                                        "QUEUED"
-                                                    ],
-                                    "isStacked":  true,
-                                    "parentPR":  30,
-                                    "parentBranch":  "",
-                                    "notes":  "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-                                },
-                         "30":  {
-                                    "issueNumber":  30,
-                                    "title":  "refactor(presentation): implement Phase 1 Layer 5 - modularize analytics-chart into SRP UI services",
-                                    "author":  "nikunjbanker",
-                                    "isCodeownerAuthor":  true,
-                                    "approvalStatus":  "AUTHORIZED",
-                                    "approvedBy":  "nikunjbanker",
-                                    "approvedAt":  "2026-09-30T15:33:43.9916648+05:30",
-                                    "issueType":  "feature",
-                                    "branchName":  "feature/issue-30-refactor-presentation-implement-pha",
-                                    "phase":  "QUEUED_AWAITING_ACTIVE_ISSUE",
-                                    "updatedAt":  "2026-09-30T10:02:43Z",
-                                    "detectedAt":  "2026-09-30T15:33:43.9945498+05:30",
-                                    "checkpoints":  [
-                                                        "DETECTED",
-                                                        "QUEUED"
-                                                    ],
-                                    "isStacked":  true,
-                                    "parentPR":  29,
-                                    "parentBranch":  "",
-                                    "notes":  "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-                                },
-                         "29":  {
-                                    "issueNumber":  29,
-                                    "title":  "refactor(presentation): implement Phase 1 Layer 4 - centralize food estimation API and delete static dictionary",
-                                    "author":  "nikunjbanker",
-                                    "isCodeownerAuthor":  true,
-                                    "approvalStatus":  "AUTHORIZED",
-                                    "approvedBy":  "nikunjbanker",
-                                    "approvedAt":  "2026-09-30T15:33:46.5351915+05:30",
-                                    "issueType":  "feature",
-                                    "branchName":  "feature/issue-29-refactor-presentation-implement-pha",
-                                    "phase":  "QUEUED_AWAITING_ACTIVE_ISSUE",
-                                    "updatedAt":  "2026-09-30T10:02:06Z",
-                                    "detectedAt":  "2026-09-30T15:33:46.5351915+05:30",
-                                    "checkpoints":  [
-                                                        "DETECTED",
-                                                        "QUEUED"
-                                                    ],
-                                    "isStacked":  true,
-                                    "parentPR":  28,
-                                    "parentBranch":  "",
-                                    "notes":  "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-                                },
-                         "28":  {
-                                    "issueNumber":  28,
-                                    "title":  "feat(presentation): implement Phase 1 Layer 3 - Web client single-roundtrip hydration in api.js and main.js",
-                                    "author":  "nikunjbanker",
-                                    "isCodeownerAuthor":  true,
-                                    "approvalStatus":  "AUTHORIZED",
-                                    "approvedBy":  "nikunjbanker",
-                                    "approvedAt":  "2026-09-30T15:33:48.9784437+05:30",
-                                    "issueType":  "feature",
-                                    "branchName":  "feature/issue-28-feat-presentation-implement-phase-1",
-                                    "phase":  "QUEUED_AWAITING_ACTIVE_ISSUE",
-                                    "updatedAt":  "2026-09-30T10:01:34Z",
-                                    "detectedAt":  "2026-09-30T15:33:48.9790040+05:30",
-                                    "checkpoints":  [
-                                                        "DETECTED",
-                                                        "QUEUED"
-                                                    ],
-                                    "isStacked":  true,
-                                    "parentPR":  27,
-                                    "parentBranch":  "",
-                                    "notes":  "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-                                },
-                         "27":  {
-                                    "issueNumber":  27,
-                                    "title":  "feat(application): implement Phase 1 Layer 2 - shared CQRS query consolidation (ledger, analytics, history, quota)",
-                                    "author":  "nikunjbanker",
-                                    "isCodeownerAuthor":  true,
-                                    "approvalStatus":  "AUTHORIZED",
-                                    "approvedBy":  "nikunjbanker",
-                                    "approvedAt":  "2026-09-30T15:33:51.4147772+05:30",
-                                    "issueType":  "feature",
-                                    "branchName":  "feature/issue-27-feat-application-implement-phase-1",
-                                    "phase":  "QUEUED_AWAITING_ACTIVE_ISSUE",
-                                    "updatedAt":  "2026-09-30T10:00:57Z",
-                                    "detectedAt":  "2026-09-30T15:33:51.4153095+05:30",
-                                    "checkpoints":  [
-                                                        "DETECTED",
-                                                        "QUEUED"
-                                                    ],
-                                    "isStacked":  true,
-                                    "parentPR":  26,
-                                    "parentBranch":  "",
-                                    "notes":  "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-                                }
-                     }
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
+  "lastUpdated": "2026-09-30T19:01:11.9351636+05:30",
+  "activeIssues": {
+    "26": {
+      "issueNumber": 26,
+      "title": "feat(web-bff): implement Phase 1 Layer 1 - Web BFF composite endpoint and shared CQRS queries",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T15:01:04.2095971+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-26-feat-web-bff-composite-endpoint",
+      "phase": "ACT_ANALYZING",
+      "updatedAt": "2026-09-30T09:34:07Z",
+      "detectedAt": "2026-09-30T15:01:04.2130565+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "ACT_RETRIGGERED",
+        "IMPLEMENTED",
+        "VALIDATED",
+        "ACT_RETRIGGERED"
+      ],
+      "isStacked": false,
+      "parentPR": 0,
+      "parentBranch": "",
+      "notes": "Issue updated on GitHub: requires re-analysis (ACT phase)."
+    }
+  },
+  "completedIssues": {},
+  "heldIssues": {},
+  "queuedIssues": {
+    "31": {
+      "issueNumber": 31,
+      "title": "feat(devops): implement Phase 1 Layer 6 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:00:35.3396612+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-31-feat-devops-implement-phase-1-layer",
+      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
+      "updatedAt": "2026-09-30T10:03:12Z",
+      "detectedAt": "2026-09-30T19:00:35.3502518+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED"
+      ],
+      "isStacked": true,
+      "parentPR": 30,
+      "parentBranch": "",
+      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
+    },
+    "30": {
+      "issueNumber": 30,
+      "title": "refactor(presentation): implement Phase 1 Layer 5 - modularize analytics-chart into SRP UI services",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:00:51.1202027+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-30-refactor-presentation-implement-pha",
+      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
+      "updatedAt": "2026-09-30T10:02:43Z",
+      "detectedAt": "2026-09-30T19:00:51.1203357+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED"
+      ],
+      "isStacked": true,
+      "parentPR": 29,
+      "parentBranch": "",
+      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
+    },
+    "29": {
+      "issueNumber": 29,
+      "title": "refactor(presentation): implement Phase 1 Layer 4 - centralize food estimation API and delete static dictionary",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:00:58.3001754+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-29-refactor-presentation-implement-pha",
+      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
+      "updatedAt": "2026-09-30T10:02:06Z",
+      "detectedAt": "2026-09-30T19:00:58.3003510+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED"
+      ],
+      "isStacked": true,
+      "parentPR": 28,
+      "parentBranch": "",
+      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
+    },
+    "28": {
+      "issueNumber": 28,
+      "title": "feat(presentation): implement Phase 1 Layer 3 - Web client single-roundtrip hydration in api.js and main.js",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:01:04.7458359+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-28-feat-presentation-implement-phase-1",
+      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
+      "updatedAt": "2026-09-30T10:01:34Z",
+      "detectedAt": "2026-09-30T19:01:04.7459634+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED"
+      ],
+      "isStacked": true,
+      "parentPR": 27,
+      "parentBranch": "",
+      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
+    },
+    "27": {
+      "issueNumber": 27,
+      "title": "feat(application): implement Phase 1 Layer 2 - shared CQRS query consolidation (ledger, analytics, history, quota)",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:01:11.9342263+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-27-feat-application-implement-phase-1",
+      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
+      "updatedAt": "2026-09-30T10:00:57Z",
+      "detectedAt": "2026-09-30T19:01:11.9343174+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED"
+      ],
+      "isStacked": true,
+      "parentPR": 26,
+      "parentBranch": "",
+      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
+    }
+  }
 }

@@ -91,6 +91,95 @@ function Get-Codeowners {
     return $owners
 }
 
+$script:ProjectBoardCache = $null
+
+function Get-ProjectBoardMetadata {
+    param (
+        [int]$ProjectNumber = 1,
+        [string]$Owner = "nikunjbanker"
+    )
+
+    if ($script:ProjectBoardCache) { return $script:ProjectBoardCache }
+
+    try {
+        $projViewJson = gh project view $ProjectNumber --owner $Owner --format json 2>$null
+        if (-not $projViewJson) { return $null }
+        $projView = $projViewJson | ConvertFrom-Json
+
+        $fieldListJson = gh project field-list $ProjectNumber --owner $Owner --format json 2>$null
+        if (-not $fieldListJson) { return $null }
+        $fieldList = $fieldListJson | ConvertFrom-Json
+
+        $statusField = $fieldList.fields | Where-Object { $_.name -eq "Status" }
+        if (-not $statusField) { return $null }
+
+        $optionsMap = @{}
+        foreach ($opt in $statusField.options) {
+            $optionsMap[$opt.name.ToLowerInvariant()] = $opt.id
+        }
+
+        $script:ProjectBoardCache = [PSCustomObject]@{
+            ProjectNumber = $ProjectNumber
+            Owner         = $Owner
+            ProjectId     = $projView.id
+            StatusFieldId = $statusField.id
+            StatusOptions = $optionsMap
+        }
+        return $script:ProjectBoardCache
+    } catch {
+        return $null
+    }
+}
+
+function Set-ProjectBoardStatus {
+    param (
+        [int]$Number,
+        [string]$TargetStatus, # "Todo", "In Progress", "Done"
+        [string]$ItemType = "issues",
+        [string]$Repo = "nikunjbanker/diet-dost"
+    )
+
+    $meta = Get-ProjectBoardMetadata
+    if (-not $meta) { return }
+
+    $targetKey = $TargetStatus.ToLowerInvariant()
+    if (-not $meta.StatusOptions.ContainsKey($targetKey)) { return }
+    $optionId = $meta.StatusOptions[$targetKey]
+
+    try {
+        $itemsJson = gh project item-list $meta.ProjectNumber --owner $meta.Owner --format json 2>$null
+        if (-not $itemsJson) { return }
+        $itemsObj = $itemsJson | ConvertFrom-Json
+
+        $matchedItem = $itemsObj.items | Where-Object {
+            $_.content -and $_.content.number -eq $Number
+        }
+
+        if (-not $matchedItem) {
+            $url = "https://github.com/$Repo/$ItemType/$Number"
+            $addJson = gh project item-add $meta.ProjectNumber --owner $meta.Owner --url $url --format json 2>$null
+            if ($addJson) {
+                $addedObj = $addJson | ConvertFrom-Json
+                $itemId = $addedObj.id
+            } else {
+                return
+            }
+        } else {
+            $itemId = $matchedItem.id
+            if ($matchedItem.status -and $matchedItem.status.ToLowerInvariant() -eq $targetKey) {
+                return
+            }
+        }
+
+        gh project item-edit --id $itemId --field-id $meta.StatusFieldId --project-id $meta.ProjectId --single-select-option-id $optionId 2>$null | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    [PROJECT BOARD] Set #$Number status to '$TargetStatus'." -ForegroundColor Cyan
+        }
+    } catch {
+        Write-Warning "Could not update board status for #$($Number): $_"
+    }
+}
+
 function Test-IssueCodeownerApproval {
     param (
         [PSCustomObject]$Issue,
@@ -193,6 +282,7 @@ function Invoke-IssueSync {
                 $State.completedIssues | Add-Member -NotePropertyName $hk -NotePropertyValue $heldRec -Force
                 $State.heldIssues.PSObject.Properties.Remove($hk)
                 Save-WorkflowState -Path $StateFile -State $State
+                Set-ProjectBoardStatus -Number ([int]$hk) -TargetStatus "Done"
                 continue
             }
             $matched = $single
@@ -210,6 +300,7 @@ function Invoke-IssueSync {
                 $State.activeIssues | Add-Member -NotePropertyName $hk -NotePropertyValue $heldRec -Force
                 $State.heldIssues.PSObject.Properties.Remove($hk)
                 Save-WorkflowState -Path $StateFile -State $State
+                Set-ProjectBoardStatus -Number ([int]$hk) -TargetStatus "In Progress"
             } else {
                 Write-Host "    Issue #$hk remains on HOLD (Waiting for approval by CODEOWNER: @$($codeowners -join ', @'))." -ForegroundColor DarkGray
             }
@@ -221,8 +312,9 @@ function Invoke-IssueSync {
         $numStr = [string]$issue.number
         $currentRecord = $State.activeIssues.$numStr
         $heldRecord = $State.heldIssues.$numStr
+        $queuedRecord = $State.queuedIssues.$numStr
 
-        if ($null -eq $currentRecord -and $null -eq $heldRecord) {
+        if ($null -eq $currentRecord -and $null -eq $heldRecord -and $null -eq $queuedRecord) {
             # New Issue Intake
             $author = if ($issue.author -and $issue.author.login) { $issue.author.login } else { "unknown" }
             $approval = Test-IssueCodeownerApproval -Issue $issue -Codeowners $codeowners
@@ -283,6 +375,7 @@ function Invoke-IssueSync {
                     $State.queuedIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
                     Save-WorkflowState -Path $StateFile -State $State
                     Write-Host "    Checkpointed issue #$($issue.number) in phase QUEUED_AWAITING_ACTIVE_ISSUE." -ForegroundColor Gray
+                    Set-ProjectBoardStatus -Number $issue.number -TargetStatus "Todo"
                 } else {
                     $newRecord = [PSCustomObject]@{
                         issueNumber = $issue.number
@@ -306,6 +399,7 @@ function Invoke-IssueSync {
                     $State.activeIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newRecord -Force
                     Save-WorkflowState -Path $StateFile -State $State
                     Write-Host "    Checkpointed issue #$($issue.number) in phase DETECTED." -ForegroundColor Gray
+                    Set-ProjectBoardStatus -Number $issue.number -TargetStatus "In Progress"
                 }
             } else {
                 Write-Host "==> HELD FOR APPROVAL: Issue #$($issue.number) created by non-codeowner '@$author'." -ForegroundColor Yellow
@@ -333,6 +427,7 @@ function Invoke-IssueSync {
                 $State.heldIssues | Add-Member -NotePropertyName $numStr -NotePropertyValue $newHeldRecord -Force
                 Save-WorkflowState -Path $StateFile -State $State
                 Write-Host "    Issue #$($issue.number) placed on HOLD until approved by CODEOWNER (@$($codeowners -join ', @'))." -ForegroundColor Gray
+                Set-ProjectBoardStatus -Number $issue.number -TargetStatus "Todo"
             }
         } elseif ($currentRecord) {
             # Issue updated in GitHub
@@ -344,6 +439,14 @@ function Invoke-IssueSync {
                     $currentRecord.phase = "ACT_ANALYZING"
                     $currentRecord.checkpoints += "ACT_RETRIGGERED"
                 }
+                Save-WorkflowState -Path $StateFile -State $State
+            }
+        } elseif ($queuedRecord) {
+            # Queued issue updated in GitHub
+            if ($queuedRecord.updatedAt -ne $issue.updatedAt) {
+                Write-Host "==> DETECTED update on queued issue #$($issue.number): '$($issue.title)'" -ForegroundColor DarkYellow
+                $queuedRecord.updatedAt = $issue.updatedAt
+                $queuedRecord.title = $issue.title
                 Save-WorkflowState -Path $StateFile -State $State
             }
         }
@@ -363,6 +466,7 @@ function Invoke-IssueSync {
                 $State.completedIssues | Add-Member -NotePropertyName $k -NotePropertyValue $rec -Force
                 $State.activeIssues.PSObject.Properties.Remove($k)
                 Save-WorkflowState -Path $StateFile -State $State
+                Set-ProjectBoardStatus -Number ([int]$k) -TargetStatus "Done"
 
                 # Single-Issue Policy: Auto-promote next queued issue if any
                 $queuedKeys = @($State.queuedIssues.PSObject.Properties | ForEach-Object { $_.Name } | Sort-Object { [int]$_ })
@@ -376,9 +480,20 @@ function Invoke-IssueSync {
                     $State.activeIssues | Add-Member -NotePropertyName $nextKey -NotePropertyValue $nextRec -Force
                     $State.queuedIssues.PSObject.Properties.Remove($nextKey)
                     Save-WorkflowState -Path $StateFile -State $State
+                    Set-ProjectBoardStatus -Number ([int]$nextKey) -TargetStatus "In Progress"
                 }
             }
         }
+    }
+
+    # 4. Synchronize Project Board status for current active and queued issues
+    $currentActiveKeys = @($State.activeIssues.PSObject.Properties | ForEach-Object { $_.Name })
+    foreach ($cak in $currentActiveKeys) {
+        Set-ProjectBoardStatus -Number ([int]$cak) -TargetStatus "In Progress"
+    }
+    $currentQueuedKeys = @($State.queuedIssues.PSObject.Properties | ForEach-Object { $_.Name })
+    foreach ($cqk in $currentQueuedKeys) {
+        Set-ProjectBoardStatus -Number ([int]$cqk) -TargetStatus "Todo"
     }
 }
 
