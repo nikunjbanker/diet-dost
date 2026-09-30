@@ -1,4 +1,4 @@
-﻿---
+---
 name: diet-dost-clean-architecture
 version: 1.2.0
 status: Approved Production Specification & Restructuring Playbook
@@ -45,6 +45,7 @@ description: >-
 > 7. **Mandatory End-to-End User Tier Validation**: After any refactoring, new feature implementation, or bug fix, execute comprehensive end-to-end verification of the running application across all 5 user tiers using seeded demo accounts (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Ensure zero runtime exceptions, accurate quota enforcement, correct tier gating (e.g. photo comparison and data export paywalls), and zero browser console errors.
 > 8. **Major Change Auto-Detection & Artifact Synchronization**: Continuously detect major changes (CQRS commands/queries, ports, entities, secret store, environment gates). Auto-synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, `docs/sdd/*.md`, and relevant skills without manual prompting.
 > 9. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol**: In case of ANY ambiguity, doubt, or multiple architectural paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
+> 10. **Zero-Throwaway Engineering & Forward-Roadmap Reusability Mandate**: Every domain model, CQRS handler, DTO schema, frontend module, CFT, and ADR must be engineered in concert with future roadmap milestones (Mobile Alpha 02, Enterprise Cloud DB Beta 01, GA 1.0) so no MVP work is discarded or rewritten.
 
 ---
 

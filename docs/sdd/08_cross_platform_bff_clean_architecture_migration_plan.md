@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -10,7 +10,7 @@
 > **Specification Version**: `v2.0.0 (Unified Living SDD & Multi-Platform Playbook)`  
 > **Classification**: Cross-Platform Architecture Review, Dual BFF Design, SOLID Governance & Phased Execution Plan  
 > **Target Subsystems**: Web PWA (`src/Nutrition.WebGateway/wwwroot/`), Cross-Platform Mobile (.NET MAUI / Expo), and Backend Presentation (`Nutrition.WebGateway`)  
-> **Core Tenets**: Zero Duplicate Domain Code &bull; SOLID & Clean Architecture &bull; Dual BFFs (Web & Mobile) &bull; Phased Platform-by-Platform Migration (Zero Big Bang) &bull; Mandatory CFT Verification (`docs/cft/`)  
+> **Core Tenets**: Zero Duplicate Domain Code &bull; SOLID & Clean Architecture &bull; Dual BFFs (Web & Mobile) &bull; Zero-Throwaway Engineering &bull; Phased Platform-by-Platform Migration (Zero Big Bang) &bull; Mandatory Living CFT Verification (`docs/cft/`)  
 
 ---
 
@@ -26,6 +26,7 @@ To achieve superior performance, rapid iteration, and maintainability across pla
 3. **Zero-Duplicate Domain Code Guarantee**: 100% of clinical calculations, ICMR-NIN 2024 algorithms, TDEE, and food estimation logic reside exclusively in `Nutrition.Domain` and `Nutrition.Application`. Zero domain math in client JavaScript or mobile code.
 4. **Phased Platform-by-Platform Migration (Zero Big Bang)**: Step-by-step GitHub Stacked PR roadmap separating backend foundations, web modernization, and mobile implementation into small, independently reviewable PRs.
 5. **Mandatory CFT (Customer & Functional Acceptance Test) Verification**: Formal platform test documents in `docs/cft/` ensuring 100% functional parity and zero regressions before any branch merge.
+6. **Zero-Throwaway Engineering & Forward-Roadmap Reusability Mandate**: Every architectural component, CQRS handler, BFF aggregation model, and CFT verification suite is explicitly designed in concert with future roadmap milestones (Mobile Alpha 02, Enterprise Cloud DB Beta 01, GA 1.0) so no MVP work is discarded or rewritten.
 
 ```mermaid
 graph TD

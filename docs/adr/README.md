@@ -55,6 +55,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-049** | Native GitHub Stacked PR Protocol, gh-stack Automation & Bidirectional Navigation | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20260928-049-native-github-stacked-pr-protocol.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-049-native-github-stacked-pr-protocol.md) |
 | **ADR-050** | CODEOWNER Gating & Approval Policy for Autonomous Issue-Driven Development | `[SECURITY]` | `ACCEPTED` | [`ADR-20260928-050-codeowner-approval-issue-workflow.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-050-codeowner-approval-issue-workflow.md) |
 | **ADR-051** | Product Owner MVP Market Roadmap Re-Prioritization & Phased Release Milestones | `[ROADMAP]` | `ACCEPTED` | [`ADR-20260929-051-mvp-market-roadmap-reprioritization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md) |
+| **ADR-052** | Zero-Throwaway Engineering, Cross-Phase Reusability & Forward-Roadmap Compatibility Mandate | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md) |
 
 ---
 
