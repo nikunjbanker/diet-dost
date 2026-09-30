@@ -173,6 +173,11 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Native gh-stack Engine**: Contributors and AI agents must manage consecutive dependent PRs using the official `github/gh-stack` extension (`gh stack link <parent-pr> <child-pr>`, `gh stack sync`). Never leave stacked PRs in an unformalized state on GitHub.
     - **Zero-Ambiguity PR Navigation**: All stacked PRs must prepend the standardized markdown Stack Navigator callout (`### 🥞 GitHub Stack #<id> (Layer X of Y)`) in the PR description with direct bidirectional links to parent and child PRs.
     - **Cascading Bottom-Up Merge Order**: Stacks must be merged sequentially from base to top. Merging Layer 1 allows GitHub to auto-retarget Layer 2 to `main`, followed by local `gh stack sync`.
+15. **Zero-Throwaway Engineering & Forward-Roadmap Reusability Standard**:
+    - **Zero Disposable Code Policy**: MVP (Phase 1 / Alpha 01) implementations must NEVER be treated as throwaway prototypes or quick hacks. All domain models, value objects, CQRS handlers, DTO schemas, and client-side modules must be engineered in concert with future roadmap milestones (Phase 2 Mobile, Phase 3 Enterprise Cloud DB, Phase 4 Automated CI/CD).
+    - **Backend & Domain Reusability**: CQRS query and command handlers built in `Nutrition.Application` for Web BFF must be directly consumable by Mobile BFF (`/api/mobile/v1/*`) with 0 duplicate clinical math. Persistence abstractions (`INutritionContext`) in Phase 1 SQLite must be strictly decoupled from provider quirks to enable seamless multi-provider injection for Phase 3 Azure SQL Serverless.
+    - **Living CFT Acceptance Inheritance**: All Customer & Functional Acceptance Tests in `docs/cft/` are reusable, living verification harnesses. Phase 1 Web CFT suites define the invariant baseline that Phase 2 Mobile CFT and Master Parity Matrix inherit and re-validate. Tests must remain parameterized and valid across SQLite, Azure Files SMB, Azure SQL, and all clients.
+    - **Mandatory Forward Roadmap Section in ADRs**: Every atomic ADR fragment (`docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md`) MUST include a dedicated section titled `Forward Roadmap Impact & Future Phase Compatibility`, certifying that the decision supports upcoming phases and creates zero technical debt.
 
 
 
