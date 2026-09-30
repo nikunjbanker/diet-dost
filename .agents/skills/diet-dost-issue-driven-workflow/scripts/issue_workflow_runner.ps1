@@ -22,7 +22,7 @@ $ErrorActionPreference = "Stop"
 
 if ([string]::IsNullOrWhiteSpace($StateFilePath)) {
     $scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
-    $StateFilePath = [System.IO.Path]::GetFullPath((Join-Path $scriptDir "../../state/issue_workflow_state.json"))
+    $StateFilePath = [System.IO.Path]::GetFullPath((Join-Path $scriptDir "../../../state/issue_workflow_state.json"))
 }
 
 function Test-GitHubConnectivity {
