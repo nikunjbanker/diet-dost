@@ -117,7 +117,11 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
      - Documentation / Governance -> Prefix: `docs/`
   4. Generate sanitized branch slug:
      `<prefix>/issue-<number>-<sanitized-title>`
-  5. Record entry in `.agents/state/issue_workflow_state.json` under phase `DETECTED`.
+  5. **Single-Issue In-Flight Policy & Stacked Queue Governance**:
+     - **Strict Concurrency Limit**: At any given time, only **ONE** issue may be actively in progress (`phase: "DETECTED"`, `"ACT"`, `"IMPLEMENT"`, `"VALIDATE"`, or `"TEST"`).
+     - **Queueing of Subsequent / Stacked Issues**: If an issue is already active in development, any newly detected or dependent issues (e.g. child stacked issues citing `Depends on: #<parent>`) are placed into `queuedIssues` in `.agents/state/issue_workflow_state.json` under phase `QUEUED_AWAITING_ACTIVE_ISSUE`.
+     - **Automated Linear Promotion**: When the currently active issue reaches `COMPLETED` (its Pull Request is created or merged on GitHub), the runner automatically dequeues and promotes the next queued issue to `activeIssues` under phase `DETECTED`.
+  6. Record entry in `.agents/state/issue_workflow_state.json` under phase `DETECTED` (if active queue empty) or `QUEUED_AWAITING_ACTIVE_ISSUE`.
 
 ---
 
