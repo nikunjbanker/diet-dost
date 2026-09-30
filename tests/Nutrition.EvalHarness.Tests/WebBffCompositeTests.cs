@@ -40,14 +40,15 @@ public class WebBffCompositeTests : IDisposable
 
     public WebBffCompositeTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
+        var connectionString = $"Data Source=file:memdb_bff_{Guid.NewGuid():N}?mode=memory&cache=shared";
+        _connection = new SqliteConnection(connectionString);
         _connection.Open();
 
         var services = new ServiceCollection();
         services.AddLogging();
 
         services.AddDbContext<DietTrackerDbContext>(options =>
-            options.UseSqlite(_connection));
+            options.UseSqlite(connectionString));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();

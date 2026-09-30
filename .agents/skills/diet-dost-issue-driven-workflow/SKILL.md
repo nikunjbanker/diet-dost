@@ -122,6 +122,12 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
      - **Queueing of Subsequent / Stacked Issues**: If an issue is already active in development, any newly detected or dependent issues (e.g. child stacked issues citing `Depends on: #<parent>`) are placed into `queuedIssues` in `.agents/state/issue_workflow_state.json` under phase `QUEUED_AWAITING_ACTIVE_ISSUE`.
      - **Automated Linear Promotion**: When the currently active issue reaches `COMPLETED` (its Pull Request is created or merged on GitHub), the runner automatically dequeues and promotes the next queued issue to `activeIssues` under phase `DETECTED`.
   6. Record entry in `.agents/state/issue_workflow_state.json` under phase `DETECTED` (if active queue empty) or `QUEUED_AWAITING_ACTIVE_ISSUE`.
+  7. **GitHub Project Board (v2) Status Automation**:
+     - Issues and linked PRs are mapped to GitHub Project 1 (`Diet-Dost Roadmap`).
+     - As issues and PRs progress through their lifecycle, their single-select `Status` field is automatically synchronized via `gh project`:
+       - **`Todo`**: Assigned to queued issues (`queuedIssues`), issues held awaiting codeowner approval (`heldIssues`), or pending stacked tasks.
+       - **`In Progress`**: Assigned to the actively executing issue (`activeIssues`), when an issue is promoted from the queue, or when its feature branch / PR is actively being worked on.
+       - **`Done`**: Assigned when an issue reaches `COMPLETED`, its Pull Request is merged into `main`, or the issue is closed on GitHub.
 
 ---
 
