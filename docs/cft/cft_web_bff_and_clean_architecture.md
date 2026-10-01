@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -17,23 +17,23 @@
 ---
 
 ## 1. Pre-Flight Setup & Environment Verification
-- [ ] Application running via Aspire / WebGateway on `http://localhost:5240`.
-- [ ] Browser Developer Tools open with Network and Console tabs active.
-- [ ] Database initialized with seeded demo accounts (`DietDost@Demo2026!`).
+- [x] Application running via Aspire / WebGateway on `http://localhost:5240`.
+- [x] Browser Developer Tools open with Network and Console tabs active.
+- [x] Database initialized with seeded demo accounts (`DietDost@Demo2026!`).
 
 ---
 
 ## 2. Test Suite 1: Single Roundtrip Web BFF Dashboard Hydration
-- [ ] **Step 1.1**: Authenticate as `free@dietdost.app`.
-- [ ] **Step 1.2**: Inspect Network tab during initial application load (`initApp`):
-  - [ ] **Assert**: Exactly **1 single composite request** to `GET /api/web/v1/dashboard?period=7D`.
-  - [ ] **Assert**: Zero redundant requests to `/api/analytics/daily`, `/api/analytics/projections`, or `/api/meals/history`.
-  - [ ] **Assert**: Response payload conforms to `WebDashboardCompositeDto` containing `user`, `todayLedger`, `projections`, `recentMeals`, `quota`, and `featureFlags`.
-  - [ ] **Assert**: Server execution time is < 50ms (parallel `Task.WhenAll` query dispatch).
-- [ ] **Step 1.3**: Inspect DOM layout rendering:
-  - [ ] **Assert**: Hero Caloric HUD hydrates instantly from in-memory state with **zero Cumulative Layout Shift (CLS)**.
-  - [ ] **Assert**: Analytics chart renders 7D timeline instantly without secondary loading spinners.
-  - [ ] **Assert**: AI Quota badge displays `1 scan remaining today`.
+- [x] **Step 1.1**: Authenticate as `free@dietdost.app`.
+- [x] **Step 1.2**: Inspect Network tab during initial application load (`initApp`):
+  - [x] **Assert**: Exactly **1 single composite request** to `GET /api/web/v1/dashboard?period=7D`.
+  - [x] **Assert**: Zero redundant requests to `/api/analytics/daily`, `/api/analytics/projections`, or `/api/meals/history`.
+  - [x] **Assert**: Response payload conforms to `WebDashboardCompositeDto` containing `user`, `todayLedger`, `projections`, `recentMeals`, `quota`, and `featureFlags`.
+  - [x] **Assert**: Server execution time is < 50ms (parallel `Task.WhenAll` query dispatch).
+- [x] **Step 1.3**: Inspect DOM layout rendering:
+  - [x] **Assert**: Hero Caloric HUD hydrates instantly from in-memory state with **zero Cumulative Layout Shift (CLS)**.
+  - [x] **Assert**: Analytics chart renders 7D timeline instantly without secondary loading spinners.
+  - [x] **Assert**: AI Quota badge displays `1 scan remaining today`.
 
 ---
 
@@ -82,6 +82,6 @@
 | `admin.demo@dietdost.app` | Premium (Admin) | 30 / day | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days |
 | `superadmin@dietdost.app` | SuperAdmin | Unlimited (-1) | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days |
 
-- [ ] Execute login and verification across all 5 tiers.
-- [ ] Verify paywall modal appears on gated feature click for Free and Basic users.
-- [ ] Verify zero console errors (`Uncaught TypeError`, `404 Not Found`) across all scenarios.
+- [x] Execute login and verification across all 5 tiers (Verified via `pwsh -File tests/validate_e2e_tiers.ps1` - 100% Pass).
+- [x] Verify paywall modal appears on gated feature click for Free and Basic users (Verified via Browser subagent).
+- [x] Verify zero console errors (`Uncaught TypeError`, `404 Not Found`) across all scenarios.
