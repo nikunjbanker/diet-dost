@@ -33,6 +33,35 @@
       "parentPR": 0,
       "parentBranch": "main",
       "notes": "PR #35 opened and verified with 148 passing tests (0 errors, 0 warnings). Awaiting review and merge into main."
+    },
+    "36": {
+      "issueNumber": 36,
+      "title": "fix(presentation): disable or hide buttons for unavailable premium features and enforce 403 API response",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-10-01T20:00:00.0000000+05:30",
+      "issueType": "fix",
+      "branchName": "fix/issue-36-disable-or-hide-gated-premium-buttons",
+      "phase": "PR_OPENED",
+      "prNumber": 37,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/37",
+      "updatedAt": "2026-10-01T20:20:00Z",
+      "detectedAt": "2026-10-01T20:00:00.0000000+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "PROMOTED_FROM_QUEUE",
+        "ACT_ANALYZED",
+        "IMPLEMENTED",
+        "VALIDATED",
+        "TESTED",
+        "PR_OPENED"
+      ],
+      "isStacked": false,
+      "parentPR": 0,
+      "parentBranch": "main",
+      "notes": "PR #37 opened and verified with 148 passing tests, 100% live multi-tier CFT pass, and browser verification. Awaiting review and merge into main."
     }
   },
   "completedIssues": {

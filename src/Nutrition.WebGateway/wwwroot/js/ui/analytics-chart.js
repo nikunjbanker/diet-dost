@@ -264,6 +264,7 @@ export class AnalyticsChartController {
       }
       this.renderMealData(recentMeals);
     }
+    this._updateExportButtonState();
   }
 
   /**
@@ -437,6 +438,33 @@ export class AnalyticsChartController {
       this.renderCards(meals);
     } else {
       this.renderGrid(meals);
+    }
+
+    this._updateExportButtonState();
+  }
+
+  /**
+   * Updates state of Export Excel button based on user entitlements.
+   * Disables button for tiers without data export permission.
+   */
+  _updateExportButtonState() {
+    const el = this.elements;
+    if (!el.btnExportExcel) return;
+    const user = this._authService?.currentUser;
+    const isExportAllowed = user?.entitlements?.allowDataExport ?? this._authService?.isAdmin();
+
+    if (isExportAllowed === false) {
+      el.btnExportExcel.disabled = true;
+      el.btnExportExcel.classList.add('disabled');
+      el.btnExportExcel.style.opacity = '0.5';
+      el.btnExportExcel.style.cursor = 'not-allowed';
+      el.btnExportExcel.title = 'Exporting meal history (Excel / CSV) is a Premium tier feature. Please upgrade your plan.';
+    } else {
+      el.btnExportExcel.disabled = false;
+      el.btnExportExcel.classList.remove('disabled');
+      el.btnExportExcel.style.opacity = '';
+      el.btnExportExcel.style.cursor = '';
+      el.btnExportExcel.title = 'Export all meal & nutrition data to Microsoft Excel';
     }
   }
 

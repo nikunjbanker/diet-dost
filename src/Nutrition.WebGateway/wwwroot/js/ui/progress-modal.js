@@ -148,6 +148,16 @@ export class ProgressModalController {
   }
 
   open(targetTab = 'pane-face-progress') {
+    const user = this._authService?.currentUser;
+    const isCompareAllowed = user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true;
+
+    if (!isCompareAllowed && targetTab !== 'pane-checkin-upload') {
+      if (typeof window.openQuotaModal === 'function') {
+        window.openQuotaModal();
+      }
+      return;
+    }
+
     this.switchTab(targetTab);
     const el = this.elements;
 
@@ -168,6 +178,16 @@ export class ProgressModalController {
   }
 
   switchTab(targetTab) {
+    const user = this._authService?.currentUser;
+    const isCompareAllowed = user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true;
+
+    if (!isCompareAllowed && targetTab !== 'pane-checkin-upload') {
+      if (typeof window.openQuotaModal === 'function') {
+        window.openQuotaModal();
+      }
+      return;
+    }
+
     document.querySelectorAll('.progress-tab-btn').forEach(b => {
       if (b.dataset.tab === targetTab) b.classList.add('active');
       else b.classList.remove('active');
@@ -187,9 +207,29 @@ export class ProgressModalController {
     const faceCard = document.getElementById('face-progress-card');
     const faceGrid = faceCard?.querySelector('.face-comparison-grid');
     let lockedOverlay = document.getElementById('face-progress-locked-overlay');
+    const el = this.elements;
 
     if (!isCompareAllowed) {
       if (faceGrid) faceGrid.style.display = 'none';
+      if (el.btnOpenBody) {
+        el.btnOpenBody.disabled = true;
+        el.btnOpenBody.style.display = 'none';
+      }
+      if (el.btnOpenHeader) {
+        el.btnOpenHeader.disabled = true;
+        el.btnOpenHeader.style.display = 'none';
+      }
+      if (el.faceDeltaPill) {
+        el.faceDeltaPill.style.display = 'none';
+      }
+      // Gated modal comparison tabs hidden for tiers without photo comparison entitlement
+      document.querySelectorAll('.progress-tab-btn').forEach(btn => {
+        if (btn.dataset.tab !== 'pane-checkin-upload') {
+          btn.disabled = true;
+          btn.style.display = 'none';
+        }
+      });
+
       if (!lockedOverlay && faceCard) {
         lockedOverlay = document.createElement('div');
         lockedOverlay.id = 'face-progress-locked-overlay';
@@ -209,6 +249,21 @@ export class ProgressModalController {
 
     if (faceGrid) faceGrid.style.display = 'grid';
     if (lockedOverlay) lockedOverlay.style.display = 'none';
+    if (el.btnOpenBody) {
+      el.btnOpenBody.disabled = false;
+      el.btnOpenBody.style.display = '';
+    }
+    if (el.btnOpenHeader) {
+      el.btnOpenHeader.disabled = false;
+      el.btnOpenHeader.style.display = '';
+    }
+    if (el.faceDeltaPill) {
+      el.faceDeltaPill.style.display = '';
+    }
+    document.querySelectorAll('.progress-tab-btn').forEach(btn => {
+      btn.disabled = false;
+      btn.style.display = '';
+    });
 
     try {
       const data = await this._progress.getComparison(this._state.userId);
