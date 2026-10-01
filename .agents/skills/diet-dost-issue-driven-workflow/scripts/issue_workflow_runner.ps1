@@ -278,7 +278,7 @@ function Invoke-IssueSync {
             if ($single -and $single.state -eq "CLOSED") {
                 Write-Host "==> Held issue #$hk was CLOSED on GitHub. Archiving." -ForegroundColor Magenta
                 $heldRec.phase = "COMPLETED"
-                $heldRec.completedAt = (Get-Date).ToString("o")
+                $heldRec | Add-Member -NotePropertyName "completedAt" -NotePropertyValue (Get-Date).ToString("o") -Force
                 $State.completedIssues | Add-Member -NotePropertyName $hk -NotePropertyValue $heldRec -Force
                 $State.heldIssues.PSObject.Properties.Remove($hk)
                 Save-WorkflowState -Path $StateFile -State $State
@@ -432,10 +432,12 @@ function Invoke-IssueSync {
         } elseif ($currentRecord) {
             # Issue updated in GitHub
             if ($currentRecord.updatedAt -ne $issue.updatedAt) {
-                Write-Host "==> DETECTED update on issue #$($issue.number): '$($issue.title)'" -ForegroundColor Yellow
                 $currentRecord.updatedAt = $issue.updatedAt
-                $currentRecord.notes = "Issue updated on GitHub: requires re-analysis (ACT phase)."
-                if ($currentRecord.phase -ne "COMPLETED") {
+                if ($currentRecord.phase -in @("PR_OPENED", "DRAFT_PR_CREATED", "TESTED", "COMPLETED")) {
+                    Write-Host "    Issue #$($issue.number) updated (Comment/activity in phase $($currentRecord.phase)). Maintaining current phase." -ForegroundColor DarkGray
+                } else {
+                    Write-Host "==> DETECTED requirement update on issue #$($issue.number): '$($issue.title)'" -ForegroundColor Yellow
+                    $currentRecord.notes = "Issue updated on GitHub: requires re-analysis (ACT phase)."
                     $currentRecord.phase = "ACT_ANALYZING"
                     $currentRecord.checkpoints += "ACT_RETRIGGERED"
                 }
@@ -462,7 +464,7 @@ function Invoke-IssueSync {
                 Write-Host "==> Issue #$k was CLOSED on GitHub. Archiving from active state." -ForegroundColor Magenta
                 $rec = $State.activeIssues.$k
                 $rec.phase = "COMPLETED"
-                $rec.completedAt = (Get-Date).ToString("o")
+                $rec | Add-Member -NotePropertyName "completedAt" -NotePropertyValue (Get-Date).ToString("o") -Force
                 $State.completedIssues | Add-Member -NotePropertyName $k -NotePropertyValue $rec -Force
                 $State.activeIssues.PSObject.Properties.Remove($k)
                 Save-WorkflowState -Path $StateFile -State $State
