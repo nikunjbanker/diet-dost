@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-01T12:00:52.1169486+05:30",
+  "lastUpdated": "2026-10-01T15:51:03.1481351+05:30",
   "activeIssues": {
     "28": {
       "issueNumber": 28,
@@ -14,8 +14,10 @@
       "approvedAt": "2026-09-30T19:01:04.7458359+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-28-feat-web-client-single-roundtrip-hydration",
-      "phase": "TESTED",
-      "updatedAt": "2026-10-01T15:46:00+05:30",
+      "phase": "PR_OPENED",
+      "prNumber": 35,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/35",
+      "updatedAt": "2026-09-30T10:01:34Z",
       "detectedAt": "2026-09-30T19:01:04.7459634+05:30",
       "checkpoints": [
         "DETECTED",
@@ -24,12 +26,13 @@
         "ACT_ANALYZED",
         "IMPLEMENTED",
         "VALIDATED",
-        "TESTED"
+        "TESTED",
+        "PR_OPENED"
       ],
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "main",
-      "notes": "Single-roundtrip web hydration implemented, verified with 148 passing tests (0 errors, 0 warnings). Ready for PR creation."
+      "notes": "PR #35 opened and verified with 148 passing tests (0 errors, 0 warnings). Awaiting review and merge into main."
     }
   },
   "completedIssues": {
