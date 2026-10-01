@@ -313,8 +313,9 @@ function Invoke-IssueSync {
         $currentRecord = $State.activeIssues.$numStr
         $heldRecord = $State.heldIssues.$numStr
         $queuedRecord = $State.queuedIssues.$numStr
+        $completedRecord = $State.completedIssues.$numStr
 
-        if ($null -eq $currentRecord -and $null -eq $heldRecord -and $null -eq $queuedRecord) {
+        if ($null -eq $currentRecord -and $null -eq $heldRecord -and $null -eq $queuedRecord -and $null -eq $completedRecord) {
             # New Issue Intake
             $author = if ($issue.author -and $issue.author.login) { $issue.author.login } else { "unknown" }
             $approval = Test-IssueCodeownerApproval -Issue $issue -Codeowners $codeowners

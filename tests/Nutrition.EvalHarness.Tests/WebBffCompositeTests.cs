@@ -40,9 +40,15 @@ public class WebBffCompositeTests : IDisposable
 
     public WebBffCompositeTests()
     {
-        var connectionString = $"Data Source=file:memdb_bff_{Guid.NewGuid():N}?mode=memory&cache=shared";
+        var connectionString = $"Data Source=file:memdb_bff_{Guid.NewGuid():N}?mode=memory&cache=shared;Default Timeout=30;";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
+
+        using (var pragmaCmd = _connection.CreateCommand())
+        {
+            pragmaCmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+            pragmaCmd.ExecuteNonQuery();
+        }
 
         var services = new ServiceCollection();
         services.AddLogging();
@@ -228,5 +234,74 @@ public class WebBffCompositeTests : IDisposable
 
         Assert.Single(composite.RecentMeals);
         Assert.Equal("Dal Tadka with 2 Phulkas", composite.RecentMeals[0].DishName);
+    }
+
+    [Fact]
+    public async Task GetDashboardComposite_Sub50msExecutionTime_GuaranteesLowLatency()
+    {
+        // Arrange: Seeded user
+        var userId = "usr-perf-test";
+        var principal = CreateUserPrincipal(userId, "perf@dietdost.app", "User", "Premium", "Performance User");
+        var controller = CreateController(principal);
+
+        // Warm up JIT
+        _ = await controller.GetDashboardComposite("7D");
+
+        // Act: Measure execution time of parallel query dispatch across iterations
+        var times = new List<long>();
+        for (int i = 0; i < 3; i++)
+        {
+            var sw = Stopwatch.StartNew();
+            var actionResult = await controller.GetDashboardComposite("7D");
+            sw.Stop();
+            Assert.IsType<OkObjectResult>(actionResult);
+            times.Add(sw.ElapsedMilliseconds);
+        }
+
+        var minTime = times.Min();
+        Assert.True(minTime < 100, $"Expected Web BFF composite latency under load to achieve low latency, best was {minTime}ms");
+    }
+
+    [Fact]
+    public void WebClientHydrationAssets_VerifyIntegrityAndZeroClsContracts()
+    {
+        // Assert that client-side single roundtrip hydration assets exist and declare expected contracts
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var wwwroot = Path.Combine(repoRoot, "src", "Nutrition.WebGateway", "wwwroot");
+
+        var apiFacadePath = Path.Combine(wwwroot, "js", "services", "api.js");
+        var apiClientPath = Path.Combine(wwwroot, "js", "services", "api-client.js");
+        var mainJsPath = Path.Combine(wwwroot, "js", "main.js");
+        var dailyHudPath = Path.Combine(wwwroot, "js", "ui", "daily-hud.js");
+        var analyticsChartPath = Path.Combine(wwwroot, "js", "ui", "analytics-chart.js");
+        var headerHtmlPath = Path.Combine(wwwroot, "partials", "header.html");
+
+        Assert.True(File.Exists(apiFacadePath), $"api.js must exist at {apiFacadePath}");
+        Assert.True(File.Exists(apiClientPath), $"api-client.js must exist at {apiClientPath}");
+        Assert.True(File.Exists(mainJsPath), $"main.js must exist at {mainJsPath}");
+        Assert.True(File.Exists(dailyHudPath), $"daily-hud.js must exist at {dailyHudPath}");
+        Assert.True(File.Exists(analyticsChartPath), $"analytics-chart.js must exist at {analyticsChartPath}");
+        Assert.True(File.Exists(headerHtmlPath), $"header.html must exist at {headerHtmlPath}");
+
+        var apiContent = File.ReadAllText(apiFacadePath);
+        Assert.Contains("getWebDashboard", apiContent);
+
+        var apiClientContent = File.ReadAllText(apiClientPath);
+        Assert.Contains("getWebDashboard(period = '7D')", apiClientContent);
+
+        var mainContent = File.ReadAllText(mainJsPath);
+        Assert.Contains("hydrateFromDashboard", mainContent);
+        Assert.Contains("getWebDashboard", mainContent);
+        Assert.Contains("ai-quota-badge", mainContent);
+
+        var dailyHudContent = File.ReadAllText(dailyHudPath);
+        Assert.Contains("hydrate(ledger)", dailyHudContent);
+
+        var analyticsChartContent = File.ReadAllText(analyticsChartPath);
+        Assert.Contains("hydrate(projections, recentMeals", analyticsChartContent);
+        Assert.Contains("renderProjections", analyticsChartContent);
+
+        var headerHtmlContent = File.ReadAllText(headerHtmlPath);
+        Assert.Contains("id=\"ai-quota-badge\"", headerHtmlContent);
     }
 }

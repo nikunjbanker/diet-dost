@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -179,9 +179,11 @@ export class ProgressModalController {
     });
   }
 
-  async refresh() {
+  async refresh(preloadedFlags = null) {
     const user = this._authService?.currentUser;
-    const isCompareAllowed = user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true;
+    const isCompareAllowed = preloadedFlags?.canComparePhotos !== undefined
+      ? preloadedFlags.canComparePhotos
+      : (user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true);
     const faceCard = document.getElementById('face-progress-card');
     const faceGrid = faceCard?.querySelector('.face-comparison-grid');
     let lockedOverlay = document.getElementById('face-progress-locked-overlay');

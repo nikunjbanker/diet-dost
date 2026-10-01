@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -112,6 +112,7 @@ export class MealsService {
 
   /**
    * Retrieve logged meal history with child items for a user and period/date.
+   * @deprecated Deprecated for initial startup hydration in favor of Web BFF single-roundtrip getWebDashboard(). Retained for filtered search, pagination, and post-logging refresh.
    * @param {string} userId
    * @param {string} [period='7D']
    * @param {string|null} [date=null]

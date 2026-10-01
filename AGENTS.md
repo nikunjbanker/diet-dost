@@ -106,9 +106,14 @@ This solution-level instruction file defines mandatory engineering and Git workf
 2. **Step 1: Perform All Changes Strictly on the Branch**:
    - Implement the required changes, domain logic, and tests within this isolated branch.
    - Run local validation: `dotnet test` and build checks (targeting .NET 11 with 0 warnings).
-3. **Step 2: Perform End-to-End User Tier Validation**:
-   - Run end-to-end product verification across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`).
-   - Validate that tier quotas, feature gating (photo comparison, data export, analytics history), and role permissions function accurately in the actual product with 0 runtime or console errors.
+3. **Step 2: Mandatory Live CFT & End-to-End User Tier Execution (Strict Pre-PR Gate)**:
+   > [!CRITICAL]
+   > **Zero Regression & Zero Assumption Pre-PR Mandate**:
+   > Never raise a Pull Request relying solely on unit tests. Unit tests test isolated code in memory; they do NOT detect runtime wiring failures, asset 404s, CORS drops, or UI regression. Before committing and opening ANY PR:
+   > 1. **Boot Local Service**: Launch `Nutrition.WebGateway` on `http://localhost:5240` (via background daemon or process).
+   > 2. **Execute Multi-Tier CFT Suite**: Run `pwsh -File tests/validate_e2e_tiers.ps1` to validate all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Assert 100% pass rate across auth, ledger, AI quota gating, photo paywalls, and composite hydration.
+   > 3. **Execute Interactive UI Verification (for Presentation Changes)**: Run browser verification (via `browser_subagent`) on `http://localhost:5240` to assert zero console errors, zero Cumulative Layout Shift (CLS), and verified UI badge/component behavior.
+   > 4. **Mandatory PR Evidence Publishing**: The exact terminal output and verification logs from the live CFT run MUST be published directly into the PR description under a dedicated `## 5. Live Customer & Functional Acceptance Test (CFT) Execution Evidence` section.
 4. **Step 3: Major Change Auto-Detection & Living Synchronization**:
    - **Auto-Detect Major Changes**: Any modification involving:
      1. *Layer or Architectural Boundaries* (Clean Architecture, Native CQRS handlers, Ports/Adapters, DI registrations).
@@ -129,6 +134,12 @@ This solution-level instruction file defines mandatory engineering and Git workf
      ```
    - **All changes MUST be merged into `main` using a Pull Request (PR) only**.
    - Direct merges or pushes to `main` without PR review and CI green-light are strictly forbidden.
+   - Every PR description MUST include:
+     1. Stack Navigation Callout (if stacked)
+     2. Executive Summary & Purpose
+     3. Changes Summary table
+     4. Forward Roadmap & Reusability Impact
+     5. Live CFT Execution Evidence (terminal output log from `tests/validate_e2e_tiers.ps1` and browser verification)
 
 ---
 

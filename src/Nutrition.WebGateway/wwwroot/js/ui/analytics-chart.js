@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -15,14 +15,16 @@ export class AnalyticsChartController {
    * @param {Object} options
    * @param {import('../services/analytics-service.js').AnalyticsService} options.analyticsService
    * @param {import('../services/meals-service.js').MealsService} [options.mealsService]
+   * @param {import('../services/api-client.js').ApiClient} [options.apiClient]
    * @param {import('./toast.js').ToastService} [options.toastService]
    * @param {import('../services/auth-service.js').AuthService} [options.authService]
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
    */
-  constructor({ analyticsService, mealsService, toastService, authService, appState, eventBus }) {
+  constructor({ analyticsService, mealsService, apiClient, toastService, authService, appState, eventBus }) {
     this._analytics = analyticsService;
     this._meals = mealsService;
+    this._apiClient = apiClient;
     this._toast = toastService;
     this._authService = authService;
     this._state = appState;
@@ -132,6 +134,11 @@ export class AnalyticsChartController {
    * Switch the active analytics timeline period.
    * @param {'1D'|'7D'|'30D'|'90D'|'365D'} period
    */
+  /**
+   * Switch the active analytics timeline period.
+   * Leverages Web BFF single-roundtrip composite hydration when apiClient is available.
+   * @param {'1D'|'7D'|'30D'|'90D'|'365D'} period
+   */
   async switchPeriod(period) {
     document.querySelectorAll('.tab-btn').forEach(b => {
       if (b.dataset.period === period) b.classList.add('active');
@@ -140,80 +147,140 @@ export class AnalyticsChartController {
 
     this._state.activePeriod = period;
     this._selectedBarFilter = null;
+
+    if (this._apiClient) {
+      try {
+        const dashboard = await this._apiClient.getWebDashboard(period);
+        if (dashboard && dashboard.projections) {
+          this.hydrate(dashboard.projections, dashboard.recentMeals, period);
+          return;
+        }
+      } catch (err) {
+        console.warn('[AnalyticsChartController] Single-roundtrip period switch failed, falling back:', err);
+      }
+    }
+
     await this.refresh();
   }
 
   /**
-   * Fetch projection data, render bar chart, and load corresponding logged meals.
+   * Render projection stats and bar chart from projection data.
+   * @param {Object} data
+   * @param {string} [period='7D']
    */
-  async refresh() {
-    try {
-      const period = this._state.activePeriod || '7D';
-      const el = this.elements;
+  renderProjections(data, period = '7D') {
+    const el = this.elements;
 
-      if (el.periodTitle) {
-        const titles = {
-          '1D': 'Daily',
+    if (el.periodTitle) {
+      const titles = {
+        '1D': 'Daily',
+        '7D': '7-Day',
+        '30D': '30-Day',
+        '90D': 'Quarterly (90D)',
+        '365D': 'Yearly (1Y)'
+      };
+      el.periodTitle.textContent = titles[period] || period;
+    }
+
+    if (el.mealLogClearPeriod) {
+      el.mealLogClearPeriod.textContent = period;
+    }
+
+    if (!data) return;
+
+    if (el.statTotalDeficit) {
+      el.statTotalDeficit.textContent = `${Math.round(data.totalDeficitKcal || 0).toLocaleString()} kcal`;
+    }
+    if (el.statProjectedWeight) {
+      el.statProjectedWeight.textContent = `${data.projectedWeightLossKg || 0} kg`;
+    }
+    if (el.statProteinCompliance) {
+      el.statProteinCompliance.textContent = `${Math.round(data.proteinCompliancePercent || 0)}%`;
+    }
+
+    if (el.barChartContainer && data.dailyTrends && data.dailyTrends.length > 0) {
+      const maxKcal = Math.max(
+        ...data.dailyTrends.map(d => Math.max(d.consumedCalories || 0, d.budgetCalories || 0)),
+        2000
+      );
+
+      el.barChartContainer.innerHTML = data.dailyTrends.map((d, idx) => {
+        const heightPct = Math.max(4, Math.round(((d.consumedCalories || 0) / maxKcal) * 100));
+        const color = (d.consumedCalories || 0) > (d.budgetCalories || 0)
+          ? 'var(--status-rose)'
+          : (d.consumedCalories || 0) === 0
+          ? 'rgba(255,255,255,0.06)'
+          : 'var(--accent-brand)';
+        const dateLabel = d.date || d.Date || '';
+
+        return `
+          <div class="chart-bar-group" data-index="${idx}" data-label="${dateLabel}">
+            <div class="chart-bar" style="height: ${heightPct}%; background: ${color};" 
+                 data-tooltip="${dateLabel}: ${Math.round(d.consumedCalories || 0)} / ${Math.round(d.budgetCalories || 0)} kcal"
+                 data-label="${dateLabel}"></div>
+            <div class="chart-label">${dateLabel}</div>
+          </div>
+        `;
+      }).join('');
+
+      // Wire interactive chart bar clicks
+      el.barChartContainer.querySelectorAll('.chart-bar-group').forEach(group => {
+        group.addEventListener('click', () => {
+          const label = group.dataset.label;
+          const bar = group.querySelector('.chart-bar');
+          this.handleBarClick(label, bar, period);
+        });
+      });
+    }
+  }
+
+  /**
+   * Synchronously hydrates chart and meals from preloaded composite payload.
+   * Eliminates secondary spinners and cumulative layout shift.
+   * @param {Object} projections
+   * @param {Array<Object>} [recentMeals]
+   * @param {string} [period='7D']
+   */
+  hydrate(projections, recentMeals = null, period = '7D') {
+    this.renderProjections(projections, period);
+    if (recentMeals) {
+      this._currentMeals = recentMeals;
+      const el = this.elements;
+      if (el.mealLogCountBadge) {
+        el.mealLogCountBadge.textContent = `${recentMeals.length} meal${recentMeals.length === 1 ? '' : 's'}`;
+      }
+      if (el.mealLogFilterSubtitle) {
+        const periodLabels = {
+          '1D': "Today's",
           '7D': '7-Day',
           '30D': '30-Day',
           '90D': 'Quarterly (90D)',
           '365D': 'Yearly (1Y)'
         };
-        el.periodTitle.textContent = titles[period] || period;
+        el.mealLogFilterSubtitle.textContent = `Showing ${periodLabels[period] || period} meal history`;
       }
-
-      if (el.mealLogClearPeriod) {
-        el.mealLogClearPeriod.textContent = period;
+      if (el.mealLogClearFilter) {
+        el.mealLogClearFilter.classList.add('hidden');
       }
+      this.renderMealData(recentMeals);
+    }
+  }
 
+  /**
+   * Fetch projection data, render bar chart, and load corresponding logged meals.
+   * If preloadedProjections is provided, hydrates synchronously with 0 redundant network calls.
+   * @param {Object} [preloadedProjections=null]
+   * @param {Array<Object>} [preloadedMeals=null]
+   */
+  async refresh(preloadedProjections = null, preloadedMeals = null) {
+    const period = this._state.activePeriod || '7D';
+    if (preloadedProjections) {
+      this.hydrate(preloadedProjections, preloadedMeals, period);
+      return;
+    }
+    try {
       const data = await this._analytics.getProjections(this._state.userId, period);
-      if (data) {
-        if (el.statTotalDeficit) {
-          el.statTotalDeficit.textContent = `${Math.round(data.totalDeficitKcal).toLocaleString()} kcal`;
-        }
-        if (el.statProjectedWeight) {
-          el.statProjectedWeight.textContent = `${data.projectedWeightLossKg} kg`;
-        }
-        if (el.statProteinCompliance) {
-          el.statProteinCompliance.textContent = `${Math.round(data.proteinCompliancePercent)}%`;
-        }
-
-        if (el.barChartContainer && data.dailyTrends && data.dailyTrends.length > 0) {
-          const maxKcal = Math.max(
-            ...data.dailyTrends.map(d => Math.max(d.consumedCalories, d.budgetCalories)),
-            2000
-          );
-
-          el.barChartContainer.innerHTML = data.dailyTrends.map((d, idx) => {
-            const heightPct = Math.max(4, Math.round((d.consumedCalories / maxKcal) * 100));
-            const color = d.consumedCalories > d.budgetCalories
-              ? 'var(--status-rose)'
-              : d.consumedCalories === 0
-              ? 'rgba(255,255,255,0.06)'
-              : 'var(--accent-brand)';
-            const dateLabel = d.date || d.Date || '';
-
-            return `
-              <div class="chart-bar-group" data-index="${idx}" data-label="${dateLabel}">
-                <div class="chart-bar" style="height: ${heightPct}%; background: ${color};" 
-                     data-tooltip="${dateLabel}: ${Math.round(d.consumedCalories)} / ${Math.round(d.budgetCalories)} kcal"
-                     data-label="${dateLabel}"></div>
-                <div class="chart-label">${dateLabel}</div>
-              </div>
-            `;
-          }).join('');
-
-          // Wire interactive chart bar clicks
-          el.barChartContainer.querySelectorAll('.chart-bar-group').forEach(group => {
-            group.addEventListener('click', () => {
-              const label = group.dataset.label;
-              const bar = group.querySelector('.chart-bar');
-              this.handleBarClick(label, bar, period);
-            });
-          });
-        }
-      }
-
+      this.renderProjections(data, period);
       // Load meal history for current period
       await this.loadMeals(period, this._selectedBarFilter);
     } catch (err) {

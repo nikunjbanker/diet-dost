@@ -58,6 +58,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-052** | Zero-Throwaway Engineering, Cross-Phase Reusability & Forward-Roadmap Compatibility Mandate | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md) |
 | **ADR-053** | Web BFF Composite Endpoint & Shared Application CQRS Queries | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20260930-053-web-bff-composite-endpoint-and-shared-cqrs-queries.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-053-web-bff-composite-endpoint-and-shared-cqrs-queries.md) |
 | **ADR-054** | Shared CQRS Query Consolidation & Native Dispatcher Integration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261001-054-shared-cqrs-query-consolidation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-054-shared-cqrs-query-consolidation.md) |
+| **ADR-055** | Web Client Single-Roundtrip Hydration & Zero CLS Orchestration | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261001-055-web-client-single-roundtrip-hydration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-055-web-client-single-roundtrip-hydration.md) |
 
 ---
 

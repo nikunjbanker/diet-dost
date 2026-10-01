@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -19,6 +19,7 @@ export class AnalyticsService {
 
   /**
    * Retrieve projections and daily trend bars for a given time window.
+   * @deprecated Deprecated for startup hydration in favor of Web BFF single-roundtrip getWebDashboard(). Retained for on-demand period switching and chart filtering.
    * @param {string} userId
    * @param {string} period - '7D', '30D', '90D', or '365D'
    */
@@ -28,6 +29,7 @@ export class AnalyticsService {
 
   /**
    * Retrieve daily calorie balance and macro consumption ledger for today.
+   * @deprecated Deprecated for startup hydration in favor of Web BFF single-roundtrip getWebDashboard(). Retained for post-logging mutations.
    * @param {string} userId
    */
   async getDailyLedger(userId) {

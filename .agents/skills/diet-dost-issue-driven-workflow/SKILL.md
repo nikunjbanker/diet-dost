@@ -175,8 +175,8 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
 
 ---
 
-### Phase 4: VALIDATE (Static Analysis & Multi-Tier Verification)
-* **Objective**: Validate code quality, licensing, and security boundaries.
+### Phase 4: VALIDATE (Static Analysis & Live Multi-Tier CFT Verification)
+* **Objective**: Validate code quality, licensing, security boundaries, and live running product behavior.
 * **Actions**:
   1. **Compile & Roslyn Validation**:
      ```bash
@@ -188,18 +188,32 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
      powershell -ExecutionPolicy Bypass -File .agents/skills/diet-dost-license-governance/scripts/verify_license_headers.ps1
      ```
      *Assert*: 100% compliant under dual AGPLv3 / SSPL v1 licensing.
-  3. **End-to-End Demo User Tier Validation**:
-     - Verify seeded demo accounts across all 5 tiers:
-       `free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` (Password: `DietDost@Demo2026!`).
-     - Assert tier quotas, feature gating, and role permissions function with 0 runtime errors.
-  4. Record phase `VALIDATED` in local state.
+  3. **Mandatory Live Multi-Tier CFT Suite Execution (Pre-PR Gate)**:
+     - Boot WebGateway locally on `http://localhost:5240` (via `dotnet run --project src/Nutrition.WebGateway` as a background process/daemon).
+     - Execute the live multi-tier test suite against the live service:
+       ```powershell
+       pwsh -File tests/validate_e2e_tiers.ps1
+       ```
+     - Assert 100% pass across all 5 tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with `DietDost@Demo2026!`):
+       - Authentication & JWT issuance
+       - Clinical profile calculations
+       - Daily calorie ledger
+       - Dynamic AI vision quota limits
+       - Photo comparison paywall gating (403 on Free/Basic, 200 on Premium+)
+       - Meal data export gating (403 on Free/Basic, 200 on Premium+)
+       - Admin user access
+       - Web BFF composite dashboard hydration
+  4. **Interactive UI Verification (For Presentation/Web Changes)**:
+     - Execute `browser_subagent` session against `http://localhost:5240`.
+     - Verify single-roundtrip hydration, zero Cumulative Layout Shift (CLS), badge/component rendering, and zero browser console errors.
+  5. Record phase `VALIDATED` in local state.
 
 ---
 
 ### Phase 5: TEST / RETEST (Closed-Loop Testing & CFT Maintenance)
 * **Objective**: Execute test suites, maintain platform CFTs, and verify cross-platform parity.
 * **Actions**:
-  1. **Automated Test Execution**:
+  1. **Automated Unit & Integration Test Execution**:
      ```bash
      dotnet test --configuration Release
      ```
@@ -236,10 +250,14 @@ Before opening the Draft PR, the agent MUST update living documentation:
    ```bash
    git push -u origin <branch-name>
    ```
-2. **Create Draft PR via GitHub CLI**:
+2. **Mandatory Live CFT Results in PR Description**:
+   - Every PR MUST include a dedicated section:
+     `## 5. Live Customer & Functional Acceptance Test (CFT) Execution Evidence`
+     containing the raw terminal output from `pwsh -File tests/validate_e2e_tiers.ps1` and browser verification notes. PRs without live CFT evidence are prohibited.
+3. **Create Draft PR via GitHub CLI**:
    - **For Independent PRs**:
      ```powershell
-     gh pr create --draft --base main --head <branch-name> --title "<type>(issue-<num>): <title>" --body "## Summary`n`nCloses #<num>`n`n### Implementation Details`n- Completed via Autonomous Issue-Driven Workflow (IDD).`n`n### Verification Results`n- \`dotnet test\`: 100% passed`n- CFT Checklist: \`docs/cft/...\` updated`n- ADR Registered: \`docs/adr/ADR-...\`"
+     gh pr create --draft --base main --head <branch-name> --title "<type>(issue-<num>): <title>" --body "..."
      ```
    - **For Stacked PRs (Consecutive / Dependent Features)**:
      ```powershell
