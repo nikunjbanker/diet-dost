@@ -2,23 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-01T01:00:26.5954384+05:30",
+  "lastUpdated": "2026-10-01T12:00:52.1169486+05:30",
   "activeIssues": {
-    "27": {
-      "issueNumber": 27,
-      "title": "feat(application): implement Phase 1 Layer 2 - shared CQRS query consolidation (ledger, analytics, history, quota)",
+    "28": {
+      "issueNumber": 28,
+      "title": "feat(presentation): implement Phase 1 Layer 3 - Web client single-roundtrip hydration in api.js and main.js",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-09-30T19:01:11.9342263+05:30",
+      "approvedAt": "2026-09-30T19:01:04.7458359+05:30",
       "issueType": "feature",
-      "branchName": "feature/issue-27-feat-application-cqrs-queries",
-      "phase": "PR_OPENED",
-      "prNumber": 34,
-      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/34",
-      "updatedAt": "2026-09-30T19:10:02Z",
-      "detectedAt": "2026-09-30T19:01:11.9343174+05:30",
+      "branchName": "feature/issue-28-feat-web-client-single-roundtrip-hydration",
+      "phase": "TESTED",
+      "updatedAt": "2026-10-01T15:46:00+05:30",
+      "detectedAt": "2026-09-30T19:01:04.7459634+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
@@ -26,13 +24,12 @@
         "ACT_ANALYZED",
         "IMPLEMENTED",
         "VALIDATED",
-        "TESTED",
-        "PR_OPENED"
+        "TESTED"
       ],
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "main",
-      "notes": "PR #34 opened and verified with 146 passing tests. Awaiting review and merge into main."
+      "notes": "Single-roundtrip web hydration implemented, verified with 148 passing tests (0 errors, 0 warnings). Ready for PR creation."
     }
   },
   "completedIssues": {
@@ -61,6 +58,37 @@
       "parentBranch": "",
       "notes": "Issue updated on GitHub: requires re-analysis (ACT phase).",
       "completedAt": "2026-09-30T22:01:44.7271581+05:30"
+    },
+    "27": {
+      "issueNumber": 27,
+      "title": "feat(application): implement Phase 1 Layer 2 - shared CQRS query consolidation (ledger, analytics, history, quota)",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:01:11.9342263+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-27-feat-application-cqrs-queries",
+      "phase": "COMPLETED",
+      "prNumber": 34,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/34",
+      "updatedAt": "2026-09-30T19:10:02Z",
+      "detectedAt": "2026-09-30T19:01:11.9343174+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED",
+        "PROMOTED_FROM_QUEUE",
+        "ACT_ANALYZED",
+        "IMPLEMENTED",
+        "VALIDATED",
+        "TESTED",
+        "PR_OPENED"
+      ],
+      "isStacked": false,
+      "parentPR": 0,
+      "parentBranch": "main",
+      "notes": "PR #34 opened and verified with 146 passing tests. Awaiting review and merge into main.",
+      "completedAt": "2026-10-01T12:00:45.0871146+05:30"
     }
   },
   "heldIssues": {},
@@ -128,28 +156,6 @@
       ],
       "isStacked": true,
       "parentPR": 28,
-      "parentBranch": "",
-      "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
-    },
-    "28": {
-      "issueNumber": 28,
-      "title": "feat(presentation): implement Phase 1 Layer 3 - Web client single-roundtrip hydration in api.js and main.js",
-      "author": "nikunjbanker",
-      "isCodeownerAuthor": true,
-      "approvalStatus": "AUTHORIZED",
-      "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-09-30T19:01:04.7458359+05:30",
-      "issueType": "feature",
-      "branchName": "feature/issue-28-feat-presentation-implement-phase-1",
-      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-09-30T10:01:34Z",
-      "detectedAt": "2026-09-30T19:01:04.7459634+05:30",
-      "checkpoints": [
-        "DETECTED",
-        "QUEUED"
-      ],
-      "isStacked": true,
-      "parentPR": 27,
       "parentBranch": "",
       "notes": "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #26 to complete)."
     }

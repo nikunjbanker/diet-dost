@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -51,6 +51,17 @@ export class ApiClient {
     });
 
     return this._handleResponse(res);
+  }
+
+  /**
+   * Retrieves the composite web dashboard payload in a single HTTP roundtrip.
+   * Invokes GET /api/web/v1/dashboard?period=${period}
+   * Concurrently aggregated by the backend Web BFF controller across isolated DI scopes.
+   * @param {string} [period='7D']
+   * @returns {Promise<any>}
+   */
+  async getWebDashboard(period = '7D') {
+    return this.get('/api/web/v1/dashboard', { period });
   }
 
   /**

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -52,68 +52,87 @@ export class DailyHudController {
   }
 
   /**
-   * Fetch daily ledger and update HUD meters and figures.
+   * Synchronously hydrates HUD elements from preloaded ledger data without network roundtrip.
+   * @param {Object} ledger
    */
-  async refresh() {
+  hydrate(ledger) {
+    if (!ledger) return;
+    const el = this.elements;
+
+    if (el.consumed) el.consumed.textContent = Math.round(ledger.consumedCalories || 0).toLocaleString();
+    if (el.budget) el.budget.textContent = Math.round(ledger.budgetedCalories || 0).toLocaleString();
+    if (el.remaining) el.remaining.textContent = Math.round(ledger.pendingCalories || 0).toLocaleString();
+
+    if (el.remaining && el.progressFill) {
+      if ((ledger.consumedCalories || 0) > (ledger.budgetedCalories || 0)) {
+        el.remaining.classList.add('over');
+        el.progressFill.className = 'progress-bar-fill over';
+      } else if ((ledger.pendingCalories || 0) <= 200) {
+        el.remaining.classList.remove('over');
+        el.progressFill.className = 'progress-bar-fill warning';
+      } else {
+        el.remaining.classList.remove('over');
+        el.progressFill.className = 'progress-bar-fill';
+      }
+
+      const budget = Math.max(1, ledger.budgetedCalories || 1600);
+      const pct = Math.min(100, Math.round(((ledger.consumedCalories || 0) / budget) * 100));
+      el.progressFill.style.width = `${pct}%`;
+    }
+
+    // Macro gauges
+    if (el.proteinVal) el.proteinVal.textContent = `${Math.round(ledger.consumedProteinGrams || 0)}g`;
+    if (el.proteinTarget) el.proteinTarget.textContent = `/ ${Math.round(ledger.targetProteinGrams || 0)}g`;
+    if (el.meterProtein) {
+      const tgt = Math.max(1, ledger.targetProteinGrams || 1);
+      el.meterProtein.style.width = `${Math.min(100, ((ledger.consumedProteinGrams || 0) / tgt) * 100)}%`;
+    }
+
+    if (el.carbsVal) el.carbsVal.textContent = `${Math.round(ledger.consumedCarbsGrams || 0)}g`;
+    if (el.carbsTarget) el.carbsTarget.textContent = `/ ${Math.round(ledger.targetCarbsGrams || 0)}g`;
+    if (el.meterCarbs) {
+      const tgt = Math.max(1, ledger.targetCarbsGrams || 1);
+      el.meterCarbs.style.width = `${Math.min(100, ((ledger.consumedCarbsGrams || 0) / tgt) * 100)}%`;
+    }
+
+    if (el.fatVal) el.fatVal.textContent = `${Math.round(ledger.consumedFatGrams || 0)}g`;
+    if (el.fatTarget) el.fatTarget.textContent = `/ ${Math.round(ledger.targetFatGrams || 0)}g`;
+    if (el.meterFat) {
+      const tgt = Math.max(1, ledger.targetFatGrams || 1);
+      el.meterFat.style.width = `${Math.min(100, ((ledger.consumedFatGrams || 0) / tgt) * 100)}%`;
+    }
+
+    if (el.fiberVal) el.fiberVal.textContent = `${Math.round(ledger.consumedFiberGrams || 0)}g`;
+    if (el.fiberTarget) el.fiberTarget.textContent = `/ ${Math.round(ledger.targetFiberGrams || 0)}g`;
+    if (el.meterFiber) {
+      const tgt = Math.max(1, ledger.targetFiberGrams || 1);
+      el.meterFiber.style.width = `${Math.min(100, ((ledger.consumedFiberGrams || 0) / tgt) * 100)}%`;
+    }
+
+    // Health Score & Speech
+    if (el.scoreCircle) el.scoreCircle.textContent = ledger.healthScore ?? 85;
+    if (el.dostSpeech) el.dostSpeech.textContent = ledger.dostMessage || "Namaste! I am Diet Dost, your AI clinical nutrition companion.";
+    if (el.streakCounter) el.streakCounter.textContent = `🔥 ${ledger.consistencyStreakDays || 0}-Day Consistency Streak`;
+
+    // Earned badges
+    if (el.badges && ledger.earnedBadges && ledger.earnedBadges.length > 0) {
+      el.badges.innerHTML = ledger.earnedBadges.map(b => `<span class="badge-chip">${b}</span>`).join('');
+    }
+  }
+
+  /**
+   * Fetch daily ledger and update HUD meters and figures.
+   * If preloadedLedger is provided, hydrates synchronously with 0 network calls.
+   * @param {Object} [preloadedLedger]
+   */
+  async refresh(preloadedLedger = null) {
+    if (preloadedLedger) {
+      this.hydrate(preloadedLedger);
+      return;
+    }
     try {
-      const el = this.elements;
       const ledger = await this._analytics.getDailyLedger(this._state.userId);
-      if (!ledger) return;
-
-      if (el.consumed) el.consumed.textContent = Math.round(ledger.consumedCalories).toLocaleString();
-      if (el.budget) el.budget.textContent = Math.round(ledger.budgetedCalories).toLocaleString();
-      if (el.remaining) el.remaining.textContent = Math.round(ledger.pendingCalories).toLocaleString();
-
-      if (el.remaining && el.progressFill) {
-        if (ledger.consumedCalories > ledger.budgetedCalories) {
-          el.remaining.classList.add('over');
-          el.progressFill.className = 'progress-bar-fill over';
-        } else if (ledger.pendingCalories <= 200) {
-          el.remaining.classList.remove('over');
-          el.progressFill.className = 'progress-bar-fill warning';
-        } else {
-          el.remaining.classList.remove('over');
-          el.progressFill.className = 'progress-bar-fill';
-        }
-
-        const pct = Math.min(100, Math.round((ledger.consumedCalories / ledger.budgetedCalories) * 100));
-        el.progressFill.style.width = `${pct}%`;
-      }
-
-      // Macro gauges
-      if (el.proteinVal) el.proteinVal.textContent = `${Math.round(ledger.consumedProteinGrams)}g`;
-      if (el.proteinTarget) el.proteinTarget.textContent = `/ ${Math.round(ledger.targetProteinGrams)}g`;
-      if (el.meterProtein) {
-        el.meterProtein.style.width = `${Math.min(100, (ledger.consumedProteinGrams / ledger.targetProteinGrams) * 100)}%`;
-      }
-
-      if (el.carbsVal) el.carbsVal.textContent = `${Math.round(ledger.consumedCarbsGrams)}g`;
-      if (el.carbsTarget) el.carbsTarget.textContent = `/ ${Math.round(ledger.targetCarbsGrams)}g`;
-      if (el.meterCarbs) {
-        el.meterCarbs.style.width = `${Math.min(100, (ledger.consumedCarbsGrams / ledger.targetCarbsGrams) * 100)}%`;
-      }
-
-      if (el.fatVal) el.fatVal.textContent = `${Math.round(ledger.consumedFatGrams)}g`;
-      if (el.fatTarget) el.fatTarget.textContent = `/ ${Math.round(ledger.targetFatGrams)}g`;
-      if (el.meterFat) {
-        el.meterFat.style.width = `${Math.min(100, (ledger.consumedFatGrams / ledger.targetFatGrams) * 100)}%`;
-      }
-
-      if (el.fiberVal) el.fiberVal.textContent = `${Math.round(ledger.consumedFiberGrams)}g`;
-      if (el.fiberTarget) el.fiberTarget.textContent = `/ ${Math.round(ledger.targetFiberGrams)}g`;
-      if (el.meterFiber) {
-        el.meterFiber.style.width = `${Math.min(100, (ledger.consumedFiberGrams / ledger.targetFiberGrams) * 100)}%`;
-      }
-
-      // Health Score & Speech
-      if (el.scoreCircle) el.scoreCircle.textContent = ledger.healthScore;
-      if (el.dostSpeech) el.dostSpeech.textContent = ledger.dostMessage;
-      if (el.streakCounter) el.streakCounter.textContent = `🔥 ${ledger.consistencyStreakDays}-Day Consistency Streak`;
-
-      // Earned badges
-      if (el.badges && ledger.earnedBadges && ledger.earnedBadges.length > 0) {
-        el.badges.innerHTML = ledger.earnedBadges.map(b => `<span class="badge-chip">${b}</span>`).join('');
-      }
+      this.hydrate(ledger);
     } catch (err) {
       console.error('[DailyHudController] Failed to refresh ledger:', err);
     }

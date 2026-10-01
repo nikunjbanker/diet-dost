@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -14,27 +14,27 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient } from './services/api-client.js?v=1.3.8';
-import { AuthService } from './services/auth-service.js?v=1.3.8';
-import { AdminService } from './services/admin-service.js?v=1.3.8';
-import { MealsService } from './services/meals-service.js?v=1.3.8';
-import { ProfileService } from './services/profile-service.js?v=1.3.8';
-import { AnalyticsService } from './services/analytics-service.js?v=1.3.8';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.3.8';
-import { MedicationService } from './services/medication-service.js?v=1.3.8';
+import { ApiClient, apiClient, getWebDashboard } from './services/api.js?v=1.3.9';
+import { AuthService } from './services/auth-service.js?v=1.3.9';
+import { AdminService } from './services/admin-service.js?v=1.3.9';
+import { MealsService } from './services/meals-service.js?v=1.3.9';
+import { ProfileService } from './services/profile-service.js?v=1.3.9';
+import { AnalyticsService } from './services/analytics-service.js?v=1.3.9';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.3.9';
+import { MedicationService } from './services/medication-service.js?v=1.3.9';
 
-import { toastService } from './ui/toast.js?v=1.3.8';
-import { confettiService } from './ui/confetti.js?v=1.3.8';
-import { DailyHudController } from './ui/daily-hud.js?v=1.3.8';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.3.8';
-import { ReviewModalController } from './ui/review-modal.js?v=1.3.8';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.8';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.3.8';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.8';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.3.8';
-import { AuthGateController } from './ui/auth-gate.js?v=1.3.8';
-import { AdminModalController } from './ui/admin-modal.js?v=1.3.8';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.3.8';
+import { toastService } from './ui/toast.js?v=1.3.9';
+import { confettiService } from './ui/confetti.js?v=1.3.9';
+import { DailyHudController } from './ui/daily-hud.js?v=1.3.9';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.3.9';
+import { ReviewModalController } from './ui/review-modal.js?v=1.3.9';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.9';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.3.9';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.9';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.3.9';
+import { AuthGateController } from './ui/auth-gate.js?v=1.3.9';
+import { AdminModalController } from './ui/admin-modal.js?v=1.3.9';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.3.9';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -95,6 +95,7 @@ container.register('reviewModal', (c) => new ReviewModalController({
 container.register('analyticsChart', (c) => new AnalyticsChartController({
   analyticsService: c.resolve('analyticsService'),
   mealsService: c.resolve('mealsService'),
+  apiClient: c.resolve('apiClient'),
   toastService: c.resolve('toastService'),
   authService: c.resolve('authService'),
   appState: c.resolve('appState'),
@@ -184,10 +185,11 @@ async function initApp() {
   const progressModal = container.resolve('progressModal');
 
   // Helper: Synchronize user header badges and visibility
-  function updateUserUI(user) {
+  function updateUserUI(user, featureFlags = null, quota = null) {
     const avatarEl = document.getElementById('header-user-avatar');
     const nameEl = document.getElementById('header-user-name');
     const tierPillEl = document.getElementById('header-tier-pill');
+    const quotaBadgeEl = document.getElementById('ai-quota-badge');
     const dropdownNameEl = document.getElementById('dropdown-user-fullname');
     const dropdownEmailEl = document.getElementById('dropdown-user-email');
     const adminMenuItem = document.getElementById('menu-open-admin');
@@ -202,6 +204,7 @@ async function initApp() {
         tierPillEl.textContent = 'Guest';
         tierPillEl.className = 'tier-badge-pill';
       }
+      if (quotaBadgeEl) quotaBadgeEl.style.display = 'none';
       if (dropdownNameEl) dropdownNameEl.textContent = 'Guest';
       if (dropdownEmailEl) dropdownEmailEl.textContent = 'Not signed in';
       if (adminMenuItem) adminMenuItem.style.display = 'none';
@@ -210,18 +213,15 @@ async function initApp() {
     }
 
     // ── Update global state with authenticated user's identity ──────────────
-    // appState.userId drives ALL data API calls (daily ledger, projections, meals).
-    // It must be set before any refresh() calls below.
-    if (user.id) appState.userId = user.id;
+    const userId = user.userId || user.id;
+    if (userId) appState.userId = userId;
     if (user.userTimezone) appState.userTimezone = user.userTimezone;
-    // UserTier can be numeric enum (0=Free,1=Basic,2=Premium,3=SuperAdmin) or string
-    // ────────────────────────────────────────────────────────────────────────────────
 
     if (mainContainer) mainContainer.style.display = 'block';
 
-    const displayName = user.name || (user.email ? user.email.split('@')[0] : 'User');
+    const displayName = user.displayName || user.name || (user.email ? user.email.split('@')[0] : 'User');
     if (nameEl) nameEl.textContent = displayName;
-    if (dropdownNameEl) dropdownNameEl.textContent = user.name || displayName;
+    if (dropdownNameEl) dropdownNameEl.textContent = displayName;
     if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || '';
 
     const tierName = typeof user.tier === 'number'
@@ -233,14 +233,44 @@ async function initApp() {
       tierPillEl.className = `tier-badge-pill tier-${tierName.toLowerCase()}`;
     }
 
-    if (quotaPreviewEl) {
-      quotaPreviewEl.textContent = tierName;
+    if (quota) {
+      const isUnlimited = quota.dailyLimit < 0;
+      const count = quota.remainingCalls;
+      const label = isUnlimited
+        ? 'Unlimited scans'
+        : `${count} scan${count === 1 ? '' : 's'} remaining today`;
+
+      if (quotaBadgeEl) {
+        quotaBadgeEl.textContent = label;
+        quotaBadgeEl.style.display = 'inline-block';
+      }
+      if (quotaPreviewEl) {
+        quotaPreviewEl.textContent = isUnlimited ? 'Unlimited' : `${count} left today`;
+      }
+    } else {
+      if (quotaBadgeEl) quotaBadgeEl.style.display = 'none';
+      if (quotaPreviewEl) quotaPreviewEl.textContent = tierName;
     }
 
-    const isAdmin = user.role === 'Admin' || user.role === 'SuperAdmin' || user.role === 1 || user.role === 2;
+    const isAdmin = featureFlags?.isAdmin ?? (user.role === 'Admin' || user.role === 'SuperAdmin' || user.role === 1 || user.role === 2);
     if (adminMenuItem) {
       adminMenuItem.style.display = isAdmin ? 'flex' : 'none';
     }
+
+    // Keep authService.currentUser synchronized with entitlements for modals & feature gates
+    authService.currentUser = {
+      id: userId,
+      email: user.email,
+      name: displayName,
+      role: user.role,
+      tier: tierName,
+      entitlements: {
+        allowPhotoCompare: featureFlags?.canComparePhotos ?? (tierName === 'Premium' || tierName === 'SuperAdmin' || isAdmin),
+        allowDataExport: featureFlags?.canExportData ?? (tierName === 'Premium' || tierName === 'SuperAdmin' || isAdmin),
+        historyLimitDays: featureFlags?.historyDayLimit ?? (tierName === 'Premium' || tierName === 'SuperAdmin' || isAdmin ? 365 : tierName === 'Basic' ? 30 : 7),
+        hasAdvancedAnalytics: featureFlags?.hasAdvancedAnalytics ?? (tierName === 'Premium' || tierName === 'SuperAdmin' || isAdmin)
+      }
+    };
   }
 
   // User menu dropdown toggle
@@ -301,16 +331,34 @@ async function initApp() {
     quotaModal.open();
   });
 
+  /**
+   * Synchronously hydrates all dashboard UI components from the Web BFF composite payload.
+   * Eliminates 5-6 fragmented requests and prevents Cumulative Layout Shift (CLS).
+   * @param {Object} dashboard - WebDashboardCompositeDto
+   */
+  function hydrateFromDashboard(dashboard) {
+    if (!dashboard) return;
+    updateUserUI(dashboard.user, dashboard.featureFlags, dashboard.quota);
+    dailyHud.refresh(dashboard.todayLedger);
+    analyticsChart.refresh(dashboard.projections, dashboard.recentMeals);
+    quotaModal.hydrate(dashboard.quota);
+    progressModal.refresh(dashboard.featureFlags);
+  }
+
   eventBus.on('auth:success', async (user) => {
-    updateUserUI(user);
     try {
+      const period = appState.activePeriod || '7D';
+      const dashboard = await apiClient.getWebDashboard(period);
+      hydrateFromDashboard(dashboard);
+    } catch (err) {
+      console.warn('[Main] Error hydrating dashboard after login:', err);
+      // Fallback update if composite fails
+      updateUserUI(user);
       await Promise.allSettled([
         dailyHud.refresh(),
         analyticsChart.refresh(),
         progressModal.refresh()
       ]);
-    } catch (err) {
-      console.warn('[Main] Error refreshing components after login:', err);
     }
   });
 
@@ -337,18 +385,32 @@ async function initApp() {
   window.appendMedication = (med) => profileModal.appendMedication(med);
   window.clearMedications = () => profileModal.clearMedications();
 
-  // Initial Auth Check & Data Load
-  const currentUser = await authService.getCurrentUser();
-  if (!currentUser || !currentUser.isEmailVerified) {
-    updateUserUI(null);
-    authGate.show('signin');
-  } else {
-    updateUserUI(currentUser);
-    await Promise.all([
-      dailyHud.refresh(),
-      analyticsChart.refresh(),
-      progressModal.refresh()
-    ]);
+  // ============================================================================
+  // 4. Initial Application Load (Single-Roundtrip Web BFF Hydration)
+  // ============================================================================
+  try {
+    const period = appState.activePeriod || '7D';
+    const dashboard = await apiClient.getWebDashboard(period);
+    hydrateFromDashboard(dashboard);
+  } catch (err) {
+    if (err.status === 401) {
+      updateUserUI(null);
+      authGate.show('signin');
+    } else {
+      console.warn('[Main] Error during initial Web BFF hydration:', err);
+      const currentUser = await authService.getCurrentUser().catch(() => null);
+      if (!currentUser || !currentUser.isEmailVerified) {
+        updateUserUI(null);
+        authGate.show('signin');
+      } else {
+        updateUserUI(currentUser);
+        await Promise.allSettled([
+          dailyHud.refresh(),
+          analyticsChart.refresh(),
+          progressModal.refresh()
+        ]);
+      }
+    }
   }
 }
 
