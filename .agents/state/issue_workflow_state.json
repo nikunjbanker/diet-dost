@@ -2,37 +2,30 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-01T15:51:03.1481351+05:30",
+  "lastUpdated": "2026-10-01T17:43:57.3389425+05:30",
   "activeIssues": {
-    "28": {
-      "issueNumber": 28,
-      "title": "feat(presentation): implement Phase 1 Layer 3 - Web client single-roundtrip hydration in api.js and main.js",
+    "36": {
+      "issueNumber": 36,
+      "title": "fix(presentation): disable or hide buttons for unavailable premium features and enforce 403 API response",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-09-30T19:01:04.7458359+05:30",
-      "issueType": "feature",
-      "branchName": "feature/issue-28-feat-web-client-single-roundtrip-hydration",
-      "phase": "PR_OPENED",
-      "prNumber": 35,
-      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/35",
-      "updatedAt": "2026-09-30T10:01:34Z",
-      "detectedAt": "2026-09-30T19:01:04.7459634+05:30",
+      "approvedAt": "2026-10-01T17:43:38.5737178+05:30",
+      "issueType": "fix",
+      "branchName": "fix/issue-36-fix-presentation-disable-or-hide-bu",
+      "phase": "DETECTED",
+      "updatedAt": "2026-10-01T12:12:59Z",
+      "detectedAt": "2026-10-01T17:43:38.5817385+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
-        "PROMOTED_FROM_QUEUE",
-        "ACT_ANALYZED",
-        "IMPLEMENTED",
-        "VALIDATED",
-        "TESTED",
-        "PR_OPENED"
+        "PROMOTED_FROM_QUEUE"
       ],
       "isStacked": false,
       "parentPR": 0,
-      "parentBranch": "main",
-      "notes": "PR #35 opened and verified with 148 passing tests (0 errors, 0 warnings). Awaiting review and merge into main."
+      "parentBranch": "",
+      "notes": "Promoted from queue after issue #28 completed."
     }
   },
   "completedIssues": {
@@ -92,6 +85,37 @@
       "parentBranch": "main",
       "notes": "PR #34 opened and verified with 146 passing tests. Awaiting review and merge into main.",
       "completedAt": "2026-10-01T12:00:45.0871146+05:30"
+    },
+    "28": {
+      "issueNumber": 28,
+      "title": "feat(presentation): implement Phase 1 Layer 3 - Web client single-roundtrip hydration in api.js and main.js",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:01:04.7458359+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-28-feat-web-client-single-roundtrip-hydration",
+      "phase": "COMPLETED",
+      "prNumber": 35,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/35",
+      "updatedAt": "2026-09-30T10:01:34Z",
+      "detectedAt": "2026-09-30T19:01:04.7459634+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED",
+        "PROMOTED_FROM_QUEUE",
+        "ACT_ANALYZED",
+        "IMPLEMENTED",
+        "VALIDATED",
+        "TESTED",
+        "PR_OPENED"
+      ],
+      "isStacked": false,
+      "parentPR": 0,
+      "parentBranch": "main",
+      "notes": "PR #35 opened and verified with 148 passing tests (0 errors, 0 warnings). Awaiting review and merge into main.",
+      "completedAt": "2026-10-01T17:43:54.5218530+05:30"
     }
   },
   "heldIssues": {},

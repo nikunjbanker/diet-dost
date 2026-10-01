@@ -471,8 +471,12 @@ function Invoke-IssueSync {
                 Save-WorkflowState -Path $StateFile -State $State
                 Set-ProjectBoardStatus -Number ([int]$k) -TargetStatus "Done"
 
-                # Single-Issue Policy: Auto-promote next queued issue if any
-                $queuedKeys = @($State.queuedIssues.PSObject.Properties | ForEach-Object { $_.Name } | Sort-Object { [int]$_ })
+                # Single-Issue Policy: Auto-promote next queued issue if any (Bugs/fixes prioritized first)
+                $queuedKeys = @($State.queuedIssues.PSObject.Properties | ForEach-Object { $_.Name } | Sort-Object {
+                    $rec = $State.queuedIssues.$_
+                    $priority = if ($rec.issueType -eq "fix") { 0 } else { 1 }
+                    return "$priority-$([int]$_)"
+                })
                 if ($queuedKeys.Count -gt 0) {
                     $nextKey = $queuedKeys[0]
                     $nextRec = $State.queuedIssues.$nextKey
