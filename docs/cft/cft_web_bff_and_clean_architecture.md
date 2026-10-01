@@ -82,6 +82,8 @@
 | `admin.demo@dietdost.app` | Premium (Admin) | 30 / day | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days |
 | `superadmin@dietdost.app` | SuperAdmin | Unlimited (-1) | **Unlocked (200 OK)** | **Unlocked (200 OK)** | 365 Days |
 
-- [x] Execute login and verification across all 5 tiers (Verified via `pwsh -File tests/validate_e2e_tiers.ps1` - 100% Pass).
-- [x] Verify paywall modal appears on gated feature click for Free and Basic users (Verified via Browser subagent).
+- [x] Execute login and verification across all 5 tiers (Verified via `pwsh -File tests/validate_e2e_tiers.ps1` - 100% Pass, including 403 Forbidden verification on `/api/progress-photos`, `/api/progress-photos/comparison`, and `/api/meals/export`).
+- [x] Verify gated premium buttons (`btn-open-body-modal`, comparison tabs) are hidden/disabled and export button (`btn-export-excel`) is disabled with opacity for Free and Basic users (Verified via Browser subagent).
+- [x] Verify paywall modal appears on direct gated feature click or comparison tab navigation for Free and Basic users (Verified via Browser subagent).
 - [x] Verify zero console errors (`Uncaught TypeError`, `404 Not Found`) across all scenarios.
+

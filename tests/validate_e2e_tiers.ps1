@@ -119,6 +119,24 @@ foreach ($u in $users) {
         }
     }
 
+    # 6b. Test Photo Gallery Gating (/api/progress-photos)
+    try {
+        $photosRes = Invoke-RestMethod -Uri "$BaseUrl/api/progress-photos" -Method Get -Headers $headers
+        if ($u.ExpectCompare) {
+            Write-Host "    [PASS] /api/progress-photos: Granted as expected (HTTP 200)" -ForegroundColor Green
+        } else {
+            Write-Host "    [FAIL] /api/progress-photos: Expected 403 Forbidden but received 200 OK!" -ForegroundColor Red
+            $allPassed = $false
+        }
+    } catch {
+        if (-not $u.ExpectCompare -and ($_.Exception.Response.StatusCode.value__ -eq 403 -or $_.Exception.Response.StatusCode -eq [System.Net.HttpStatusCode]::Forbidden)) {
+            Write-Host "    [PASS] /api/progress-photos: Gated with 403 Forbidden as expected for tier $($u.Tier)" -ForegroundColor Green
+        } else {
+            Write-Host "    [FAIL] /api/progress-photos: Unexpected response: $($_.Exception.Message)" -ForegroundColor Red
+            $allPassed = $false
+        }
+    }
+
     # 7. Test Data Export Gating (/api/meals/export)
     try {
         $exportRes = Invoke-RestMethod -Uri "$BaseUrl/api/meals/export" -Method Get -Headers $headers

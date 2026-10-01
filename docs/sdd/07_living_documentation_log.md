@@ -125,6 +125,8 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-053** | Web BFF Composite Endpoint & Shared Application CQRS Queries | `ACCEPTED` | [`ADR-20260930-053-web-bff-composite-endpoint-and-shared-cqrs-queries.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-053-web-bff-composite-endpoint-and-shared-cqrs-queries.md) |
 | **ADR-054** | Shared CQRS Query Consolidation & Native Dispatcher Integration | `ACCEPTED` | [`ADR-20261001-054-shared-cqrs-query-consolidation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-054-shared-cqrs-query-consolidation.md) |
 | **ADR-055** | Web Client Single-Roundtrip Hydration & Zero CLS Orchestration | `ACCEPTED` | [`ADR-20261001-055-web-client-single-roundtrip-hydration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-055-web-client-single-roundtrip-hydration.md) |
+| **ADR-056** | Gated Premium Feature Button State & Underlying API Defense | `ACCEPTED` | [`ADR-20261001-056-gated-feature-button-state-and-api-defense.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-056-gated-feature-button-state-and-api-defense.md) |
+
 
 ---
 
