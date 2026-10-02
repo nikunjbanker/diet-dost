@@ -4,6 +4,31 @@
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
   "lastUpdated": "2026-10-02T13:00:44.0942423+05:30",
   "activeIssues": {
+    "41": {
+      "issueNumber": 41,
+      "title": "feat(api): implement Phase 1 Layer 7 - Mobile BFF contracts, compact payloads, and caching headers for mobile readiness",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-10-02T13:03:00+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-41-mobile-bff-contracts",
+      "phase": "DETECTED",
+      "updatedAt": "2026-10-02T11:37:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED",
+        "PROMOTED_FROM_QUEUE"
+      ],
+      "isStacked": true,
+      "parentPR": 48,
+      "parentBranch": "feature/issue-40-responsive-ui-layout",
+      "notes": "Promoted to active. Stacked on Layer 6 (PR #48 / feature/issue-40-responsive-ui-layout)."
+    }
+  },
+  "completedIssues": {
     "40": {
       "issueNumber": 40,
       "title": "feat(presentation): implement Phase 1 Layer 6 - responsive UI layout and touch-first navigation for mobile and tablet viewports",
@@ -14,9 +39,12 @@
       "approvedAt": "2026-10-02T13:03:00.0000000+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-40-responsive-ui-layout",
-      "phase": "VALIDATED",
-      "updatedAt": "2026-10-02T11:35:00Z",
+      "phase": "COMPLETED",
+      "prNumber": 48,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/48",
+      "updatedAt": "2026-10-02T11:37:00Z",
       "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "completedAt": "2026-10-02T17:07:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
@@ -26,15 +54,14 @@
         "IMPLEMENTED",
         "CFT_VALIDATED",
         "ADR_RECORDED",
-        "VALIDATED"
+        "VALIDATED",
+        "PR_CREATED"
       ],
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "main",
-      "notes": "Responsive layout, thumb navigation, bottom sheets, and touch targets validated against live multi-tier CFT and 151 unit/eval tests."
-    }
-  },
-  "completedIssues": {
+      "notes": "PR #48 opened. Responsive layout, thumb navigation, bottom sheets, and touch targets validated against live multi-tier CFT and 151 unit/eval tests."
+    },
     "26": {
       "issueNumber": 26,
       "title": "feat(web-bff): implement Phase 1 Layer 1 - Web BFF composite endpoint and shared CQRS queries",
@@ -239,28 +266,6 @@
   },
   "heldIssues": {},
   "queuedIssues": {
-    "41": {
-      "issueNumber": 41,
-      "title": "feat(api): implement Phase 1 Layer 7 - Mobile BFF contracts, compact payloads, and caching headers for mobile readiness",
-      "author": "nikunjbanker",
-      "isCodeownerAuthor": true,
-      "approvalStatus": "AUTHORIZED",
-      "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T13:03:00+05:30",
-      "issueType": "feature",
-      "branchName": "feature/issue-41-mobile-bff-contracts",
-      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:34:00Z",
-      "detectedAt": "2026-10-02T12:43:00+05:30",
-      "checkpoints": [
-        "DETECTED",
-        "QUEUED"
-      ],
-      "isStacked": true,
-      "parentPR": 0,
-      "parentBranch": "feature/issue-40-responsive-ui-layout",
-      "notes": "Phase 1 Layer 7 (Prepare Contract Now). Queued: depends on Layer 6 (#40)."
-    },
     "42": {
       "issueNumber": 42,
       "title": "docs(mobile): implement Phase 1 Layer 8 - native feature classification matrix and responsive CFT acceptance suite",
