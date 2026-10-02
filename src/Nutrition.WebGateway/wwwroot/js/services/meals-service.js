@@ -99,7 +99,7 @@ export class MealsService {
    * @param {string} [mealType=null]
    */
   async estimateFoodItem(name, portion = null, useAi = true, userId = null, mealType = null) {
-    return this._api.postJson('/api/meals/estimate-item', { name, portion, useAi, userId, mealType });
+    return this._api.postJson('/api/meals/estimate', { name, portion, useAi, userId, mealType });
   }
 
   /**

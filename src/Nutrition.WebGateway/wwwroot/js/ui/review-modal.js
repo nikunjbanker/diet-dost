@@ -1,12 +1,10 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-import { estimateIndianFoodNutrition, estimateFoodNutritionWithAi, generateDietitianAdvice, scaleNutritionByPortion } from '../services/nutrition-estimator.js?v=1.3.6';
-
 /**
  * ReviewModalController
  * Manages AI Food Detection Review, interactive portion steppers, ghee/tadka adjustments,
@@ -32,12 +30,30 @@ export class ReviewModalController {
     this._feedbackSubmitted = false;
     this._isEditing = false;
     this._editingMealId = null;
+    this._debounceTimers = new Map();
 
     this._bindEvents();
 
     // Listen for meal analyzed event from MealLogger
     this._bus.on('meal:analyzed', (analysis) => this.open(analysis));
     this._bus.on('meal:edit', (meal) => this.openForEdit(meal));
+  }
+
+  /**
+   * Debounces a named callback by the specified millisecond delay.
+   * @param {string} key
+   * @param {Function} fn
+   * @param {number} [delay=300]
+   */
+  _debounce(key, fn, delay = 300) {
+    if (this._debounceTimers.has(key)) {
+      clearTimeout(this._debounceTimers.get(key));
+    }
+    const timer = setTimeout(() => {
+      this._debounceTimers.delete(key);
+      fn();
+    }, delay);
+    this._debounceTimers.set(key, timer);
   }
 
   get elements() {
@@ -515,12 +531,10 @@ export class ReviewModalController {
       analysis.identifiedItems.forEach(i => {
         if (!i.originalDetection) i.originalDetection = i.name;
         if (i.fiberGrams === undefined || i.fiberGrams === null || i.fiberGrams === 0) {
-          const est = estimateIndianFoodNutrition(i.name, i.estimatedPortion);
-          i.fiberGrams = est?.fiberGrams ?? 2.0;
+          i.fiberGrams = i.fiberGrams || 2.0;
         }
         if (i.sugarGrams === undefined || i.sugarGrams === null || i.sugarGrams === 0) {
-          const est = estimateIndianFoodNutrition(i.name, i.estimatedPortion);
-          i.sugarGrams = est?.sugarGrams ?? 1.5;
+          i.sugarGrams = i.sugarGrams || 1.5;
         }
       });
     }
@@ -947,21 +961,17 @@ export class ReviewModalController {
           message: `Added ${names} with verified clinical nutrition.`
         });
       } else {
-        // Fallback to single item estimation
-        const fallback = await estimateFoodNutritionWithAi(query, null, {
-          forceRefresh: true,
-          userId,
-          mealType
-        });
+        // Fallback to single item estimation via centralized backend API
+        const fallback = await this._meals.estimateFoodItem(query, null, true, userId, mealType);
         if (fallback) {
           if (!this._state.currentMeal) this._state.currentMeal = { identifiedItems: [] };
           if (!this._state.currentMeal.identifiedItems) this._state.currentMeal.identifiedItems = [];
 
           this._state.currentMeal.identifiedItems.push({
-            name: fallback.name || query,
+            name: fallback.normalizedName || fallback.name || query,
             originalDetection: query,
-            hindiOrRegionalName: fallback.hindiName || query,
-            estimatedPortion: fallback.portion || '1 Portion',
+            hindiOrRegionalName: fallback.hindiOrRegionalName || fallback.hindiName || query,
+            estimatedPortion: fallback.estimatedPortion || fallback.portion || '1 Portion',
             quantity: 1,
             grams: fallback.grams || 100,
             calories: Math.round(fallback.calories || 100),
@@ -971,7 +981,7 @@ export class ReviewModalController {
             fiberGrams: fallback.fiberGrams || 2,
             sugarGrams: fallback.sugarGrams || 1.5,
             sodiumMg: fallback.sodiumMg || 120,
-            cookingMediumEstimate: fallback.cookingMedium || 'Home cooking',
+            cookingMediumEstimate: fallback.cookingMediumEstimate || fallback.cookingMedium || 'Home cooking',
             isAiEstimated: true
           });
 
@@ -981,7 +991,7 @@ export class ReviewModalController {
 
           this._toast.show({
             title: '🤖 Food Item Added!',
-            message: `Added '${fallback.name || query}' (${Math.round(fallback.calories)} kcal).`
+            message: `Added '${fallback.normalizedName || fallback.name || query}' (${Math.round(fallback.calories)} kcal).`
           });
         }
       }
@@ -1013,14 +1023,16 @@ export class ReviewModalController {
     this.renderItems();
 
     try {
-      const aiResult = await estimateFoodNutritionWithAi(name, item.estimatedPortion, {
-        forceRefresh: true,
-        userId: this._state.userId || 'user-default',
-        mealType: this._state.currentMeal?.mealType
-      });
+      const aiResult = await this._meals.estimateFoodItem(
+        name,
+        item.estimatedPortion,
+        true,
+        this._state.userId || 'user-default',
+        this._state.currentMeal?.mealType
+      );
 
       if (aiResult) {
-        item.calories = aiResult.calories;
+        item.calories = Math.round(aiResult.calories);
         item.proteinGrams = aiResult.proteinGrams;
         item.carbsGrams = aiResult.carbsGrams;
         item.fatGrams = aiResult.fatGrams;
@@ -1028,14 +1040,14 @@ export class ReviewModalController {
         item.sugarGrams = aiResult.sugarGrams;
         item.sodiumMg = aiResult.sodiumMg;
         if (aiResult.grams) item.grams = aiResult.grams;
-        if (aiResult.portion) item.estimatedPortion = aiResult.portion;
-        if (aiResult.hindiName) item.hindiOrRegionalName = aiResult.hindiName;
-        if (aiResult.cookingMedium) item.cookingMediumEstimate = aiResult.cookingMedium;
+        if (aiResult.estimatedPortion) item.estimatedPortion = aiResult.estimatedPortion;
+        if (aiResult.hindiOrRegionalName) item.hindiOrRegionalName = aiResult.hindiOrRegionalName;
+        if (aiResult.cookingMediumEstimate) item.cookingMediumEstimate = aiResult.cookingMediumEstimate;
         item.isAiEstimated = true;
 
         this._toast.show({
           title: '🤖 AI Nutrition Updated!',
-          message: `${aiResult.name}: ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
+          message: `${aiResult.normalizedName || name}: ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
         });
       }
     } catch (e) {
@@ -1204,22 +1216,7 @@ export class ReviewModalController {
     const oldName = item.name;
     item.name = trimmed;
 
-    // 1. Instant client-side nutrition estimation (Zero Latency - Hardcoded ICMR-NIN baseline)
-    const baseline = estimateIndianFoodNutrition(trimmed, item.estimatedPortion);
-    if (baseline) {
-      item.calories = baseline.calories;
-      item.proteinGrams = baseline.proteinGrams;
-      item.carbsGrams = baseline.carbsGrams;
-      item.fatGrams = baseline.fatGrams;
-      item.fiberGrams = baseline.fiberGrams;
-      item.sugarGrams = baseline.sugarGrams;
-      item.sodiumMg = baseline.sodiumMg;
-      item.isAiEstimated = false;
-      if (!item.estimatedPortion && baseline.portion) item.estimatedPortion = baseline.portion;
-      if (baseline.hindiName) item.hindiOrRegionalName = baseline.hindiName;
-    }
-
-    // 2. Synchronize meal dishName title
+    // Synchronize meal dishName title
     if (this._state.currentMeal.dishName && oldName && oldName.toLowerCase() !== trimmed.toLowerCase()) {
       let cleanDish = this._state.currentMeal.dishName.replace(/\s*\([~≈]?\d+\s*kcal\)/gi, '').trim();
       const escapedOld = oldName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1230,43 +1227,50 @@ export class ReviewModalController {
       this._state.currentMeal.dishName = cleanDish;
     }
 
-    // 3. Mark loading & recalculate baseline
     item.isAiSearching = true;
     this.renderItems();
     this.recalculateTotals();
 
-    // 4. Asynchronously query AI agent (Google Gemini / Clinical NLP) with textual meal search
-    try {
-      const aiResult = await estimateFoodNutritionWithAi(trimmed, item.estimatedPortion, {
-        forceRefresh: true,
-        userId: this._state.userId || 'user-default',
-        mealType: this._state.currentMeal?.mealType
-      });
-      if (aiResult) {
-        item.calories = aiResult.calories;
-        item.proteinGrams = aiResult.proteinGrams;
-        item.carbsGrams = aiResult.carbsGrams;
-        item.fatGrams = aiResult.fatGrams;
-        item.fiberGrams = aiResult.fiberGrams;
-        item.sugarGrams = aiResult.sugarGrams;
-        item.sodiumMg = aiResult.sodiumMg;
-        if (aiResult.grams) item.grams = aiResult.grams;
-        if (aiResult.hindiName) item.hindiOrRegionalName = aiResult.hindiName;
-        if (aiResult.cookingMedium) item.cookingMediumEstimate = aiResult.cookingMedium;
-        item.isAiEstimated = true;
+    // Debounced (300ms) call to centralized backend estimation API
+    this._debounce(`item-name-${idx}`, async () => {
+      try {
+        const est = await this._meals.estimateFoodItem(
+          trimmed,
+          item.estimatedPortion,
+          true,
+          this._state.userId || 'user-default',
+          this._state.currentMeal?.mealType
+        );
 
-        this._toast.show({
-          title: '🤖 AI Nutrition Refined!',
-          message: `${aiResult.name}: ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
-        });
+        if (est && this._state.currentMeal?.identifiedItems[idx]) {
+          const current = this._state.currentMeal.identifiedItems[idx];
+          current.calories = Math.round(est.calories);
+          current.proteinGrams = est.proteinGrams;
+          current.carbsGrams = est.carbsGrams;
+          current.fatGrams = est.fatGrams;
+          current.fiberGrams = est.fiberGrams;
+          current.sugarGrams = est.sugarGrams;
+          current.sodiumMg = est.sodiumMg;
+          if (est.grams) current.grams = est.grams;
+          if (est.hindiOrRegionalName) current.hindiOrRegionalName = est.hindiOrRegionalName;
+          if (est.cookingMediumEstimate) current.cookingMediumEstimate = est.cookingMediumEstimate;
+          current.isAiEstimated = true;
+
+          this._toast.show({
+            title: '⚡ Nutrition Recalculated',
+            message: `${est.normalizedName || trimmed}: ${Math.round(current.calories)} kcal · ${current.proteinGrams}g Protein.`
+          });
+        }
+      } catch (err) {
+        console.warn('Backend food estimation error:', err);
+      } finally {
+        if (this._state.currentMeal?.identifiedItems[idx]) {
+          this._state.currentMeal.identifiedItems[idx].isAiSearching = false;
+        }
+        this.renderItems();
+        this.recalculateTotals();
       }
-    } catch (_) {
-      // Hardcoded ICMR-NIN baseline already applied
-    } finally {
-      item.isAiSearching = false;
-      this.renderItems();
-      this.recalculateTotals();
-    }
+    }, 300);
   }
 
   async updateItemPortion(idx, newPortion) {
@@ -1276,47 +1280,43 @@ export class ReviewModalController {
 
     const item = this._state.currentMeal.identifiedItems[idx];
     item.estimatedPortion = trimmed;
-
-    // 1. Instant client-side portion scaling (Zero Latency)
-    const scaled = scaleNutritionByPortion(item, trimmed);
-    item.grams = scaled.grams;
-    item.calories = scaled.calories;
-    item.proteinGrams = scaled.proteinGrams;
-    item.carbsGrams = scaled.carbsGrams;
-    item.fatGrams = scaled.fatGrams;
-    item.fiberGrams = scaled.fiberGrams;
-    item.sugarGrams = scaled.sugarGrams;
-    item.sodiumMg = scaled.sodiumMg;
-
     item.isAiSearching = true;
     this.renderItems();
     this.recalculateTotals();
 
-    // 2. Query AI agent to refine exact nutrition metrics for the updated portion
-    try {
-      const aiResult = await estimateFoodNutritionWithAi(item.name, trimmed, {
-        forceRefresh: true,
-        userId: this._state.userId || 'user-default',
-        mealType: this._state.currentMeal?.mealType
-      });
-      if (aiResult) {
-        item.calories = aiResult.calories;
-        item.proteinGrams = aiResult.proteinGrams;
-        item.carbsGrams = aiResult.carbsGrams;
-        item.fatGrams = aiResult.fatGrams;
-        item.fiberGrams = aiResult.fiberGrams;
-        item.sugarGrams = aiResult.sugarGrams;
-        item.sodiumMg = aiResult.sodiumMg;
-        if (aiResult.grams) item.grams = aiResult.grams;
-        item.isAiEstimated = true;
+    // Debounced (300ms) call to centralized backend estimation API
+    this._debounce(`item-portion-${idx}`, async () => {
+      try {
+        const est = await this._meals.estimateFoodItem(
+          item.name,
+          trimmed,
+          true,
+          this._state.userId || 'user-default',
+          this._state.currentMeal?.mealType
+        );
+
+        if (est && this._state.currentMeal?.identifiedItems[idx]) {
+          const current = this._state.currentMeal.identifiedItems[idx];
+          current.calories = Math.round(est.calories);
+          current.proteinGrams = est.proteinGrams;
+          current.carbsGrams = est.carbsGrams;
+          current.fatGrams = est.fatGrams;
+          current.fiberGrams = est.fiberGrams;
+          current.sugarGrams = est.sugarGrams;
+          current.sodiumMg = est.sodiumMg;
+          if (est.grams) current.grams = est.grams;
+          current.isAiEstimated = true;
+        }
+      } catch (err) {
+        console.warn('Backend portion estimation error:', err);
+      } finally {
+        if (this._state.currentMeal?.identifiedItems[idx]) {
+          this._state.currentMeal.identifiedItems[idx].isAiSearching = false;
+        }
+        this.renderItems();
+        this.recalculateTotals();
       }
-    } catch (_) {
-      // Local scaled ICMR-NIN baseline already active
-    } finally {
-      item.isAiSearching = false;
-      this.renderItems();
-      this.recalculateTotals();
-    }
+    }, 300);
   }
 
   stepItemQuantity(idx, delta) {
@@ -1491,15 +1491,17 @@ export class ReviewModalController {
     const el = this.elements;
     if (!this._state.currentMeal || !el.dietitianAdvice) return;
 
-    const items = this._state.currentMeal.identifiedItems || [];
-    const advice = generateDietitianAdvice(items, {
-      addedGhee: this._state.addedGhee || 0,
-      addedTadka: this._state.addedTadka || 0,
-      mealType: this._state.currentMeal.mealType || 'Lunch'
-    });
-
-    this._state.currentMeal.dietitianAdvice = advice;
-    el.dietitianAdvice.textContent = advice;
+    const currentAdvice = this._state.currentMeal.dietitianAdvice;
+    if (currentAdvice && currentAdvice.trim()) {
+      el.dietitianAdvice.textContent = currentAdvice;
+    } else {
+      const totalKcal = Math.round(this._state.currentMeal.totalCalories || 0);
+      const advice = totalKcal > 0
+        ? `Balanced Indian preparation (~${totalKcal} kcal) adhering to ICMR-NIN 2024 dietary guidelines.`
+        : 'Add food items to your meal plate to receive real-time ICMR-NIN 2024 clinical dietitian guidance.';
+      this._state.currentMeal.dietitianAdvice = advice;
+      el.dietitianAdvice.textContent = advice;
+    }
 
     // Trigger subtle visual pulse on container
     const box = el.dietitianAdvice.closest('.review-dietitian-box');

@@ -22,3 +22,18 @@ export { ApiClient, apiClient };
 export async function getWebDashboard(period = '7D') {
   return apiClient.getWebDashboard(period);
 }
+
+/**
+ * Estimates nutritional values for a given food item name and portion via centralized backend API.
+ * Invokes POST /api/meals/estimate
+ * @param {string} name
+ * @param {string} [portion=null]
+ * @param {boolean} [useAi=true]
+ * @param {string} [userId=null]
+ * @param {string} [mealType=null]
+ * @returns {Promise<any>}
+ */
+export async function estimateFoodItem(name, portion = null, useAi = true, userId = null, mealType = null) {
+  return apiClient.postJson('/api/meals/estimate', { name, portion, useAi, userId, mealType });
+}
+

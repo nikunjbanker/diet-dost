@@ -60,6 +60,8 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-054** | Shared CQRS Query Consolidation & Native Dispatcher Integration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261001-054-shared-cqrs-query-consolidation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-054-shared-cqrs-query-consolidation.md) |
 | **ADR-055** | Web Client Single-Roundtrip Hydration & Zero CLS Orchestration | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261001-055-web-client-single-roundtrip-hydration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-055-web-client-single-roundtrip-hydration.md) |
 | **ADR-056** | Gated Premium Feature Button State & Underlying API Defense | `[SECURITY]` | `ACCEPTED` | [`ADR-20261001-056-gated-feature-button-state-and-api-defense.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-056-gated-feature-button-state-and-api-defense.md) |
+| **ADR-057** | Centralize Food Estimation API & Eliminate Static Client Dictionary | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-057-centralize-food-estimation-api.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-057-centralize-food-estimation-api.md) |
+
 
 
 ---
