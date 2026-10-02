@@ -96,7 +96,20 @@ async function main() {
     await sendCdp(ws, 'DOM.enable');
 
     // Wait for page to fully load and hydrate
-    await sleep(2000);
+    await sleep(1500);
+
+    // Authenticate demo session so main UI elements are visible
+    await evaluate(`(async () => {
+        const idInput = document.getElementById('signin-identifier');
+        const pwdInput = document.getElementById('signin-password');
+        const form = document.getElementById('form-signin');
+        if (idInput && pwdInput && form) {
+            idInput.value = 'basic@dietdost.app';
+            pwdInput.value = 'DietDost@Demo2026!';
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        }
+    })()`);
+    await sleep(1500);
 
     const results = [];
 

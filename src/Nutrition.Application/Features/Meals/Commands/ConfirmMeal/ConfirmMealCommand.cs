@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -17,7 +17,9 @@ namespace Nutrition.Application.Features.Meals.Commands.ConfirmMeal;
 public record ConfirmMealCommand(
     MealLog Meal,
     string CurrentUserId,
-    bool IsAdminOrSuper
+    bool IsAdminOrSuper,
+    string? ClientMutationId = null,
+    DateTime? ClientTimestampUtc = null
 ) : ICommand<Result<ConfirmMealResultDto>>;
 
 public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Result<ConfirmMealResultDto>>
@@ -44,6 +46,15 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
         var meal = request.Meal;
         if (meal == null)
             return Result<ConfirmMealResultDto>.Failure("Meal payload cannot be null.", "InvalidPayload", 400);
+
+        if (!string.IsNullOrWhiteSpace(request.ClientMutationId))
+        {
+            meal.ClientMutationId ??= request.ClientMutationId;
+        }
+        if (request.ClientTimestampUtc.HasValue)
+        {
+            meal.ClientTimestampUtc ??= request.ClientTimestampUtc.Value;
+        }
 
         // Tenant isolation: meal belongs to authenticated user unless admin explicitly overrides
         if (!request.IsAdminOrSuper)

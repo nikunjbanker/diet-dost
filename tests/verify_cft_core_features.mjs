@@ -126,14 +126,14 @@ async function main() {
     // -------------------------------------------------------------------------
     // STEP 1: AUTHENTICATION FLOW VIA DEMO CREDENTIALS
     // -------------------------------------------------------------------------
-    console.log('\n[3/8] Executing End-to-End User Authentication as free@dietdost.app...');
+    console.log('\n[3/8] Executing End-to-End User Authentication as basic@dietdost.app...');
     const authSuccess = await evaluate(`(async () => {
         const idInput = document.getElementById('signin-identifier');
         const pwdInput = document.getElementById('signin-password');
         const form = document.getElementById('form-signin');
         if (!idInput || !pwdInput || !form) return false;
 
-        idInput.value = 'free@dietdost.app';
+        idInput.value = 'basic@dietdost.app';
         pwdInput.value = 'DietDost@Demo2026!';
         
         // Dispatch submit event to trigger handleSignIn
@@ -346,17 +346,17 @@ async function main() {
     // STEP 6: HISTORICAL ANALYTICS & TIER PAYWALL GATING
     // -------------------------------------------------------------------------
     console.log('\n[8/8] Testing Historical Analytics & Free Tier Paywall Gating...');
-    // Click 30-Day Period Tab
+    // Click 90-Day Period Tab (Gated for Basic & Free)
     const tabSwitchResult = await evaluate(`(() => {
-        const tab30D = document.querySelector('[data-period="30D"]');
-        if (tab30D) tab30D.click();
+        const tabGated = document.querySelector('[data-period="90D"]') || document.querySelector('[data-period="30D"]');
+        if (tabGated) tabGated.click();
         const quotaModal = document.getElementById('quota-modal');
         const open = quotaModal && window.getComputedStyle(quotaModal).display !== 'none';
-        return { tabClicked: !!tab30D, quotaModalOpen: open };
+        return { tabClicked: !!tabGated, quotaModalOpen: open };
     })()`);
     await sleep(400);
 
-    console.log(`    30-Day Period Tab Clicked: ${tabSwitchResult.tabClicked}`);
+    console.log(`    Paywall Gated Period Tab Clicked: ${tabSwitchResult.tabClicked}`);
     await captureScreenshot('cft_core_07_tier_paywall_gate.png');
 
     // Close Quota Modal if opened

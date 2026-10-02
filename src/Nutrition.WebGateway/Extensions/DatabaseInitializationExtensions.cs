@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -95,6 +95,9 @@ public static class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Meals", "TotalSodiumMg", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(db, "Meals", "AiFeedbackRating", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Meals", "AiFeedbackRemarks", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Meals", "ClientMutationId", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Meals", "ClientTimestampUtc", "TEXT NULL");
+        await db.Database.ExecuteSqlRawAsync(@"CREATE INDEX IF NOT EXISTS ""IX_Meals_UserId_ClientMutationId"" ON ""Meals"" (""UserId"", ""ClientMutationId"");");
         await EnsureColumnExistsAsync(db, "FoodItems", "OriginalDetection", "TEXT NOT NULL DEFAULT ''");
         await EnsureColumnExistsAsync(db, "FoodItems", "FiberGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(db, "FoodItems", "SugarGrams", "REAL NOT NULL DEFAULT 0");

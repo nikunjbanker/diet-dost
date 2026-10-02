@@ -14,19 +14,25 @@
       "approvedAt": "2026-10-02T13:03:00+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-41-mobile-bff-contracts",
-      "phase": "ACT_ANALYZING",
-      "updatedAt": "2026-10-02T07:33:55Z",
+      "phase": "VALIDATED",
+      "updatedAt": "2026-10-02T21:25:00+05:30",
       "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
         "PROMOTED_FROM_QUEUE",
-        "ACT_RETRIGGERED"
+        "ACT_ANALYZED",
+        "BRANCH_CREATED_AND_VERIFIED",
+        "IMPLEMENTING",
+        "IMPLEMENTED",
+        "CFT_VALIDATED",
+        "ADR_RECORDED",
+        "VALIDATED"
       ],
-      "isStacked": true,
+      "isStacked": false,
       "parentPR": 48,
-      "parentBranch": "feature/issue-40-responsive-ui-layout",
-      "notes": "Issue updated on GitHub: requires re-analysis (ACT phase)."
+      "parentBranch": "main",
+      "notes": "Mobile BFF composite endpoint, Brotli compression, ETag 304 caching, and offline mutation idempotency implemented. 159 tests passed 100%, live CFT passed 100%, and ADR-062 recorded."
     }
   },
   "completedIssues": {
