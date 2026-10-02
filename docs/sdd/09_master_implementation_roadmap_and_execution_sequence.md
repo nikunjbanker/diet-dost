@@ -7,12 +7,12 @@
 -->
 
 # SDD 09: Master Implementation Roadmap & Skill-by-Skill Execution Sequence
-> **Specification Version**: `v2.2.0 (Zero-Throwaway Engineering & Forward-Roadmap Reusability Mandate)`  
+> **Specification Version**: `v2.3.0 (Phase 2 Two-Stage Responsive & Mobile Readiness Architecture)`  
 > **Classification**: PO Master Market Roadmap, Phased Release Milestones, Reusability Governance, Skill Dependency Graph, and Delivery Plan  
-> **Target Subsystems**: Web PWA, Mobile (Android/iOS), Presentation Gateway, Core Persistence, and Azure Infrastructure  
-> **Governing Skills**: `diet-dost-clean-architecture`, `diet-dost-mobile-architecture`, `diet-dost-database-architecture`, `diet-dost-azure-deployment`, `diet-dost-user-management-security`  
-> **Acceptance Suites**: `docs/cft/` (Web BFF, Mobile MVP, Cross-Platform Parity Matrix)  
-> **Architectural Decisions**: [`docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md), [`docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md)  
+> **Target Subsystems**: Web PWA (Responsive Desktop/Tablet/Mobile), Mobile (Android/iOS), Presentation Gateway, Core Persistence, and Azure Infrastructure  
+> **Governing Skills**: `diet-dost-clean-architecture`, `diet-dost-responsive-web-mobile-readiness`, `diet-dost-mobile-architecture`, `diet-dost-database-architecture`, `diet-dost-azure-deployment`, `diet-dost-user-management-security`  
+> **Acceptance Suites**: `docs/cft/` (Web BFF, Responsive Web/Tablet, Mobile MVP, Cross-Platform Parity Matrix)  
+> **Architectural Decisions**: [`docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md), [`docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md), [`docs/adr/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md)  
 
 ---
 
@@ -70,30 +70,40 @@ graph TD
         PR6 --> DEMO_GATE
     end
 
-    subgraph MILESTONE_ALPHA2 ["Milestone: Alpha Release 02 (Cross-Platform Mobile MVP)"]
-        SKILL_MOBILE["Skill: diet-dost-mobile-architecture"]
-        PR7["PR 7: Mobile Client Shell & Secure Hardware Auth (KeyStore/Keychain)"]
-        PR8["PR 8: Native Camera & Client-Side 1080p SkiaSharp Compression"]
-        PR9["PR 9: Mobile Caloric HUD, Macro Rings & Tier Quota Enforcement"]
-        PR10["PR 10: Offline SQLite Cache & 1-Tap Meal Review Screen"]
-        PR11["PR 11: Multi-Platform CFT Parity Verification (Web vs Android vs iOS against Azure)"]
+    subgraph MILESTONE_ALPHA2 ["Milestone: Alpha Release 02 (Cross-Platform Mobile MVP & Readiness)"]
+        subgraph STAGE_2A ["Stage 2A: Responsive / Shared Preparation"]
+            SKILL_RESPONSIVE["Skill: diet-dost-responsive-web-mobile-readiness"]
+            PR7["PR 7: Responsive UI Layout & Touch Navigation (Phone, Tablet, Desktop) [Implement Now]"]
+            PR8["PR 8: Mobile BFF Contracts, Compact Payloads & Caching Headers [Prepare Contract Now]"]
+            PR9["PR 9: Native Feature Classification Matrix & Responsive CFT Suite [Document for Native]"]
+            SKILL_RESPONSIVE --> PR7 --> PR8 --> PR9
+        end
 
-        SKILL_MOBILE --> PR7 --> PR8 --> PR9 --> PR10 --> PR11
+        subgraph STAGE_2B ["Stage 2B: Native Mobile Implementation"]
+            SKILL_MOBILE["Skill: diet-dost-mobile-architecture"]
+            PR10["PR 10: Mobile Client Shell & Secure Hardware Auth (KeyStore/Keychain)"]
+            PR11["PR 11: Native Camera & Client-Side 1080p SkiaSharp Compression"]
+            PR12["PR 12: Offline SQLite Cache & 1-Tap Meal Review Screen"]
+            PR13["PR 13: Multi-Platform CFT Parity Verification (Web vs Android vs iOS against Azure)"]
+            SKILL_MOBILE --> PR10 --> PR11 --> PR12 --> PR13
+        end
+
+        PR9 -->|Phase 2 Exit Gate| PR10
     end
 
     subgraph MILESTONE_BETA1 ["Milestone: Beta Release 01 (Enterprise Cloud Persistence)"]
         SKILL_DB["Skill: diet-dost-database-architecture"]
-        PR12["PR 12: Multi-Provider EF Core Configuration & Azure SQL Free Tier"]
-        PR13["PR 13: Passwordless Managed Identity & Mobile Cloud Sync Pipeline"]
+        PR14["PR 14: Multi-Provider EF Core Configuration & Azure SQL Free Tier"]
+        PR15["PR 15: Passwordless Managed Identity & Mobile Cloud Sync Pipeline"]
 
-        SKILL_DB --> PR12 --> PR13
+        SKILL_DB --> PR14 --> PR15
     end
 
     subgraph MILESTONE_GA1 ["Milestone: GA Release 1.0 (Production Scaling & Automated CI/CD)"]
         SKILL_DEPLOY["Skill: diet-dost-azure-deployment"]
-        PR14["PR 14: GitHub Actions Automated CI/CD Pipeline to Azure Container Apps"]
+        PR16["PR 16: GitHub Actions Automated CI/CD Pipeline to Azure Container Apps"]
 
-        SKILL_DEPLOY --> PR14
+        SKILL_DEPLOY --> PR16
     end
 
     subgraph REUSABILITY_PILLARS ["Continuous Reusability & Governance Across All Milestones"]
@@ -107,8 +117,8 @@ graph TD
         REUSE_CFT -.-> REUSE_ADR
     end
 
-    DEMO_GATE -->|"Directly Consumes Phase 1 Backend & Live Azure Host"| MILESTONE_ALPHA2
-    MILESTONE_ALPHA2 -->|"Client Parity Verified & Offline Cache Ready"| MILESTONE_BETA1
+    DEMO_GATE -->|"Directly Consumes Phase 1 Backend & Live Azure Host"| STAGE_2A
+    PR13 -->|"Client Parity Verified & Offline Cache Ready"| MILESTONE_BETA1
     MILESTONE_BETA1 -->|"Persistence Swapped with 0 Client Changes"| MILESTONE_GA1
 ```
 
@@ -119,7 +129,7 @@ graph TD
 | Release Milestone | Phase / Target Subsystem | Governing Skills | Primary Objective | PO Market & Architectural Justification ("Why This Order?") | Reusable Assets & Forward-Roadmap Linkages |
 | :---: | :--- | :--- | :--- | :--- | :--- |
 | **Alpha Release 01** | **Phase 1: Web Clean Architecture, Web BFF & Azure MVP Deployment** | [`diet-dost-clean-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/SKILL.md)<br/>[`diet-dost-azure-deployment`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-azure-deployment/SKILL.md) | Deliver a polished, single-roundtrip Web BFF and deploy the live workable MVP to Azure Container Apps with custom domain TLS and Azure Files SQLite persistence. | **Immediate Live Demo Value**: Demonstrating locally on `localhost` cannot validate customer interest remotely. Deploying the Web MVP to Azure Container Apps (`https://app.dietdost.com`) backed by persistent Azure Files SQLite delivers a worldwide, live customer showcase with zero cloud SQL/NoSQL costs (<$0.30/mo) and zero breaking changes for future phases. | **Durable Core Foundations**: Produces the shared CQRS query handlers, centralized food estimation API, and parameterized Docker deployment directly reused by Mobile in Phase 2 and Azure SQL in Phase 3. |
-| **Alpha Release 02** | **Phase 2: Cross-Platform Mobile MVP & Mobile BFF** | [`diet-dost-mobile-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-mobile-architecture/SKILL.md) | Native camera meal capture, 1080p SkiaSharp compression (<400 KB), hardware token security, touch HUD, and offline local cache connecting to live Azure backend. | **Zero Duplicate Domain Math**: Because Alpha 01 already deployed the backend CQRS handlers and Web BFF to Azure, the mobile app consumes the live `MobileBffController` (`https://app.dietdost.com/api/mobile/v1/*`) directly without writing a single line of duplicated clinical code. | **Shared Mobile Core**: Hardware vault security, client-side compression pipeline, and local SQLite cache schema engineered to plug into Phase 3's cloud sync engine. |
+| **Alpha Release 02** | **Phase 2: Cross-Platform Mobile MVP & Readiness**<br/>• *Stage 2A: Responsive / Shared Preparation*<br/>• *Stage 2B: Native Mobile Implementation* | [`diet-dost-responsive-web-mobile-readiness`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-responsive-web-mobile-readiness/SKILL.md)<br/>[`diet-dost-mobile-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-mobile-architecture/SKILL.md) | **Stage 2A**: Deliver responsive multi-device UX (desktop, tablet, mobile bottom nav), prepare Mobile BFF contracts (`/api/mobile/v1/*`) with compact payloads and caching, and document native feature boundaries.<br/>**Stage 2B**: Implement device-specific capabilities: native camera, 1080p SkiaSharp compression (<400 KB), hardware token security, and offline SQLite cache. | **Two-Stage De-risking**: Jumping straight to native mobile creates high risk of contract rework. By first establishing responsive web ergonomics and backend mobile contracts in Stage 2A, the native mobile implementation in Stage 2B connects to a proven, tested API with zero duplicate math. | **Shared Mobile Core**: Unified Mobile BFF contracts, responsive layout templates, hardware vault security, client-side compression pipeline, and local SQLite cache schema engineered to plug into Phase 3's cloud sync engine. |
 | **Beta Release 01** | **Phase 3: Enterprise Cloud Persistence & Azure SQL Free Tier** | [`diet-dost-database-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-database-architecture/SKILL.md) | Transition persistence from Azure Files SQLite to Azure SQL Serverless Free Tier ($0/mo) + Azure Cosmos DB Free Tier with passwordless Managed Identity. | **Zero Client Breaking Changes**: Web and Mobile clients are already functional and validated against the live Azure MVP. Swapping EF Core providers to Azure SQL Serverless with Managed Identity is purely an infrastructural layer change in `Nutrition.Infrastructure` with zero impact on UI clients. | **Multi-Provider Persistence Engine**: Multi-provider EF Core configuration enabling zero-downtime provider swaps and hydrating Phase 2 Mobile SQLite offline caches via Azure Managed Identity. |
 | **GA Release 1.0** | **Phase 4: Production Scaling & Automated CI/CD** | [`diet-dost-azure-deployment`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-azure-deployment/SKILL.md) | Multi-environment staging/production gating, automated GitHub Actions CI/CD pipeline, and horizontal scaling governance. | **Commercial Launch**: Once cloud database persistence and mobile clients are thoroughly validated, automated CI/CD provides continuous zero-downtime releases from Git commits directly to Azure Container Apps. | **End-to-End Release Automation**: Automated CI/CD running full CFT regression matrix across Web and Mobile, executing zero-downtime canary rollouts. |
 | **Cross-Cutting** | **User Management, Security Governance & Quotas** | [`diet-dost-user-management-security`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-user-management-security/SKILL.md) | Dual-scheme authentication (Cookies + JWT Bearer), 5 user tiers, dynamic AI quotas, SuperAdmin console. | **Active Guardrails**: Governs all four phases by providing tier quotas, role-based paywalls, and DPDPA compliance checks across both Web and Mobile. | **Universal Entitlement Engine**: Reusable across all endpoints, client platforms, and persistence providers without tier re-implementation. |
@@ -169,29 +179,59 @@ graph TD
 
 ---
 
-### Phase 2: Milestone Alpha Release 02 — Cross-Platform Mobile MVP & Mobile BFF (Track 3 & Track 4)
-- **Release Milestone**: `Alpha Release 02 (Cross-Platform Mobile MVP)`
-- **Governing Skill**: [`diet-dost-mobile-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-mobile-architecture/SKILL.md)
-- **CFT Suites**: [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) and [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md)
+### Phase 2: Milestone Alpha Release 02 — Cross-Platform Mobile MVP & Readiness (Track 3 & Track 4)
+- **Release Milestone**: `Alpha Release 02 (Cross-Platform Mobile MVP & Readiness)`
+- **Governing Skills**:
+  - [`diet-dost-responsive-web-mobile-readiness`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-responsive-web-mobile-readiness/SKILL.md) (Responsive web, mobile/tablet UX, Mobile BFF contracts, native feature taxonomy)
+  - [`diet-dost-mobile-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-mobile-architecture/SKILL.md) (Cross-platform mobile client, hardware keystore, native camera, offline SQLite cache)
+- **CFT Suites**:
+  - [`docs/cft/cft_responsive_web_and_tablet.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_responsive_web_and_tablet.md) (Responsive multi-viewport ergonomics & CLS verification)
+  - [`docs/cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) (Mobile native MVP verification)
+  - [`docs/cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md) (Multi-platform mathematical and visual parity)
 - **Target Backend**: Connects directly to the live Azure backend (`https://app.dietdost.com/api/mobile/v1/*`).
-- **Deliverables**:
-  1. **PR 7**: Cross-platform mobile project foundation (.NET MAUI / Expo) with `AuthService` using hardware security (`AndroidKeyStore` / iOS Keychain).
-  2. **PR 8**: Native camera integration with SkiaSharp 1080p client-side compression (<400 KB) and `POST /api/mobile/v1/meals/capture`.
-  3. **PR 9**: Touch Caloric HUD, macro progress rings (Protein, Carbs, Fat), tier quota badge, and upgrade paywalls.
-  4. **PR 10**: Offline-first SQLite local ledger cache and 1-tap meal review screen.
-  5. **PR 11**: Multi-Platform CFT Parity Verification across all 5 user tiers on Web, Android, and iOS against the live Azure backend.
+
+#### Stage 2A: Responsive / Shared Preparation (Execute First)
+1. **PR 7 (Phase 2 Layer 1 — Implement Now)**:
+   - Modern responsive CSS Grid and Flexbox layout for Phone (`375px`, `390px`), Tablet (`768px`, `820px`), and Desktop (`1440px`, `1920px`).
+   - Mobile-first fixed bottom navigation bar for thumb-zone ergonomics on screens `<640px`.
+   - Bottom sheet modals for meal logging and quota alerts on mobile viewports.
+   - Touch targets satisfying WCAG 2.2 Level AA / Apple HIG (`>= 44px x 44px`).
+2. **PR 8 (Phase 2 Layer 2 — Prepare Contract Now)**:
+   - Mobile BFF controller (`MobileBffController.cs`) exposing `GET /api/mobile/v1/dashboard/composite`.
+   - Payload minification: camelCase serialization, null-omission over the wire, ISO 8601 UTC timestamps.
+   - HTTP response compression (Brotli / Gzip) and HTTP caching (`ETag` / `If-None-Match` returning `304 Not Modified`).
+   - Sync metadata contracts (`clientMutationId`, `clientTimestampUtc`).
+3. **PR 9 (Phase 2 Layer 3 — Document for Native)**:
+   - Authoritative Native Feature Classification Matrix (browser PWA vs. native device hardware boundaries).
+   - Platform capability blueprint (Camera, Keystore, Push notifications, BLE scales, Offline SQLite).
+   - Automated responsive CFT test suite and verification execution across all viewports.
+   - **Phase 2 Exit Gate Signoff**: Formal verification of Stage 2A exit criteria before greenlighting Stage 2B.
+
+#### Stage 2B: Native Mobile Implementation (Execute Next)
+4. **PR 10 (Phase 2 Layer 4 — Device-Specific Native)**:
+   - Cross-platform mobile project foundation (.NET MAUI / Expo) with `AuthService` using hardware security (`AndroidKeyStore` / iOS Keychain).
+5. **PR 11 (Phase 2 Layer 5 — Device-Specific Native)**:
+   - Native hardware camera integration with SkiaSharp 1080p client-side compression (<400 KB) and `POST /api/mobile/v1/meals/capture`.
+6. **PR 12 (Phase 2 Layer 6 — Device-Specific Native)**:
+   - Offline-first SQLite local ledger cache (`diet_dost_local.db`) with pending mutation queue and 1-tap meal review screen.
+7. **PR 13 (Phase 2 Layer 7 — Multi-Platform Parity)**:
+   - Multi-Platform CFT Parity Verification across all 5 user tiers on Web, Android, and iOS against the live Azure backend.
 
 #### Reusable Assets & Forward-Roadmap Linkages (In Concert with Future Phases)
-* **PR 7 Reusability -> Hardware Security Foundation for Enterprise Cloud Sync (PR 13)**:
-  The secure hardware token storage (`AndroidKeyStore` / iOS Keychain) created in PR 7 provides the durable credential management layer required for long-lived offline refresh tokens and Phase 3 Managed Identity sync.
-* **PR 8 Reusability -> Permanent Media Ingestion Pipeline**:
+* **PR 7 Reusability -> Reusable PWA & Mobile Webview Presentation Shell**:
+  The responsive layout tokens, bottom nav bar, and bottom sheet CSS are fully usable in Progressive Web App (PWA) mode and within hybrid webview shells without code duplication.
+* **PR 8 Reusability -> Shared Mobile BFF Contracts Consumed Directly by .NET MAUI & Future Clients**:
+  `MobileDashboardCompositeDto` establishes the permanent mobile contract. The .NET MAUI client in PR 10, future watchOS widgets, and third-party integrations consume this exact single-roundtrip endpoint.
+* **PR 9 Reusability -> Architectural Boundary & Acceptance Harness for Native Features**:
+  The feature classification matrix prevents scope creep, while the responsive CFT suite serves as an automated visual regression guard for all future UI modifications.
+* **PR 10 Reusability -> Hardware Security Foundation for Enterprise Cloud Sync (PR 15)**:
+  The secure hardware token storage (`AndroidKeyStore` / iOS Keychain) created in PR 10 provides the durable credential management layer required for long-lived offline refresh tokens and Phase 3 Managed Identity sync.
+* **PR 11 Reusability -> Permanent Media Ingestion Pipeline**:
   The SkiaSharp 1080p client-side compression (<400 KB) algorithm is built as an independent, platform-agnostic service, reusable across camera capture, photo library selection, and future multi-photo comparison workflows.
-* **PR 9 Reusability -> Guaranteed Cross-Platform Visual Parity**:
-  The mobile Touch HUD and macro progress rings consume the exact DTO contracts produced by Phase 1's CQRS handlers, ensuring identical calculations and visual parity with the Web PWA.
-* **PR 10 Reusability -> Offline Cache Ready for Phase 3 Cloud Sync Protocol (PR 13)**:
-  The local SQLite database schema implemented in PR 10 is designed with sync metadata (`SyncStatus`, `LastModifiedUtc`, `ClientMutationId`), making it 100% ready to serve as the offline-first edge database for Phase 3's bidirectional cloud sync pipeline.
-* **PR 11 Reusability -> Durable Multi-Platform Regression Suite**:
-  The functional parity matrix (`cft_cross_platform_functional_parity_matrix.md`) verified in PR 11 is preserved as the regression testing gate for Phase 3 and Phase 4.
+* **PR 12 Reusability -> Offline Cache Ready for Phase 3 Cloud Sync Protocol (PR 15)**:
+  The local SQLite database schema implemented in PR 12 is designed with sync metadata (`SyncStatus`, `LastModifiedUtc`, `ClientMutationId`), making it 100% ready to serve as the offline-first edge database for Phase 3's bidirectional cloud sync pipeline.
+* **PR 13 Reusability -> Durable Multi-Platform Regression Suite**:
+  The functional parity matrix (`cft_cross_platform_functional_parity_matrix.md`) verified in PR 13 is preserved as the regression testing gate for Phase 3 and Phase 4.
 
 ---
 
@@ -200,13 +240,13 @@ graph TD
 - **Governing Skill**: [`diet-dost-database-architecture`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-database-architecture/SKILL.md)
 - **Reference**: `references/azure_database_architecture_playbook.md`
 - **Deliverables**:
-  1. **PR 12**: Multi-provider EF Core configuration in `StorageInfrastructureExtensions.cs` supporting both SQLite (`Database:Provider=Sqlite`) and Azure SQL Serverless (`Database:Provider=AzureSql`).
-  2. **PR 13**: Azure SQL Serverless Free Tier provisioning (32,000 vCore-seconds + 32 GB storage free/month), Passwordless Azure Managed Identity (`DefaultAzureCredential`), and mobile offline sync protocol.
+  1. **PR 14**: Multi-provider EF Core configuration in `StorageInfrastructureExtensions.cs` supporting both SQLite (`Database:Provider=Sqlite`) and Azure SQL Serverless (`Database:Provider=AzureSql`).
+  2. **PR 15**: Azure SQL Serverless Free Tier provisioning (32,000 vCore-seconds + 32 GB storage free/month), Passwordless Azure Managed Identity (`DefaultAzureCredential`), and mobile offline sync protocol.
 
 #### Reusable Assets & Forward-Roadmap Linkages (In Concert with Future Phases)
-* **PR 12 Reusability -> Non-Breaking Persistence Swap**:
+* **PR 14 Reusability -> Non-Breaking Persistence Swap**:
   Because Phase 1 adhered strictly to Clean Architecture, swapping to Azure SQL Serverless in `Nutrition.Infrastructure` requires zero modifications in `Nutrition.Domain`, `Nutrition.Application`, `Nutrition.WebGateway`, or the Mobile client.
-* **PR 13 Reusability -> Enterprise Sync Backbone for Commercial Scale (Phase 4)**:
+* **PR 15 Reusability -> Enterprise Sync Backbone for Commercial Scale (Phase 4)**:
   The bidirectional sync pipeline hydrates the Phase 2 mobile SQLite caches with Azure SQL Serverless, establishing the enterprise-scale data infrastructure required for commercial multi-region rollout in Phase 4.
 
 ---
@@ -215,10 +255,10 @@ graph TD
 - **Release Milestone**: `GA Release 1.0 (Commercial Production Cloud Launch)`
 - **Governing Skill**: [`diet-dost-azure-deployment`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-azure-deployment/SKILL.md)
 - **Deliverables**:
-  1. **PR 14**: GitHub Actions Automated CI/CD Pipeline (multi-environment deployment, container image push to ACR, zero-downtime revision rollout on Azure Container Apps).
+  1. **PR 16**: GitHub Actions Automated CI/CD Pipeline (multi-environment deployment, container image push to ACR, zero-downtime revision rollout on Azure Container Apps).
 
 #### Reusable Assets & Forward-Roadmap Linkages (In Concert with Future Phases)
-* **PR 14 Reusability -> Continuous Delivery Harness**:
+* **PR 16 Reusability -> Continuous Delivery Harness**:
   Automates the execution of all reusable CFT acceptance suites (`docs/cft/`), runs .NET 11 zero-warning verification, builds multi-stage production container images, and executes zero-downtime canary deployments to Azure Container Apps.
 
 ---

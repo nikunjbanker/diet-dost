@@ -127,6 +127,8 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-055** | Web Client Single-Roundtrip Hydration & Zero CLS Orchestration | `ACCEPTED` | [`ADR-20261001-055-web-client-single-roundtrip-hydration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-055-web-client-single-roundtrip-hydration.md) |
 | **ADR-056** | Gated Premium Feature Button State & Underlying API Defense | `ACCEPTED` | [`ADR-20261001-056-gated-feature-button-state-and-api-defense.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-056-gated-feature-button-state-and-api-defense.md) |
 | **ADR-057** | Centralize Food Estimation API & Eliminate Static Client Dictionary | `ACCEPTED` | [`ADR-20261002-057-centralize-food-estimation-api.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-057-centralize-food-estimation-api.md) |
+| **ADR-058** | Deconstruct Monolithic UI Controller into Single Responsibility (SRP) ES Modules | `ACCEPTED` | [`ADR-20261002-058-modularize-ui-controllers.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-058-modularize-ui-controllers.md) |
+| **ADR-059** | Phase 2 Two-Stage Responsive Web & Mobile Readiness Architecture | `ACCEPTED` | [`ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md) |
 
 
 
