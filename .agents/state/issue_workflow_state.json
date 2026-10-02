@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-02T12:20:46.2149355+05:30",
+  "lastUpdated": "2026-10-02T12:23:31.9265982+05:30",
   "activeIssues": {
     "30": {
       "issueNumber": 30,
@@ -14,9 +14,9 @@
       "approvedAt": "2026-10-02T11:50:32.5763721+05:30",
       "issueType": "refactor",
       "branchName": "feature/issue-30-modularize-analytics-chart",
-      "phase": "TESTED",
-      "prNumber": null,
-      "prUrl": null,
+      "phase": "PR_OPENED",
+      "prNumber": 39,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/39",
       "updatedAt": "2026-09-30T10:02:43Z",
       "detectedAt": "2026-10-02T11:50:32.5822022+05:30",
       "checkpoints": [
@@ -26,12 +26,13 @@
         "ACT_ANALYZED",
         "IMPLEMENTED",
         "VALIDATED",
-        "TESTED"
+        "TESTED",
+        "PR_OPENED"
       ],
       "isStacked": false,
       "parentPR": 38,
       "parentBranch": "main",
-      "notes": "Deconstructed analytics-chart.js into ChartRenderer.js, MealDiaryView.js, and ExcelExportService.js. 151/151 unit tests passed, 0 build warnings/errors, 100% pass on live multi-tier CFT suite."
+      "notes": "PR #39 opened and verified with 151 passing tests, live multi-tier CFT pass, and modularized UI service architecture. Awaiting review and merge into main."
     }
   },
   "completedIssues": {
