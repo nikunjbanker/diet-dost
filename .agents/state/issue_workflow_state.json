@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-02T21:26:00+05:30",
+  "lastUpdated": "2026-10-02T21:30:13.6554467+05:30",
   "activeIssues": {
     "42": {
       "issueNumber": 42,
@@ -14,19 +14,26 @@
       "approvedAt": "2026-10-02T13:03:00+05:30",
       "issueType": "documentation",
       "branchName": "docs/issue-42-native-feature-classification",
-      "phase": "ACT_ANALYZING",
-      "updatedAt": "2026-10-02T21:26:00+05:30",
+      "phase": "DRAFTING_PR",
+      "updatedAt": "2026-10-02T23:58:00+05:30",
       "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
         "PROMOTED_FROM_QUEUE",
-        "ACT_ANALYZED"
+        "ACT_ANALYZED",
+        "BRANCH_CREATED_AND_VERIFIED",
+        "IMPLEMENTING",
+        "IMPLEMENTED",
+        "CFT_VALIDATED",
+        "ADR_RECORDED",
+        "VALIDATED",
+        "READY_FOR_PR"
       ],
-      "isStacked": true,
-      "parentPR": 49,
-      "parentBranch": "feature/issue-41-mobile-bff-contracts",
-      "notes": "Promoted to active. Ready for dedicated branch creation and execution of Phase 1 Layer 8."
+      "isStacked": false,
+      "parentPR": null,
+      "parentBranch": null,
+      "notes": "Native feature classification codified, responsive CFT verified 100%, ADR-063 recorded, and exit gate signed off."
     }
   },
   "completedIssues": {
