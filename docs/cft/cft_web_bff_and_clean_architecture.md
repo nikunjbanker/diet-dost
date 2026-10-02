@@ -53,22 +53,22 @@
 ---
 
 ## 4. Test Suite 3: Modularized UI Controllers (Strict SRP Compliance)
-- [ ] **Step 3.1**: Verify `ChartRenderer.js`:
-  - [ ] Switch timeline tabs: `1D`, `7D`, `30D`, `90D`, `365D`.
-  - [ ] **Assert**: SVG chart dynamically recalculates bar coordinates and heights smoothly.
-  - [ ] Click on an individual chart bar:
-    - [ ] **Assert**: Click event filters the meal diary below to that specific date.
-    - [ ] **Assert**: Chart rendering logic operates independently of table DOM code.
-- [ ] **Step 3.2**: Verify `MealDiaryView.js`:
-  - [ ] Toggle layout switch between **Card View** and **Grid View**.
-  - [ ] **Assert**: DOM re-renders cleanly into cards or semantic `<table>` rows.
-  - [ ] Click `Delete Meal`:
-    - [ ] **Assert**: Obsidian dark confirmation dialog emerges cleanly.
-- [ ] **Step 3.3**: Verify `ExcelExportService.js`:
-  - [ ] Authenticate as `premium@dietdost.app`.
-  - [ ] Click `Export Meals (Excel/CSV)`:
-    - [ ] **Assert**: Browser triggers file download (`diet-dost-export.csv`).
-    - [ ] **Assert**: File contains formatted headers and accurate meal rows.
+- [x] **Step 3.1**: Verify `ChartRenderer.js`:
+  - [x] Switch timeline tabs: `1D`, `7D`, `30D`, `90D`, `365D`.
+  - [x] **Assert**: SVG chart dynamically recalculates bar coordinates and heights smoothly.
+  - [x] Click on an individual chart bar:
+    - [x] **Assert**: Click event filters the meal diary below to that specific date.
+    - [x] **Assert**: Chart rendering logic operates independently of table DOM code.
+- [x] **Step 3.2**: Verify `MealDiaryView.js`:
+  - [x] Toggle layout switch between **Card View** and **Grid View**.
+  - [x] **Assert**: DOM re-renders cleanly into cards or semantic `<table>` rows.
+  - [x] Click `Delete Meal`:
+    - [x] **Assert**: Obsidian dark confirmation dialog emerges cleanly.
+- [x] **Step 3.3**: Verify `ExcelExportService.js`:
+  - [x] Authenticate as `premium@dietdost.app`.
+  - [x] Click `Export Meals (Excel/CSV)`:
+    - [x] **Assert**: Browser triggers file download (`diet-dost-export.csv`).
+    - [x] **Assert**: File contains formatted headers and accurate meal rows.
 
 ---
 

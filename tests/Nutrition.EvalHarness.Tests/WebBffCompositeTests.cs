@@ -301,6 +301,31 @@ public class WebBffCompositeTests : IDisposable
         Assert.Contains("hydrate(projections, recentMeals", analyticsChartContent);
         Assert.Contains("renderProjections", analyticsChartContent);
 
+        // Assert Phase 1 Layer 5 SRP UI Modules
+        var chartRendererPath = Path.Combine(wwwroot, "js", "ui", "ChartRenderer.js");
+        var mealDiaryViewPath = Path.Combine(wwwroot, "js", "ui", "MealDiaryView.js");
+        var excelExportServicePath = Path.Combine(wwwroot, "js", "services", "ExcelExportService.js");
+
+        Assert.True(File.Exists(chartRendererPath), $"ChartRenderer.js must exist at {chartRendererPath}");
+        Assert.True(File.Exists(mealDiaryViewPath), $"MealDiaryView.js must exist at {mealDiaryViewPath}");
+        Assert.True(File.Exists(excelExportServicePath), $"ExcelExportService.js must exist at {excelExportServicePath}");
+
+        var chartRendererContent = File.ReadAllText(chartRendererPath);
+        Assert.Contains("class ChartRenderer", chartRendererContent);
+        Assert.Contains("render(dailyTrends", chartRendererContent);
+        Assert.Contains("clearSelection()", chartRendererContent);
+
+        var mealDiaryViewContent = File.ReadAllText(mealDiaryViewPath);
+        Assert.Contains("class MealDiaryView", mealDiaryViewContent);
+        Assert.Contains("renderCards(meals)", mealDiaryViewContent);
+        Assert.Contains("renderGrid(meals)", mealDiaryViewContent);
+        Assert.Contains("showDeleteConfirmModal(meal)", mealDiaryViewContent);
+
+        var excelExportContent = File.ReadAllText(excelExportServicePath);
+        Assert.Contains("class ExcelExportService", excelExportContent);
+        Assert.Contains("isExportAllowed()", excelExportContent);
+        Assert.Contains("export(meals", excelExportContent);
+
         var headerHtmlContent = File.ReadAllText(headerHtmlPath);
         Assert.Contains("id=\"ai-quota-badge\"", headerHtmlContent);
     }

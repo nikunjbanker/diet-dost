@@ -61,6 +61,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-055** | Web Client Single-Roundtrip Hydration & Zero CLS Orchestration | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261001-055-web-client-single-roundtrip-hydration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-055-web-client-single-roundtrip-hydration.md) |
 | **ADR-056** | Gated Premium Feature Button State & Underlying API Defense | `[SECURITY]` | `ACCEPTED` | [`ADR-20261001-056-gated-feature-button-state-and-api-defense.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261001-056-gated-feature-button-state-and-api-defense.md) |
 | **ADR-057** | Centralize Food Estimation API & Eliminate Static Client Dictionary | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-057-centralize-food-estimation-api.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-057-centralize-food-estimation-api.md) |
+| **ADR-058** | Deconstruct Monolithic UI Controller into Single Responsibility (SRP) ES Modules | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-058-modularize-ui-controllers.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-058-modularize-ui-controllers.md) |
 
 
 

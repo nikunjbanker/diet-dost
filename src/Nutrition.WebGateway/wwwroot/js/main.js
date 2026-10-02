@@ -29,6 +29,7 @@ import { DailyHudController } from './ui/daily-hud.js?v=1.3.9';
 import { MealLoggerController } from './ui/meal-logger.js?v=1.3.9';
 import { ReviewModalController } from './ui/review-modal.js?v=1.3.9';
 import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.9';
+import { ExcelExportService } from './services/ExcelExportService.js?v=1.3.9';
 import { ProfileModalController } from './ui/profile-modal.js?v=1.3.9';
 import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.9';
 import { ProgressModalController } from './ui/progress-modal.js?v=1.3.9';
@@ -92,6 +93,12 @@ container.register('reviewModal', (c) => new ReviewModalController({
   eventBus: c.resolve('eventBus')
 }));
 
+container.register('excelExportService', (c) => new ExcelExportService({
+  authService: c.resolve('authService'),
+  toastService: c.resolve('toastService'),
+  mealsService: c.resolve('mealsService')
+}));
+
 container.register('analyticsChart', (c) => new AnalyticsChartController({
   analyticsService: c.resolve('analyticsService'),
   mealsService: c.resolve('mealsService'),
@@ -99,7 +106,8 @@ container.register('analyticsChart', (c) => new AnalyticsChartController({
   toastService: c.resolve('toastService'),
   authService: c.resolve('authService'),
   appState: c.resolve('appState'),
-  eventBus: c.resolve('eventBus')
+  eventBus: c.resolve('eventBus'),
+  excelExportService: c.resolve('excelExportService')
 }));
 
 container.register('profileModal', (c) => new ProfileModalController({
