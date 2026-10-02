@@ -10,6 +10,11 @@
 param (
     [string]$StateFilePath = "",
     [int]$IssueNumber = 0,
+    [string]$SetCheckpoint = "",
+    [string]$Phase = "",
+    [string]$Notes = "",
+    [int]$PRNumber = 0,
+    [string]$PRUrl = "",
     [switch]$Poll,
     [int]$PollIntervalSeconds = 60,
     [switch]$Resume,
@@ -466,6 +471,19 @@ function Invoke-IssueSync {
                 $rec = $State.activeIssues.$k
                 $rec.phase = "COMPLETED"
                 $rec | Add-Member -NotePropertyName "completedAt" -NotePropertyValue (Get-Date).ToString("o") -Force
+                # Ensure all terminal checkpoints are recorded
+                if ($rec.prNumber -and -not ($rec.checkpoints -contains "PR_MERGED")) {
+                    $rec.checkpoints += "PR_MERGED"
+                }
+                if (-not ($rec.checkpoints -contains "ISSUE_CLOSED")) {
+                    $rec.checkpoints += "ISSUE_CLOSED"
+                }
+                if (-not ($rec.checkpoints -contains "COMPLETED")) {
+                    $rec.checkpoints += "COMPLETED"
+                }
+                $prInfo = if ($rec.prNumber) { "PR #$($rec.prNumber) merged into main. " } else { "" }
+                $rec.notes = "$($prInfo)Issue #$k successfully resolved and closed on GitHub."
+
                 $State.completedIssues | Add-Member -NotePropertyName $k -NotePropertyValue $rec -Force
                 $State.activeIssues.PSObject.Properties.Remove($k)
                 Save-WorkflowState -Path $StateFile -State $State
@@ -478,10 +496,21 @@ function Invoke-IssueSync {
                     $nextRec = $State.queuedIssues.$nextKey
                     Write-Host "==> PROMOTING next queued issue #$nextKey to active execution!" -ForegroundColor Green
                     $nextRec.phase = "DETECTED"
-                    $nextRec.checkpoints += "PROMOTED_FROM_QUEUE"
-                    $nextRec.notes = "Promoted from queue after issue #$k completed."
+                    if (-not ($nextRec.checkpoints -contains "PROMOTED_FROM_QUEUE")) {
+                        $nextRec.checkpoints += "PROMOTED_FROM_QUEUE"
+                    }
+                    $nextRec.notes = "Promoted from queue after issue #$k completed. Branching directly from origin/main."
+                    $nextRec.isStacked = $false
+                    $nextRec.parentBranch = "main"
                     $State.activeIssues | Add-Member -NotePropertyName $nextKey -NotePropertyValue $nextRec -Force
                     $State.queuedIssues.PSObject.Properties.Remove($nextKey)
+
+                    # Update waiting message on remaining queued issues
+                    $remainingQueued = @($State.queuedIssues.PSObject.Properties | ForEach-Object { $_.Name })
+                    foreach ($rqk in $remainingQueued) {
+                        $State.queuedIssues.$rqk.notes = "Authorized by CODEOWNER. Queued: single active issue in-flight policy enforced (Waiting for #$nextKey to complete)."
+                    }
+
                     Save-WorkflowState -Path $StateFile -State $State
                     Set-ProjectBoardStatus -Number ([int]$nextKey) -TargetStatus "In Progress"
                 }
@@ -527,6 +556,21 @@ if ($IssueNumber -gt 0) {
         Write-Warning "Issue #$IssueNumber is ON HOLD awaiting CODEOWNER approval."
         Write-Warning "Created by non-codeowner '@($held.author)'. A recognized CODEOWNER must comment '/approve' or apply 'approved-by-codeowner' label before development can begin."
         exit 1
+    }
+
+    if ($SetCheckpoint -or $Phase -or $Notes -or $PRNumber -gt 0 -or $PRUrl) {
+        if ($record) {
+            if ($Phase) { $record.phase = $Phase }
+            if ($SetCheckpoint -and -not ($record.checkpoints -contains $SetCheckpoint)) {
+                $record.checkpoints += $SetCheckpoint
+            }
+            if ($Notes) { $record.notes = $Notes }
+            if ($PRNumber -gt 0) { $record.prNumber = $PRNumber }
+            if ($PRUrl) { $record.prUrl = $PRUrl }
+            Save-WorkflowState -Path $StateFilePath -State $state
+            Write-Host "Updated issue #$IssueNumber state: Phase=$($record.phase), Checkpoints=$($record.checkpoints -join ', ')" -ForegroundColor Green
+            exit 0
+        }
     }
 
     Write-Host "Active State for Issue #$IssueNumber`: $($state.activeIssues.$numKey | ConvertTo-Json)" -ForegroundColor Green
