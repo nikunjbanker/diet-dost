@@ -319,6 +319,50 @@ async function initApp() {
     authGate.show('signin');
   });
 
+  // Mobile Thumb-Zone Bottom Navigation Wiring
+  const btnNavOverview = document.getElementById('btn-nav-overview');
+  const btnNavLogMeal = document.getElementById('btn-nav-log-meal');
+  const btnNavHistory = document.getElementById('btn-nav-history');
+  const btnNavProfile = document.getElementById('btn-nav-profile');
+
+  function setBottomNavActive(activeBtn) {
+    document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+
+  btnNavOverview?.addEventListener('click', () => {
+    setBottomNavActive(btnNavOverview);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  btnNavLogMeal?.addEventListener('click', () => {
+    setBottomNavActive(btnNavLogMeal);
+    const loggerCard = document.querySelector('.logging-card');
+    if (loggerCard) {
+      loggerCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const textInput = document.getElementById('text-input');
+      const fileInput = document.getElementById('file-input');
+      if (textInput && window.getComputedStyle(textInput.parentElement).display !== 'none') {
+        textInput.focus();
+      } else if (fileInput) {
+        fileInput.click();
+      }
+    }
+  });
+
+  btnNavHistory?.addEventListener('click', () => {
+    setBottomNavActive(btnNavHistory);
+    const historySection = document.getElementById('meal-log-section') || document.querySelector('.analytics-card');
+    if (historySection) {
+      historySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+
+  btnNavProfile?.addEventListener('click', () => {
+    setBottomNavActive(btnNavProfile);
+    profileModal.open();
+  });
+
   // Global window event listeners for auth/quota lifecycle
   window.addEventListener('auth:token_expired', () => {
     container.resolve('toastService')?.warning('Your session has expired. Please sign in again to continue.');

@@ -69,24 +69,78 @@ This document establishes the official **Customer & Functional Acceptance Test (
 ## 4. Automated Execution Script Snippet
 
 ```bash
-# Automated headless browser viewport execution via Playwright / Subagent
-node -e "
-const { chromium } = require('playwright');
-(async () => {
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
-  const viewports = [
-    { name: 'iPhone 14', width: 390, height: 844 },
-    { name: 'iPad Portrait', width: 768, height: 1024 },
-    { name: 'Desktop 1080p', width: 1920, height: 1080 }
-  ];
-  for (const vp of viewports) {
-    await page.setViewportSize({ width: vp.width, height: vp.height });
-    await page.goto('http://localhost:5240/');
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
-    console.log(\`\${vp.name}: \${overflow ? 'FAILED (Overflow)' : 'PASSED'}\`);
-  }
-  await browser.close();
-})();
-"
+# Automated CDP viewport test execution via Node.js
+node tests/verify_cft_viewports.mjs
 ```
+
+---
+
+## 5. Live Multi-Viewport Execution Evidence (Pre-Merge Certification)
+
+**Execution Date**: 2026-10-02  
+**Harness**: `tests/verify_cft_viewports.mjs` (Chrome DevTools Protocol via Headless Browser)  
+**Target Server**: `http://localhost:5240/`  
+
+```text
+======================================================================
+  CFT TEST SUITE: MULTI-VIEWPORT RESPONSIVE & TOUCH-FIRST ACCEPTANCE  
+======================================================================
+[1/5] Launching headless browser on port 9222...
+   Browser CDP Connected: Chrome/154.0.8037.59
+[2/5] Navigating to http://localhost:5240/...
+[3/5] Executing Viewport Layout & Overflow Assertions...
+
+--> Testing Profile: Desktop Web (1440x900)
+    [PASS/FAIL] Overflow: PASS (scrollWidth: 1430px, innerWidth: 1440px)
+    [PASS/FAIL] Bottom Nav Display: PASS (Actual: 'none', Expected: 'none')
+    [PASS/FAIL] Desktop Header Buttons: PASS (Actual: 'flex', Expected: 'inline-flex/block')
+
+--> Testing Profile: Tablet Portrait (768x1024)
+    [PASS/FAIL] Overflow: PASS (scrollWidth: 758px, innerWidth: 768px)
+    [PASS/FAIL] Bottom Nav Display: PASS (Actual: 'none', Expected: 'none')
+    [PASS/FAIL] Desktop Header Buttons: PASS (Actual: 'flex', Expected: 'inline-flex/block')
+
+--> Testing Profile: Mobile Standard - iPhone 14 (390x844)
+    [PASS/FAIL] Overflow: PASS (scrollWidth: 390px, innerWidth: 390px)
+    [PASS/FAIL] Bottom Nav Display: PASS (Actual: 'flex', Expected: 'flex')
+    [PASS/FAIL] Desktop Header Buttons: PASS (Actual: 'none', Expected: 'none')
+
+--> Testing Profile: Mobile Compact - iPhone SE (375x667)
+    [PASS/FAIL] Overflow: PASS (scrollWidth: 375px, innerWidth: 375px)
+    [PASS/FAIL] Bottom Nav Display: PASS (Actual: 'flex', Expected: 'flex')
+    [PASS/FAIL] Desktop Header Buttons: PASS (Actual: 'none', Expected: 'none')
+
+[4/5] Executing Mobile Touch Target & Bottom Sheet Verification (375x667)...
+    Touch Target Dimensions (Target >= 44px x 44px):
+    - #btn-nav-overview: PASS (60px x 48px)
+    - #btn-nav-log-meal: PASS (62px x 71px)
+    - #btn-nav-history: PASS (56px x 48px)
+    - #btn-nav-profile: PASS (56px x 48px)
+    - #btn-mode-camera: PASS (152px x 47px)
+    - #btn-mode-text: PASS (152px x 47px)
+
+--> Testing Clinical Profile (#btn-nav-profile) -> Mobile Bottom Sheet Modal Flow:
+    [PASS/FAIL] Bottom Sheet Open: PASS
+    [PASS/FAIL] Bottom Sheet Styling: PASS (alignItems: flex-end, borderRadius: '20px 20px 0px 0px', dimensions: 375x587px, bottomGap: 0px)
+
+--> Testing Diary Navigation (#btn-nav-history) Click:
+    [PASS/FAIL] Diary Tab Active State: PASS
+    [INFO] Scroll Position: 0px -> 2043px
+
+--> Testing Overview Navigation (#btn-nav-overview) Click:
+    [PASS/FAIL] Overview Tab Active State: PASS
+    [INFO] Scroll Position Top: 68px
+
+======================================================================
+                    CFT EXECUTION SUMMARY RESULTS                     
+======================================================================
+1. Horizontal Overflow (scrollWidth <= innerWidth): ALL PASSED (100%)
+2. Bottom Navigation Responsive Visibility:         ALL PASSED (100%)
+3. Desktop Header Button Adaptive Visibility:       ALL PASSED (100%)
+4. Touch Target Governance (>= 44px x 44px):        ALL PASSED (100%)
+5. Mobile Bottom Sheet Modal Behavior:              PASSED (100%)
+======================================================================
+
+>>> VERDICT: CFT ACCEPTANCE CRITERIA 100% SATISFIED ON ALL VIEWPORTS! <<<
+```
+

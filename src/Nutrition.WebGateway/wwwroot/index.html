@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Diet Dost | AI-Powered Indian Diet & Calorie Tracker</title>
   <meta name="description" content="South Asian calibrated AI nutrition intelligence adhering to ICMR-NIN guidelines with visual body & face progress tracking.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=1.3.9">
+  <link rel="stylesheet" href="styles.css?v=1.4.0">
 </head>
 <body>
   <!-- Header / Navbar Component -->
@@ -32,6 +32,28 @@
     <div data-include="partials/analytics-card.html"></div>
   </main>
 
+  <!-- Fixed Thumb-Zone Bottom Navigation Bar (<640px) -->
+  <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobile Navigation">
+    <button type="button" class="bottom-nav-item active" id="btn-nav-overview" aria-label="Overview">
+      <span class="bottom-nav-icon">📊</span>
+      <span class="bottom-nav-label">Overview</span>
+    </button>
+    <button type="button" class="bottom-nav-item bottom-nav-fab" id="btn-nav-log-meal" aria-label="Log Meal">
+      <div class="fab-circle">
+        <span class="fab-icon">➕</span>
+      </div>
+      <span class="bottom-nav-label">Log Meal</span>
+    </button>
+    <button type="button" class="bottom-nav-item" id="btn-nav-history" aria-label="Meal Diary and History">
+      <span class="bottom-nav-icon">📅</span>
+      <span class="bottom-nav-label">Diary</span>
+    </button>
+    <button type="button" class="bottom-nav-item" id="btn-nav-profile" aria-label="Clinical Profile and Intake">
+      <span class="bottom-nav-icon">⚙️</span>
+      <span class="bottom-nav-label">Clinical</span>
+    </button>
+  </nav>
+
   <!-- Interactive Overlays & Modals -->
   <div data-include="partials/auth-gate.html"></div>
   <div data-include="partials/admin-modal.html"></div>
@@ -46,6 +68,6 @@
   <div id="toast-container" class="toast-container"></div>
 
   <!-- Application Bootstrap (ES Modules, IoC Container & Component Loader) -->
-  <script type="module" src="js/main.js?v=1.3.9"></script>
+  <script type="module" src="js/main.js?v=1.4.0"></script>
 </body>
 </html>
