@@ -71,6 +71,6 @@ Prior to Layer 8, responsive layout styling (Layer 6) and Mobile BFF contracts (
 * **Phase 2 (Mobile App Implementation - Stage 2B)**:
   - The classification matrix serves as the exact functional specification for native .NET MAUI development. Developers will implement `ISecureTokenStore`, `IImageCompressionService` (SkiaSharp), and `ILocalLedgerSyncEngine` (SQLite) against the approved mobile contracts.
 * **Phase 1 Layer 9 (Azure Container Apps Live Showcase)**:
-  - Validated responsive web client ensures flawless presentation for reviewers across smartphones, tablets, and desktop displays on the live URL `https://app.dietdost.com`.
+  - Validated responsive web client ensures flawless presentation for reviewers across smartphones, tablets, and desktop displays on the live URL `https://dev.diet-dost.in`.
 * **Zero Technical Debt**:
   - Eliminates disposable prototypes; all responsive styles, test harnesses, and architecture blueprints directly transfer into future production releases.

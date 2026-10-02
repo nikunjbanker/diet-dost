@@ -53,7 +53,7 @@ Prior to this deliverable, Diet-Dost had minimal, ad-hoc media queries, resultin
 
 ## 5. Forward Roadmap Impact & Future Phase Compatibility
 
-* **Phase 1 Layer 9 (Azure Deployment Gate / Issue #31)**: The container image deployed to Azure Container Apps bundles the responsive frontend, ensuring `https://app.dietdost.com` looks and behaves like a native app on mobile phones from minute one.
+* **Phase 1 Layer 9 (Azure Deployment Gate / Issue #31)**: The container image deployed to Azure Container Apps bundles the responsive frontend, ensuring `https://dev.diet-dost.in` looks and behaves like a native app on mobile phones from minute one.
 * **Phase 2 (Mobile MVP / Issues #43–#46)**: Mobile UI mockups and client-side webviews inherit this exact CSS token design system without re-engineering layouts.
 
 ---

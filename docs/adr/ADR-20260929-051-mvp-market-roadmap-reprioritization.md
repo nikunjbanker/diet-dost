@@ -24,7 +24,7 @@ Following direct Product Owner (PO) assessment of early market discovery, live c
 
 Key PO drivers and strategic adjustments:
 * **"Showcase First, Scale Second" Strategy**: The primary immediate goal is to establish **Milestone: Alpha Release 01 (Workable Web Showcase MVP on Azure)** without external cloud SQL or NoSQL database dependencies, allowing rapid, zero-cost customer showcases, clinical dietitian validations, and investor feedback over the live internet.
-* **Live Azure Deployment in Alpha 01 (PR 6)**: To make the MVP demoable to external customers and stakeholders worldwide, Phase 1 includes **PR 6: Azure Container Apps MVP Deployment with persistent Azure Files SQLite SMB volume mount (`/app/data`) and custom domain (`app.dietdost.com`) with free Azure-managed TLS certificate auto-renewal**.
+* **Live Azure Deployment in Alpha 01 (PR 6)**: To make the MVP demoable to external customers and stakeholders worldwide, Phase 1 includes **PR 6: Azure Container Apps MVP Deployment with persistent Azure Files SQLite SMB volume mount (`/app/data`) and custom domain (`dev.diet-dost.in`) with free Azure-managed TLS certificate auto-renewal**.
 * **Zero Cloud SQL/NoSQL Expense (<$0.30/Month)**: Retains lightweight embedded local SQLite (`diettracker.db`) hosted on an Azure Files SMB share, completely eliminating cloud database provisioning delays, cloud connection firewall setups, and expensive cloud database licenses during initial customer validation.
 * **End-Goal Durability**: The Clean Architecture and CQRS decoupling implemented in Phase 1 ensures that transitioning to Azure SQL Serverless and Azure Cosmos DB in Beta 01 is an isolated infrastructure swap with zero client-side breaking changes.
 
@@ -35,7 +35,7 @@ Key PO drivers and strategic adjustments:
 Diet-Dost previously had a sequential 4-phase technical roadmap that grouped cloud database provisioning and mobile development in a monolithic pipeline without formal product release milestone gates. Furthermore, cloud containerization was initially postponed to Phase 4, which would have left Alpha 01 confined to `localhost`, preventing remote customer and investor demos.
 
 From a product management and go-to-market perspective:
-1. Demonstrations to prospective customers, dietitians, and angel investors require a live, publicly accessible, HTTPS-secured web application on Azure (`https://app.dietdost.com`).
+1. Demonstrations to prospective customers, dietitians, and angel investors require a live, publicly accessible, HTTPS-secured web application on Azure (`https://dev.diet-dost.in`).
 2. Provisioning Azure SQL Serverless, Azure Cosmos DB, Managed Identity, and multi-region replication before validating customer appetite introduces premature infrastructure overhead and unnecessary cloud bills.
 3. The roadmap needed clear release milestone demarcation (Alpha 01 -> Alpha 02 -> Beta 01 -> GA 1.0) with a live Azure showcase deployed at the conclusion of Phase 1.
 
@@ -43,7 +43,7 @@ From a product management and go-to-market perspective:
 
 ## 3. Decision Drivers
 
-* **Driver 1: Worldwide Live Customer Showcase**: Enable immediate, frictionless demos of Diet-Dost's core AI vision, ICMR-NIN 2024 calculators, and 5 user tiers on a live Azure custom domain (`https://app.dietdost.com`).
+* **Driver 1: Worldwide Live Customer Showcase**: Enable immediate, frictionless demos of Diet-Dost's core AI vision, ICMR-NIN 2024 calculators, and 5 user tiers on a live Azure custom domain (`https://dev.diet-dost.in`).
 * **Driver 2: Zero Cloud Database Cost for Alpha 01 (<$0.30/mo)**: Avoid Azure SQL/Cosmos DB provisioning and operational costs during early feedback cycles by using Azure Files-backed SQLite.
 * **Driver 3: Architectural Independence (Clean Architecture)**: Ensure client applications and domain logic remain 100% agnostic to whether persistence is Azure Files SQLite or Azure SQL Serverless.
 * **Driver 4: Native GitHub Stacked PR Protocol Compliance**: Maintain small, reviewable, bottoms-up stacked PR tracks (PR 1 through PR 6 in Phase 1) in adherence with `AGENTS.md`.
@@ -68,7 +68,7 @@ From a product management and go-to-market perspective:
 ## 6. Consequences & Trade-Offs
 
 ### Positive Consequences:
-* **Live Worldwide Customer Showcase**: Alpha 01 Web Showcase MVP is live at `https://app.dietdost.com` with free Azure-managed TLS.
+* **Live Worldwide Customer Showcase**: Alpha 01 Web Showcase MVP is live at `https://dev.diet-dost.in` with free Azure-managed TLS.
 * **Pre-Seeded 5 User Tiers**: Instant login with `free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`.
 * **Zero Cloud SQL/NoSQL Bills**: SQLite runs on Azure Files SMB share with single-replica constraint (`maxReplicas: 1`), keeping total cloud spend under $0.30/month.
 * **Zero Technical Debt**: Because domain models and Web BFF are built with Clean Architecture, persistence is abstracted behind `IRepository<T>` and `IUnitOfWork`.
