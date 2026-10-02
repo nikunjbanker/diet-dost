@@ -9,11 +9,13 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Nutrition.Application;
+using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Features.Analytics.Queries.GetDailyLedger;
 using Nutrition.Application.Features.Analytics.Queries.GetHistoricalAnalytics;
 using Nutrition.Application.Features.Analytics.Queries.GetProjections;
+using Nutrition.Application.Features.Meals.Queries.EstimateFoodItem;
 using Nutrition.Application.Features.Meals.Queries.GetAiQuota;
 using Nutrition.Application.Features.Meals.Queries.GetMealHistory;
 using Nutrition.Application.Features.Profile.Queries.GetProfile;
@@ -55,6 +57,7 @@ public class SharedCqrsQueryTests : IDisposable
         services.AddScoped<ClinicalDietitianService>();
         services.AddScoped<ITierConfigurationService, TierConfigurationService>();
         services.AddScoped<IAiQuotaService, AiQuotaService>();
+        services.AddScoped<IFoodVisionAgent, DummyFoodVisionAgent>();
 
         // Register application services and CQRS handlers via native scanning
         services.AddApplicationServices();
@@ -288,4 +291,92 @@ public class SharedCqrsQueryTests : IDisposable
         Assert.Equal("Rohan Verma", result.Data.Profile.Name);
         Assert.True(result.Data.Budget.TargetCalories > 1000);
     }
+
+    [Fact]
+    public async Task EstimateFoodItem_ValidDish_ReturnsIcmrNinNutrition()
+    {
+        const string userId = "user-estimate-test";
+        await SeedUserWithProfileAndMealsAsync(userId, UserTier.Free);
+
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var query = new EstimateFoodItemQuery(userId, "Paneer Butter Masala", "1.5 katori", false, "Dinner");
+        var result = await dispatcher.QueryAsync(query);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Data);
+        Assert.True(result.Data.Calories > 0);
+        Assert.True(result.Data.ProteinGrams > 0);
+        Assert.Equal("1.5 katori", result.Data.EstimatedPortion);
+    }
+
+    [Fact]
+    public async Task EstimateFoodItem_PortionScaling_AdjustsMacrosProportionately()
+    {
+        const string userId = "user-portion-test";
+        await SeedUserWithProfileAndMealsAsync(userId, UserTier.Free);
+
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var singlePortion = await dispatcher.QueryAsync(new EstimateFoodItemQuery(userId, "Dal Tadka", "1 katori", false, "Lunch"));
+        var doublePortion = await dispatcher.QueryAsync(new EstimateFoodItemQuery(userId, "Dal Tadka", "2 katori", false, "Lunch"));
+
+        Assert.True(singlePortion.Succeeded);
+        Assert.True(doublePortion.Succeeded);
+        Assert.True(doublePortion.Data!.Calories > singlePortion.Data!.Calories);
+        Assert.True(doublePortion.Data.ProteinGrams > singlePortion.Data.ProteinGrams);
+    }
+
+    [Fact]
+    public async Task EstimateFoodItem_MissingName_ReturnsFailure()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var query = new EstimateFoodItemQuery("test-user", "", "1 katori", false, "Lunch");
+        var result = await dispatcher.QueryAsync(query);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(400, result.StatusCode);
+    }
 }
+
+public class DummyFoodVisionAgent : IFoodVisionAgent
+{
+    public Task<IndianMealAnalysisResult> AnalyzeMealPhotoAsync(
+        Stream imageStream,
+        string mimeType,
+        string? regionalContext = null,
+        UserProfile? userContext = null,
+        List<Nutrition.Domain.Model.Meal.UserCorrectionRecord>? userLearnedCorrections = null,
+        string? mealType = null,
+        string? fileName = null,
+        CancellationToken ct = default)
+    {
+        return Task.FromResult(new IndianMealAnalysisResult());
+    }
+
+    public Task<IndianMealAnalysisResult> AnalyzeMealDescriptionAsync(
+        string description,
+        string? mealType = null,
+        UserProfile? userContext = null,
+        List<Nutrition.Domain.Model.Meal.UserCorrectionRecord>? userLearnedCorrections = null,
+        CancellationToken ct = default)
+    {
+        return Task.FromResult(new IndianMealAnalysisResult());
+    }
+
+    public Task<FeedbackRetrainingResult> ProcessFeedbackRetrainingAsync(
+        string userId,
+        string dishName,
+        string rating,
+        string? remarks,
+        List<IndianMealItemDto>? currentItems = null,
+        CancellationToken ct = default)
+    {
+        return Task.FromResult(new FeedbackRetrainingResult(false, "Stub"));
+    }
+}
+

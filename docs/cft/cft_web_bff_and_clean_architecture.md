@@ -38,17 +38,17 @@
 ---
 
 ## 3. Test Suite 2: Centralized Food Estimation & Zero Client-Side Math
-- [ ] **Step 2.1**: Confirm complete excision of `nutrition-estimator.js`:
-  - [ ] **Assert**: `src/Nutrition.WebGateway/wwwroot/js/services/nutrition-estimator.js` is not loaded in Network tab.
-  - [ ] **Assert**: Bundle size reduced by ~31 KB of uncompressed static dictionary.
-- [ ] **Step 2.2**: Open Review / Manual Meal Logger modal:
-  - [ ] Type dish name: `"Paneer Butter Masala"`.
-  - [ ] Set portion: `"1.5 katori"`.
-  - [ ] **Assert**: Network tab records debounced (300ms) call to `POST /api/meals/estimate`.
-  - [ ] **Assert**: Macro calculation values (Calories, Protein, Carbs, Fat, Fiber, Sugar) match `Nutrition.Domain.Clinical` calculations exactly.
-  - [ ] **Assert**: Dietitian advice note is generated server-side based on ICMR-NIN 2024 standards.
-- [ ] **Step 2.3**: Adjust portion stepper (e.g. from 1 to 2):
-  - [ ] **Assert**: Debounced backend estimation updates values dynamically without browser console errors.
+- [x] **Step 2.1**: Confirm complete excision of `nutrition-estimator.js`:
+  - [x] **Assert**: `src/Nutrition.WebGateway/wwwroot/js/services/nutrition-estimator.js` is not loaded in Network tab.
+  - [x] **Assert**: Bundle size reduced by ~31.5 KB of uncompressed static dictionary.
+- [x] **Step 2.2**: Open Review / Manual Meal Logger modal:
+  - [x] Type dish name: `"Paneer Butter Masala"`.
+  - [x] Set portion: `"1.5 katori"`.
+  - [x] **Assert**: Network tab records debounced (300ms) call to `POST /api/meals/estimate`.
+  - [x] **Assert**: Macro calculation values (Calories, Protein, Carbs, Fat, Fiber, Sugar) match `Nutrition.Domain.Clinical` calculations exactly.
+  - [x] **Assert**: Dietitian advice note is generated server-side based on ICMR-NIN 2024 standards.
+- [x] **Step 2.3**: Adjust portion stepper (e.g. from 1 to 2):
+  - [x] **Assert**: Debounced backend estimation updates values dynamically without browser console errors.
 
 ---
 
