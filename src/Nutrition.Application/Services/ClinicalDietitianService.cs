@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -209,6 +209,16 @@ public class ClinicalDietitianService
                 meal.Items.Any(i => i.Name.ToLowerInvariant().Contains("coconut water") || i.Name.ToLowerInvariant().Contains("diet salt")))
             {
                 meal.MedicationWarnings.Add("Medication Warning: High potassium item detected with ARB/ACE inhibitor. Avoid excessive potassium to prevent hyperkalemia.");
+            }
+        }
+
+        // Idempotency check: if clientMutationId was provided, check if already recorded
+        if (!string.IsNullOrWhiteSpace(meal.ClientMutationId))
+        {
+            var existing = (await _mealRepo.FindAsync(m => m.UserId == meal.UserId && m.ClientMutationId == meal.ClientMutationId, ct)).FirstOrDefault();
+            if (existing != null)
+            {
+                return existing;
             }
         }
 

@@ -2,8 +2,34 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-02T17:30:11.3008134+05:30",
+  "lastUpdated": "2026-10-02T21:26:00+05:30",
   "activeIssues": {
+    "42": {
+      "issueNumber": 42,
+      "title": "docs(mobile): implement Phase 1 Layer 8 - native feature classification matrix and responsive CFT acceptance suite",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-10-02T13:03:00+05:30",
+      "issueType": "documentation",
+      "branchName": "docs/issue-42-native-feature-classification",
+      "phase": "ACT_ANALYZING",
+      "updatedAt": "2026-10-02T21:26:00+05:30",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED",
+        "PROMOTED_FROM_QUEUE",
+        "ACT_ANALYZED"
+      ],
+      "isStacked": true,
+      "parentPR": 49,
+      "parentBranch": "feature/issue-41-mobile-bff-contracts",
+      "notes": "Promoted to active. Ready for dedicated branch creation and execution of Phase 1 Layer 8."
+    }
+  },
+  "completedIssues": {
     "41": {
       "issueNumber": 41,
       "title": "feat(api): implement Phase 1 Layer 7 - Mobile BFF contracts, compact payloads, and caching headers for mobile readiness",
@@ -14,22 +40,31 @@
       "approvedAt": "2026-10-02T13:03:00+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-41-mobile-bff-contracts",
-      "phase": "ACT_ANALYZING",
-      "updatedAt": "2026-10-02T07:33:55Z",
+      "phase": "COMPLETED",
+      "prNumber": 49,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/49",
+      "updatedAt": "2026-10-02T21:25:00+05:30",
       "detectedAt": "2026-10-02T12:43:00+05:30",
+      "completedAt": "2026-10-02T21:26:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
         "PROMOTED_FROM_QUEUE",
-        "ACT_RETRIGGERED"
+        "ACT_ANALYZED",
+        "BRANCH_CREATED_AND_VERIFIED",
+        "IMPLEMENTING",
+        "IMPLEMENTED",
+        "CFT_VALIDATED",
+        "ADR_RECORDED",
+        "VALIDATED",
+        "PR_CREATED",
+        "COMPLETED"
       ],
-      "isStacked": true,
+      "isStacked": false,
       "parentPR": 48,
-      "parentBranch": "feature/issue-40-responsive-ui-layout",
-      "notes": "Issue updated on GitHub: requires re-analysis (ACT phase)."
-    }
-  },
-  "completedIssues": {
+      "parentBranch": "main",
+      "notes": "PR #49 created. Mobile BFF composite endpoint, Brotli compression, ETag 304 caching, and offline mutation idempotency verified with 159 tests and 100% CFT pass rate."
+    },
     "40": {
       "issueNumber": 40,
       "title": "feat(presentation): implement Phase 1 Layer 6 - responsive UI layout and touch-first navigation for mobile and tablet viewports",
@@ -267,28 +302,6 @@
   },
   "heldIssues": {},
   "queuedIssues": {
-    "42": {
-      "issueNumber": 42,
-      "title": "docs(mobile): implement Phase 1 Layer 8 - native feature classification matrix and responsive CFT acceptance suite",
-      "author": "nikunjbanker",
-      "isCodeownerAuthor": true,
-      "approvalStatus": "AUTHORIZED",
-      "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T13:03:00+05:30",
-      "issueType": "documentation",
-      "branchName": "docs/issue-42-native-feature-classification",
-      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:34:00Z",
-      "detectedAt": "2026-10-02T12:43:00+05:30",
-      "checkpoints": [
-        "DETECTED",
-        "QUEUED"
-      ],
-      "isStacked": true,
-      "parentPR": 0,
-      "parentBranch": "feature/issue-41-mobile-bff-contracts",
-      "notes": "Phase 1 Layer 8 (Document for Native & Responsive CFT Gate). Queued: depends on Layer 7 (#41)."
-    },
     "31": {
       "issueNumber": 31,
       "title": "feat(devops): implement Phase 1 Layer 9 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",

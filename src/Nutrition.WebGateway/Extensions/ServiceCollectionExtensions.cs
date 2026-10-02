@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -44,6 +44,27 @@ public static class ServiceCollectionExtensions
 
         // Native .NET 11 Clean Architecture Application Services & CQRS Dispatcher
         services.AddApplicationServices();
+
+        // Response Compression for Mobile payloads (Brotli & Gzip)
+        services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = true;
+            options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
+            options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
+            options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(new[]
+            {
+                "application/json",
+                "text/json"
+            });
+        });
+        services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
+        {
+            options.Level = System.IO.Compression.CompressionLevel.Fastest;
+        });
+        services.Configure<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProviderOptions>(options =>
+        {
+            options.Level = System.IO.Compression.CompressionLevel.Fastest;
+        });
 
         // Ambient User Claims Context Provider (OWASP ASVS tenant isolation)
         services.AddHttpContextAccessor();

@@ -151,7 +151,19 @@ public class MealsController : ControllerBase
         if (string.IsNullOrWhiteSpace(currentUserId))
             return Unauthorized();
 
-        var command = new ConfirmMealCommand(meal, currentUserId, User.IsAdminOrSuper());
+        if (Request.Headers.TryGetValue("X-Client-Mutation-Id", out var headerMutationId) &&
+            string.IsNullOrWhiteSpace(meal.ClientMutationId))
+        {
+            meal.ClientMutationId = headerMutationId.ToString();
+        }
+
+        var command = new ConfirmMealCommand(
+            meal,
+            currentUserId,
+            User.IsAdminOrSuper(),
+            meal.ClientMutationId,
+            meal.ClientTimestampUtc
+        );
         var result = await _dispatcher.SendAsync(command, ct);
 
         if (!result.Succeeded)

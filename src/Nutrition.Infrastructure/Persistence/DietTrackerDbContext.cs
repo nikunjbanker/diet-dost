@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -75,6 +75,7 @@ public class DietTrackerDbContext : DbContext
         modelBuilder.Entity<MealLog>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.UserId, e.ClientMutationId });
             entity.HasMany(e => e.Items)
                   .WithOne()
                   .HasForeignKey(i => i.MealLogId)

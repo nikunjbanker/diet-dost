@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -55,6 +55,10 @@ public class MealLog
     // 1-Tap Cooking fat modifiers
     public double AddedGheeKcal { get; set; }
     public double AddedTadkaKcal { get; set; }
+
+    // Offline-first mutation sync metadata (idempotency support)
+    public string? ClientMutationId { get; set; }
+    public DateTime? ClientTimestampUtc { get; set; }
 
     // Persisted macro totals with fallback computation
     private double? _totalCalories;
