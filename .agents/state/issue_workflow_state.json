@@ -14,18 +14,24 @@
       "approvedAt": "2026-10-02T13:03:00.0000000+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-40-responsive-ui-layout",
-      "phase": "DETECTED",
-      "updatedAt": "2026-10-02T07:34:00Z",
+      "phase": "VALIDATED",
+      "updatedAt": "2026-10-02T11:35:00Z",
       "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
-        "PROMOTED_FROM_QUEUE"
+        "PROMOTED_FROM_QUEUE",
+        "BRANCH_CREATED_AND_VERIFIED",
+        "IMPLEMENTING",
+        "IMPLEMENTED",
+        "CFT_VALIDATED",
+        "ADR_RECORDED",
+        "VALIDATED"
       ],
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "main",
-      "notes": "Promoted to active per Option A re-sequencing (Responsive UI before Azure deployment). Branching directly from origin/main."
+      "notes": "Responsive layout, thumb navigation, bottom sheets, and touch targets validated against live multi-tier CFT and 151 unit/eval tests."
     }
   },
   "completedIssues": {

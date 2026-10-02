@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -33,6 +33,12 @@
   --radius-pill: 9999px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Geist", "Inter", sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  /* Phase 1 Layer 6 Responsive Breakpoint Tokens */
+  --breakpoint-mobile-max: 639px;
+  --breakpoint-tablet-min: 640px;
+  --breakpoint-tablet-max: 1023px;
+  --breakpoint-desktop-min: 1024px;
+  --breakpoint-wide-min: 1440px;
 }
 
 * {
@@ -41,7 +47,7 @@
   padding: 0;
 }
 
-body {
+html, body {
   background-color: var(--canvas-bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
@@ -49,6 +55,17 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+@media (max-width: 639px) {
+  body {
+    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 .tabular {
@@ -3981,5 +3998,499 @@ body {
 .legal-full-link:hover {
   text-decoration: underline;
 }
+
+/* ==========================================================================
+   Phase 1 Layer 6: Responsive Web UI, Touch Ergonomics & Mobile Navigation
+   Codified per ADR-060, SDD 09 v2.4.0 & responsive-ui-playbook.md
+   ========================================================================== */
+
+/* Main Container Sizing & Margins */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  box-sizing: border-box;
+}
+
+/* Fluid Heading Typography */
+h1 {
+  font-size: clamp(1.4rem, 4vw + 0.2rem, 2.2rem);
+}
+h2 {
+  font-size: clamp(1.2rem, 3vw + 0.1rem, 1.8rem);
+}
+
+/* Touch Target Standard Utility (WCAG 2.2 / Apple HIG >= 44x44px) */
+.touch-target {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+}
+
+/* ==========================================================================
+   Fixed Thumb-Zone Bottom Navigation Bar (< 640px)
+   ========================================================================== */
+.mobile-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(15, 16, 18, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-subtle);
+  display: none; /* Hidden on desktop & tablet */
+  justify-content: space-around;
+  align-items: center;
+  z-index: 1000;
+  padding: 0 0.5rem;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
+}
+
+.bottom-nav-item {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 56px;
+  min-height: 48px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: all 0.15s ease;
+  position: relative;
+  text-decoration: none;
+}
+
+.bottom-nav-item:hover,
+.bottom-nav-item:focus {
+  color: var(--text-primary);
+}
+
+.bottom-nav-item.active {
+  color: var(--accent-brand-hover);
+}
+
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 16px;
+  height: 3px;
+  background: var(--accent-brand);
+  border-radius: var(--radius-pill);
+}
+
+.bottom-nav-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.bottom-nav-label {
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Center Floating Action Button (FAB) */
+.bottom-nav-item.bottom-nav-fab {
+  transform: translateY(-8px);
+}
+
+.bottom-nav-item.bottom-nav-fab .fab-circle {
+  width: 46px;
+  height: 46px;
+  background: linear-gradient(135deg, var(--accent-brand), #8f98ff);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px var(--accent-brand-glow);
+  color: #fff;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.bottom-nav-item.bottom-nav-fab:active .fab-circle {
+  transform: scale(0.92);
+}
+
+.bottom-nav-item.bottom-nav-fab .fab-icon {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.bottom-nav-item.bottom-nav-fab .bottom-nav-label {
+  margin-top: 3px;
+  color: var(--accent-brand-hover);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   Mobile Viewports (< 640px)
+   ========================================================================== */
+@media (max-width: 639px) {
+  /* Show fixed bottom navigation */
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  /* Safe container padding */
+  .container {
+    padding: 0.75rem 0.85rem;
+    gap: 1rem;
+    max-width: 100vw;
+  }
+
+  /* Slim Mobile App Header */
+  .app-header {
+    padding: 0.5rem 0.85rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .brand-name {
+    font-size: 1.05rem;
+  }
+  .brand-tag {
+    display: none !important; /* Hide lengthy scientific tag on small phone header */
+  }
+  .header-actions {
+    gap: 0.4rem;
+  }
+  .header-btn-desktop {
+    display: none !important; /* Secondary action buttons hidden on phone header */
+  }
+  #btn-open-transparency,
+  #btn-open-profile,
+  #btn-open-progress-header {
+    display: none !important; /* Accessible in bottom nav & dropdown menu */
+  }
+  .user-menu-wrapper #btn-user-menu {
+    padding: 4px 8px !important;
+  }
+  #header-user-name {
+    display: none !important;
+  }
+
+  /* Companion Card Mobile Adaption */
+  .companion-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 1rem !important;
+    gap: 0.75rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .companion-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.6rem;
+  }
+  .companion-speech {
+    font-size: 0.88rem;
+  }
+  .streak-pill {
+    align-self: flex-start !important;
+    font-size: 0.78rem !important;
+    padding: 0.25rem 0.65rem !important;
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  /* Hero Calorie HUD & Numbers */
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .card {
+    padding: 1.1rem;
+  }
+  .calorie-hud-header {
+    margin-bottom: 0.85rem;
+  }
+  .calorie-numbers-row {
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+  .stat-box {
+    padding: 0.65rem 0.4rem;
+    text-align: center;
+  }
+  .stat-box-label {
+    font-size: 0.68rem;
+  }
+  .stat-box-val {
+    font-size: clamp(1.15rem, 5vw, 1.45rem);
+  }
+
+  /* Macro Grid: 2x2 Clean Stack */
+  .macro-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .macro-pill {
+    padding: 0.6rem 0.5rem;
+  }
+  .macro-pill-header {
+    font-size: 0.7rem;
+    margin-bottom: 0.25rem;
+  }
+  .macro-pill-val {
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Face Progress Card */
+  .progress-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .progress-header-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+  .progress-header-actions .btn {
+    flex: 1;
+    min-height: 44px;
+    justify-content: center;
+    font-size: 0.78rem;
+    padding: 0.4rem 0.6rem;
+  }
+  .face-comparison-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .compare-divider {
+    flex-direction: row;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+
+  /* Instant Meal Logger */
+  .logging-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .mode-switcher {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .mode-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+  .dropzone {
+    padding: 1.75rem 1rem;
+  }
+  .dropzone-icon {
+    font-size: 2.2rem;
+  }
+  .dropzone-text {
+    font-size: 0.92rem;
+  }
+  .dropzone-sub {
+    font-size: 0.75rem;
+  }
+  .search-input-wrapper {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .search-input-wrapper .btn {
+    min-height: 44px;
+    justify-content: center;
+    width: 100%;
+  }
+  .suggest-chip {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.78rem;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Analytics Tabs: Swipeable Scroll */
+  .tabs-nav {
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 0.5rem;
+    gap: 0.35rem;
+  }
+  .tabs-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .tab-btn {
+    flex-shrink: 0;
+    min-height: 44px;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  /* Meal Diary Toolbar */
+  .meal-log-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .meal-log-toolbar {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .btn-export-excel,
+  .btn-toggle-view,
+  .btn-clear-filter {
+    min-height: 44px;
+  }
+
+  /* Bottom Sheet Modals for Mobile (<640px) */
+  .modal-overlay,
+  .review-modal-overlay,
+  .auth-gate-overlay {
+    align-items: flex-end !important;
+    justify-content: center !important;
+    padding: 0 !important;
+  }
+
+  .review-card,
+  .modal-card,
+  .delete-modal-card,
+  .profile-modal-card,
+  .legal-modal-card,
+  .auth-card,
+  .quota-modal-card,
+  .admin-modal-card,
+  .transparency-modal-card,
+  .progress-detail-modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 88vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    padding: 1.25rem 1rem !important;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.65) !important;
+    animation: slideUpBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    overflow-y: auto !important;
+    margin: 0 !important;
+  }
+
+  .review-body-layout {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+@keyframes slideUpBottom {
+  from {
+    transform: translateY(100%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   Tablet Viewports (640px - 1023px)
+   ========================================================================== */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  .container {
+    max-width: 960px;
+    padding: 1.25rem;
+    gap: 1.25rem;
+  }
+
+  .app-header {
+    padding: 0.65rem 1.25rem;
+  }
+
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .calorie-numbers-row {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .macro-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+  }
+
+  .face-comparison-grid {
+    grid-template-columns: 1fr auto 1fr;
+    gap: 1rem;
+  }
+}
+
+/* ==========================================================================
+   Desktop Viewports (>= 1024px) & Ultra-Wide (>= 1440px)
+   ========================================================================== */
+@media (min-width: 1024px) {
+  .mobile-bottom-nav {
+    display: none;
+  }
+
+  .hero-grid {
+    grid-template-columns: 2fr 1fr;
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1400px;
+  }
+}
+
+/* Universal Touch Target Guarantee across Touch Devices */
+@media (pointer: coarse) {
+  button,
+  .btn,
+  .mode-btn,
+  .tab-btn,
+  .suggest-chip,
+  .bottom-nav-item,
+  .btn-toggle-view,
+  .btn-export-excel,
+  .btn-clear-filter {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+}
+
 
 

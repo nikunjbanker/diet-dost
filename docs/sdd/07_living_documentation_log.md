@@ -130,6 +130,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-058** | Deconstruct Monolithic UI Controller into Single Responsibility (SRP) ES Modules | `ACCEPTED` | [`ADR-20261002-058-modularize-ui-controllers.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-058-modularize-ui-controllers.md) |
 | **ADR-059** | Phase 2 Two-Stage Responsive Web & Mobile Readiness Architecture | `ACCEPTED` | [`ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md) |
 | **ADR-060** | Re-sequence Responsive Web & Mobile BFF Ahead of Azure Deployment | `ACCEPTED` | [`ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md) |
+| **ADR-061** | Responsive UI Layout, Touch Ergonomics & Mobile Bottom Navigation | `ACCEPTED` | [`ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md) |
 
 
 
