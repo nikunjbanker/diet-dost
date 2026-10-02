@@ -2,21 +2,21 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-02T12:32:59.5513763+05:30",
+  "lastUpdated": "2026-10-02T13:00:44.0942423+05:30",
   "activeIssues": {
-    "31": {
-      "issueNumber": 31,
-      "title": "feat(devops): implement Phase 1 Layer 6 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",
+    "40": {
+      "issueNumber": 40,
+      "title": "feat(presentation): implement Phase 1 Layer 6 - responsive UI layout and touch-first navigation for mobile and tablet viewports",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-09-30T19:00:35.3396612+05:30",
+      "approvedAt": "2026-10-02T13:03:00.0000000+05:30",
       "issueType": "feature",
-      "branchName": "feature/issue-31-azure-container-apps-deployment",
+      "branchName": "feature/issue-40-responsive-ui-layout",
       "phase": "DETECTED",
-      "updatedAt": "2026-09-30T10:03:12Z",
-      "detectedAt": "2026-09-30T19:00:35.3502518+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
@@ -25,7 +25,7 @@
       "isStacked": false,
       "parentPR": 0,
       "parentBranch": "main",
-      "notes": "Promoted from queue after issue #30 completed. Branching directly from origin/main."
+      "notes": "Promoted to active per Option A re-sequencing (Responsive UI before Azure deployment). Branching directly from origin/main."
     }
   },
   "completedIssues": {
@@ -233,41 +233,19 @@
   },
   "heldIssues": {},
   "queuedIssues": {
-    "40": {
-      "issueNumber": 40,
-      "title": "feat(presentation): implement Phase 2 Layer 1 - responsive UI layout and touch-first navigation for mobile and tablet viewports",
-      "author": "nikunjbanker",
-      "isCodeownerAuthor": true,
-      "approvalStatus": "AUTHORIZED",
-      "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
-      "issueType": "feature",
-      "branchName": "feature/issue-40-responsive-ui-layout",
-      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
-      "checkpoints": [
-        "DETECTED",
-        "QUEUED"
-      ],
-      "isStacked": false,
-      "parentPR": 0,
-      "parentBranch": "main",
-      "notes": "Phase 2 Stage 2A Layer 1 (Implement Now). Queued: awaiting active issue #31 completion."
-    },
     "41": {
       "issueNumber": 41,
-      "title": "feat(api): implement Phase 2 Layer 2 - Mobile BFF contracts, compact payloads, and caching headers for mobile readiness",
+      "title": "feat(api): implement Phase 1 Layer 7 - Mobile BFF contracts, compact payloads, and caching headers for mobile readiness",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "approvedAt": "2026-10-02T13:03:00+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-41-mobile-bff-contracts",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -275,21 +253,21 @@
       "isStacked": true,
       "parentPR": 0,
       "parentBranch": "feature/issue-40-responsive-ui-layout",
-      "notes": "Phase 2 Stage 2A Layer 2 (Prepare Contract Now). Queued: depends on Layer 1."
+      "notes": "Phase 1 Layer 7 (Prepare Contract Now). Queued: depends on Layer 6 (#40)."
     },
     "42": {
       "issueNumber": 42,
-      "title": "docs(mobile): implement Phase 2 Layer 3 - native feature classification matrix and responsive CFT acceptance suite",
+      "title": "docs(mobile): implement Phase 1 Layer 8 - native feature classification matrix and responsive CFT acceptance suite",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "approvedAt": "2026-10-02T13:03:00+05:30",
       "issueType": "documentation",
       "branchName": "docs/issue-42-native-feature-classification",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -297,21 +275,21 @@
       "isStacked": true,
       "parentPR": 0,
       "parentBranch": "feature/issue-41-mobile-bff-contracts",
-      "notes": "Phase 2 Stage 2A Layer 3 (Document for Native & Exit Gate). Queued: depends on Layer 2."
+      "notes": "Phase 1 Layer 8 (Document for Native & Responsive CFT Gate). Queued: depends on Layer 7 (#41)."
     },
-    "43": {
-      "issueNumber": 43,
-      "title": "feat(mobile): implement Phase 2 Layer 4 - cross-platform native app shell with hardware keystore security",
+    "31": {
+      "issueNumber": 31,
+      "title": "feat(devops): implement Phase 1 Layer 9 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "approvedAt": "2026-09-30T19:00:35.3396612+05:30",
       "issueType": "feature",
-      "branchName": "feature/issue-43-native-app-shell",
+      "branchName": "feature/issue-31-azure-container-apps-deployment",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-09-30T19:00:35.3502518+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -319,21 +297,43 @@
       "isStacked": true,
       "parentPR": 0,
       "parentBranch": "docs/issue-42-native-feature-classification",
-      "notes": "Phase 2 Stage 2B Layer 4 (Native App Shell & Keystore). Queued: depends on Stage 2A Exit Gate (Layer 3)."
+      "notes": "Phase 1 Layer 9 (Live Cloud Showcase Gate on Azure). Queued: depends on responsive & Mobile BFF completion (#42)."
     },
-    "44": {
-      "issueNumber": 44,
-      "title": "feat(mobile): implement Phase 2 Layer 5 - native camera integration with SkiaSharp 1080p client-side compression",
+    "43": {
+      "issueNumber": 43,
+      "title": "feat(mobile): implement Phase 2 Layer 1 - cross-platform native app shell with hardware keystore security",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "approvedAt": "2026-10-02T12:43:00+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-43-native-app-shell",
+      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED"
+      ],
+      "isStacked": true,
+      "parentPR": 0,
+      "parentBranch": "feature/issue-31-azure-container-apps-deployment",
+      "notes": "Phase 2 Layer 1 (Native App Shell & Keystore). Queued: depends on live Azure deployment (#31)."
+    },
+    "44": {
+      "issueNumber": 44,
+      "title": "feat(mobile): implement Phase 2 Layer 2 - native camera integration with SkiaSharp 1080p client-side compression",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-10-02T12:43:00+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-44-native-camera-skiasharp",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -341,21 +341,21 @@
       "isStacked": true,
       "parentPR": 0,
       "parentBranch": "feature/issue-43-native-app-shell",
-      "notes": "Phase 2 Stage 2B Layer 5 (Native Camera & SkiaSharp Compression). Queued: depends on Layer 4."
+      "notes": "Phase 2 Layer 2 (Native Camera & SkiaSharp Compression). Queued: depends on Layer 1 (#43)."
     },
     "45": {
       "issueNumber": 45,
-      "title": "feat(mobile): implement Phase 2 Layer 6 - offline-first SQLite local ledger cache and sync engine",
+      "title": "feat(mobile): implement Phase 2 Layer 3 - offline-first SQLite local ledger cache and sync engine",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "approvedAt": "2026-10-02T12:43:00+05:30",
       "issueType": "feature",
       "branchName": "feature/issue-45-offline-sqlite-sync",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -363,21 +363,21 @@
       "isStacked": true,
       "parentPR": 0,
       "parentBranch": "feature/issue-44-native-camera-skiasharp",
-      "notes": "Phase 2 Stage 2B Layer 6 (Offline SQLite Cache & Sync). Queued: depends on Layer 5."
+      "notes": "Phase 2 Layer 3 (Offline SQLite Cache & Sync). Queued: depends on Layer 2 (#44)."
     },
     "46": {
       "issueNumber": 46,
-      "title": "test(mobile): implement Phase 2 Layer 7 - multi-platform CFT parity verification across Web, Android, and iOS",
+      "title": "test(mobile): implement Phase 2 Layer 4 - multi-platform CFT parity verification across Web, Android, and iOS",
       "author": "nikunjbanker",
       "isCodeownerAuthor": true,
       "approvalStatus": "AUTHORIZED",
       "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "approvedAt": "2026-10-02T12:43:00+05:30",
       "issueType": "test",
       "branchName": "test/issue-46-multi-platform-parity",
       "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:13:00Z",
-      "detectedAt": "2026-10-02T12:43:00.0000000+05:30",
+      "updatedAt": "2026-10-02T07:34:00Z",
+      "detectedAt": "2026-10-02T12:43:00+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED"
@@ -385,7 +385,7 @@
       "isStacked": true,
       "parentPR": 0,
       "parentBranch": "feature/issue-45-offline-sqlite-sync",
-      "notes": "Phase 2 Stage 2B Layer 7 (Multi-Platform Parity Verification & Phase 2 Closure). Queued: depends on Layer 6."
+      "notes": "Phase 2 Layer 4 (Multi-Platform Parity Verification & Phase 2 Closure). Queued: depends on Layer 3 (#45)."
     }
   }
 }
