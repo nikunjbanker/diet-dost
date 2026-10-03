@@ -198,6 +198,50 @@ public class DemoUserEnvironmentSecurityTests
         Assert.Equal(UserTier.Premium, result.Data.User.Tier);
     }
 
+    [Theory]
+    [InlineData("admin.demo@dietdost.app", UserRole.Admin, UserTier.Premium)]
+    [InlineData("superadmin@dietdost.app", UserRole.SuperAdmin, UserTier.SuperAdmin)]
+    public async Task Login_InDebugAndDevelopmentMode_Allows_AdminAndSuperAdminDemoUsers_Locally(string email, UserRole role, UserTier tier)
+    {
+        // Arrange: Environment configured as Debug + Development (running locally)
+        var debugEnv = new FakeAppEnvironment
+        {
+            IsDebugMode = true,
+            IsDevelopment = true
+        };
+
+        var demoUser = new ApplicationUser
+        {
+            Id = role == UserRole.Admin ? "user-admin" : "user-superadmin",
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            PasswordHash = "HASH_DietDost@Demo2026!",
+            IsEmailVerified = true,
+            IsActive = true,
+            Tier = tier,
+            Role = role
+        };
+
+        var userRepo = new InMemoryRepo<ApplicationUser>(new[] { demoUser });
+        var profileRepo = new InMemoryRepo<UserProfile>(new[] { new UserProfile { Id = demoUser.Id, Name = $"{role} User" } });
+        var tierRepo = new InMemoryRepo<TierFeatureConfiguration>(TierFeatureConfiguration.GetDefaultConfigurations());
+        var uow = new FakeUnitOfWork();
+        var hasher = new FakePasswordHasher();
+        var jwt = new FakeJwtTokenService();
+        var logger = NullLogger<LoginCommandHandler>.Instance;
+
+        var handler = new LoginCommandHandler(userRepo, profileRepo, tierRepo, uow, hasher, jwt, debugEnv, logger);
+
+        // Act: Attempt to login as admin or superadmin demo user in local Debug mode
+        var result = await handler.HandleAsync(new LoginCommand(email, "DietDost@Demo2026!"));
+
+        // Assert: Login must succeed without limitation when running locally in debug
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Data);
+        Assert.Equal(tier, result.Data.User.Tier);
+        Assert.Equal(role, result.Data.User.Role);
+    }
+
     [Fact]
     public async Task Login_InReleaseMode_Allows_RealNonDemoUser()
     {
