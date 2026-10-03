@@ -11,17 +11,13 @@
 name: Build and Deploy to Azure Container Apps
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/**'
-      - 'infra/**'
-      - 'deploy/**'
-      - 'Containerfile'
-      - '.containerignore'
-      - '.github/workflows/azure-deploy.yml'
   workflow_dispatch:
+    inputs:
+      allowDemoUsers:
+        description: 'Enable seeded 5-tier demo accounts for dev showcase'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   id-token: write
@@ -84,7 +80,7 @@ jobs:
             appName=app-dietdost-web
             containerImage=${{ steps.build-image.outputs.image_tag }}
             customDomain=dev.diet-dost.in
-            allowDemoUsers=true
+            allowDemoUsers=${{ inputs.allowDemoUsers }}
             fileShareQuotaGb=10
             geminiApiKey="${{ secrets.GEMINI_API_KEY }}"
           failOnStderr: false

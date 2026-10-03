@@ -79,11 +79,10 @@ Following the successful implementation of responsive UI ergonomics (#40), Mobil
    - Azure Storage Account with Standard LRS SMB share (`dietdost-data`) and network ACLs denying public traffic and permitting only the VNet subnet.
    - ACA Managed Environment linked to Log Analytics Workspace and storage mount `dietdoststorage`.
    - Container App `app-dietdost-web` with external ingress on port 8080, volume mount `/app/data`, and single-replica enforcement.
-3. **Automated Deployment Tooling (`deploy/deploy.ps1` & `deploy/deploy.sh`)**:
-   - Orchestrates Podman container build, ACR login, image push, and Bicep resource provisioning.
-   - Outputs target FQDN and verification token for custom domain DNS configuration (`CNAME` and `TXT asuid.dev`).
-4. **GitHub Actions CI/CD (`.github/workflows/azure-deploy.yml`)**:
-   - Automated build, test, container packaging, and zero-downtime deployment pipeline.
+3. **On-Demand GitHub Actions Deployment (`.github/workflows/azure-deploy.yml`)**:
+   - Single authoritative deployment vehicle triggered on-demand via `workflow_dispatch` with parameterization (`allowDemoUsers`).
+   - Executes unit/domain test suites, builds and pushes OCI container image with Podman, provisions Bicep infrastructure, and asserts health.
+   - Eliminates redundant local script sprawl by consolidating all deployment automation in CI/CD.
 5. **Showcase Demo User Governance**:
    - Extended `IAppEnvironment` and `AppEnvironment` to check `_configuration.GetValue<bool>("Security:AllowDemoUsers") || (IsDebugMode && IsDevelopment)`.
    - Allows `dev.diet-dost.in` showcase deployment to activate demo accounts (`free`, `basic`, `premium`, `admin.demo`, `superadmin`) in Release mode while ensuring production remains strictly secured.

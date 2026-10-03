@@ -256,14 +256,14 @@ Diet-Dost delivers a workable public cloud showcase MVP hosted on **Azure Contai
 4. **Free Managed TLS 1.3**: Automatic 90-day auto-renewing certificate via Azure Container Apps managed environment.
 5. **Showcase 5-Tier Governance**: Configured with `Security:AllowDemoUsers=true` enabling live validation across all 5 user tiers.
 
-### Deploy with Podman & Azure CLI:
-```powershell
-# 1. Automated deployment via PowerShell (Bicep + Podman)
-pwsh -File deploy/deploy.ps1 -ResourceGroupName "rg-dietdost-dev" -Location "centralindia" -CustomDomain "dev.diet-dost.in"
+### On-Demand Deployment via GitHub Actions:
+Deployments are managed exclusively via the automated GitHub Actions workflow ([`.github/workflows/azure-deploy.yml`](.github/workflows/azure-deploy.yml)) triggered on-demand (`workflow_dispatch`):
 
-# 2. Or using POSIX Bash:
-./deploy/deploy.sh rg-dietdost-dev centralindia dev.diet-dost.in
+```bash
+# Trigger via GitHub CLI:
+gh workflow run "Build and Deploy to Azure Container Apps" -f allowDemoUsers=true
 ```
+Or via GitHub Web UI: Navigate to **Actions** → **Build and Deploy to Azure Container Apps** → **Run workflow**.
 
 ### DNS Records for Custom Domain (`dev.diet-dost.in`):
 | Type | Host | Target / Value | Purpose |
