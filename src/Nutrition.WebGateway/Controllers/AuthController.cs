@@ -100,6 +100,16 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpGet("config")]
+    public IActionResult GetAuthConfig()
+    {
+        var allowRegistration = _configuration.GetValue<bool>("Auth:AllowRegistration", true);
+        return Ok(new
+        {
+            allowRegistration
+        });
+    }
+
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {

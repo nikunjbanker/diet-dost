@@ -28,6 +28,7 @@ export class AuthGateController {
     this.resendSeconds = 0;
     this.resetResendTimer = null;
     this.resetResendSeconds = 0;
+    this.allowRegistration = true;
 
     this.initElements();
     this.bindEvents();
@@ -78,6 +79,9 @@ export class AuthGateController {
 
     // Bind Alpha Preview demo credentials quick-fill buttons
     this.bindDemoAccountButtons();
+
+    // Dynamically check registration feature flag from backend
+    this.checkRegistrationConfig();
 
     // Legal modal openers (stop propagation to prevent label toggling the checkbox)
     document.getElementById('link-open-terms')?.addEventListener('click', (e) => {
@@ -179,7 +183,7 @@ export class AuthGateController {
   switchTab(tab) {
     this.clearErrors();
 
-    if (tab === 'register') {
+    if (tab === 'register' && !this.allowRegistration) {
       if (this.toastService?.info) {
         this.toastService.info('Public registration is currently closed. Please use a demo account.');
       }
@@ -335,11 +339,84 @@ export class AuthGateController {
     }
   }
 
-  // ── Register (Disabled during Alpha Preview) ───────────────────────────────
+  async checkRegistrationConfig() {
+    try {
+      const res = await fetch('/api/auth/config');
+      if (res.ok) {
+        const data = await res.json();
+        this.allowRegistration = data.allowRegistration !== false;
+      }
+    } catch {
+      this.allowRegistration = true;
+    }
+
+    if (this.tabRegister) {
+      this.tabRegister.style.display = this.allowRegistration ? 'inline-block' : 'none';
+    }
+    const disabledBanner = document.querySelector('.auth-disabled-banner');
+    if (disabledBanner) {
+      disabledBanner.style.display = this.allowRegistration ? 'none' : 'block';
+    }
+  }
+
+  // ── Register ───────────────────────────────────────────────────────────────
   async handleRegister(e) {
     e.preventDefault();
     this.clearErrors();
-    this.showError(this.registerError, 'New user registration is currently disabled during the alpha preview. Please sign in using one of the demo accounts.');
+
+    if (!this.allowRegistration) {
+      this.showError(this.registerError, 'New user registration is currently disabled during the alpha preview. Please sign in using one of the demo accounts.');
+      return;
+    }
+
+    const name = document.getElementById('reg-name')?.value.trim();
+    const email = document.getElementById('reg-email')?.value.trim();
+    const mobileNumber = document.getElementById('reg-mobile')?.value.trim();
+    const password = document.getElementById('reg-password')?.value;
+    const confirmPassword = document.getElementById('reg-confirm-password')?.value;
+    const acceptTerms = document.getElementById('reg-consent-terms')?.checked;
+    const acceptHealthConsent = document.getElementById('reg-consent-health')?.checked;
+    const submitBtn = document.getElementById('btn-submit-register');
+
+    // ── Client-side pre-flight checks ─────────────────────────────────────
+    if (!acceptTerms || !acceptHealthConsent) {
+      this.showError(this.registerError, 'You must accept both legal agreements to proceed.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      this.showError(this.registerError, 'Password and Confirm Password do not match.');
+      return;
+    }
+    const { score } = this.evaluatePasswordStrength(password);
+    if (score <= 2) {
+      this.showError(this.registerError, 'Password is too weak. Use at least 10 characters with uppercase, lowercase, digit and a special character.');
+      return;
+    }
+
+    this.setButtonLoading(submitBtn, true);
+    try {
+      const res = await this.authService.register({
+        name, email, mobileNumber, password,
+        acceptTerms, acceptHealthConsent
+      });
+
+      this.pendingEmail = email;
+      this.pendingMobile = mobileNumber;
+      if (this.otpTargetDisplay) this.otpTargetDisplay.textContent = email;
+
+      if (res.devOtpCode && this.devOtpHolder && this.devOtpCode) {
+        this.devOtpCode.textContent = res.devOtpCode;
+        this.devOtpHolder.style.display = 'flex';
+      }
+
+      this.switchTab('verify');
+      this.startResendCountdown(60);
+      this.toastService?.success('Account created! Enter the 6-digit verification code sent to your email.');
+    } catch (err) {
+      this.showError(this.registerError, err.data?.error || err.message || 'Registration failed.');
+    } finally {
+      this.setButtonLoading(submitBtn, false);
+    }
   }
 
   // ── Verify OTP ─────────────────────────────────────────────────────────────

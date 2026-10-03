@@ -151,13 +151,13 @@ async function main() {
 
             return {
                 modalVisible: modalDisplay === 'flex' || modalDisplay === 'block',
-                registerTabHidden: regDisplay === 'none',
+                registerTabPresent: regDisplay !== 'none',
                 signInTabVisible: signinDisplay !== 'none',
                 signInActive: isSigninActive,
                 noticeCardPresent: !!noticeCard,
                 badgePresent: !!badge,
                 demoButtonCount: demoButtons.length,
-                disabledBannerPresent: !!disabledBanner,
+                disabledBannerHidden: !disabledBanner || disabledBanner.style.display === 'none' || window.getComputedStyle(disabledBanner).display === 'none',
                 noticeCardBorder: cardStyle.borderWidth,
                 noticeCardRadius: cardStyle.borderRadius,
                 badgeRadius: badgeStyle.borderRadius
@@ -167,12 +167,12 @@ async function main() {
 
     console.log('   Desktop UI Checks:');
     console.log(`   - Auth Gate Modal Visible: ${desktopChecks.modalVisible ? 'PASS' : 'FAIL'}`);
-    console.log(`   - Create Account Tab Hidden: ${desktopChecks.registerTabHidden ? 'PASS' : 'FAIL'}`);
+    console.log(`   - Create Account Tab Present: ${desktopChecks.registerTabPresent ? 'PASS' : 'FAIL'}`);
     console.log(`   - Sign In Tab Active: ${desktopChecks.signInActive ? 'PASS' : 'FAIL'}`);
     console.log(`   - Alpha Preview Notice Card Present: ${desktopChecks.noticeCardPresent ? 'PASS' : 'FAIL'}`);
     console.log(`   - Status Badge Present: ${desktopChecks.badgePresent ? 'PASS' : 'FAIL'}`);
     console.log(`   - Demo Quick-Fill Buttons Count: ${desktopChecks.demoButtonCount} (Expected: 4)`);
-    console.log(`   - Disabled Form Banner Present: ${desktopChecks.disabledBannerPresent ? 'PASS' : 'FAIL'}`);
+    console.log(`   - Disabled Form Banner Hidden: ${desktopChecks.disabledBannerHidden ? 'PASS' : 'FAIL'}`);
     console.log(`   - DESIGN.md Card Radius: ${desktopChecks.noticeCardRadius}`);
     console.log(`   - DESIGN.md Badge Radius: ${desktopChecks.badgeRadius}`);
 
@@ -293,10 +293,11 @@ async function main() {
     console.log('Cleaning up browser session...');
     edge.kill();
 
-    const allPassed = desktopChecks.registerTabHidden &&
+    const allPassed = desktopChecks.registerTabPresent &&
                       desktopChecks.signInActive &&
                       desktopChecks.noticeCardPresent &&
                       desktopChecks.demoButtonCount === 4 &&
+                      desktopChecks.disabledBannerHidden &&
                       tabletChecks.overflowPass &&
                       mobileChecks.overflowPass &&
                       mobileChecks.freeDim.pass &&

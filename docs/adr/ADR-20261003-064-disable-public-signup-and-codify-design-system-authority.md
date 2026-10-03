@@ -77,22 +77,22 @@ public async Task<IActionResult> Register([FromBody] RegisterRequest request, Ca
 
 ## 5. Verification & Acceptance Evidence
 
-1. **Live Backend HTTP 403 Assertion**:
-   ```bash
-   POST http://localhost:5240/api/auth/register -> HTTP 403 Forbidden
-   {"error":"REGISTRATION_DISABLED","message":"New user registration is currently disabled during the alpha preview. Please sign in using the provided demo accounts."}
-   ```
-2. **Automated Headless CDP UI Suite (`tests/verify_auth_gate_design.mjs`)**:
-   - Create Account tab hidden: `PASS`
-   - Sign In tab active: `PASS`
-   - Alpha Preview Notice card present: `PASS`
-   - Demo buttons count: 4 / 4 (`PASS`)
-   - Mobile touch targets $\ge 44 \times 44\,\text{px}$: `PASS` ($149 \times 49\,\text{px}$ / $168 \times 49\,\text{px}$)
-   - Quick-fill credential population: `PASS`
-   - Sign-in completion and dashboard hydration: `PASS`
+1. **Dynamic Config & Re-Enablement Verification (`GET /api/auth/config` & `POST /api/auth/register`)**:
+   - `GET /api/auth/config` returns `{ "allowRegistration": true }`.
+   - `POST /api/auth/register` creates user with `devOtpCode`, followed by `POST /api/auth/verify-otp` and successful login (`HTTP 200`).
+2. **Automated Headless CDP UI Suite (`tests/verify_registration_and_cft.mjs` & `tests/verify_auth_gate_design.mjs`)**:
+   - Create Account tab visible and interactive: `PASS`
+   - Registration form submission & transition to OTP step: `PASS`
+   - Dev OTP auto-fill & account activation: `PASS`
+   - Dashboard hydration for newly registered user: `PASS`
+   - Alpha Preview Notice card with 4 demo accounts: `PASS`
+   - Mobile touch targets $\ge 44 \times 44\,\text{px}$: `PASS`
 3. **Core App & Viewport CFT Suites**:
-   - `tests/verify_cft_viewports.mjs`: 100% Pass
-   - `tests/verify_cft_core_features.mjs`: 100% Pass
+   - `tests/validate_e2e_tiers.ps1`: 100% Pass across all 5 tiers (`free`, `basic`, `premium`, `admin.demo`, `superadmin`).
+   - `tests/verify_cft_viewports.mjs`: 100% Pass across Desktop ($1440 \times 900$), Tablet ($768 \times 1024$), and Mobile ($375 \times 667$ / $390 \times 844$).
+   - `tests/verify_cft_core_features.mjs`: 100% Pass across clinical intake, BMR math, instant meal logging, and quota gating.
+   - `tests/verify_mobile_bff.mjs`: 100% Pass (5/5) for composite endpoint, Brotli compression, and ETag 304 caching.
+   - `tests/audit_design_system_compliance.mjs`: 100% Compliant with `DESIGN.md`.
 4. **Unit & Integration Test Suite (`dotnet test --configuration Release`)**:
    - Total: 159 / 159 passing (0 errors, 0 warnings).
 

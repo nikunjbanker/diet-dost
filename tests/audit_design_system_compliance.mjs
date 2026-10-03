@@ -184,7 +184,7 @@ async function main() {
     console.log('   Auth Gate Surface Audit:');
     console.log(`   - Modal Active: ${authGateAudit.modalActive ? 'PASS' : 'FAIL'}`);
     console.log(`   - Card Radius: ${authGateAudit.cardRadius}`);
-    console.log(`   - Visible Auth Tabs: ${authGateAudit.tabCount} (Only Sign In visible, Registration hidden)`);
+    console.log(`   - Visible Auth Tabs: ${authGateAudit.tabCount} (Sign In & Create Account tabs visible)`);
     console.log(`   - Alpha Notice Card Present: ${authGateAudit.hasNoticeCard ? 'PASS' : 'FAIL'}`);
     console.log(`   - Demo Quick-Fill Buttons Count: ${authGateAudit.demoButtonsCount} (Expected: 4)`);
     console.log(`   - Submit Button Height: ${authGateAudit.submitBtnHeight}px (>= 40px)`);

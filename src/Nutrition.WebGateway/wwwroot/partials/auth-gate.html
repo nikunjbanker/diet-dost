@@ -11,7 +11,7 @@
     <!-- Navigation Tabs -->
     <div class="auth-tabs">
       <button type="button" id="btn-tab-signin" class="auth-tab-btn active">Sign In</button>
-      <button type="button" id="btn-tab-register" class="auth-tab-btn" style="display: none;">Create Account</button>
+      <button type="button" id="btn-tab-register" class="auth-tab-btn">Create Account</button>
       <button type="button" id="btn-tab-verify" class="auth-tab-btn" style="display: none;">Verify OTP</button>
       <button type="button" id="btn-tab-reset" class="auth-tab-btn" style="display: none;">Reset Password</button>
     </div>
@@ -44,7 +44,7 @@
           <span class="auth-preview-badge">Alpha Preview Access</span>
         </div>
         <p class="auth-notice-text">
-          Public sign-up is temporarily disabled. Select a demo account to evaluate Diet Dost:
+          Quick-select a demo account below, or use the <strong>Create Account</strong> tab to register:
         </p>
         <div class="demo-account-grid">
           <button type="button" class="demo-pill-btn" id="btn-demo-free" aria-label="Sign in as Free Tier user">
@@ -67,9 +67,9 @@
       </div>
     </form>
 
-    <!-- Tab 2: Create Account (Disabled during Alpha Preview) -->
+    <!-- Tab 2: Create Account -->
     <form id="form-register" class="auth-form" style="display: none;">
-      <div class="auth-disabled-banner">
+      <div class="auth-disabled-banner" style="display: none;">
         <div class="disabled-icon">🔒</div>
         <div class="disabled-heading">Sign-up Temporarily Closed</div>
         <div>New account registrations are closed for this preview. Please sign in with one of our demo accounts.</div>
