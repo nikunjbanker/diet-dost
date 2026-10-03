@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -139,7 +139,10 @@ export class ProfileModalController {
     this.updateMedicationSuggestions(false);
     this._autoDetectTimezone();
 
-    if (el.modal) el.modal.style.display = 'flex';
+    if (el.modal) {
+      document.body.classList.add('modal-open');
+      el.modal.style.display = 'flex';
+    }
 
     try {
       const data = await this._profile.getProfile(this._state.userId);
@@ -153,7 +156,10 @@ export class ProfileModalController {
 
   close() {
     const el = this.elements;
-    if (el.modal) el.modal.style.display = 'none';
+    if (el.modal) {
+      el.modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    }
   }
 
   populateProfile(p) {

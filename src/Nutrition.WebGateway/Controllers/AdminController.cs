@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -244,6 +244,7 @@ public class AdminController : ControllerBase
         return Ok(result.Data);
     }
 
+    [Authorize(Roles = "SuperAdmin")]
     [HttpPut("tier-configs/{tier}")]
     public async Task<IActionResult> UpdateTierConfig(
         [FromRoute] UserTier tier,
@@ -251,6 +252,7 @@ public class AdminController : ControllerBase
         CancellationToken ct = default)
     {
         var adminUserId = User.GetUserId();
+        var currentRole = User.GetRole() ?? string.Empty;
         var command = new UpdateTierConfigCommand(
             tier,
             request.DailyAiDetectionLimit,
@@ -258,7 +260,8 @@ public class AdminController : ControllerBase
             request.AllowDataExport,
             request.AnalyticsHistoryDays,
             request.Description,
-            adminUserId
+            adminUserId,
+            currentRole
         );
 
         var result = await _dispatcher.SendAsync(command, ct);

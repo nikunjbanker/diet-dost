@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -28,6 +28,7 @@ export class AuthGateController {
     this.resendSeconds = 0;
     this.resetResendTimer = null;
     this.resetResendSeconds = 0;
+    this.allowRegistration = true;
 
     this.initElements();
     this.bindEvents();
@@ -74,6 +75,13 @@ export class AuthGateController {
     document.getElementById('link-goto-signin')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('link-goto-forgot-password')?.addEventListener('click', () => this.switchTab('reset'));
     document.getElementById('link-back-to-signin-from-reset')?.addEventListener('click', () => this.switchTab('signin'));
+    document.getElementById('btn-goto-signin-from-disabled')?.addEventListener('click', () => this.switchTab('signin'));
+
+    // Bind Alpha Preview demo credentials quick-fill buttons
+    this.bindDemoAccountButtons();
+
+    // Dynamically check registration feature flag from backend
+    this.checkRegistrationConfig();
 
     // Legal modal openers (stop propagation to prevent label toggling the checkbox)
     document.getElementById('link-open-terms')?.addEventListener('click', (e) => {
@@ -156,17 +164,19 @@ export class AuthGateController {
     });
   }
 
-  // ── Tab routing ────────────────────────────────────────────────────────────
   show(defaultTab = 'signin') {
     if (this.modal) {
+      document.body.classList.add('modal-open');
       this.modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
+      this.applyRegistrationState();
       this.switchTab(defaultTab);
     }
   }
 
   hide() {
     if (this.modal) {
+      document.body.classList.remove('modal-open');
       this.modal.style.display = 'none';
       document.body.style.overflow = '';
     }
@@ -174,6 +184,13 @@ export class AuthGateController {
 
   switchTab(tab) {
     this.clearErrors();
+
+    if (tab === 'register' && !this.allowRegistration) {
+      if (this.toastService?.info) {
+        this.toastService.info('Public registration is currently closed. Please use a demo account.');
+      }
+      tab = 'signin';
+    }
 
     this.tabSignIn?.classList.toggle('active', tab === 'signin');
     this.tabRegister?.classList.toggle('active', tab === 'register');
@@ -187,6 +204,34 @@ export class AuthGateController {
 
     if (tab === 'verify' && this.tabVerify) this.tabVerify.style.display = 'inline-block';
     if (tab === 'reset' && this.tabReset) this.tabReset.style.display = 'inline-block';
+  }
+
+  bindDemoAccountButtons() {
+    const demoCredentials = {
+      'btn-demo-free': { email: 'free@dietdost.app', pass: 'DietDost@Demo2026!' },
+      'btn-demo-basic': { email: 'basic@dietdost.app', pass: 'DietDost@Demo2026!' },
+      'btn-demo-premium': { email: 'premium@dietdost.app', pass: 'DietDost@Demo2026!' },
+      'btn-demo-admin': { email: 'admin.demo@dietdost.app', pass: 'DietDost@Demo2026!' }
+    };
+
+    for (const [btnId, creds] of Object.entries(demoCredentials)) {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const idInput = document.getElementById('signin-identifier');
+          const passInput = document.getElementById('signin-password');
+          if (idInput && passInput) {
+            idInput.value = creds.email;
+            passInput.value = creds.pass;
+            this.clearErrors();
+            passInput.focus();
+            if (this.toastService?.info) {
+              this.toastService.info(`Selected demo credentials for ${creds.email}`);
+            }
+          }
+        });
+      }
+    }
   }
 
   clearErrors() {
@@ -296,10 +341,69 @@ export class AuthGateController {
     }
   }
 
+  applyRegistrationState() {
+    const tabRegister = document.getElementById('btn-tab-register') || this.tabRegister;
+    const disabledBanner = document.getElementById('auth-disabled-banner') || document.querySelector('.auth-disabled-banner');
+    const noticeText = document.getElementById('auth-notice-text');
+    const submitRegister = document.getElementById('btn-submit-register');
+    const btnText = submitRegister?.querySelector('.btn-text');
+
+    if (this.allowRegistration) {
+      if (tabRegister) tabRegister.style.display = 'inline-block';
+      if (disabledBanner) disabledBanner.style.display = 'none';
+      if (submitRegister) {
+        submitRegister.disabled = false;
+        submitRegister.style.opacity = '1';
+        submitRegister.style.cursor = 'pointer';
+      }
+      if (btnText) {
+        btnText.textContent = 'Create Account';
+      }
+      if (noticeText) {
+        noticeText.innerHTML = 'Quick-select a demo account below, or use the <strong>Create Account</strong> tab to register:';
+      }
+    } else {
+      if (tabRegister) tabRegister.style.display = 'none';
+      if (disabledBanner) disabledBanner.style.display = 'block';
+      if (submitRegister) {
+        submitRegister.disabled = true;
+        submitRegister.style.opacity = '0.6';
+        submitRegister.style.cursor = 'not-allowed';
+      }
+      if (btnText) {
+        btnText.textContent = 'Registration Disabled (Alpha Preview)';
+      }
+      if (noticeText) {
+        noticeText.textContent = 'Public sign-up is temporarily disabled. Select a demo account below to evaluate Diet Dost:';
+      }
+      if (this.currentTab === 'register') {
+        this.switchTab('signin');
+      }
+    }
+  }
+
+  async checkRegistrationConfig() {
+    try {
+      const res = await fetch('/api/auth/config');
+      if (res.ok) {
+        const data = await res.json();
+        this.allowRegistration = data.allowRegistration !== false;
+      }
+    } catch {
+      this.allowRegistration = true;
+    }
+    this.applyRegistrationState();
+  }
+
   // ── Register ───────────────────────────────────────────────────────────────
   async handleRegister(e) {
     e.preventDefault();
     this.clearErrors();
+
+    if (!this.allowRegistration) {
+      this.showError(this.registerError, 'New user registration is currently disabled during the alpha preview. Please sign in using one of the demo accounts.');
+      return;
+    }
 
     const name = document.getElementById('reg-name')?.value.trim();
     const email = document.getElementById('reg-email')?.value.trim();

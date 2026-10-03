@@ -14,28 +14,28 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient, getWebDashboard } from './services/api.js?v=1.3.9';
-import { AuthService } from './services/auth-service.js?v=1.3.9';
-import { AdminService } from './services/admin-service.js?v=1.3.9';
-import { MealsService } from './services/meals-service.js?v=1.3.9';
-import { ProfileService } from './services/profile-service.js?v=1.3.9';
-import { AnalyticsService } from './services/analytics-service.js?v=1.3.9';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.3.9';
-import { MedicationService } from './services/medication-service.js?v=1.3.9';
+import { ApiClient, apiClient, getWebDashboard } from './services/api.js?v=1.5.0';
+import { AuthService } from './services/auth-service.js?v=1.5.0';
+import { AdminService } from './services/admin-service.js?v=1.5.0';
+import { MealsService } from './services/meals-service.js?v=1.5.0';
+import { ProfileService } from './services/profile-service.js?v=1.5.0';
+import { AnalyticsService } from './services/analytics-service.js?v=1.5.0';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.5.0';
+import { MedicationService } from './services/medication-service.js?v=1.5.0';
 
-import { toastService } from './ui/toast.js?v=1.3.9';
-import { confettiService } from './ui/confetti.js?v=1.3.9';
-import { DailyHudController } from './ui/daily-hud.js?v=1.3.9';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.3.9';
-import { ReviewModalController } from './ui/review-modal.js?v=1.3.9';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.3.9';
-import { ExcelExportService } from './services/ExcelExportService.js?v=1.3.9';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.3.9';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.3.9';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.3.9';
-import { AuthGateController } from './ui/auth-gate.js?v=1.3.9';
-import { AdminModalController } from './ui/admin-modal.js?v=1.3.9';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.3.9';
+import { toastService } from './ui/toast.js?v=1.5.0';
+import { confettiService } from './ui/confetti.js?v=1.5.0';
+import { DailyHudController } from './ui/daily-hud.js?v=1.5.0';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.5.0';
+import { ReviewModalController } from './ui/review-modal.js?v=1.5.0';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.5.0';
+import { ExcelExportService } from './services/ExcelExportService.js?v=1.5.0';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.5.0';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.5.0';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.5.0';
+import { AuthGateController } from './ui/auth-gate.js?v=1.5.0';
+import { AdminModalController } from './ui/admin-modal.js?v=1.5.0';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.5.0';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -142,6 +142,7 @@ container.register('authGate', (c) => new AuthGateController({
 
 container.register('adminModal', (c) => new AdminModalController({
   adminService: c.resolve('adminService'),
+  authService: c.resolve('authService'),
   toastService: c.resolve('toastService'),
   eventBus: c.resolve('eventBus')
 }));
@@ -215,6 +216,8 @@ async function initApp() {
       if (quotaBadgeEl) quotaBadgeEl.style.display = 'none';
       if (dropdownNameEl) dropdownNameEl.textContent = 'Guest';
       if (dropdownEmailEl) dropdownEmailEl.textContent = 'Not signed in';
+      const profileSessionEmail = document.getElementById('profile-user-session-email');
+      if (profileSessionEmail) profileSessionEmail.textContent = 'Not signed in';
       if (adminMenuItem) adminMenuItem.style.display = 'none';
       if (mainContainer) mainContainer.style.display = 'none';
       return;
@@ -231,6 +234,8 @@ async function initApp() {
     if (nameEl) nameEl.textContent = displayName;
     if (dropdownNameEl) dropdownNameEl.textContent = displayName;
     if (dropdownEmailEl) dropdownEmailEl.textContent = user.email || '';
+    const profileSessionEmail = document.getElementById('profile-user-session-email');
+    if (profileSessionEmail) profileSessionEmail.textContent = user.email || 'Signed in';
 
     const tierName = typeof user.tier === 'number'
       ? (user.tier === 3 ? 'SuperAdmin' : user.tier === 2 ? 'Premium' : user.tier === 1 ? 'Basic' : 'Free')
@@ -297,7 +302,7 @@ async function initApp() {
   });
 
   document.addEventListener('click', (e) => {
-    if (userMenuDropdown && !userMenuDropdown.contains(e.target) && e.target !== userMenuBtn) {
+    if (userMenuDropdown && !userMenuDropdown.contains(e.target) && !userMenuBtn?.contains(e.target)) {
       userMenuDropdown.style.display = 'none';
     }
   });
@@ -312,12 +317,16 @@ async function initApp() {
     adminModal.open();
   });
 
-  document.getElementById('menu-btn-signout')?.addEventListener('click', async () => {
+  const performSignOut = async () => {
     if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+    if (window.closeProfileModal) window.closeProfileModal();
     await authService.logout();
     updateUserUI(null);
     authGate.show('signin');
-  });
+  };
+
+  document.getElementById('menu-btn-signout')?.addEventListener('click', performSignOut);
+  document.getElementById('btn-profile-signout')?.addEventListener('click', performSignOut);
 
   // Mobile Thumb-Zone Bottom Navigation Wiring
   const btnNavOverview = document.getElementById('btn-nav-overview');
@@ -341,11 +350,9 @@ async function initApp() {
     if (loggerCard) {
       loggerCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
       const textInput = document.getElementById('text-input');
-      const fileInput = document.getElementById('file-input');
-      if (textInput && window.getComputedStyle(textInput.parentElement).display !== 'none') {
+      const textLoggerBox = document.getElementById('text-logger-box');
+      if (textLoggerBox && window.getComputedStyle(textLoggerBox).display !== 'none' && textInput) {
         textInput.focus();
-      } else if (fileInput) {
-        fileInput.click();
       }
     }
   });
@@ -417,18 +424,18 @@ async function initApp() {
   // ============================================================================
   // 3. Global Window Facades (for HTML onclick & inline attribute compatibility)
   // ============================================================================
-  window.openAuthGate = (tab) => authGate.show(tab);
-  window.closeAuthGate = () => authGate.hide();
-  window.openAdminModal = () => adminModal.open();
-  window.closeAdminModal = () => adminModal.close();
-  window.openQuotaModal = () => quotaModal.open();
-  window.closeQuotaModal = () => quotaModal.close();
-  window.openProgressModal = (tab) => progressModal.open(tab);
-  window.closeProgressModal = () => progressModal.close();
-  window.openTransparencyModal = () => transparencyModal.open();
-  window.closeTransparencyModal = () => transparencyModal.close();
-  window.openProfileModal = () => profileModal.open();
-  window.closeProfileModal = () => profileModal.close();
+  window.openAuthGate = (tab) => { document.body.classList.add('modal-open'); authGate.show(tab); };
+  window.closeAuthGate = () => { document.body.classList.remove('modal-open'); authGate.hide(); };
+  window.openAdminModal = () => { document.body.classList.add('modal-open'); adminModal.open(); };
+  window.closeAdminModal = () => { document.body.classList.remove('modal-open'); adminModal.close(); };
+  window.openQuotaModal = () => { document.body.classList.add('modal-open'); quotaModal.open(); };
+  window.closeQuotaModal = () => { document.body.classList.remove('modal-open'); quotaModal.close(); };
+  window.openProgressModal = (tab) => { document.body.classList.add('modal-open'); progressModal.open(tab); };
+  window.closeProgressModal = () => { document.body.classList.remove('modal-open'); progressModal.close(); };
+  window.openTransparencyModal = () => { document.body.classList.add('modal-open'); transparencyModal.open(); };
+  window.closeTransparencyModal = () => { document.body.classList.remove('modal-open'); transparencyModal.close(); };
+  window.openProfileModal = () => { document.body.classList.add('modal-open'); profileModal.open(); };
+  window.closeProfileModal = () => { document.body.classList.remove('modal-open'); profileModal.close(); };
   window.switchAnalyticsPeriod = (period) => analyticsChart.switchPeriod(period);
   window.quickAddSubzi = (name, kcal, p, c, f) => reviewModal.quickAddSubzi(name, kcal, p, c, f);
   window.updateItemName = (idx, name) => reviewModal.updateItemName(idx, name);

@@ -1,7 +1,7 @@
 <!-- Calculation Transparency One-Pager Modal -->
 <div class="review-modal-overlay" id="transparency-modal">
-  <div class="review-card" style="max-width: min(96vw, 1120px); max-height: 92vh;">
-    <div class="review-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem;">
+  <div class="review-card transparency-modal-card" style="max-width: min(96vw, 1120px); max-height: 92vh; display: flex; flex-direction: column;">
+    <div class="review-header" style="border-bottom: 1px solid var(--border-subtle); padding-bottom: 0.75rem; flex-shrink: 0;">
       <div>
         <div class="hud-title">Clinical Calculation Transparency One-Pager</div>
         <h2 style="font-size: 1.3rem; font-weight: 700; margin-top: 0.2rem;">How Diet Dost Calculates Your Nutrition</h2>
@@ -15,7 +15,7 @@
       </div>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 1.25rem; font-size: 0.85rem; line-height: 1.5;">
+    <div class="transparency-modal-body" style="display: flex; flex-direction: column; gap: 1.25rem; font-size: 0.85rem; line-height: 1.5; overflow-y: auto; flex: 1; min-height: 0; padding-right: 4px;">
       
       <!-- Live Audit Trail Card for Active Profile -->
       <div id="tp-audit-card" style="background: var(--surface-subtle); border: 1px solid rgba(94, 106, 210, 0.3); border-radius: var(--radius-md); padding: 1rem; transition: border-color 0.4s ease, box-shadow 0.4s ease;">

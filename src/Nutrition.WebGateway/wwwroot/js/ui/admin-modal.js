@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -10,13 +10,21 @@
  * Manages user accounts, dynamic tier entitlements, and telemetry audits.
  */
 export class AdminModalController {
-  constructor({ adminService, toastService, eventBus }) {
+  constructor({ adminService, authService, toastService, eventBus }) {
     this.adminService = adminService;
+    this.authService = authService;
     this.toastService = toastService;
     this.eventBus = eventBus;
 
     this.initElements();
     this.bindEvents();
+  }
+
+  isSuperAdmin() {
+    const user = this.authService?.currentUser;
+    if (!user) return false;
+    const role = user.role;
+    return role === 'SuperAdmin' || role === 2 || role === '2';
   }
 
   initElements() {
@@ -85,6 +93,7 @@ export class AdminModalController {
 
   open() {
     if (this.modal) {
+      document.body.classList.add('modal-open');
       this.modal.style.display = 'flex';
       this.switchTab('users');
     }
@@ -93,6 +102,7 @@ export class AdminModalController {
   close() {
     if (this.modal) {
       this.modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
     }
   }
 
@@ -382,53 +392,90 @@ export class AdminModalController {
     this.tierCardsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Loading tier configurations...</div>`;
 
     try {
+      if (!this.authService?.currentUser) {
+        await this.authService?.getCurrentUser().catch(() => null);
+      }
       const configs = await this.adminService.getTierConfigs();
-      this.tierCardsContainer.innerHTML = configs.map(c => {
+      const canEdit = this.isSuperAdmin();
+
+      const bannerHtml = !canEdit ? `
+        <div class="tier-admin-readonly-banner" style="grid-column: 1/-1; background: rgba(94, 106, 210, 0.08); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 0.75rem 1rem; color: var(--text-secondary); font-size: 0.82rem; display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
+          <span style="font-size: 1.1rem;">🔒</span>
+          <div>
+            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">Read-Only Tier Governance</div>
+            <div>Only <strong>SuperAdmin</strong> accounts are authorized to modify global tier quotas, entitlements, and policies. Standard Administrators have audit-only visibility.</div>
+          </div>
+        </div>
+      ` : `
+        <div class="tier-admin-write-banner" style="grid-column: 1/-1; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-md); padding: 0.6rem 1rem; color: #34d399; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span>⚡</span>
+          <span><strong>SuperAdmin Mode:</strong> You have full write authority to adjust tier quotas, retention policies, and feature paywalls. Changes invalidate cache cluster-wide.</span>
+        </div>
+      `;
+
+      this.tierCardsContainer.innerHTML = bannerHtml + configs.map(c => {
         const tierName = typeof c.tier === 'number'
           ? (c.tier === 3 ? 'SuperAdmin' : c.tier === 2 ? 'Premium' : c.tier === 1 ? 'Basic' : 'Free')
           : c.tier;
 
-        const isSuper = tierName === 'SuperAdmin';
+        const isSuperTier = tierName === 'SuperAdmin';
+        const isEditable = canEdit && !isSuperTier;
 
         return `
-          <div class="tier-admin-card" data-tier="${c.tier}" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
+          <div class="tier-admin-card" data-tier="${c.tier}" data-readonly="${!isEditable}" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
               <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">${tierName} Tier</h3>
-              <span class="badge" style="font-size: 0.7rem; padding: 2px 6px;">Tier #${c.tier}</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                ${!canEdit ? '<span class="badge" style="background: rgba(94, 106, 210, 0.15); color: #818cf8; font-size: 0.68rem; padding: 2px 6px;">🔒 Read-Only</span>' : ''}
+                <span class="badge" style="font-size: 0.7rem; padding: 2px 6px;">Tier #${c.tier}</span>
+              </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0.5rem;">
               <label style="font-size: 0.75rem; color: var(--text-secondary);">Daily AI Detection Limit (-1 for Unlimited)</label>
-              <input type="number" class="text-input inp-daily-limit" value="${c.dailyAiDetectionLimit}" style="width: 100%;" ${isSuper ? 'readonly' : ''}>
+              <input type="number" class="text-input inp-daily-limit" value="${c.dailyAiDetectionLimit}" style="width: 100%; ${!isEditable ? 'background: rgba(255, 255, 255, 0.03); color: var(--text-muted); cursor: not-allowed; border-color: var(--hairline); pointer-events: none;' : ''}" ${!isEditable ? 'readonly disabled' : ''}>
             </div>
 
             <div class="form-group" style="margin-bottom: 0.5rem;">
               <label style="font-size: 0.75rem; color: var(--text-secondary);">Analytics History Days</label>
-              <input type="number" class="text-input inp-history-days" value="${c.analyticsHistoryDays}" style="width: 100%;">
+              <input type="number" class="text-input inp-history-days" value="${c.analyticsHistoryDays}" style="width: 100%; ${!isEditable ? 'background: rgba(255, 255, 255, 0.03); color: var(--text-muted); cursor: not-allowed; border-color: var(--hairline); pointer-events: none;' : ''}" ${!isEditable ? 'readonly disabled' : ''}>
             </div>
 
             <div style="margin-bottom: 0.5rem;">
-              <label class="legal-checkbox-label" style="font-size: 0.8rem;">
-                <input type="checkbox" class="cb-photo-compare" ${c.allowPhotoCompare ? 'checked' : ''} ${isSuper ? 'disabled' : ''}>
+              <label class="legal-checkbox-label" style="font-size: 0.8rem; ${!isEditable ? 'opacity: 0.6; cursor: not-allowed; pointer-events: none;' : ''}">
+                <input type="checkbox" class="cb-photo-compare" ${c.allowPhotoCompare ? 'checked' : ''} ${!isEditable ? 'disabled' : ''}>
                 <span>Allow Photo Compare</span>
               </label>
             </div>
 
             <div style="margin-bottom: 0.75rem;">
-              <label class="legal-checkbox-label" style="font-size: 0.8rem;">
-                <input type="checkbox" class="cb-data-export" ${c.allowDataExport ? 'checked' : ''} ${isSuper ? 'disabled' : ''}>
+              <label class="legal-checkbox-label" style="font-size: 0.8rem; ${!isEditable ? 'opacity: 0.6; cursor: not-allowed; pointer-events: none;' : ''}">
+                <input type="checkbox" class="cb-data-export" ${c.allowDataExport ? 'checked' : ''} ${!isEditable ? 'disabled' : ''}>
                 <span>Allow Data Export (Excel / CSV)</span>
               </label>
             </div>
 
             <div class="form-group" style="margin-bottom: 0.75rem;">
               <label style="font-size: 0.75rem; color: var(--text-secondary);">Description</label>
-              <input type="text" class="text-input inp-description" value="${c.description || ''}" style="width: 100%;">
+              <input type="text" class="text-input inp-description" value="${c.description || ''}" style="width: 100%; ${!isEditable ? 'background: rgba(255, 255, 255, 0.03); color: var(--text-muted); cursor: not-allowed; border-color: var(--hairline); pointer-events: none;' : ''}" ${!isEditable ? 'readonly disabled' : ''}>
             </div>
 
-            <button type="button" class="btn btn-sm btn-primary btn-save-tier" style="width: 100%;">
-              Save Configuration
-            </button>
+            ${canEdit && !isSuperTier ? `
+              <button type="button" class="btn btn-sm btn-primary btn-save-tier" style="width: 100%;">
+                Save Configuration
+              </button>
+            ` : isSuperTier ? `
+              <button type="button" class="btn btn-sm btn-outline" style="width: 100%; opacity: 0.45; cursor: not-allowed;" disabled>
+                Immutable System Tier
+              </button>
+            ` : `
+              <div style="width: 100%; text-align: center; padding: 7px 12px; font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--hairline); border-radius: var(--radius-sm); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                <span>🔒</span> <span>Read-Only View</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline btn-save-tier" style="display: none;" disabled title="Only SuperAdmin can modify tier configurations">
+                🔒 SuperAdmin Only
+              </button>
+            `}
           </div>
         `;
       }).join('');
@@ -440,8 +487,17 @@ export class AdminModalController {
   }
 
   bindTierActionHandlers() {
+    if (!this.isSuperAdmin()) {
+      return; // Do not attach save handlers for non-superadmin users
+    }
+
     this.tierCardsContainer?.querySelectorAll('.btn-save-tier').forEach(btn => {
       btn.addEventListener('click', async (e) => {
+        if (!this.isSuperAdmin()) {
+          this.toastService?.error('Only SuperAdmin accounts are authorized to modify tier configurations.');
+          return;
+        }
+
         const card = e.target.closest('.tier-admin-card');
         const tier = card?.dataset.tier;
         if (!card || tier === undefined) return;
@@ -464,7 +520,7 @@ export class AdminModalController {
           });
           this.toastService?.success('Tier configuration updated and cache invalidated.');
         } catch (err) {
-          this.toastService?.error(err.data?.error || 'Failed to update tier configuration.');
+          this.toastService?.error(err.data?.error || err.data?.message || 'Failed to update tier configuration.');
         } finally {
           btn.disabled = false;
           btn.textContent = 'Save Configuration';

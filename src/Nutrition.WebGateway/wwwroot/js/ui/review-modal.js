@@ -601,7 +601,10 @@ export class ReviewModalController {
       el.dietitianAdvice.textContent = analysis.dietitianAdvice || 'Wholesome homestyle preparation adhering to ICMR-NIN guidelines.';
     }
 
-    if (el.modal) el.modal.style.display = 'flex';
+    if (el.modal) {
+      document.body.classList.add('modal-open');
+      el.modal.style.display = 'flex';
+    }
   }
 
   close() {
@@ -620,7 +623,10 @@ export class ReviewModalController {
       el.btnConfirm.disabled = false;
       el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
     }
-    if (el.modal) el.modal.style.display = 'none';
+    if (el.modal) {
+      el.modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    }
     this._state.currentMeal = null;
   }
 
@@ -762,7 +768,10 @@ export class ReviewModalController {
       el.dietitianAdvice.textContent = this._state.currentMeal.dietitianAdvice;
     }
 
-    if (el.modal) el.modal.style.display = 'flex';
+    if (el.modal) {
+      document.body.classList.add('modal-open');
+      el.modal.style.display = 'flex';
+    }
   }
 
   /**
@@ -1107,6 +1116,7 @@ export class ReviewModalController {
               <span class="tabular" style="color: #34d399;">${totalItemFiber}g Fiber</span>
               <span>·</span>
               <span class="tabular" style="color: #f472b6;">${totalItemSugar}g Sugar</span>
+              <span class="item-ai-status-wrap">
               ${item.isAiSearching ? `
                 <span class="item-ai-searching-badge">
                   <span class="spinner-mini">⏳</span> 🤖 AI Searching...
@@ -1116,6 +1126,7 @@ export class ReviewModalController {
                   ✓ AI-Verified
                 </span>
               ` : '')}
+              </span>
             </div>
             ${isCorrected ? `
               <div class="item-correction-indicator" style="color: var(--status-emerald); font-size: 0.72rem; margin-top: 4px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap;">
@@ -1228,7 +1239,11 @@ export class ReviewModalController {
     }
 
     item.isAiSearching = true;
-    this.renderItems();
+    const rowEl = this.elements.itemsList?.children[idx];
+    const badgeWrap = rowEl?.querySelector('.item-ai-status-wrap');
+    if (badgeWrap) {
+      badgeWrap.innerHTML = `<span class="item-ai-searching-badge"><span class="spinner-mini">⏳</span> 🤖 AI Searching...</span>`;
+    }
     this.recalculateTotals();
 
     // Debounced (300ms) call to centralized backend estimation API
@@ -1281,7 +1296,11 @@ export class ReviewModalController {
     const item = this._state.currentMeal.identifiedItems[idx];
     item.estimatedPortion = trimmed;
     item.isAiSearching = true;
-    this.renderItems();
+    const rowEl = this.elements.itemsList?.children[idx];
+    const badgeWrap = rowEl?.querySelector('.item-ai-status-wrap');
+    if (badgeWrap) {
+      badgeWrap.innerHTML = `<span class="item-ai-searching-badge"><span class="spinner-mini">⏳</span> 🤖 AI Searching...</span>`;
+    }
     this.recalculateTotals();
 
     // Debounced (300ms) call to centralized backend estimation API
@@ -1306,6 +1325,11 @@ export class ReviewModalController {
           current.sodiumMg = est.sodiumMg;
           if (est.grams) current.grams = est.grams;
           current.isAiEstimated = true;
+
+          this._toast.show({
+            title: '🤖 AI Nutrition Updated',
+            message: `${est.normalizedName || item.name} (${trimmed}): ${Math.round(current.calories)} kcal · ${current.proteinGrams}g Protein.`
+          });
         }
       } catch (err) {
         console.warn('Backend portion estimation error:', err);
@@ -1320,10 +1344,74 @@ export class ReviewModalController {
   }
 
   stepItemQuantity(idx, delta) {
+    if (!this._state.currentMeal || !this._state.currentMeal.identifiedItems[idx]) return;
     const item = this._state.currentMeal.identifiedItems[idx];
-    item.quantity = Math.max(0.5, (item.quantity || 1) + delta);
+    const newQty = Math.max(0.5, (item.quantity || 1) + delta);
+    item.quantity = newQty;
     this.renderItems();
     this.recalculateTotals();
+
+    // Automatically trigger AI search & clinical recalculation for the updated quantity
+    this.updateItemQuantityAi(idx, newQty);
+  }
+
+  async updateItemQuantityAi(idx, newQty) {
+    if (!this._state.currentMeal || !this._state.currentMeal.identifiedItems[idx]) return;
+    const item = this._state.currentMeal.identifiedItems[idx];
+    item.isAiSearching = true;
+
+    const rowEl = this.elements.itemsList?.children[idx];
+    const badgeWrap = rowEl?.querySelector('.item-ai-status-wrap');
+    if (badgeWrap) {
+      badgeWrap.innerHTML = `<span class="item-ai-searching-badge"><span class="spinner-mini">⏳</span> 🤖 AI Searching...</span>`;
+    }
+
+    this._debounce(`item-qty-${idx}`, async () => {
+      try {
+        let scaledPortion = item.estimatedPortion || '1 Portion';
+        const numMatch = scaledPortion.match(/^([\d\.]+)\s*(.*)$/);
+        if (numMatch && numMatch[2]) {
+          scaledPortion = `${newQty} ${numMatch[2]}`;
+        } else {
+          scaledPortion = `${newQty} servings of ${item.name}`;
+        }
+
+        const est = await this._meals.estimateFoodItem(
+          item.name,
+          scaledPortion,
+          true,
+          this._state.userId || 'user-default',
+          this._state.currentMeal?.mealType
+        );
+
+        if (est && this._state.currentMeal?.identifiedItems[idx]) {
+          const current = this._state.currentMeal.identifiedItems[idx];
+          // AI returned nutrition for the full scaled portion; calibrate per-unit values
+          current.calories = Math.round(est.calories / newQty);
+          current.proteinGrams = Number((est.proteinGrams / newQty).toFixed(1));
+          current.carbsGrams = Number((est.carbsGrams / newQty).toFixed(1));
+          current.fatGrams = Number((est.fatGrams / newQty).toFixed(1));
+          current.fiberGrams = Number((est.fiberGrams / newQty).toFixed(1));
+          current.sugarGrams = Number((est.sugarGrams / newQty).toFixed(1));
+          current.sodiumMg = Math.round(est.sodiumMg / newQty);
+          if (est.grams) current.grams = Math.round(est.grams);
+          current.isAiEstimated = true;
+
+          this._toast.show({
+            title: '🤖 AI Nutrition Updated',
+            message: `${est.normalizedName || item.name} (${newQty}x): ${Math.round(est.calories)} kcal · ${est.proteinGrams}g Protein.`
+          });
+        }
+      } catch (err) {
+        console.warn('Backend food quantity estimation error:', err);
+      } finally {
+        if (this._state.currentMeal?.identifiedItems[idx]) {
+          this._state.currentMeal.identifiedItems[idx].isAiSearching = false;
+        }
+        this.renderItems();
+        this.recalculateTotals();
+      }
+    }, 350);
   }
 
   deleteItem(idx) {
@@ -1667,9 +1755,11 @@ export class ReviewModalController {
         });
       } else {
         const mealTypeName = this._state.currentMeal?.mealType || 'Meal';
+        const loggedKcal = data.meal?.totalCalories ?? data.meal?.calories ?? this._state.currentMeal?.totalCalories ?? 0;
+        const loggedProtein = data.meal?.totalProteinGrams ?? this._state.currentMeal?.totalProteinGrams ?? 0;
         this._toast.show({
           title: `${mealTypeName} Logged! 🎉`,
-          message: `Logged ${Math.round(data.totalCalories)} kcal and ${Math.round(data.totalProtein)}g Protein. Compliance score updated!`,
+          message: `Logged ${Math.round(loggedKcal)} kcal and ${Math.round(loggedProtein)}g Protein. Compliance score updated!`,
           actionText: '📊 View Daily Graph',
           onAction: () => this._bus.emit('analytics:switch-period', '1D')
         });

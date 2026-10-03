@@ -447,6 +447,7 @@ export class MealDiaryView {
         isClosed = true;
         modal.style.display = 'none';
         modal.classList.remove('active');
+        document.body.classList.remove('modal-open');
         document.removeEventListener('keydown', onKeyDown);
         if (btnConfirm) btnConfirm.removeEventListener('click', onConfirm);
         if (btnCancel) btnCancel.removeEventListener('click', onCancel);
@@ -483,6 +484,7 @@ export class MealDiaryView {
       modal.addEventListener('click', onBackdropClick);
       document.addEventListener('keydown', onKeyDown);
 
+      document.body.classList.add('modal-open');
       modal.style.display = 'flex';
       modal.classList.add('active');
       if (btnCancel) btnCancel.focus();

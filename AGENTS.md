@@ -189,6 +189,11 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Backend & Domain Reusability**: CQRS query and command handlers built in `Nutrition.Application` for Web BFF must be directly consumable by Mobile BFF (`/api/mobile/v1/*`) with 0 duplicate clinical math. Persistence abstractions (`INutritionContext`) in Phase 1 SQLite must be strictly decoupled from provider quirks to enable seamless multi-provider injection for Phase 3 Azure SQL Serverless.
     - **Living CFT Acceptance Inheritance**: All Customer & Functional Acceptance Tests in `docs/cft/` are reusable, living verification harnesses. Phase 1 Web CFT suites define the invariant baseline that Phase 2 Mobile CFT and Master Parity Matrix inherit and re-validate. Tests must remain parameterized and valid across SQLite, Azure Files SMB, Azure SQL, and all clients.
     - **Mandatory Forward Roadmap Section in ADRs**: Every atomic ADR fragment (`docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md`) MUST include a dedicated section titled `Forward Roadmap Impact & Future Phase Compatibility`, certifying that the decision supports upcoming phases and creates zero technical debt.
+16. **Authoritative UI/UX Design System Standard (DESIGN.md Compliance)**:
+    - **Single Source of Truth**: [`DESIGN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/DESIGN.md) is the absolute authority for all frontend UI/UX, surfaces, typography, tokens, and components across Diet-Dost.
+    - **Mandatory Pre-UI Inspection**: Contributors and AI agents MUST inspect `DESIGN.md` and the existing design system tokens in `styles.css` prior to introducing or altering any visual components.
+    - **Zero-Ad-Hoc Visual Conventions**: Never introduce arbitrary bright or saturated colors, atmospheric gradients, or custom non-standard border radiuses. Use the canonical four-step surface ladder (`canvas` #010102 → `surface-1` #0f1011 → `surface-2` #141516 → `surface-3` #18191a → `surface-4` #191a1b), hairline borders (`#23252a`), and Linear lavender-blue (`#5e6ad2`) chromatic accent.
+    - **Mandatory Verification**: Every UI modification must be verified for `DESIGN.md` token compliance, responsive layout across all viewports (Mobile, Tablet, Desktop), touch target minimums ($\ge 44 \times 44\,\text{px}$), and accessibility contrast.
 
 
 
