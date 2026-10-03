@@ -67,6 +67,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-061** | Responsive UI Layout, Touch Ergonomics & Mobile Bottom Navigation | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md) |
 | **ADR-062** | Mobile BFF Composite Contracts, ETag Caching & Offline Idempotency | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md) |
 | **ADR-063** | Native Feature Classification Matrix & Responsive Exit Gate Signoff | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md) |
+| **ADR-064** | Disable Public User Sign-Up & Codify DESIGN.md UI/UX Authority | `[SECURITY]` | `ACCEPTED` | [`ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md) |
 
 
 

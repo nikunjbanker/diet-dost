@@ -3635,6 +3635,134 @@ html, body {
   cursor: pointer;
 }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   DESIGN.md: Alpha Preview Notice & Demo Accounts Selector
+   Adheres to Linear design system: surface-1 (#0f1011), hairline border (#23252a),
+   ink-subtle (#8a8f98), status pill, and 44px touch targets on mobile.
+   ────────────────────────────────────────────────────────────────────────── */
+.auth-notice-card {
+  margin-top: 1rem;
+  padding: 12px 14px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+
+.auth-notice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.auth-preview-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: 0.4px;
+}
+
+.auth-preview-badge::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7a7fad;
+}
+
+.auth-notice-text {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0 0 10px 0;
+}
+
+.demo-account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.demo-pill-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 10px;
+  min-height: 44px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.76rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  user-select: none;
+}
+
+.demo-pill-btn:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.demo-pill-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.4);
+  border-color: var(--accent-brand);
+}
+
+.demo-pill-btn .demo-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.demo-pill-btn .demo-role {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  margin-top: 2px;
+  letter-spacing: -0.2px;
+}
+
+.auth-disabled-banner {
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 18px 14px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin-bottom: 0.75rem;
+}
+
+.auth-disabled-banner .disabled-icon {
+  font-size: 1.5rem;
+  margin-bottom: 6px;
+}
+
+.auth-disabled-banner .disabled-heading {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+
 .legal-consent-container {
   display: flex;
   flex-direction: column;

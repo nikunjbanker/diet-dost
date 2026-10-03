@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -65,17 +65,20 @@ public class AuthController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
     private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AuthController> _logger;
     private readonly ResiliencePipeline _rateLimiter;
 
     public AuthController(
         IDispatcher dispatcher,
         IWebHostEnvironment env,
+        IConfiguration configuration,
         ILogger<AuthController> logger,
         ResiliencePipeline rateLimiter)
     {
         _dispatcher = dispatcher;
         _env = env;
+        _configuration = configuration;
         _logger = logger;
         _rateLimiter = rateLimiter;
     }
@@ -100,6 +103,16 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
+        if (!_configuration.GetValue<bool>("Auth:AllowRegistration", false))
+        {
+            _logger.LogWarning("Blocked registration attempt for {Email} because public sign-up is disabled.", request.Email);
+            return StatusCode(StatusCodes.Status403Forbidden, new
+            {
+                error = "REGISTRATION_DISABLED",
+                message = "New user registration is temporarily disabled during the alpha preview. Please sign in using the provided demo accounts."
+            });
+        }
+
         return await ExecuteWithRateLimitAsync(async () =>
         {
             var isDev = _env.IsDevelopment();

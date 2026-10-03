@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -74,6 +74,10 @@ export class AuthGateController {
     document.getElementById('link-goto-signin')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('link-goto-forgot-password')?.addEventListener('click', () => this.switchTab('reset'));
     document.getElementById('link-back-to-signin-from-reset')?.addEventListener('click', () => this.switchTab('signin'));
+    document.getElementById('btn-goto-signin-from-disabled')?.addEventListener('click', () => this.switchTab('signin'));
+
+    // Bind Alpha Preview demo credentials quick-fill buttons
+    this.bindDemoAccountButtons();
 
     // Legal modal openers (stop propagation to prevent label toggling the checkbox)
     document.getElementById('link-open-terms')?.addEventListener('click', (e) => {
@@ -175,6 +179,13 @@ export class AuthGateController {
   switchTab(tab) {
     this.clearErrors();
 
+    if (tab === 'register') {
+      if (this.toastService?.info) {
+        this.toastService.info('Public registration is currently closed. Please use a demo account.');
+      }
+      tab = 'signin';
+    }
+
     this.tabSignIn?.classList.toggle('active', tab === 'signin');
     this.tabRegister?.classList.toggle('active', tab === 'register');
     this.tabVerify?.classList.toggle('active', tab === 'verify');
@@ -187,6 +198,34 @@ export class AuthGateController {
 
     if (tab === 'verify' && this.tabVerify) this.tabVerify.style.display = 'inline-block';
     if (tab === 'reset' && this.tabReset) this.tabReset.style.display = 'inline-block';
+  }
+
+  bindDemoAccountButtons() {
+    const demoCredentials = {
+      'btn-demo-free': { email: 'free@dietdost.app', pass: 'DietDost@Demo2026!' },
+      'btn-demo-basic': { email: 'basic@dietdost.app', pass: 'DietDost@Demo2026!' },
+      'btn-demo-premium': { email: 'premium@dietdost.app', pass: 'DietDost@Demo2026!' },
+      'btn-demo-admin': { email: 'admin.demo@dietdost.app', pass: 'DietDost@Demo2026!' }
+    };
+
+    for (const [btnId, creds] of Object.entries(demoCredentials)) {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          const idInput = document.getElementById('signin-identifier');
+          const passInput = document.getElementById('signin-password');
+          if (idInput && passInput) {
+            idInput.value = creds.email;
+            passInput.value = creds.pass;
+            this.clearErrors();
+            passInput.focus();
+            if (this.toastService?.info) {
+              this.toastService.info(`Selected demo credentials for ${creds.email}`);
+            }
+          }
+        });
+      }
+    }
   }
 
   clearErrors() {
@@ -296,59 +335,11 @@ export class AuthGateController {
     }
   }
 
-  // ── Register ───────────────────────────────────────────────────────────────
+  // ── Register (Disabled during Alpha Preview) ───────────────────────────────
   async handleRegister(e) {
     e.preventDefault();
     this.clearErrors();
-
-    const name = document.getElementById('reg-name')?.value.trim();
-    const email = document.getElementById('reg-email')?.value.trim();
-    const mobileNumber = document.getElementById('reg-mobile')?.value.trim();
-    const password = document.getElementById('reg-password')?.value;
-    const confirmPassword = document.getElementById('reg-confirm-password')?.value;
-    const acceptTerms = document.getElementById('reg-consent-terms')?.checked;
-    const acceptHealthConsent = document.getElementById('reg-consent-health')?.checked;
-    const submitBtn = document.getElementById('btn-submit-register');
-
-    // ── Client-side pre-flight checks ─────────────────────────────────────
-    if (!acceptTerms || !acceptHealthConsent) {
-      this.showError(this.registerError, 'You must accept both legal agreements to proceed.');
-      return;
-    }
-    if (password !== confirmPassword) {
-      this.showError(this.registerError, 'Password and Confirm Password do not match.');
-      return;
-    }
-    const { score } = this.evaluatePasswordStrength(password);
-    if (score <= 2) {
-      this.showError(this.registerError, 'Password is too weak. Use at least 10 characters with uppercase, lowercase, digit and a special character.');
-      return;
-    }
-
-    this.setButtonLoading(submitBtn, true);
-    try {
-      const res = await this.authService.register({
-        name, email, mobileNumber, password,
-        acceptTerms, acceptHealthConsent
-      });
-
-      this.pendingEmail = email;
-      this.pendingMobile = mobileNumber;
-      if (this.otpTargetDisplay) this.otpTargetDisplay.textContent = email;
-
-      if (res.devOtpCode && this.devOtpHolder && this.devOtpCode) {
-        this.devOtpCode.textContent = res.devOtpCode;
-        this.devOtpHolder.style.display = 'flex';
-      }
-
-      this.switchTab('verify');
-      this.startResendCountdown(60);
-      this.toastService?.success('Account created! Enter the 6-digit verification code sent to your email.');
-    } catch (err) {
-      this.showError(this.registerError, err.data?.error || err.message || 'Registration failed.');
-    } finally {
-      this.setButtonLoading(submitBtn, false);
-    }
+    this.showError(this.registerError, 'New user registration is currently disabled during the alpha preview. Please sign in using one of the demo accounts.');
   }
 
   // ── Verify OTP ─────────────────────────────────────────────────────────────
