@@ -245,6 +245,34 @@ Validates real-time authentication, JWT issuance, profile calculations, daily AI
 
 ---
 
+## 🚀 Cloud Deployment (Azure Container Apps + Persistent SQLite SMB)
+
+Diet-Dost delivers a workable public cloud showcase MVP hosted on **Azure Container Apps (ACA)** at **`https://dev.diet-dost.in`** with zero external cloud SQL costs (<$0.30/month) adhering to the **SQLite Cloud Persistence Doctrine**:
+
+### Architecture & Zero Data Loss Principles:
+1. **Persistent SMB Mount**: Azure Files SMB 3.0 share (`dietdost-data`) mounted directly to `/app/data` for transactional durability.
+2. **Single Replica Constraint**: `minReplicas: 1`, `maxReplicas: 1` enforced in Bicep to eliminate network file locking deadlocks.
+3. **Private Network Perimeter**: Storage Account isolates traffic via dedicated VNet subnet and `Microsoft.Storage` service endpoint (`defaultAction: Deny`).
+4. **Free Managed TLS 1.3**: Automatic 90-day auto-renewing certificate via Azure Container Apps managed environment.
+5. **Showcase 5-Tier Governance**: Configured with `Security:AllowDemoUsers=true` enabling live validation across all 5 user tiers.
+
+### Deploy with Podman & Azure CLI:
+```powershell
+# 1. Automated deployment via PowerShell (Bicep + Podman)
+pwsh -File deploy/deploy.ps1 -ResourceGroupName "rg-dietdost-dev" -Location "centralindia" -CustomDomain "dev.diet-dost.in"
+
+# 2. Or using POSIX Bash:
+./deploy/deploy.sh rg-dietdost-dev centralindia dev.diet-dost.in
+```
+
+### DNS Records for Custom Domain (`dev.diet-dost.in`):
+| Type | Host | Target / Value | Purpose |
+| :--- | :--- | :--- | :--- |
+| **CNAME** | `dev` | `<app-fqdn>.azurecontainerapps.io` | Web traffic routing |
+| **TXT** | `asuid.dev` | `<customDomainVerificationId>` | Azure domain ownership verification |
+
+---
+
 ## 📚 Living Documentation (SDD v1.3.1)
 
 Diet Dost strictly adheres to living documentation practices. Every architectural decision, clinical dietetic formula, and security standard is documented in detail:

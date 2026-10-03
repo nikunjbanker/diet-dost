@@ -69,6 +69,28 @@ public static class DatabaseInitializationExtensions
     {
         await db.Database.EnsureCreatedAsync();
 
+        // If core domain tables were skipped (e.g. if another table pre-existed in sqlite_master), generate schema
+        var mealsExist = await TableExistsAsync(db, "Meals");
+        if (!mealsExist)
+        {
+            var createScript = db.Database.GenerateCreateScript();
+            var rawStatements = createScript.Split(new[] { ";\r\n", ";\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var rawStatement in rawStatements)
+            {
+                if (string.IsNullOrWhiteSpace(rawStatement)) continue;
+                try
+                {
+#pragma warning disable EF1003 // EF Core schema create script execution is internally generated and sanitized
+                    await db.Database.ExecuteSqlRawAsync(rawStatement + ";");
+#pragma warning restore EF1003
+                }
+                catch
+                {
+                    // Table, index, or constraint may already exist
+                }
+            }
+        }
+
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""Corrections"" (
                 ""Id"" TEXT NOT NULL CONSTRAINT ""PK_Corrections"" PRIMARY KEY,
@@ -215,6 +237,20 @@ public static class DatabaseInitializationExtensions
         ");
     }
 
+    private static async Task<bool> TableExistsAsync(DietTrackerDbContext db, string tableName)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        using var checkTableCmd = connection.CreateCommand();
+        checkTableCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+        var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
+        return count > 0;
+    }
+
     private static async Task EnsureColumnExistsAsync(DietTrackerDbContext db, string tableName, string columnName, string columnDefinition)
     {
         var connection = db.Database.GetDbConnection();
@@ -298,6 +334,7 @@ public static class DatabaseInitializationExtensions
         }
 
         await db.SaveChangesAsync();
+        (configuration as IConfigurationRoot)?.Reload();
     }
 
     private static async Task DeactivateDemoUsersInReleaseModeAsync(DietTrackerDbContext db, ILogger logger)

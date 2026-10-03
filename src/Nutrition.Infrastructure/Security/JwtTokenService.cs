@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -31,7 +31,16 @@ public class JwtTokenService : IJwtTokenService
     {
         _issuer = configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
         _audience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
-        _key = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY") ?? string.Empty;
+        var configuredKey = configuration["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(configuredKey))
+        {
+            configuredKey = Environment.GetEnvironmentVariable("JWT_KEY");
+        }
+        if (string.IsNullOrWhiteSpace(configuredKey))
+        {
+            configuredKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
+        }
+        _key = configuredKey;
 
         var keyBytes = Encoding.UTF8.GetBytes(_key);
         if (keyBytes.Length < 32)

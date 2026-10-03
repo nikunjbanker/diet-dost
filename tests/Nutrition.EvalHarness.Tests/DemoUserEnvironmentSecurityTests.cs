@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -7,6 +7,7 @@
  */
 using System.Linq.Expressions;
 using System.Security.Claims;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
@@ -232,5 +233,51 @@ public class DemoUserEnvironmentSecurityTests
         Assert.True(result.Succeeded);
         Assert.NotNull(result.Data);
         Assert.Equal("doctor.sharma@hospital.org", result.Data.User.Email);
+    }
+
+    [Fact]
+    public void AppEnvironment_WithShowcaseConfiguration_AllowsDemoUsers_InReleaseProduction()
+    {
+        // Arrange: Production environment with explicit Security:AllowDemoUsers=true
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Security:AllowDemoUsers"] = "true"
+            })
+            .Build();
+
+        var hostEnv = new FakeHostEnvironment { EnvironmentName = "Production" };
+        var appEnv = new Nutrition.Infrastructure.Services.AppEnvironment(hostEnv, config);
+
+        // Assert: Demo users are permitted for the showcase deployment
+        Assert.False(appEnv.IsDevelopment);
+        Assert.True(appEnv.AllowsDemoUsers);
+    }
+
+    [Fact]
+    public void AppEnvironment_WithoutShowcaseConfiguration_DeniesDemoUsers_InReleaseProduction()
+    {
+        // Arrange: Production environment without showcase toggle
+        var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Security:AllowDemoUsers"] = "false"
+            })
+            .Build();
+
+        var hostEnv = new FakeHostEnvironment { EnvironmentName = "Production" };
+        var appEnv = new Nutrition.Infrastructure.Services.AppEnvironment(hostEnv, config);
+
+        // Assert: In standard production, demo users are strictly disallowed
+        Assert.False(appEnv.IsDevelopment);
+        Assert.False(appEnv.AllowsDemoUsers);
+    }
+
+    private class FakeHostEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Production";
+        public string ApplicationName { get; set; } = "Nutrition.WebGateway";
+        public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
 }

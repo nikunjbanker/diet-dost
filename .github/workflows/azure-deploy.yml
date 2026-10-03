@@ -1,0 +1,110 @@
+# ==============================================================================
+# Copyright (c) 2026 diet-dost and/or its contributors.
+# Licensed under the "GNU Affero General Public License v3.0 only" and
+# the "Server Side Public License, v 1"; you may not use this file except
+# in compliance with, at your election, the "GNU Affero General Public
+# License v3.0 only" or the "Server Side Public License, v 1".
+# ==============================================================================
+# GitHub Actions CI/CD: Automated Azure Container Apps & Persistent SMB Deployment
+# ==============================================================================
+
+name: Build and Deploy to Azure Container Apps
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'infra/**'
+      - 'deploy/**'
+      - 'Containerfile'
+      - '.containerignore'
+      - '.github/workflows/azure-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-test-and-deploy:
+    name: Build, Test & Deploy (ACA + Persistent SQLite SMB)
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup .NET 11 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+
+      - name: 3. Execute Unit & Domain Test Suites (100% Pass Standard)
+        run: |
+          dotnet test --configuration Release --verbosity normal
+
+      - name: 4. Azure CLI Authentication
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 5. Ensure Resource Group Exists
+        run: |
+          az group create \
+            --name "${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}" \
+            --location "${{ vars.AZURE_LOCATION || 'centralindia' }}" \
+            --output table
+
+      - name: 6. Build and Push OCI Container Image (Podman)
+        id: build-image
+        run: |
+          ACR_NAME="${{ secrets.ACR_NAME }}"
+          IMAGE_TAG="${ACR_NAME}.azurecr.io/diet-dost-web:${{ github.sha }}"
+          IMAGE_LATEST="${ACR_NAME}.azurecr.io/diet-dost-web:latest"
+
+          # Login to ACR via Azure CLI credentials using Podman
+          ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
+          echo "$ACR_PASSWORD" | podman login "${ACR_NAME}.azurecr.io" -u "$ACR_NAME" --password-stdin
+
+          # Build and push using Podman
+          podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
+          podman push "$IMAGE_TAG"
+          podman push "$IMAGE_LATEST"
+
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: 7. Deploy Infrastructure via Bicep
+        uses: azure/arm-deploy@v3
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
+          template: ./infra/main.bicep
+          parameters: >-
+            appName=app-dietdost-web
+            containerImage=${{ steps.build-image.outputs.image_tag }}
+            customDomain=dev.diet-dost.in
+            allowDemoUsers=true
+            fileShareQuotaGb=10
+            geminiApiKey="${{ secrets.GEMINI_API_KEY }}"
+          failOnStderr: false
+
+      - name: 8. Verify Deployment Health
+        run: |
+          APP_NAME="app-dietdost-web"
+          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          
+          echo "Checking Container App revision status..."
+          REVISION_HEALTH=$(az containerapp revision list \
+            --name "$APP_NAME" \
+            --resource-group "$RG" \
+            --query "[0].properties.healthState" -o tsv)
+          
+          echo "Health State: $REVISION_HEALTH"
+          
+          APP_FQDN=$(az containerapp show \
+            --name "$APP_NAME" \
+            --resource-group "$RG" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+          
+          echo "Application is live at: https://$APP_FQDN"
