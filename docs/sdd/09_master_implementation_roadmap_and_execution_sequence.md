@@ -155,10 +155,10 @@ graph TD
   3. **PR 3 (Issue #28)**: Refactor `src/Nutrition.WebGateway/wwwroot/js/services/api.js` and `main.js` to hydrate dashboard in 1 single HTTP roundtrip. *(Merged)*
   4. **PR 4 (Issue #29)**: Wire meal review modal to `POST /api/meals/estimate` and safely delete `nutrition-estimator.js` (-1,001 lines). *(Merged)*
   5. **PR 5 (Issue #30)**: Deconstruct `analytics-chart.js` into SRP modules: `ChartRenderer.js`, `MealDiaryView.js`, `ExcelExportService.js`. *(Merged)*
-  6. **PR 6 (Issue #40)**: Responsive CSS Grid/Flexbox layout for Phone (`375px`, `390px`), Tablet (`768px`, `820px`), and Desktop (`1440px`), mobile-first bottom navigation bar, touch targets >= 44x44px.
-  7. **PR 7 (Issue #41)**: Mobile BFF controller (`MobileBffController.cs`) exposing `GET /api/mobile/v1/dashboard/composite`, payload minification, HTTP caching (`ETag`/`304 Not Modified`), sync metadata contracts.
-  8. **PR 8 (Issue #42)**: Authoritative Native Feature Classification Matrix, platform capability blueprint, and living responsive CFT test suite execution.
-  9. **PR 9 (Issue #31)**: Multi-stage Linux Docker build for `Nutrition.WebGateway`, Azure Container Apps deployment template with Azure Files SMB volume mount (`/app/data`), custom domain binding (`dev.diet-dost.in`) with free Azure-managed TLS certificate, and environment secret injection — **Live Customer Showcase Gate**.
+  6. **PR 6 (Issue #40)**: Responsive CSS Grid/Flexbox layout for Phone (`375px`, `390px`), Tablet (`768px`, `820px`), and Desktop (`1440px`), mobile-first bottom navigation bar, touch targets >= 44x44px. *(Merged)*
+  7. **PR 7 (Issue #41)**: Mobile BFF controller (`MobileBffController.cs`) exposing `GET /api/mobile/v1/dashboard/composite`, payload minification, HTTP caching (`ETag`/`304 Not Modified`), sync metadata contracts. *(Merged)*
+  8. **PR 8 (Issue #42)**: Authoritative Native Feature Classification Matrix, platform capability blueprint, and living responsive CFT test suite execution. *(Merged)*
+  9. **PR 9 (Issue #31)**: Multi-stage Linux Podman build (`Containerfile`), Azure Container Apps Bicep deployment template with persistent Azure Files SMB volume mount (`/app/data`), private VNet service endpoint isolation, custom domain binding (`dev.diet-dost.in`) with free Azure-managed TLS certificate, and showcase demo user governance — **Live Customer Showcase Gate**. *(Implemented / Active)*
 
 #### Reusable Assets & Forward-Roadmap Linkages (In Concert with Future Phases)
 * **PR 1 & PR 2 Reusability -> Reused in Mobile BFF (PR 7) & Mobile App (PR 10)**:

@@ -1,0 +1,15 @@
+**/.git
+**/.github
+**/.vs
+**/.vscode
+**/.gemini
+**/bin
+**/obj
+**/*.user
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/logs
+**/scratch
+test_meal.jpg
+tests/

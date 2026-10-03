@@ -1,0 +1,155 @@
+/*
+ * Copyright (c) 2026 diet-dost and/or its contributors.
+ * Licensed under the "GNU Affero General Public License v3.0 only" and
+ * the "Server Side Public License, v 1"; you may not use this file except
+ * in compliance with, at your election, the "GNU Affero General Public
+ * License v3.0 only" or the "Server Side Public License, v 1".
+ */
+using System.IO;
+using System.Text;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Nutrition.WebGateway.Middleware;
+using Xunit;
+
+namespace Nutrition.EvalHarness.Tests;
+
+public class SecurityEnvironmentAndHeaderTests
+{
+    private class TestHostEnvironment : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = Environments.Production;
+        public string ApplicationName { get; set; } = "Nutrition.WebGateway";
+        public string ContentRootPath { get; set; } = Directory.GetCurrentDirectory();
+        public IFileProvider ContentRootFileProvider { get; set; } = null!;
+    }
+
+    [Fact]
+    public async Task HostGating_Production_PermitsDevDietDostIn()
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString("dev.diet-dost.in");
+        context.Request.Path = "/api/test";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task HostGating_Production_PermitsDietDostIn()
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString("diet-dost.in");
+        context.Request.Path = "/api/test";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("evil.attacker.com")]
+    [InlineData("app-dietdost-web.azurecontainerapps.io")]
+    [InlineData("unauthorized.diet-dost.in")]
+    [InlineData("192.168.1.100")]
+    public async Task HostGating_Production_BlocksUnauthorizedHost_With403Forbidden(string unauthorizedHost)
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString(unauthorizedHost);
+        context.Request.Path = "/api/test";
+        var memStream = new MemoryStream();
+        context.Response.Body = memStream;
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
+        Assert.Equal("application/json", context.Response.ContentType);
+
+        memStream.Position = 0;
+        using var reader = new StreamReader(memStream, Encoding.UTF8);
+        var body = await reader.ReadToEndAsync();
+        Assert.Contains("ForbiddenHost", body);
+        Assert.Contains("dev.diet-dost.in", body);
+    }
+
+    [Fact]
+    public async Task HostGating_Production_AllowsHealthProbes_FromAnyHost()
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString("10.0.0.5");
+        context.Request.Path = "/health";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task HostGating_Development_AllowsAnyHost()
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Development };
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString("any-host.local");
+        context.Request.Path = "/api/test";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task SecurityHeaders_AppendsAllOwaspTop10Headers()
+    {
+        var middleware = new SecurityHeadersMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        });
+
+        var context = new DefaultHttpContext();
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"]);
+        Assert.Equal("DENY", context.Response.Headers["X-Frame-Options"]);
+        Assert.Equal("strict-origin-when-cross-origin", context.Response.Headers["Referrer-Policy"]);
+        Assert.Contains("geolocation=()", context.Response.Headers["Permissions-Policy"].ToString());
+        Assert.Contains("default-src 'self'", context.Response.Headers["Content-Security-Policy"].ToString());
+        Assert.Contains("dev.diet-dost.in", context.Response.Headers["Content-Security-Policy"].ToString());
+    }
+}

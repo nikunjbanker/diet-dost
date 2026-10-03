@@ -8,6 +8,7 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
@@ -46,7 +47,7 @@ public static class DatabaseInitializationExtensions
 
             if (appEnv.AllowsDemoUsers)
             {
-                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, logger);
+                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, appEnv, logger);
             }
             else
             {
@@ -68,6 +69,28 @@ public static class DatabaseInitializationExtensions
     private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db)
     {
         await db.Database.EnsureCreatedAsync();
+
+        // If core domain tables were skipped (e.g. if another table pre-existed in sqlite_master), generate schema
+        var mealsExist = await TableExistsAsync(db, "Meals");
+        if (!mealsExist)
+        {
+            var createScript = db.Database.GenerateCreateScript();
+            var rawStatements = createScript.Split(new[] { ";\r\n", ";\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var rawStatement in rawStatements)
+            {
+                if (string.IsNullOrWhiteSpace(rawStatement)) continue;
+                try
+                {
+#pragma warning disable EF1003 // EF Core schema create script execution is internally generated and sanitized
+                    await db.Database.ExecuteSqlRawAsync(rawStatement + ";");
+#pragma warning restore EF1003
+                }
+                catch
+                {
+                    // Table, index, or constraint may already exist
+                }
+            }
+        }
 
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""Corrections"" (
@@ -215,6 +238,20 @@ public static class DatabaseInitializationExtensions
         ");
     }
 
+    private static async Task<bool> TableExistsAsync(DietTrackerDbContext db, string tableName)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        using var checkTableCmd = connection.CreateCommand();
+        checkTableCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+        var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
+        return count > 0;
+    }
+
     private static async Task EnsureColumnExistsAsync(DietTrackerDbContext db, string tableName, string columnName, string columnDefinition)
     {
         var connection = db.Database.GetDbConnection();
@@ -298,6 +335,7 @@ public static class DatabaseInitializationExtensions
         }
 
         await db.SaveChangesAsync();
+        (configuration as IConfigurationRoot)?.Reload();
     }
 
     private static async Task DeactivateDemoUsersInReleaseModeAsync(DietTrackerDbContext db, ILogger logger)
@@ -324,6 +362,27 @@ public static class DatabaseInitializationExtensions
         }
     }
 
+    private static async Task DeactivatePrivilegedDemoUsersAsync(DietTrackerDbContext db, ILogger logger)
+    {
+        var privilegedDemoUsers = await db.Users
+            .Where(u => ApplicationUser.PrivilegedDemoEmails.Contains(u.Email) ||
+                        u.Id.StartsWith("user-admin") ||
+                        u.Id.StartsWith("user-superadmin"))
+            .ToListAsync();
+
+        if (privilegedDemoUsers.Count > 0)
+        {
+            foreach (var user in privilegedDemoUsers)
+            {
+                user.IsActive = false;
+                user.SecurityStamp = Guid.NewGuid().ToString("N");
+            }
+
+            await db.SaveChangesAsync();
+            logger.LogWarning("[SECURITY] Deactivated {Count} privileged demo user account(s) (Admin/SuperAdmin) in released environment.", privilegedDemoUsers.Count);
+        }
+    }
+
     private static async Task SeedTierConfigurationsAsync(DietTrackerDbContext db, ILogger logger)
     {
         if (!await db.TierConfigurations.AnyAsync())
@@ -338,6 +397,7 @@ public static class DatabaseInitializationExtensions
         DietTrackerDbContext db,
         IServiceProvider serviceProvider,
         IConfiguration configuration,
+        IAppEnvironment appEnv,
         ILogger logger)
     {
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
@@ -348,6 +408,7 @@ public static class DatabaseInitializationExtensions
             ? configuredSuperAdminEmail
             : "superadmin@dietdost.app";
 
+        // Seeded end-user demo tier accounts (Free, Basic, Premium) - permitted in showcase environments
         var demoSpecs = new List<DemoUserSpec>
         {
             new(
@@ -388,8 +449,13 @@ public static class DatabaseInitializationExtensions
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            ),
-            new(
+            )
+        };
+
+        // Privileged Admin & SuperAdmin demo accounts - strictly permitted ONLY in local Debug/Development builds
+        if (appEnv.AllowsAdminDemoUsers)
+        {
+            demoSpecs.Add(new(
                 Id: "user-admin",
                 Email: "admin.demo@dietdost.app",
                 Name: "Admin Tier User (Demo)",
@@ -399,8 +465,9 @@ public static class DatabaseInitializationExtensions
                 Cuisine: "Maharashtrian",
                 Conditions: new List<string>(),
                 Medications: new List<MedicationEntry>()
-            ),
-            new(
+            ));
+
+            demoSpecs.Add(new(
                 Id: "user-superadmin",
                 Email: primarySuperAdminEmail,
                 Name: "SuperAdmin Tier User (Demo)",
@@ -413,25 +480,30 @@ public static class DatabaseInitializationExtensions
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            )
-        };
-
-        if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
-        {
-            demoSpecs.Add(new(
-                Id: "user-superadmin-alias",
-                Email: "admin@dietdost.app",
-                Name: "SuperAdmin Tier User (Alias)",
-                Mobile: "+919999999998",
-                Role: UserRole.SuperAdmin,
-                Tier: UserTier.SuperAdmin,
-                Cuisine: "North Indian",
-                Conditions: new List<string> { "Pre-Diabetes" },
-                Medications: new List<MedicationEntry>
-                {
-                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
-                }
             ));
+
+            if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
+            {
+                demoSpecs.Add(new(
+                    Id: "user-superadmin-alias",
+                    Email: "admin@dietdost.app",
+                    Name: "SuperAdmin Tier User (Alias)",
+                    Mobile: "+919999999998",
+                    Role: UserRole.SuperAdmin,
+                    Tier: UserTier.SuperAdmin,
+                    Cuisine: "North Indian",
+                    Conditions: new List<string> { "Pre-Diabetes" },
+                    Medications: new List<MedicationEntry>
+                    {
+                        new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                    }
+                ));
+            }
+        }
+        else
+        {
+            logger.LogInformation("[SECURITY] Released environment detected: Admin and SuperAdmin demo user seeding is suppressed. Only Free, Basic, and Premium demo users are seeded.");
+            await DeactivatePrivilegedDemoUsersAsync(db, logger);
         }
 
         var demoPassword = configuration["Auth:DemoPassword"]

@@ -18,6 +18,7 @@ using Nutrition.Application.Features.Auth.Commands.ResendOtp;
 using Nutrition.Application.Features.Auth.Commands.ResetPassword;
 using Nutrition.Application.Features.Auth.Commands.VerifyOtp;
 using Nutrition.Application.Features.Auth.Queries.GetCurrentUser;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.WebGateway.Extensions;
 using Polly;
@@ -65,6 +66,7 @@ public class AuthController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
     private readonly IWebHostEnvironment _env;
+    private readonly IAppEnvironment _appEnv;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthController> _logger;
     private readonly ResiliencePipeline _rateLimiter;
@@ -72,12 +74,14 @@ public class AuthController : ControllerBase
     public AuthController(
         IDispatcher dispatcher,
         IWebHostEnvironment env,
+        IAppEnvironment appEnv,
         IConfiguration configuration,
         ILogger<AuthController> logger,
         ResiliencePipeline rateLimiter)
     {
         _dispatcher = dispatcher;
         _env = env;
+        _appEnv = appEnv;
         _configuration = configuration;
         _logger = logger;
         _rateLimiter = rateLimiter;
@@ -106,7 +110,9 @@ public class AuthController : ControllerBase
         var allowRegistration = _configuration.GetValue<bool>("Auth:AllowRegistration", true);
         return Ok(new
         {
-            allowRegistration
+            allowRegistration,
+            allowsDemoUsers = _appEnv.AllowsDemoUsers,
+            allowsAdminDemoUsers = _appEnv.AllowsAdminDemoUsers
         });
     }
 
