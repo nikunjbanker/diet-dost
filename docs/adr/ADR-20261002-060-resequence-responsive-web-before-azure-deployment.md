@@ -24,7 +24,7 @@
 In the previous roadmap sequence (v2.3.0), Issue #31 (Azure Container Apps MVP Deployment) was scheduled immediately after Issue #30 (Modularize UI services). Responsive UI layouts (#40) and Mobile BFF contracts (#41) were scheduled as Phase 2 Stage 2A *after* the initial cloud deployment.
 
 ### Critical Assessment:
-1. **The First-Impression Demo Flaw**: In consumer health tech, early users, angel investors, and dietitians primarily test shared showcase URLs (`https://app.dietdost.com`) on smartphones via links clicked in WhatsApp, LinkedIn, or Email. If deployed before responsive layouts, mobile visitors would encounter a desktop-optimized UI lacking bottom navigation and thumb-zone ergonomics.
+1. **The First-Impression Demo Flaw**: In consumer health tech, early users, angel investors, and dietitians primarily test shared showcase URLs (`https://dev.diet-dost.in`) on smartphones via links clicked in WhatsApp, LinkedIn, or Email. If deployed before responsive layouts, mobile visitors would encounter a desktop-optimized UI lacking bottom navigation and thumb-zone ergonomics.
 2. **Cloud Container Churn**: Deploying to Azure Container Apps first, then implementing responsive CSS and the Mobile BFF facade immediately afterwards, forces building a second container image revision and updating Azure Container Apps revisions within days of initial launch.
 
 ---
@@ -54,9 +54,9 @@ Phase 2: Milestone Alpha Release 02 (Cross-Platform Mobile MVP)
 
 ## 3. Positive Consequences & Architectural Impact
 
-1. **All-Device Flawless First Impression**: The very first public release on `https://app.dietdost.com` is 100% responsive, touch-ergonomic, and tablet-optimized.
+1. **All-Device Flawless First Impression**: The very first public release on `https://dev.diet-dost.in` is 100% responsive, touch-ergonomic, and tablet-optimized.
 2. **Single Cloud Build**: The initial production container image (`diet-dost-webgateway:1.0.0`) bundles the fully responsive frontend, centralized food estimation, and the live Mobile BFF facade in one cohesive deployment.
-3. **Mobile Ready from Day 1**: When .NET MAUI development begins in Phase 2 Layer 1 (#43), the cloud Mobile BFF endpoint (`https://app.dietdost.com/api/mobile/v1/dashboard/composite`) is already active, eliminating backend delays.
+3. **Mobile Ready from Day 1**: When .NET MAUI development begins in Phase 2 Layer 1 (#43), the cloud Mobile BFF endpoint (`https://dev.diet-dost.in/api/mobile/v1/dashboard/composite`) is already active, eliminating backend delays.
 
 ---
 

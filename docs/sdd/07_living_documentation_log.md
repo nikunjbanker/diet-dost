@@ -132,6 +132,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-060** | Re-sequence Responsive Web & Mobile BFF Ahead of Azure Deployment | `ACCEPTED` | [`ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md) |
 | **ADR-061** | Responsive UI Layout, Touch Ergonomics & Mobile Bottom Navigation | `ACCEPTED` | [`ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md) |
 | **ADR-062** | Mobile BFF Composite Contracts, ETag Caching & Offline Idempotency | `ACCEPTED` | [`ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md) |
+| **ADR-063** | Native Feature Classification Matrix & Responsive Exit Gate Signoff | `ACCEPTED` | [`ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md) |
 
 
 

@@ -1,4 +1,4 @@
-﻿---
+---
 name: diet-dost-azure-deployment
 description: Authoritative Azure cloud deployment, SQLite zero-data-loss persistence, custom domain SSL binding, and CI/CD automation guide for Diet-Dost (.NET 11, Aspire, SQLite).
 ---
@@ -97,7 +97,7 @@ az storage blob upload --account-name <storage> --container-name db-backups --fi
 ### 3.1 Architecture Overview
 ```mermaid
 graph TD
-    User([End User / Mobile Browser]) -->|HTTPS / Port 443| Domain[Custom Domain: diet.yourdomain.com]
+    User([End User / Mobile Browser]) -->|HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in]
     Domain -->|CNAME + TXT Verification| ACA_Ingress[ACA Environment Ingress<br/>Free Managed TLS 1.3 Certificate]
     
     subgraph ACA_Perimeter ["Azure Container Apps Environment (cae-dietdost-prod)"]
@@ -387,7 +387,7 @@ networks:
 
 ## 6. Custom Domain & Managed TLS DNS Verification Walkthrough
 
-To bind your custom domain (e.g. `diet.yourdomain.com`) to Azure Container Apps with a free managed SSL certificate:
+To bind your custom domain (e.g. `dev.diet-dost.in`) to Azure Container Apps with a free managed SSL certificate:
 
 ### Step 6.1: Retrieve Ingress FQDN and Verification ID
 ```bash
@@ -402,21 +402,21 @@ echo "Verification ID: $CUSTOM_DOMAIN_VERIFICATION_ID"
 ```
 
 ### Step 6.2: Configure DNS Records at Domain Registrar (GoDaddy, Namecheap, Cloudflare, etc.)
-Add two DNS records for your subdomain (e.g. `diet`):
+Add two DNS records for your subdomain (e.g. `dev`):
 
 | Record Type | Host / Name | Value / Destination | TTL | Purpose |
 | :--- | :--- | :--- | :--- | :--- |
-| **CNAME** | `diet` | `$ACA_FQDN` (e.g. `app-dietdost-web.happyrock-1234.centralindia.azurecontainerapps.io`) | 300 | Routes web traffic |
-| **TXT** | `asuid.diet` | `$CUSTOM_DOMAIN_VERIFICATION_ID` | 300 | Proves domain ownership to Azure |
+| **CNAME** | `dev` | `$ACA_FQDN` (e.g. `app-dietdost-web.happyrock-1234.centralindia.azurecontainerapps.io`) | 300 | Routes web traffic |
+| **TXT** | `asuid.dev` | `$CUSTOM_DOMAIN_VERIFICATION_ID` | 300 | Proves domain ownership to Azure |
 
 > [!NOTE]
-> If configuring the apex/root domain (e.g. `yourdomain.com`), create an `A` record pointing to the ACA Environment Static IP (`properties.staticIp`) and a `TXT` record named `asuid` with `$CUSTOM_DOMAIN_VERIFICATION_ID`.
+> If configuring the apex/root domain (e.g. `diet-dost.in`), create an `A` record pointing to the ACA Environment Static IP (`properties.staticIp`) and a `TXT` record named `asuid` with `$CUSTOM_DOMAIN_VERIFICATION_ID`.
 
 ### Step 6.3: Bind Domain & Issue Free Azure Managed Certificate
 Once DNS propagates (usually 1–5 minutes):
 
 ```bash
-DOMAIN_NAME="diet.yourdomain.com"
+DOMAIN_NAME="dev.diet-dost.in"
 
 # 1. Add hostname to Container App
 az containerapp hostname add \
@@ -508,7 +508,7 @@ After deployment, perform these mandatory operational checks:
    - Restart the Container App: `az containerapp restart --name app-dietdost-web --resource-group rg-dietdost-prod`.
    - Refresh the food diary: verify all meals and nutritional ledgers are 100% intact.
 2. **TLS 1.3 & SSL Verification**:
-   - Access `https://diet.yourdomain.com`.
+   - Access `https://dev.diet-dost.in`.
    - Check SSL certificate status: Issued by Microsoft Azure Managed Certificate authority with valid expiry.
 3. **Application Logs**:
    - Stream live logs: `az containerapp logs show --name app-dietdost-web --resource-group rg-dietdost-prod --follow`.

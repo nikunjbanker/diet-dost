@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -19,8 +19,8 @@
 
 ```mermaid
 graph TD
-    User([End User / Mobile PWA]) -->|HTTPS / TLS 1.3| DNS[Custom Domain DNS<br/>diet.yourdomain.com]
-    DNS -->|CNAME: diet -> *.azurecontainerapps.io<br/>TXT: asuid.diet -> Domain Verification ID| ACA_Env[Azure Container Apps Environment<br/>Managed TLS / Ingress]
+    User([End User / Mobile PWA]) -->|HTTPS / TLS 1.3| DNS[Custom Domain DNS<br/>dev.diet-dost.in]
+    DNS -->|CNAME: dev -> *.azurecontainerapps.io<br/>TXT: asuid.dev -> Domain Verification ID| ACA_Env[Azure Container Apps Environment<br/>Managed TLS / Ingress]
     
     subgraph Azure_Cloud ["Azure Cloud (Secure Perimeter)"]
         ACA_Env --> App[WebGateway Container<br/>.NET 11 Web API + Static PWA<br/>Port 8080]
@@ -158,29 +158,29 @@ graph TD
       --query "properties.customDomainConfiguration.customDomainVerificationId" -o tsv
     ```
 - [ ] **5.2 Configure DNS Records at Domain Registrar**
-  - [ ] *For Subdomain (`diet.yourdomain.com` or `app.yourdomain.com`)*:
-    - [ ] `CNAME`: Host `diet` $\rightarrow$ Target `<app-name>.<env-hash>.<region>.azurecontainerapps.io`
-    - [ ] `TXT`: Host `asuid.diet` $\rightarrow$ Target `<Verification-ID>`
-  - [ ] *For Apex Domain (`yourdomain.com`)*:
+  - [ ] *For Subdomain (`dev.diet-dost.in`)*:
+    - [ ] `CNAME`: Host `dev` $\rightarrow$ Target `<app-name>.<env-hash>.<region>.azurecontainerapps.io`
+    - [ ] `TXT`: Host `asuid.dev` $\rightarrow$ Target `<Verification-ID>`
+  - [ ] *For Apex Domain (`diet-dost.in`)*:
     - [ ] `A`: Host `@` $\rightarrow$ Target `<Static-IP-of-CAE>`
     - [ ] `TXT`: Host `asuid` $\rightarrow$ Target `<Verification-ID>`
 - [ ] **5.3 Verify DNS Propagation**
-  - [ ] Check CNAME: `Resolve-DnsName -Name diet.yourdomain.com -Type CNAME`
-  - [ ] Check TXT: `Resolve-DnsName -Name asuid.diet.yourdomain.com -Type TXT`
+  - [ ] Check CNAME: `Resolve-DnsName -Name dev.diet-dost.in -Type CNAME`
+  - [ ] Check TXT: `Resolve-DnsName -Name asuid.dev.diet-dost.in -Type TXT`
 - [ ] **5.4 Bind Custom Domain & Issue Free Managed Certificate**
   - [ ] Bind hostname to Container App:
     ```bash
     az containerapp hostname add \
       --resource-group rg-dietdost-prod \
       --name diet-dost-web \
-      --hostname diet.yourdomain.com
+      --hostname dev.diet-dost.in
     ```
   - [ ] Issue free Azure Managed Certificate:
     ```bash
     az containerapp hostname bind \
       --resource-group rg-dietdost-prod \
       --name diet-dost-web \
-      --hostname diet.yourdomain.com \
+      --hostname dev.diet-dost.in \
       --environment cae-dietdost-prod \
       --validation-method CNAME
     ```
@@ -203,7 +203,7 @@ graph TD
 
 ### Phase 7: Post-Deployment Verification & Living Documentation
 - [ ] **7.1 Live Health & Functional Testing**
-  - [ ] Verify HTTPS handshake and TLS 1.3 cipher negotiation: `curl -Iv https://diet.yourdomain.com/api/clinical/guidelines`
+  - [ ] Verify HTTPS handshake and TLS 1.3 cipher negotiation: `curl -Iv https://dev.diet-dost.in/api/clinical/guidelines`
   - [ ] Verify PWA installability and ServiceWorker caching on mobile device.
   - [ ] Test AI meal photo analysis and text estimation.
   - [ ] Test container restart and verify SQLite / Postgres data persistence.
@@ -234,8 +234,8 @@ podman push crdietdostprod.azurecr.io/diet-dost-web:v1.0
 ### Domain & Certificate CLI
 ```bash
 # Add custom domain
-az containerapp hostname add -g rg-dietdost-prod -n diet-dost-web --hostname diet.yourdomain.com
+az containerapp hostname add -g rg-dietdost-prod -n diet-dost-web --hostname dev.diet-dost.in
 
 # Bind managed cert
-az containerapp hostname bind -g rg-dietdost-prod -n diet-dost-web --hostname diet.yourdomain.com --environment cae-dietdost-prod --validation-method CNAME
+az containerapp hostname bind -g rg-dietdost-prod -n diet-dost-web --hostname dev.diet-dost.in --environment cae-dietdost-prod --validation-method CNAME
 ```

@@ -80,18 +80,17 @@ public class MobileBffController : ControllerBase
         var isAdminOrSuper = User.IsAdminOrSuper();
         var userTier = Enum.TryParse<UserTier>(tierStr, true, out var parsedTier) ? parsedTier : UserTier.Free;
 
-        // Parse or normalize requested date
-        var targetDateOnly = !string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var parsedDate)
-            ? parsedDate
-            : DateOnly.FromDateTime(DateTime.UtcNow);
-        var targetDateStr = targetDateOnly.ToString("yyyy-MM-dd");
+        // Parse requested date; if null, pass null so domain services resolve user's local timezone date
+        string? targetDateStr = !string.IsNullOrWhiteSpace(date) && DateOnly.TryParse(date, out var parsedDate)
+            ? parsedDate.ToString("yyyy-MM-dd")
+            : null;
 
         // Bound history days to user's tier entitlement
         var maxHistory = (userTier is UserTier.Premium || roleStr is "SuperAdmin" or "Admin") ? 365 : (userTier is UserTier.Basic ? 30 : 7);
         var boundedDays = Math.Clamp(historyDays, 1, maxHistory);
 
         _logger.LogInformation("Mobile BFF dashboard requested for user {UserId} (Tier: {Tier}, Date: {Date}, HistoryDays: {Days})",
-            userId, tierStr, targetDateStr, boundedDays);
+            userId, tierStr, targetDateStr ?? "today", boundedDays);
 
         // Execute independent read queries concurrently across isolated DI scopes for 100% thread safety
         var ledgerTask = Task.Run(async () =>
@@ -153,7 +152,7 @@ public class MobileBffController : ControllerBase
         );
 
         var summary = new MobileDailySummaryDto(
-            Date: targetDateStr,
+            Date: targetDateStr ?? ledger?.Date.ToString("yyyy-MM-dd") ?? DateTime.UtcNow.ToString("yyyy-MM-dd"),
             BudgetCalories: Math.Round(budgetCalories, 1),
             ConsumedCalories: Math.Round(consumed, 1),
             RemainingCalories: Math.Round(remaining, 1),
@@ -203,10 +202,11 @@ public class MobileBffController : ControllerBase
 
         // Compute deterministic content hash for weak ETag
         var latestMealStamp = rawMeals.Count > 0 ? rawMeals.Max(m => m.LoggedAt.Ticks) : 0;
-        var contentFingerprint = $"{userId}:{targetDateStr}:{consumed:F1}:{remaining:F1}:{rawMeals.Count}:{latestMealStamp}:{quota?.UsedToday}";
+        var dateToken = (targetDateStr ?? DateTime.UtcNow.ToString("yyyy-MM-dd")).Replace("-", "");
+        var contentFingerprint = $"{userId}:{dateToken}:{consumed:F1}:{remaining:F1}:{rawMeals.Count}:{latestMealStamp}:{quota?.UsedToday}";
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(contentFingerprint));
         var hexHash = Convert.ToHexString(hashBytes)[..16].ToLowerInvariant();
-        var etag = $"W/\"{hexHash}-{targetDateOnly:yyyyMMdd}\"";
+        var etag = $"W/\"{hexHash}-{dateToken}\"";
 
         // Check incoming If-None-Match header for cache validation
         if (Request.Headers.TryGetValue("If-None-Match", out var ifNoneMatchHeader))

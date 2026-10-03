@@ -2,8 +2,35 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "version": "1.0.0",
   "description": "Durable local state registry for Diet-Dost Autonomous Issue-Driven Development (IDD)",
-  "lastUpdated": "2026-10-02T21:26:00+05:30",
+  "lastUpdated": "2026-10-03T01:00:19.3408128+05:30",
   "activeIssues": {
+    "31": {
+      "issueNumber": 31,
+      "title": "feat(devops): implement Phase 1 Layer 9 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-09-30T19:00:35.3396612+05:30",
+      "issueType": "feature",
+      "branchName": "feature/issue-31-azure-container-apps-deployment",
+      "phase": "ACT_ANALYZING",
+      "updatedAt": "2026-10-02T07:34:05Z",
+      "detectedAt": "2026-09-30T19:00:35.3502518+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "QUEUED",
+        "PROMOTED_FROM_QUEUE",
+        "ACT_ANALYZED",
+        "ACT_RETRIGGERED"
+      ],
+      "isStacked": true,
+      "parentPR": 50,
+      "parentBranch": "docs/issue-42-native-feature-classification",
+      "notes": "Issue updated on GitHub: requires re-analysis (ACT phase)."
+    }
+  },
+  "completedIssues": {
     "42": {
       "issueNumber": 42,
       "title": "docs(mobile): implement Phase 1 Layer 8 - native feature classification matrix and responsive CFT acceptance suite",
@@ -14,22 +41,31 @@
       "approvedAt": "2026-10-02T13:03:00+05:30",
       "issueType": "documentation",
       "branchName": "docs/issue-42-native-feature-classification",
-      "phase": "ACT_ANALYZING",
-      "updatedAt": "2026-10-02T21:26:00+05:30",
+      "phase": "COMPLETED",
+      "prNumber": 50,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/50",
+      "updatedAt": "2026-10-03T00:00:25+05:30",
       "detectedAt": "2026-10-02T12:43:00+05:30",
+      "completedAt": "2026-10-03T00:00:25+05:30",
       "checkpoints": [
         "DETECTED",
         "QUEUED",
         "PROMOTED_FROM_QUEUE",
-        "ACT_ANALYZED"
+        "ACT_ANALYZED",
+        "BRANCH_CREATED_AND_VERIFIED",
+        "IMPLEMENTING",
+        "IMPLEMENTED",
+        "CFT_VALIDATED",
+        "ADR_RECORDED",
+        "VALIDATED",
+        "PR_CREATED",
+        "COMPLETED"
       ],
-      "isStacked": true,
-      "parentPR": 49,
-      "parentBranch": "feature/issue-41-mobile-bff-contracts",
-      "notes": "Promoted to active. Ready for dedicated branch creation and execution of Phase 1 Layer 8."
-    }
-  },
-  "completedIssues": {
+      "isStacked": false,
+      "parentPR": null,
+      "parentBranch": null,
+      "notes": "PR #50 created. Native feature classification matrix codified, responsive CFT verified 100%, ADR-063 recorded, and exit gate signed off."
+    },
     "41": {
       "issueNumber": 41,
       "title": "feat(api): implement Phase 1 Layer 7 - Mobile BFF contracts, compact payloads, and caching headers for mobile readiness",
@@ -302,28 +338,6 @@
   },
   "heldIssues": {},
   "queuedIssues": {
-    "31": {
-      "issueNumber": 31,
-      "title": "feat(devops): implement Phase 1 Layer 9 - Azure Container Apps MVP deployment with persistent SQLite SMB mount and custom domain TLS",
-      "author": "nikunjbanker",
-      "isCodeownerAuthor": true,
-      "approvalStatus": "AUTHORIZED",
-      "approvedBy": "nikunjbanker",
-      "approvedAt": "2026-09-30T19:00:35.3396612+05:30",
-      "issueType": "feature",
-      "branchName": "feature/issue-31-azure-container-apps-deployment",
-      "phase": "QUEUED_AWAITING_ACTIVE_ISSUE",
-      "updatedAt": "2026-10-02T07:34:05Z",
-      "detectedAt": "2026-09-30T19:00:35.3502518+05:30",
-      "checkpoints": [
-        "DETECTED",
-        "QUEUED"
-      ],
-      "isStacked": true,
-      "parentPR": 0,
-      "parentBranch": "docs/issue-42-native-feature-classification",
-      "notes": "Phase 1 Layer 9 (Live Cloud Showcase Gate on Azure). Queued: depends on responsive & Mobile BFF completion (#42)."
-    },
     "43": {
       "issueNumber": 43,
       "title": "feat(mobile): implement Phase 2 Layer 1 - cross-platform native app shell with hardware keystore security",

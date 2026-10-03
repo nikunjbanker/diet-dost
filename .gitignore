@@ -35,6 +35,9 @@ appsettings.Development.json
 ## Uploads
 src/Nutrition.WebGateway/wwwroot/uploads/
 
+## Scratch & Temporary Working Files
+scratch/
+
 ## OS generated files
 .DS_Store
 Thumbs.db
