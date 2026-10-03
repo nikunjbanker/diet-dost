@@ -312,17 +312,33 @@ async function main() {
     // -------------------------------------------------------------------------
     console.log('\n[7/10] Step 5: Logging Meal by Text and Inspecting Mobile Review Modal...');
     const mealQuery = "2 Phulkas + 1 Katori Dal Tadka + Cucumber Salad";
-    await evaluate(`(() => {
+    const clickRes = await evaluate(`(() => {
         const input = document.getElementById('text-input');
-        if (input) input.value = ${JSON.stringify(mealQuery)};
+        if (input) {
+            input.value = ${JSON.stringify(mealQuery)};
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+        }
         const btn = document.getElementById('btn-submit-text');
-        if (btn) btn.click();
+        if (btn) {
+            btn.click();
+            return { foundBtn: true, text: btn.textContent, disabled: btn.disabled };
+        }
+        return { foundBtn: false };
     })()`);
+    console.log('    [DEBUG Click Submit]:', JSON.stringify(clickRes));
 
     let reviewModalOpen = false;
     let reviewMetrics = null;
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 80; i++) {
         await sleep(500);
+        if (i % 10 === 0) {
+            const pollDebug = await evaluate(`(() => {
+                const btn = document.getElementById('btn-submit-text');
+                const toast = document.querySelector('.toast');
+                return { iter: ${i}, btnText: btn?.textContent, toastText: toast?.textContent };
+            })()`);
+            console.log('    [DEBUG Poll]:', JSON.stringify(pollDebug));
+        }
         reviewMetrics = await evaluate(`(() => {
             const modal = document.getElementById('review-modal');
             if (!modal || window.getComputedStyle(modal).display === 'none') return null;
@@ -462,15 +478,28 @@ async function main() {
     })()`);
     await sleep(300);
 
-    await evaluate(`(() => {
+    const clickSample = await evaluate(`(() => {
         const sampleBtn = document.getElementById('btn-sample-thali');
-        if (sampleBtn) sampleBtn.click();
+        if (sampleBtn) {
+            sampleBtn.click();
+            return { found: true, visible: sampleBtn.offsetHeight > 0 };
+        }
+        return { found: false };
     })()`);
+    console.log('    [DEBUG Click Sample]:', JSON.stringify(clickSample));
 
     let photoModalOpen = false;
     let photoData = null;
-    for (let i = 0; i < 45; i++) {
+    for (let i = 0; i < 70; i++) {
         await sleep(500);
+        if (i % 10 === 0) {
+            const scanStatus = await evaluate(`(() => {
+                const scanning = document.getElementById('photo-scanning');
+                const toast = document.querySelector('.toast');
+                return { iter: ${i}, scanning: scanning && window.getComputedStyle(scanning).display !== 'none', toast: toast?.textContent };
+            })()`);
+            console.log('    [DEBUG Photo Poll]:', JSON.stringify(scanStatus));
+        }
         photoData = await evaluate(`(() => {
             const modal = document.getElementById('review-modal');
             const open = modal && window.getComputedStyle(modal).display !== 'none';
@@ -482,7 +511,7 @@ async function main() {
             const confirmVisible = confirmBtn && window.getComputedStyle(confirmBtn).display !== 'none';
             return { open, hasSrc, dishTitle, confirmVisible, photoSrc };
         })()`);
-        if (photoData && photoData.open && (photoData.hasSrc || photoData.dishTitle)) {
+        if (photoData && photoData.open && photoData.hasSrc) {
             photoModalOpen = true;
             // Wait an extra second for image rendering to complete
             await sleep(1000);
