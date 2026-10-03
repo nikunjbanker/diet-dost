@@ -4527,35 +4527,56 @@ h2 {
   /* Bottom Sheet Modals for Mobile (<640px) */
   .modal-overlay,
   .review-modal-overlay,
+  .delete-modal-overlay,
   .auth-gate-overlay {
     align-items: flex-end !important;
     justify-content: center !important;
     padding: 0 !important;
+    z-index: 100010 !important;
   }
 
-  .modal-card,
-  .delete-modal-card,
-  .profile-modal-card,
-  .legal-modal-card,
-  .auth-card,
-  .quota-modal-card,
-  .admin-modal-card,
-  .transparency-modal-card,
-  .progress-detail-modal {
+  /* Single-Card Compact Modals */
+  .auth-gate-card {
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 88vh !important;
+    max-height: 94vh !important;
     border-radius: 20px 20px 0 0 !important;
     border-bottom: none !important;
-    padding: 1.25rem 1rem !important;
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.65) !important;
+    padding: 1.25rem 1rem max(1rem, env(safe-area-inset-bottom, 1rem)) 1rem !important;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.75) !important;
     animation: slideUpBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
     margin: 0 !important;
   }
 
-  /* Dedicated Mobile Review Modal Card: Pinned Header + Scroll Body + Pinned Footer */
-  .review-card {
+  .delete-modal-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    border-bottom: none !important;
+    padding: 1.25rem 1rem max(1rem, env(safe-area-inset-bottom, 1rem)) 1rem !important;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.75) !important;
+    animation: slideUpBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    margin: 0 !important;
+  }
+
+  .delete-modal-actions .btn-delete-cancel,
+  .delete-modal-actions .btn-delete-confirm {
+    min-height: 48px !important;
+    flex: 1 !important;
+    display: inline-flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+
+  /* Full-Featured Structured Modals: Pinned Header + Scrollable Body + Pinned/Sticky Footer */
+  .review-card,
+  .profile-modal-card,
+  .admin-modal-card,
+  .transparency-modal-card,
+  .quota-modal-card,
+  .progress-detail-modal {
     width: 100% !important;
     max-width: 100% !important;
     height: 94vh !important;
@@ -4570,6 +4591,64 @@ h2 {
     overflow: hidden !important;
     margin: 0 !important;
     box-sizing: border-box !important;
+  }
+
+  /* Pinned Headers */
+  .review-header,
+  .modal-header {
+    flex-shrink: 0 !important;
+    z-index: 10 !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  .review-header .btn-sm,
+  .modal-header .modal-close {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 1.15rem !important;
+    touch-action: manipulation !important;
+  }
+
+  /* Scrollable Content Panes */
+  .profile-form-scrollable,
+  .admin-pane,
+  .transparency-modal-body,
+  .progress-tab-pane {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 1.25rem !important;
+  }
+
+  /* Pinned / Sticky Action Footers */
+  .profile-modal-footer {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 0.65rem !important;
+    padding: 0.75rem 0.85rem max(0.75rem, env(safe-area-inset-bottom, 0.75rem)) 0.85rem !important;
+    background: var(--surface-modal) !important;
+    border-top: 1px solid var(--border-subtle) !important;
+    margin: 0 -0.85rem !important;
+    flex-shrink: 0 !important;
+    z-index: 20 !important;
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  .profile-modal-footer .btn,
+  .profile-modal-footer .btn-primary,
+  .profile-modal-footer .btn-outline {
+    flex: 1 !important;
+    min-height: 48px !important;
+    font-size: 0.875rem !important;
+    justify-content: center !important;
+    align-items: center !important;
+    display: inline-flex !important;
+    min-width: 0 !important;
   }
 
   .review-header {

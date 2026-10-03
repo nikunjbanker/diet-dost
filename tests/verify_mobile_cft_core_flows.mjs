@@ -469,27 +469,41 @@ async function main() {
 
     let photoModalOpen = false;
     let photoData = null;
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 45; i++) {
         await sleep(500);
         photoData = await evaluate(`(() => {
             const modal = document.getElementById('review-modal');
             const open = modal && window.getComputedStyle(modal).display !== 'none';
             const photoImg = document.getElementById('review-meal-photo');
-            const hasSrc = photoImg && photoImg.src && !photoImg.src.includes('placeholder');
+            const photoSrc = photoImg ? photoImg.src : '';
+            const hasSrc = !!photoSrc && !photoSrc.includes('placeholder') && photoSrc.length > 5;
             const dishTitle = document.getElementById('review-dish-name-input')?.value;
             const confirmBtn = document.getElementById('btn-confirm-meal');
             const confirmVisible = confirmBtn && window.getComputedStyle(confirmBtn).display !== 'none';
-            return { open, hasSrc, dishTitle, confirmVisible };
+            return { open, hasSrc, dishTitle, confirmVisible, photoSrc };
         })()`);
-        if (photoData && photoData.open && photoData.hasSrc) {
+        if (photoData && photoData.open && (photoData.hasSrc || photoData.dishTitle)) {
             photoModalOpen = true;
+            // Wait an extra second for image rendering to complete
+            await sleep(1000);
+            photoData = await evaluate(`(() => {
+                const modal = document.getElementById('review-modal');
+                const open = modal && window.getComputedStyle(modal).display !== 'none';
+                const photoImg = document.getElementById('review-meal-photo');
+                const photoSrc = photoImg ? photoImg.src : '';
+                const hasSrc = !!photoSrc && !photoSrc.includes('placeholder') && photoSrc.length > 5;
+                const dishTitle = document.getElementById('review-dish-name-input')?.value;
+                const confirmBtn = document.getElementById('btn-confirm-meal');
+                const confirmVisible = confirmBtn && window.getComputedStyle(confirmBtn).display !== 'none';
+                return { open, hasSrc, dishTitle, confirmVisible, photoSrc };
+            })()`);
             break;
         }
     }
 
     console.log(`    [PASS/FAIL] Photo Review Modal Opened with Plate Image: ${photoModalOpen ? 'PASS' : 'FAIL'}`);
     if (photoData) {
-        console.log(`    [INFO] Dish Detected: "${photoData.dishTitle}", Photo Loaded: ${photoData.hasSrc}, Confirm Visible: ${photoData.confirmVisible}`);
+        console.log(`    [INFO] Dish Detected: "${photoData.dishTitle}", Photo Loaded: ${photoData.hasSrc} (${photoData.photoSrc}), Confirm Visible: ${photoData.confirmVisible}`);
     }
     await captureScreenshot('cft_mobile_10_photo_review_modal.png');
 

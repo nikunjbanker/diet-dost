@@ -136,6 +136,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-064** | Disable Public User Sign-Up & Codify DESIGN.md UI/UX Authority | `ACCEPTED` | [`ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md) |
 | **ADR-065** | Mobile User Sign Out Repair & Meal Review Ergonomics Modernization | `ACCEPTED` | [`ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md) |
 | **ADR-066** | SuperAdmin-Only Tier Configuration Governance & Authorization | `ACCEPTED` | [`ADR-20261003-066-superadmin-tier-governance-authorization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-066-superadmin-tier-governance-authorization.md) |
+| **ADR-067** | Universal Mobile Modal Ergonomics, Layering Isolation & Dynamic AI Nutrition Recalculation | `ACCEPTED` | [`ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md) |
 
 
 

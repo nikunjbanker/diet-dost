@@ -164,9 +164,9 @@ export class AuthGateController {
     });
   }
 
-  // ── Tab routing ────────────────────────────────────────────────────────────
   show(defaultTab = 'signin') {
     if (this.modal) {
+      document.body.classList.add('modal-open');
       this.modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
       this.applyRegistrationState();
@@ -176,6 +176,7 @@ export class AuthGateController {
 
   hide() {
     if (this.modal) {
+      document.body.classList.remove('modal-open');
       this.modal.style.display = 'none';
       document.body.style.overflow = '';
     }
@@ -345,20 +346,38 @@ export class AuthGateController {
     const disabledBanner = document.getElementById('auth-disabled-banner') || document.querySelector('.auth-disabled-banner');
     const noticeText = document.getElementById('auth-notice-text');
     const submitRegister = document.getElementById('btn-submit-register');
+    const btnText = submitRegister?.querySelector('.btn-text');
 
     if (this.allowRegistration) {
       if (tabRegister) tabRegister.style.display = 'inline-block';
       if (disabledBanner) disabledBanner.style.display = 'none';
-      if (submitRegister) submitRegister.disabled = false;
+      if (submitRegister) {
+        submitRegister.disabled = false;
+        submitRegister.style.opacity = '1';
+        submitRegister.style.cursor = 'pointer';
+      }
+      if (btnText) {
+        btnText.textContent = 'Create Account';
+      }
       if (noticeText) {
         noticeText.innerHTML = 'Quick-select a demo account below, or use the <strong>Create Account</strong> tab to register:';
       }
     } else {
       if (tabRegister) tabRegister.style.display = 'none';
       if (disabledBanner) disabledBanner.style.display = 'block';
-      if (submitRegister) submitRegister.disabled = true;
+      if (submitRegister) {
+        submitRegister.disabled = true;
+        submitRegister.style.opacity = '0.6';
+        submitRegister.style.cursor = 'not-allowed';
+      }
+      if (btnText) {
+        btnText.textContent = 'Registration Disabled (Alpha Preview)';
+      }
       if (noticeText) {
         noticeText.textContent = 'Public sign-up is temporarily disabled. Select a demo account below to evaluate Diet Dost:';
+      }
+      if (this.currentTab === 'register') {
+        this.switchTab('signin');
       }
     }
   }

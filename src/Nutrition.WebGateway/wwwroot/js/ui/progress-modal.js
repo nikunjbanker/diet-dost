@@ -169,12 +169,18 @@ export class ProgressModalController {
       if (match) el.inpWeight.value = match[0];
     }
 
-    if (el.modal) el.modal.style.display = 'flex';
+    if (el.modal) {
+      document.body.classList.add('modal-open');
+      el.modal.style.display = 'flex';
+    }
   }
 
   close() {
     const el = this.elements;
-    if (el.modal) el.modal.style.display = 'none';
+    if (el.modal) {
+      el.modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    }
   }
 
   switchTab(targetTab) {

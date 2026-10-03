@@ -70,6 +70,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-064** | Disable Public User Sign-Up & Codify DESIGN.md UI/UX Authority | `[SECURITY]` | `ACCEPTED` | [`ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md) |
 | **ADR-065** | Mobile User Sign Out Repair & Meal Review Ergonomics Modernization | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md) |
 | **ADR-066** | SuperAdmin-Only Tier Configuration Governance & Authorization | `[SECURITY]` | `ACCEPTED` | [`ADR-20261003-066-superadmin-tier-governance-authorization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-066-superadmin-tier-governance-authorization.md) |
+| **ADR-067** | Universal Mobile Modal Ergonomics, Layering Isolation & Dynamic AI Nutrition Recalculation | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md) |
 
 
 

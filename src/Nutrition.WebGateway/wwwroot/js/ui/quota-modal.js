@@ -45,6 +45,7 @@ export class QuotaModalController {
 
   open() {
     if (this.modal) {
+      document.body.classList.add('modal-open');
       this.modal.style.display = 'flex';
       this.refresh();
     }
@@ -53,6 +54,7 @@ export class QuotaModalController {
   close() {
     if (this.modal) {
       this.modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
     }
   }
 
