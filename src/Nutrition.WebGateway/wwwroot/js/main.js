@@ -142,6 +142,7 @@ container.register('authGate', (c) => new AuthGateController({
 
 container.register('adminModal', (c) => new AdminModalController({
   adminService: c.resolve('adminService'),
+  authService: c.resolve('authService'),
   toastService: c.resolve('toastService'),
   eventBus: c.resolve('eventBus')
 }));

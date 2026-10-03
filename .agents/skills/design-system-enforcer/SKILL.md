@@ -1,7 +1,15 @@
----
+﻿---
 name: design-system-enforcer
 description: Enforces a repository's DESIGN.md as the authoritative UI/UX design specification for new development, ongoing development, UI changes, refactoring, responsive work, accessibility work, and visual verification. Use whenever a task creates, modifies, reviews, fixes, or refactors application UI/UX.
 ---
+
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
 
 # Design System Enforcer
 

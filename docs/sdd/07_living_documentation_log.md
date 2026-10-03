@@ -133,6 +133,9 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-061** | Responsive UI Layout, Touch Ergonomics & Mobile Bottom Navigation | `ACCEPTED` | [`ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md) |
 | **ADR-062** | Mobile BFF Composite Contracts, ETag Caching & Offline Idempotency | `ACCEPTED` | [`ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md) |
 | **ADR-063** | Native Feature Classification Matrix & Responsive Exit Gate Signoff | `ACCEPTED` | [`ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md) |
+| **ADR-064** | Disable Public User Sign-Up & Codify DESIGN.md UI/UX Authority | `ACCEPTED` | [`ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-064-disable-public-signup-and-codify-design-system-authority.md) |
+| **ADR-065** | Mobile User Sign Out Repair & Meal Review Ergonomics Modernization | `ACCEPTED` | [`ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md) |
+| **ADR-066** | SuperAdmin-Only Tier Configuration Governance & Authorization | `ACCEPTED` | [`ADR-20261003-066-superadmin-tier-governance-authorization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-066-superadmin-tier-governance-authorization.md) |
 
 
 

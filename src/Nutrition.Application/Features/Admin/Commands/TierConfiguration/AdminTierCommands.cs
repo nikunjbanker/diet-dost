@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -39,7 +39,8 @@ public record UpdateTierConfigCommand(
     bool AllowDataExport,
     int AnalyticsHistoryDays,
     string Description,
-    string? AdminUserId
+    string? AdminUserId,
+    string? CurrentUserRole = null
 ) : ICommand<Result<UpdateTierConfigResultDto>>;
 
 public record UpdateTierConfigResultDto(
@@ -62,6 +63,13 @@ public class UpdateTierConfigCommandHandler : ICommandHandler<UpdateTierConfigCo
 
     public async Task<Result<UpdateTierConfigResultDto>> HandleAsync(UpdateTierConfigCommand request, CancellationToken ct = default)
     {
+        if (request.CurrentUserRole != nameof(UserRole.SuperAdmin))
+        {
+            _logger.LogWarning("Unauthorized tier configuration update attempt by {AdminId} with role {Role} on tier {Tier}",
+                request.AdminUserId, request.CurrentUserRole, request.Tier);
+            return Result<UpdateTierConfigResultDto>.Forbidden("Only SuperAdmin accounts are authorized to update tier configurations.");
+        }
+
         var config = await _tierConfigService.GetConfigurationAsync(request.Tier, ct);
         config.DailyAiDetectionLimit = request.DailyAiDetectionLimit;
         config.AllowPhotoCompare = request.AllowPhotoCompare;
@@ -72,7 +80,7 @@ public class UpdateTierConfigCommandHandler : ICommandHandler<UpdateTierConfigCo
 
         var updated = await _tierConfigService.UpdateConfigurationAsync(config, ct);
 
-        _logger.LogInformation("Admin {AdminId} updated tier config for {Tier}",
+        _logger.LogInformation("SuperAdmin {AdminId} updated tier config for {Tier}",
             request.AdminUserId, request.Tier);
 
         return Result<UpdateTierConfigResultDto>.Success(new UpdateTierConfigResultDto(

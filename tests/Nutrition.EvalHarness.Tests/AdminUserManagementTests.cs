@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -11,11 +11,13 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
+using Nutrition.Application.Features.Admin.Commands.TierConfiguration;
 using Nutrition.Application.Features.Admin.Commands.UserManagement;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Infrastructure.Persistence;
 using Nutrition.Infrastructure.Security;
+using Nutrition.Infrastructure.Services;
 using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
@@ -329,5 +331,93 @@ public class AdminUserManagementTests : IDisposable
         Assert.NotNull(unlockedInDb);
         Assert.True(unlockedInDb.IsActive);
         Assert.True(unlockedInDb.CanLogin(out _));
+    }
+
+    [Fact]
+    public async Task UpdateTierConfig_AsSuperAdmin_Succeeds()
+    {
+        _db.TierConfigurations.AddRange(TierFeatureConfiguration.GetDefaultConfigurations());
+        await _db.SaveChangesAsync();
+
+        var tierService = new TierConfigurationService(_db);
+        var handler = new UpdateTierConfigCommandHandler(tierService, NullLogger<UpdateTierConfigCommandHandler>.Instance);
+
+        var command = new UpdateTierConfigCommand(
+            Tier: UserTier.Basic,
+            DailyAiDetectionLimit: 12,
+            AllowPhotoCompare: true,
+            AllowDataExport: true,
+            AnalyticsHistoryDays: 45,
+            Description: "Updated Basic Tier by SuperAdmin",
+            AdminUserId: "superadmin-1",
+            CurrentUserRole: nameof(UserRole.SuperAdmin)
+        );
+
+        var result = await handler.HandleAsync(command);
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(12, result.Data!.Configuration.DailyAiDetectionLimit);
+        Assert.True(result.Data.Configuration.AllowPhotoCompare);
+        Assert.Equal(45, result.Data.Configuration.AnalyticsHistoryDays);
+
+        var configInDb = await tierService.GetConfigurationAsync(UserTier.Basic);
+        Assert.Equal(12, configInDb.DailyAiDetectionLimit);
+        Assert.True(configInDb.AllowPhotoCompare);
+    }
+
+    [Fact]
+    public async Task UpdateTierConfig_AsNormalAdmin_ReturnsForbidden()
+    {
+        _db.TierConfigurations.AddRange(TierFeatureConfiguration.GetDefaultConfigurations());
+        await _db.SaveChangesAsync();
+
+        var tierService = new TierConfigurationService(_db);
+        var handler = new UpdateTierConfigCommandHandler(tierService, NullLogger<UpdateTierConfigCommandHandler>.Instance);
+
+        var command = new UpdateTierConfigCommand(
+            Tier: UserTier.Basic,
+            DailyAiDetectionLimit: 50,
+            AllowPhotoCompare: true,
+            AllowDataExport: true,
+            AnalyticsHistoryDays: 90,
+            Description: "Malicious or Unauthorized Admin Edit",
+            AdminUserId: "admin-demo-1",
+            CurrentUserRole: nameof(UserRole.Admin)
+        );
+
+        var result = await handler.HandleAsync(command);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(403, result.StatusCode);
+        Assert.Equal("Forbidden", result.ErrorCode);
+        Assert.Contains("Only SuperAdmin accounts are authorized", result.Error);
+    }
+
+    [Fact]
+    public async Task UpdateTierConfig_AsNormalUser_ReturnsForbidden()
+    {
+        _db.TierConfigurations.AddRange(TierFeatureConfiguration.GetDefaultConfigurations());
+        await _db.SaveChangesAsync();
+
+        var tierService = new TierConfigurationService(_db);
+        var handler = new UpdateTierConfigCommandHandler(tierService, NullLogger<UpdateTierConfigCommandHandler>.Instance);
+
+        var command = new UpdateTierConfigCommand(
+            Tier: UserTier.Premium,
+            DailyAiDetectionLimit: 999,
+            AllowPhotoCompare: true,
+            AllowDataExport: true,
+            AnalyticsHistoryDays: 365,
+            Description: "Normal User Bypass Attempt",
+            AdminUserId: "user-1",
+            CurrentUserRole: nameof(UserRole.User)
+        );
+
+        var result = await handler.HandleAsync(command);
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(403, result.StatusCode);
+        Assert.Equal("Forbidden", result.ErrorCode);
+        Assert.Contains("Only SuperAdmin accounts are authorized", result.Error);
     }
 }

@@ -23,11 +23,11 @@ param(
 )
 
 $users = @(
-    @{ Email = "free@dietdost.app"; Tier = "Free"; Role = "User"; ExpectCompare = $false; ExpectExport = $false; ExpectAdmin = $false },
-    @{ Email = "basic@dietdost.app"; Tier = "Basic"; Role = "User"; ExpectCompare = $false; ExpectExport = $false; ExpectAdmin = $false },
-    @{ Email = "premium@dietdost.app"; Tier = "Premium"; Role = "User"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $false },
-    @{ Email = "admin.demo@dietdost.app"; Tier = "Premium"; Role = "Admin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true },
-    @{ Email = "superadmin@dietdost.app"; Tier = "SuperAdmin"; Role = "SuperAdmin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true }
+    @{ Email = "free@dietdost.app"; Tier = "Free"; Role = "User"; ExpectCompare = $false; ExpectExport = $false; ExpectAdmin = $false; ExpectSuperAdmin = $false },
+    @{ Email = "basic@dietdost.app"; Tier = "Basic"; Role = "User"; ExpectCompare = $false; ExpectExport = $false; ExpectAdmin = $false; ExpectSuperAdmin = $false },
+    @{ Email = "premium@dietdost.app"; Tier = "Premium"; Role = "User"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $false; ExpectSuperAdmin = $false },
+    @{ Email = "admin.demo@dietdost.app"; Tier = "Premium"; Role = "Admin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true; ExpectSuperAdmin = $false },
+    @{ Email = "superadmin@dietdost.app"; Tier = "SuperAdmin"; Role = "SuperAdmin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true; ExpectSuperAdmin = $true }
 )
 
 Write-Host "==========================================================" -ForegroundColor Cyan
@@ -185,6 +185,33 @@ foreach ($u in $users) {
     } catch {
         Write-Host "    [FAIL] /api/web/v1/dashboard failed: $($_.Exception.Message)" -ForegroundColor Red
         $allPassed = $false
+    }
+
+    # 10. Test Tier Configuration Governance (/api/admin/tier-configs/1)
+    # ONLY SuperAdmin is permitted to update tier configuration. Normal admin and users MUST be rejected with 403 Forbidden.
+    $tierBody = @{
+        dailyAiDetectionLimit = 7
+        allowPhotoCompare = $false
+        allowDataExport = $false
+        analyticsHistoryDays = 30
+        description = "Live CFT Governance Verification on Basic Tier"
+    } | ConvertTo-Json
+
+    try {
+        $tierRes = Invoke-RestMethod -Uri "$BaseUrl/api/admin/tier-configs/1" -Method Put -Body $tierBody -ContentType "application/json" -Headers $headers
+        if ($u.ExpectSuperAdmin) {
+            Write-Host "    [PASS] /api/admin/tier-configs/1: Update granted as expected for SuperAdmin (HTTP 200)" -ForegroundColor Green
+        } else {
+            Write-Host "    [FAIL] /api/admin/tier-configs/1: Expected 403 Forbidden for non-superadmin $($u.Role) but received 200 OK!" -ForegroundColor Red
+            $allPassed = $false
+        }
+    } catch {
+        if (-not $u.ExpectSuperAdmin -and ($_.Exception.Response.StatusCode.value__ -eq 403 -or $_.Exception.Response.StatusCode -eq [System.Net.HttpStatusCode]::Forbidden)) {
+            Write-Host "    [PASS] /api/admin/tier-configs/1: Gated with 403 Forbidden as expected for $($u.Role) (SuperAdmin Only)" -ForegroundColor Green
+        } else {
+            Write-Host "    [FAIL] /api/admin/tier-configs/1: Unexpected response for $($u.Role): $($_.Exception.Message)" -ForegroundColor Red
+            $allPassed = $false
+        }
     }
 }
 
