@@ -31,6 +31,38 @@
     }
   },
   "completedIssues": {
+    "52": {
+      "issueNumber": 52,
+      "title": "feat(auth): disable public user sign-up and enforce DESIGN.md design system authority",
+      "author": "nikunjbanker",
+      "isCodeownerAuthor": true,
+      "approvalStatus": "AUTHORIZED",
+      "approvedBy": "nikunjbanker",
+      "approvedAt": "2026-10-03T13:00:58+05:30",
+      "issueType": "feature",
+      "branchName": "feat/disable-public-signup-and-enforce-design-system",
+      "phase": "PR_CREATED",
+      "prNumber": 51,
+      "prUrl": "https://github.com/nikunjbanker/diet-dost/pull/51",
+      "updatedAt": "2026-10-03T13:01:40+05:30",
+      "detectedAt": "2026-10-03T12:58:00+05:30",
+      "completedAt": "2026-10-03T13:01:40+05:30",
+      "checkpoints": [
+        "DETECTED",
+        "ACT_ANALYZED",
+        "BRANCH_CREATED_AND_VERIFIED",
+        "IMPLEMENTING",
+        "IMPLEMENTED",
+        "CFT_VALIDATED",
+        "ADR_RECORDED",
+        "VALIDATED",
+        "PR_CREATED"
+      ],
+      "isStacked": false,
+      "parentPR": null,
+      "parentBranch": "main",
+      "notes": "PR #51 created and linked with Issue #52. Registration gated at backend (403) and UI (Linear notice card with 4 demo accounts), DESIGN.md authority codified in AGENTS.md, ADR-064 recorded, and design-system-enforcer skill installed."
+    },
     "42": {
       "issueNumber": 42,
       "title": "docs(mobile): implement Phase 1 Layer 8 - native feature classification matrix and responsive CFT acceptance suite",
