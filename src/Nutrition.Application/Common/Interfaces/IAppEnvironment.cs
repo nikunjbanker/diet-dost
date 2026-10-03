@@ -26,9 +26,16 @@ public interface IAppEnvironment
     bool IsDevelopment { get; }
 
     /// <summary>
-    /// True if demo user seeding and authentication are permitted in this environment.
+    /// True if end-user demo user seeding and authentication (Free, Basic, Premium) are permitted in this environment.
     /// In local development, evaluates to IsDebugMode && IsDevelopment.
     /// In showcase environments (e.g. dev.diet-dost.in), can be explicitly enabled via Security:AllowDemoUsers.
     /// </summary>
     bool AllowsDemoUsers => IsDebugMode && IsDevelopment;
+
+    /// <summary>
+    /// True if privileged demo accounts (Admin and SuperAdmin) are permitted.
+    /// Strictly evaluates to true ONLY in local Development debug builds (IsDebugMode && IsDevelopment).
+    /// In ANY released version or production environment, this is unconditionally false.
+    /// </summary>
+    bool AllowsAdminDemoUsers => IsDebugMode && IsDevelopment;
 }

@@ -8,6 +8,7 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
@@ -46,7 +47,7 @@ public static class DatabaseInitializationExtensions
 
             if (appEnv.AllowsDemoUsers)
             {
-                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, logger);
+                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, appEnv, logger);
             }
             else
             {
@@ -361,6 +362,27 @@ public static class DatabaseInitializationExtensions
         }
     }
 
+    private static async Task DeactivatePrivilegedDemoUsersAsync(DietTrackerDbContext db, ILogger logger)
+    {
+        var privilegedDemoUsers = await db.Users
+            .Where(u => ApplicationUser.PrivilegedDemoEmails.Contains(u.Email) ||
+                        u.Id.StartsWith("user-admin") ||
+                        u.Id.StartsWith("user-superadmin"))
+            .ToListAsync();
+
+        if (privilegedDemoUsers.Count > 0)
+        {
+            foreach (var user in privilegedDemoUsers)
+            {
+                user.IsActive = false;
+                user.SecurityStamp = Guid.NewGuid().ToString("N");
+            }
+
+            await db.SaveChangesAsync();
+            logger.LogWarning("[SECURITY] Deactivated {Count} privileged demo user account(s) (Admin/SuperAdmin) in released environment.", privilegedDemoUsers.Count);
+        }
+    }
+
     private static async Task SeedTierConfigurationsAsync(DietTrackerDbContext db, ILogger logger)
     {
         if (!await db.TierConfigurations.AnyAsync())
@@ -375,6 +397,7 @@ public static class DatabaseInitializationExtensions
         DietTrackerDbContext db,
         IServiceProvider serviceProvider,
         IConfiguration configuration,
+        IAppEnvironment appEnv,
         ILogger logger)
     {
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
@@ -385,6 +408,7 @@ public static class DatabaseInitializationExtensions
             ? configuredSuperAdminEmail
             : "superadmin@dietdost.app";
 
+        // Seeded end-user demo tier accounts (Free, Basic, Premium) - permitted in showcase environments
         var demoSpecs = new List<DemoUserSpec>
         {
             new(
@@ -425,8 +449,13 @@ public static class DatabaseInitializationExtensions
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            ),
-            new(
+            )
+        };
+
+        // Privileged Admin & SuperAdmin demo accounts - strictly permitted ONLY in local Debug/Development builds
+        if (appEnv.AllowsAdminDemoUsers)
+        {
+            demoSpecs.Add(new(
                 Id: "user-admin",
                 Email: "admin.demo@dietdost.app",
                 Name: "Admin Tier User (Demo)",
@@ -436,8 +465,9 @@ public static class DatabaseInitializationExtensions
                 Cuisine: "Maharashtrian",
                 Conditions: new List<string>(),
                 Medications: new List<MedicationEntry>()
-            ),
-            new(
+            ));
+
+            demoSpecs.Add(new(
                 Id: "user-superadmin",
                 Email: primarySuperAdminEmail,
                 Name: "SuperAdmin Tier User (Demo)",
@@ -450,25 +480,30 @@ public static class DatabaseInitializationExtensions
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            )
-        };
-
-        if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
-        {
-            demoSpecs.Add(new(
-                Id: "user-superadmin-alias",
-                Email: "admin@dietdost.app",
-                Name: "SuperAdmin Tier User (Alias)",
-                Mobile: "+919999999998",
-                Role: UserRole.SuperAdmin,
-                Tier: UserTier.SuperAdmin,
-                Cuisine: "North Indian",
-                Conditions: new List<string> { "Pre-Diabetes" },
-                Medications: new List<MedicationEntry>
-                {
-                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
-                }
             ));
+
+            if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
+            {
+                demoSpecs.Add(new(
+                    Id: "user-superadmin-alias",
+                    Email: "admin@dietdost.app",
+                    Name: "SuperAdmin Tier User (Alias)",
+                    Mobile: "+919999999998",
+                    Role: UserRole.SuperAdmin,
+                    Tier: UserTier.SuperAdmin,
+                    Cuisine: "North Indian",
+                    Conditions: new List<string> { "Pre-Diabetes" },
+                    Medications: new List<MedicationEntry>
+                    {
+                        new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                    }
+                ));
+            }
+        }
+        else
+        {
+            logger.LogInformation("[SECURITY] Released environment detected: Admin and SuperAdmin demo user seeding is suppressed. Only Free, Basic, and Premium demo users are seeded.");
+            await DeactivatePrivilegedDemoUsersAsync(db, logger);
         }
 
         var demoPassword = configuration["Auth:DemoPassword"]

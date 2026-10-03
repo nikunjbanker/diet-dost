@@ -56,4 +56,11 @@ public class AppEnvironment : IAppEnvironment
     /// </summary>
     public bool AllowsDemoUsers =>
         _configuration.GetValue<bool>("Security:AllowDemoUsers") || (IsDebugMode && IsDevelopment);
+
+    /// <summary>
+    /// Admin and SuperAdmin demo accounts are strictly restricted to local Development debug builds.
+    /// In ANY released version or deployed environment, this unconditionally returns false,
+    /// even if Security:AllowDemoUsers is enabled for end-user showcase.
+    /// </summary>
+    public bool AllowsAdminDemoUsers => IsDebugMode && IsDevelopment;
 }

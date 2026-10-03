@@ -25,6 +25,10 @@ public class DemoUserEnvironmentSecurityTests
     {
         public bool IsDebugMode { get; set; }
         public bool IsDevelopment { get; set; }
+        public bool? ExplicitAllowsDemoUsers { get; set; }
+
+        public bool AllowsDemoUsers => ExplicitAllowsDemoUsers ?? (IsDebugMode && IsDevelopment);
+        public bool AllowsAdminDemoUsers => IsDebugMode && IsDevelopment;
     }
 
     private class InMemoryRepo<T> : IRepository<T> where T : class
@@ -235,6 +239,117 @@ public class DemoUserEnvironmentSecurityTests
         Assert.Equal("doctor.sharma@hospital.org", result.Data.User.Email);
     }
 
+    [Theory]
+    [InlineData("admin.demo@dietdost.app", true)]
+    [InlineData("superadmin@dietdost.app", true)]
+    [InlineData("admin@dietdost.app", true)]
+    [InlineData("free@dietdost.app", false)]
+    [InlineData("basic@dietdost.app", false)]
+    [InlineData("premium@dietdost.app", false)]
+    [InlineData("doctor@hospital.org", false)]
+    public void ApplicationUser_CorrectlyIdentifies_PrivilegedDemoEmails(string email, bool expectedIsPrivileged)
+    {
+        var user = new ApplicationUser
+        {
+            Email = email,
+            NormalizedEmail = ApplicationUser.NormalizeEmailAddress(email)
+        };
+
+        Assert.Equal(expectedIsPrivileged, user.IsPrivilegedDemoAccount);
+        Assert.Equal(expectedIsPrivileged, ApplicationUser.IsPrivilegedDemoEmail(email));
+    }
+
+    [Theory]
+    [InlineData("free@dietdost.app", UserTier.Free)]
+    [InlineData("basic@dietdost.app", UserTier.Basic)]
+    [InlineData("premium@dietdost.app", UserTier.Premium)]
+    public async Task Login_InReleaseProduction_WithShowcaseAllowDemoUsers_PermitsEndUserDemoAccounts(string email, UserTier tier)
+    {
+        // Arrange: Environment configured as Release/Production with Security:AllowDemoUsers=true
+        var showcaseEnv = new FakeAppEnvironment
+        {
+            IsDebugMode = false,
+            IsDevelopment = false,
+            ExplicitAllowsDemoUsers = true
+        };
+
+        var demoUser = new ApplicationUser
+        {
+            Id = $"user-{tier.ToString().ToLower()}",
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            PasswordHash = "HASH_DietDost@Demo2026!",
+            IsEmailVerified = true,
+            IsActive = true,
+            Tier = tier,
+            Role = UserRole.User
+        };
+
+        var userRepo = new InMemoryRepo<ApplicationUser>(new[] { demoUser });
+        var profileRepo = new InMemoryRepo<UserProfile>(new[] { new UserProfile { Id = demoUser.Id, Name = $"{tier} User" } });
+        var tierRepo = new InMemoryRepo<TierFeatureConfiguration>(TierFeatureConfiguration.GetDefaultConfigurations());
+        var uow = new FakeUnitOfWork();
+        var hasher = new FakePasswordHasher();
+        var jwt = new FakeJwtTokenService();
+        var logger = NullLogger<LoginCommandHandler>.Instance;
+
+        var handler = new LoginCommandHandler(userRepo, profileRepo, tierRepo, uow, hasher, jwt, showcaseEnv, logger);
+
+        // Act: Attempt to login as free/basic/premium demo user in showcase release mode
+        var result = await handler.HandleAsync(new LoginCommand(email, "DietDost@Demo2026!"));
+
+        // Assert: Login must succeed for end-user demo accounts in showcase
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Data);
+        Assert.Equal(tier, result.Data.User.Tier);
+    }
+
+    [Theory]
+    [InlineData("admin.demo@dietdost.app", UserRole.Admin)]
+    [InlineData("superadmin@dietdost.app", UserRole.SuperAdmin)]
+    [InlineData("admin@dietdost.app", UserRole.SuperAdmin)]
+    public async Task Login_InReleaseProduction_WithShowcaseAllowDemoUsers_StrictlyBlocksAdminAndSuperAdminDemoAccounts(string email, UserRole role)
+    {
+        // Arrange: Environment configured as Release/Production with Security:AllowDemoUsers=true
+        var showcaseEnv = new FakeAppEnvironment
+        {
+            IsDebugMode = false,
+            IsDevelopment = false,
+            ExplicitAllowsDemoUsers = true
+        };
+
+        var demoUser = new ApplicationUser
+        {
+            Id = role == UserRole.Admin ? "user-admin" : "user-superadmin",
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            PasswordHash = "HASH_DietDost@Demo2026!",
+            IsEmailVerified = true,
+            IsActive = true,
+            Tier = role == UserRole.Admin ? UserTier.Premium : UserTier.SuperAdmin,
+            Role = role
+        };
+
+        var userRepo = new InMemoryRepo<ApplicationUser>(new[] { demoUser });
+        var profileRepo = new InMemoryRepo<UserProfile>(new[] { new UserProfile { Id = demoUser.Id, Name = $"{role} User" } });
+        var tierRepo = new InMemoryRepo<TierFeatureConfiguration>(TierFeatureConfiguration.GetDefaultConfigurations());
+        var uow = new FakeUnitOfWork();
+        var hasher = new FakePasswordHasher();
+        var jwt = new FakeJwtTokenService();
+        var logger = NullLogger<LoginCommandHandler>.Instance;
+
+        var handler = new LoginCommandHandler(userRepo, profileRepo, tierRepo, uow, hasher, jwt, showcaseEnv, logger);
+
+        // Act: Attempt to login as admin or superadmin demo user in showcase release mode
+        var result = await handler.HandleAsync(new LoginCommand(email, "DietDost@Demo2026!"));
+
+        // Assert: Login must be strictly blocked with 403 Forbidden
+        Assert.False(result.Succeeded);
+        Assert.Equal(403, result.StatusCode);
+        Assert.Equal("DemoAccessForbidden", result.ErrorCode);
+        Assert.Contains("Admin and SuperAdmin demo accounts are strictly prohibited in released versions", result.Error);
+    }
+
     [Fact]
     public void AppEnvironment_WithShowcaseConfiguration_AllowsDemoUsers_InReleaseProduction()
     {
@@ -249,9 +364,10 @@ public class DemoUserEnvironmentSecurityTests
         var hostEnv = new FakeHostEnvironment { EnvironmentName = "Production" };
         var appEnv = new Nutrition.Infrastructure.Services.AppEnvironment(hostEnv, config);
 
-        // Assert: Demo users are permitted for the showcase deployment
+        // Assert: End-user demo users are permitted for the showcase deployment, but admin demo users are strictly prohibited
         Assert.False(appEnv.IsDevelopment);
         Assert.True(appEnv.AllowsDemoUsers);
+        Assert.False(appEnv.AllowsAdminDemoUsers);
     }
 
     [Fact]
@@ -271,6 +387,7 @@ public class DemoUserEnvironmentSecurityTests
         // Assert: In standard production, demo users are strictly disallowed
         Assert.False(appEnv.IsDevelopment);
         Assert.False(appEnv.AllowsDemoUsers);
+        Assert.False(appEnv.AllowsAdminDemoUsers);
     }
 
     private class FakeHostEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment
