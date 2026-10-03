@@ -6,6 +6,7 @@
 # License v3.0 only" or the "Server Side Public License, v 1".
 # ==============================================================================
 # GitHub Actions CI/CD: Automated Azure Container Apps & Persistent SMB Deployment
+# Strictly On-Demand (workflow_dispatch only) with Mandatory OWASP Pre-Deployment Gates
 # ==============================================================================
 
 name: Build and Deploy to Azure Container Apps
@@ -25,7 +26,7 @@ permissions:
 
 jobs:
   build-test-and-deploy:
-    name: Build, Test & Deploy (ACA + Persistent SQLite SMB)
+    name: Build, Security Gate & Deploy (ACA + Persistent SQLite SMB)
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -36,41 +37,77 @@ jobs:
         with:
           dotnet-version: '11.0.x'
 
-      - name: 3. Execute Unit & Domain Test Suites (100% Pass Standard)
+      - name: 3. OWASP Security Gate - Audit NuGet Dependencies (OWASP A06)
         run: |
+          echo "Scanning all package dependencies for known CVE vulnerabilities..."
+          AUDIT_LOG=$(dotnet list package --vulnerable --include-transitive)
+          echo "$AUDIT_LOG"
+          if echo "$AUDIT_LOG" | grep -iq "has the following vulnerable packages"; then
+            echo "❌ CRITICAL OWASP SECURITY GATE FAILED: Vulnerable dependencies detected in solution!"
+            echo "Deployment denied by release governance policy."
+            exit 1
+          fi
+          echo "✅ OWASP Dependency Security Gate Passed: 0 known vulnerabilities found."
+
+      - name: 4. Execute Full Security & Functional Test Suites (100% Pass Standard)
+        run: |
+          echo "Running 170+ unit, domain, and security gating test suites..."
           dotnet test --configuration Release --verbosity normal
 
-      - name: 4. Azure CLI Authentication
+      - name: 5. Azure CLI Authentication
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: 5. Ensure Resource Group Exists
+      - name: 6. Ensure Resource Group Exists
         run: |
           az group create \
             --name "${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}" \
             --location "${{ vars.AZURE_LOCATION || 'centralindia' }}" \
             --output table
 
-      - name: 6. Build and Push OCI Container Image (Podman)
+      - name: 7. Build OCI Container Image (Podman)
         id: build-image
         run: |
           ACR_NAME="${{ secrets.ACR_NAME }}"
           IMAGE_TAG="${ACR_NAME}.azurecr.io/diet-dost-web:${{ github.sha }}"
           IMAGE_LATEST="${ACR_NAME}.azurecr.io/diet-dost-web:latest"
 
+          # Build container image with Podman
+          podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
+          podman save -o app-image.tar "$IMAGE_TAG"
+
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
+
+      - name: 8. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
+        run: |
+          echo "Installing Trivy security scanner..."
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /tmp/trivy-bin
+          
+          echo "Scanning container image for CRITICAL OS and library vulnerabilities..."
+          /tmp/trivy-bin/trivy image \
+            --input app-image.tar \
+            --severity CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed
+
+          echo "✅ Container Security Gate Passed: 0 critical unpatched vulnerabilities detected."
+
+      - name: 9. Push OCI Container Image to ACR (Podman)
+        run: |
+          ACR_NAME="${{ secrets.ACR_NAME }}"
+          IMAGE_TAG="${{ steps.build-image.outputs.image_tag }}"
+          IMAGE_LATEST="${{ steps.build-image.outputs.image_latest }}"
+
           # Login to ACR via Azure CLI credentials using Podman
           ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
           echo "$ACR_PASSWORD" | podman login "${ACR_NAME}.azurecr.io" -u "$ACR_NAME" --password-stdin
 
-          # Build and push using Podman
-          podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
           podman push "$IMAGE_TAG"
           podman push "$IMAGE_LATEST"
 
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-
-      - name: 7. Deploy Infrastructure via Bicep
+      - name: 10. Deploy Infrastructure & Container App via Bicep
         uses: azure/arm-deploy@v3
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
@@ -85,7 +122,7 @@ jobs:
             geminiApiKey="${{ secrets.GEMINI_API_KEY }}"
           failOnStderr: false
 
-      - name: 8. Verify Deployment Health
+      - name: 11. Verify Deployment Health
         run: |
           APP_NAME="app-dietdost-web"
           RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"

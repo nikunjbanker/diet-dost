@@ -118,17 +118,34 @@ public static class SecurityAndAuthExtensions
         return services;
     }
 
-    public static IServiceCollection AddAppCors(this IServiceCollection services)
+    public static IServiceCollection AddAppCors(this IServiceCollection services, Microsoft.Extensions.Hosting.IHostEnvironment env)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(env);
 
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", policy =>
-                policy.SetIsOriginAllowed(_ => true)
-                      .AllowAnyMethod()
-                      .AllowAnyHeader()
-                      .AllowCredentials());
+            if (env.IsDevelopment())
+            {
+                options.AddPolicy("AppCorsPolicy", policy =>
+                    policy.SetIsOriginAllowed(_ => true)
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials());
+            }
+            else
+            {
+                // Strict production CORS policy restricted to dev.diet-dost.in and diet-dost.in
+                options.AddPolicy("AppCorsPolicy", policy =>
+                    policy.WithOrigins(
+                              "https://dev.diet-dost.in",
+                              "https://diet-dost.in",
+                              "http://diet-dost.in"
+                          )
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials());
+            }
         });
 
         return services;

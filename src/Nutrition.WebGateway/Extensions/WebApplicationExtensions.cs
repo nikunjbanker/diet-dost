@@ -21,8 +21,21 @@ public static class WebApplicationExtensions
         // Capture request/response payloads in OpenTelemetry activity for observability
         app.UseMiddleware<HttpPayloadTelemetryMiddleware>();
 
-        // Security, Static Assets & Identity
-        app.UseCors("AllowAll");
+        // 1. Enforce HTTPS & HSTS (Transport Security)
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHsts();
+            app.UseHttpsRedirection();
+        }
+
+        // 2. OWASP Top 10 Security Response Headers
+        app.UseMiddleware<SecurityHeadersMiddleware>();
+
+        // 3. Deployed Environment Host Gating (dev.diet-dost.in & diet-dost.in)
+        app.UseMiddleware<HostGatingMiddleware>();
+
+        // 4. Security, Static Assets & Identity
+        app.UseCors("AppCorsPolicy");
         app.UseResponseCompression();
         app.UseDefaultFiles();
         app.UseStaticFiles();
