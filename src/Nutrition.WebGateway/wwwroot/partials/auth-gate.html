@@ -11,7 +11,7 @@
     <!-- Navigation Tabs -->
     <div class="auth-tabs">
       <button type="button" id="btn-tab-signin" class="auth-tab-btn active">Sign In</button>
-      <button type="button" id="btn-tab-register" class="auth-tab-btn">Create Account</button>
+      <button type="button" id="btn-tab-register" class="auth-tab-btn" style="display: none;">Create Account</button>
       <button type="button" id="btn-tab-verify" class="auth-tab-btn" style="display: none;">Verify OTP</button>
       <button type="button" id="btn-tab-reset" class="auth-tab-btn" style="display: none;">Reset Password</button>
     </div>
@@ -38,13 +38,44 @@
         <span class="btn-spinner" style="display: none;">⏳ Signing in...</span>
       </button>
 
-      <div class="auth-footer-prompt">
-        Don't have an account? <a href="javascript:void(0)" id="link-goto-register">Create one free</a>
+      <!-- Alpha Preview Notice & Demo Accounts Selector (DESIGN.md compliant) -->
+      <div class="auth-notice-card">
+        <div class="auth-notice-header">
+          <span class="auth-preview-badge">Alpha Preview Access</span>
+        </div>
+        <p class="auth-notice-text">
+          Public sign-up is temporarily disabled. Select a demo account to evaluate Diet Dost:
+        </p>
+        <div class="demo-account-grid">
+          <button type="button" class="demo-pill-btn" id="btn-demo-free" aria-label="Sign in as Free Tier user">
+            <span class="demo-title">⭐ Free Tier</span>
+            <span class="demo-role">free@dietdost.app</span>
+          </button>
+          <button type="button" class="demo-pill-btn" id="btn-demo-basic" aria-label="Sign in as Basic Tier user">
+            <span class="demo-title">⭐ Basic Tier</span>
+            <span class="demo-role">basic@dietdost.app</span>
+          </button>
+          <button type="button" class="demo-pill-btn" id="btn-demo-premium" aria-label="Sign in as Premium Tier user">
+            <span class="demo-title">👑 Premium Tier</span>
+            <span class="demo-role">premium@dietdost.app</span>
+          </button>
+          <button type="button" class="demo-pill-btn" id="btn-demo-admin" aria-label="Sign in as Admin user">
+            <span class="demo-title">🛡️ Admin Portal</span>
+            <span class="demo-role">admin.demo@dietdost.app</span>
+          </button>
+        </div>
       </div>
     </form>
 
-    <!-- Tab 2: Create Account -->
+    <!-- Tab 2: Create Account (Disabled during Alpha Preview) -->
     <form id="form-register" class="auth-form" style="display: none;">
+      <div class="auth-disabled-banner">
+        <div class="disabled-icon">🔒</div>
+        <div class="disabled-heading">Sign-up Temporarily Closed</div>
+        <div>New account registrations are closed for this preview. Please sign in with one of our demo accounts.</div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-goto-signin-from-disabled" style="margin-top: 10px;">Return to Sign In</button>
+      </div>
+
       <div id="register-error" class="auth-error-alert" style="display: none;"></div>
 
       <div class="form-group">
@@ -101,13 +132,13 @@
         </label>
       </div>
 
-      <button type="submit" id="btn-submit-register" class="btn btn-primary auth-submit-btn">
-        <span class="btn-text">Create Account &amp; Send Code ➔</span>
+      <button type="submit" id="btn-submit-register" class="btn btn-primary auth-submit-btn" disabled style="opacity: 0.6; cursor: not-allowed;">
+        <span class="btn-text">Registration Disabled (Alpha Preview)</span>
         <span class="btn-spinner" style="display: none;">⏳ Creating Account...</span>
       </button>
 
       <div class="auth-footer-prompt">
-        Already registered? <a href="javascript:void(0)" id="link-goto-signin">Sign In</a>
+        Already registered? <a href="javascript:void(0)" id="link-goto-signin">Sign In with Demo Account</a>
       </div>
     </form>
 
