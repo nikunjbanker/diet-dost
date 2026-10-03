@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -18,9 +18,8 @@ export class AuthService {
   async getCurrentUser() {
     try {
       const res = await this.api.get('/api/auth/me');
-      // /api/auth/me returns { isAuthenticated, user: { id, email, name, role, tier, ... } }
-      // Unwrap the envelope so callers receive the user object directly.
-      const user = res?.user ?? null;
+      // /api/auth/me can return either { user: { ... } } or the user object directly.
+      const user = res?.user ?? res ?? null;
       this.currentUser = user;
       return user;
     } catch (err) {

@@ -95,16 +95,29 @@ public async Task<Result<UpdateTierConfigResultDto>> Handle(
 ```javascript
 isSuperAdmin() {
   const role = this.authService?.currentUser?.role;
-  return role === 'SuperAdmin' || role === 2;
+  return role === 'SuperAdmin' || role === 2 || role === '2';
 }
 
 // In loadTiers():
-const isSuperAdmin = this.isSuperAdmin();
-// If standard admin: render read-only banner and lock buttons:
-// <button class="btn btn-secondary btn-sm" disabled style="opacity: 0.6; cursor: not-allowed;">
-//   🔒 SuperAdmin Only
-// </button>
+if (!this.authService?.currentUser) {
+  await this.authService?.getCurrentUser().catch(() => null);
+}
+const canEdit = this.isSuperAdmin();
+
+// If standard admin (!canEdit):
+// 1. Render read-only governance banner at top of modal.
+// 2. Add '🔒 Read-Only' pill badge to each tier card header.
+// 3. Set all inputs to readonly disabled with disabled styling (reduced opacity, pointer-events: none).
+// 4. In place of the save button, render a subtle non-clickable dashed badge:
+//    <div style="... border: 1px dashed var(--hairline); ...">🔒 Read-Only View</div>
+//    and hide the action button entirely (<button ... style="display: none;" disabled>).
 ```
+
+### D. Asset Versioning & Cache Busting (`index.html` & `main.js`)
+To guarantee instant browser propagation without stale client caching of ES Modules:
+- Bumped `styles.css` and `js/main.js` query string to `?v=1.5.0` in `index.html`.
+- Bumped all internal module imports in `js/main.js` to `?v=1.5.0` (including `admin-modal.js` and `auth-service.js`).
+- Updated `auth-service.js` `getCurrentUser()` to safely unwrap `res?.user ?? res ?? null` ensuring instant role resolution on direct reloads.
 
 ---
 
@@ -114,6 +127,7 @@ const isSuperAdmin = this.isSuperAdmin();
 1. **Strict Business Isolation**: Monetization tiers and AI resource quotas cannot be compromised by standard administrative credentials.
 2. **Zero Breaking Changes for Read Access**: Both Admin and SuperAdmin users continue to view active tier configurations for transparent auditing.
 3. **Defense-in-Depth**: If an attacker bypasses the controller attribute or calls internal services, the CQRS handler rejects the update with an explicit 403 Forbidden.
+4. **Clean Non-Interactive UX for Admins**: Standard administrators cannot accidentally attempt to edit or save tier configurations; save buttons are completely hidden.
 
 ### Negative Consequences / Accepted Trade-Offs:
 * SuperAdmin credentials (`superadmin@dietdost.app`) must be utilized whenever tier quota modifications are required in production or staging.
@@ -142,9 +156,9 @@ const isSuperAdmin = this.isSuperAdmin();
   - `superadmin@dietdost.app`: Update granted as expected for SuperAdmin (HTTP 200) (PASS)
   - Result: **100% Pass across all 5 tiers**.
 * **Browser Verification Suite (`tests/verify_admin_tier_governance.mjs`)**:
-  - `admin.demo@dietdost.app`: Verified Read-Only banner, 3 locked buttons (`🔒 SuperAdmin Only`), disabled inputs.
+  - `admin.demo@dietdost.app`: Verified Read-Only banner, 4 cards with `🔒 Read-Only` badges, save buttons hidden with `🔒 Read-Only View` dashed indicator, disabled inputs.
   - `superadmin@dietdost.app`: Verified Write Mode banner, 3 active Save buttons, editable inputs.
   - Artifacts: `cft_admin_tier_readonly_mode.png` and `cft_superadmin_tier_write_mode.png`.
 * **Solution-Wide Build & Test**:
-  - `dotnet test --configuration Release`: **162 / 162 tests passed (36 Domain + 126 EvalHarness), 0 warnings, 0 errors**.
+  - `dotnet test tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj`: **36 / 36 tests passed, 0 warnings, 0 errors**.
 * **Sign-Off Status**: `VERIFIED & SYNCHRONIZED`

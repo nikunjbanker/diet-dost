@@ -23,7 +23,8 @@ export class AdminModalController {
   isSuperAdmin() {
     const user = this.authService?.currentUser;
     if (!user) return false;
-    return user.role === 'SuperAdmin' || user.role === 2;
+    const role = user.role;
+    return role === 'SuperAdmin' || role === 2 || role === '2';
   }
 
   initElements() {
@@ -391,6 +392,9 @@ export class AdminModalController {
     this.tierCardsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">Loading tier configurations...</div>`;
 
     try {
+      if (!this.authService?.currentUser) {
+        await this.authService?.getCurrentUser().catch(() => null);
+      }
       const configs = await this.adminService.getTierConfigs();
       const canEdit = this.isSuperAdmin();
 
@@ -418,31 +422,34 @@ export class AdminModalController {
         const isEditable = canEdit && !isSuperTier;
 
         return `
-          <div class="tier-admin-card" data-tier="${c.tier}" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
+          <div class="tier-admin-card" data-tier="${c.tier}" data-readonly="${!isEditable}" style="background: var(--surface-subtle); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
               <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">${tierName} Tier</h3>
-              <span class="badge" style="font-size: 0.7rem; padding: 2px 6px;">Tier #${c.tier}</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                ${!canEdit ? '<span class="badge" style="background: rgba(94, 106, 210, 0.15); color: #818cf8; font-size: 0.68rem; padding: 2px 6px;">🔒 Read-Only</span>' : ''}
+                <span class="badge" style="font-size: 0.7rem; padding: 2px 6px;">Tier #${c.tier}</span>
+              </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 0.5rem;">
               <label style="font-size: 0.75rem; color: var(--text-secondary);">Daily AI Detection Limit (-1 for Unlimited)</label>
-              <input type="number" class="text-input inp-daily-limit" value="${c.dailyAiDetectionLimit}" style="width: 100%;" ${!isEditable ? 'readonly disabled' : ''}>
+              <input type="number" class="text-input inp-daily-limit" value="${c.dailyAiDetectionLimit}" style="width: 100%; ${!isEditable ? 'background: rgba(255, 255, 255, 0.03); color: var(--text-muted); cursor: not-allowed; border-color: var(--hairline); pointer-events: none;' : ''}" ${!isEditable ? 'readonly disabled' : ''}>
             </div>
 
             <div class="form-group" style="margin-bottom: 0.5rem;">
               <label style="font-size: 0.75rem; color: var(--text-secondary);">Analytics History Days</label>
-              <input type="number" class="text-input inp-history-days" value="${c.analyticsHistoryDays}" style="width: 100%;" ${!isEditable ? 'readonly disabled' : ''}>
+              <input type="number" class="text-input inp-history-days" value="${c.analyticsHistoryDays}" style="width: 100%; ${!isEditable ? 'background: rgba(255, 255, 255, 0.03); color: var(--text-muted); cursor: not-allowed; border-color: var(--hairline); pointer-events: none;' : ''}" ${!isEditable ? 'readonly disabled' : ''}>
             </div>
 
             <div style="margin-bottom: 0.5rem;">
-              <label class="legal-checkbox-label" style="font-size: 0.8rem; ${!isEditable ? 'opacity: 0.7; cursor: not-allowed;' : ''}">
+              <label class="legal-checkbox-label" style="font-size: 0.8rem; ${!isEditable ? 'opacity: 0.6; cursor: not-allowed; pointer-events: none;' : ''}">
                 <input type="checkbox" class="cb-photo-compare" ${c.allowPhotoCompare ? 'checked' : ''} ${!isEditable ? 'disabled' : ''}>
                 <span>Allow Photo Compare</span>
               </label>
             </div>
 
             <div style="margin-bottom: 0.75rem;">
-              <label class="legal-checkbox-label" style="font-size: 0.8rem; ${!isEditable ? 'opacity: 0.7; cursor: not-allowed;' : ''}">
+              <label class="legal-checkbox-label" style="font-size: 0.8rem; ${!isEditable ? 'opacity: 0.6; cursor: not-allowed; pointer-events: none;' : ''}">
                 <input type="checkbox" class="cb-data-export" ${c.allowDataExport ? 'checked' : ''} ${!isEditable ? 'disabled' : ''}>
                 <span>Allow Data Export (Excel / CSV)</span>
               </label>
@@ -450,7 +457,7 @@ export class AdminModalController {
 
             <div class="form-group" style="margin-bottom: 0.75rem;">
               <label style="font-size: 0.75rem; color: var(--text-secondary);">Description</label>
-              <input type="text" class="text-input inp-description" value="${c.description || ''}" style="width: 100%;" ${!isEditable ? 'readonly disabled' : ''}>
+              <input type="text" class="text-input inp-description" value="${c.description || ''}" style="width: 100%; ${!isEditable ? 'background: rgba(255, 255, 255, 0.03); color: var(--text-muted); cursor: not-allowed; border-color: var(--hairline); pointer-events: none;' : ''}" ${!isEditable ? 'readonly disabled' : ''}>
             </div>
 
             ${canEdit && !isSuperTier ? `
@@ -458,11 +465,14 @@ export class AdminModalController {
                 Save Configuration
               </button>
             ` : isSuperTier ? `
-              <button type="button" class="btn btn-sm btn-outline" style="width: 100%; opacity: 0.5; cursor: not-allowed;" disabled>
+              <button type="button" class="btn btn-sm btn-outline" style="width: 100%; opacity: 0.45; cursor: not-allowed;" disabled>
                 Immutable System Tier
               </button>
             ` : `
-              <button type="button" class="btn btn-sm btn-outline btn-save-tier" style="width: 100%; opacity: 0.45; cursor: not-allowed;" disabled title="Only SuperAdmin can modify tier configurations">
+              <div style="width: 100%; text-align: center; padding: 7px 12px; font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--hairline); border-radius: var(--radius-sm); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                <span>🔒</span> <span>Read-Only View</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline btn-save-tier" style="display: none;" disabled title="Only SuperAdmin can modify tier configurations">
                 🔒 SuperAdmin Only
               </button>
             `}

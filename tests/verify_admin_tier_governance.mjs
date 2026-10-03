@@ -74,6 +74,12 @@ async function main() {
     await sendCdp(ws, 'Page.enable');
     await sendCdp(ws, 'Runtime.enable');
     await sendCdp(ws, 'DOM.enable');
+    await sendCdp(ws, 'Emulation.setDeviceMetricsOverride', {
+        width: 1280,
+        height: 950,
+        deviceScaleFactor: 1,
+        mobile: false
+    });
 
     await sleep(2000);
 
