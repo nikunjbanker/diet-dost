@@ -169,6 +169,7 @@ export class AuthGateController {
     if (this.modal) {
       this.modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
+      this.applyRegistrationState();
       this.switchTab(defaultTab);
     }
   }
@@ -339,6 +340,29 @@ export class AuthGateController {
     }
   }
 
+  applyRegistrationState() {
+    const tabRegister = document.getElementById('btn-tab-register') || this.tabRegister;
+    const disabledBanner = document.getElementById('auth-disabled-banner') || document.querySelector('.auth-disabled-banner');
+    const noticeText = document.getElementById('auth-notice-text');
+    const submitRegister = document.getElementById('btn-submit-register');
+
+    if (this.allowRegistration) {
+      if (tabRegister) tabRegister.style.display = 'inline-block';
+      if (disabledBanner) disabledBanner.style.display = 'none';
+      if (submitRegister) submitRegister.disabled = false;
+      if (noticeText) {
+        noticeText.innerHTML = 'Quick-select a demo account below, or use the <strong>Create Account</strong> tab to register:';
+      }
+    } else {
+      if (tabRegister) tabRegister.style.display = 'none';
+      if (disabledBanner) disabledBanner.style.display = 'block';
+      if (submitRegister) submitRegister.disabled = true;
+      if (noticeText) {
+        noticeText.textContent = 'Public sign-up is temporarily disabled. Select a demo account below to evaluate Diet Dost:';
+      }
+    }
+  }
+
   async checkRegistrationConfig() {
     try {
       const res = await fetch('/api/auth/config');
@@ -349,14 +373,7 @@ export class AuthGateController {
     } catch {
       this.allowRegistration = true;
     }
-
-    if (this.tabRegister) {
-      this.tabRegister.style.display = this.allowRegistration ? 'inline-block' : 'none';
-    }
-    const disabledBanner = document.querySelector('.auth-disabled-banner');
-    if (disabledBanner) {
-      disabledBanner.style.display = this.allowRegistration ? 'none' : 'block';
-    }
+    this.applyRegistrationState();
   }
 
   // ── Register ───────────────────────────────────────────────────────────────

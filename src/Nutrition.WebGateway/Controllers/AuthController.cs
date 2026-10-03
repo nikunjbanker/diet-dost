@@ -113,7 +113,7 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        if (!_configuration.GetValue<bool>("Auth:AllowRegistration", false))
+        if (!_configuration.GetValue<bool>("Auth:AllowRegistration", true))
         {
             _logger.LogWarning("Blocked registration attempt for {Email} because public sign-up is disabled.", request.Email);
             return StatusCode(StatusCodes.Status403Forbidden, new
