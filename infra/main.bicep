@@ -222,6 +222,14 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: 'Production'
             }
             {
+              name: 'ASPNETCORE_FORWARDEDHEADERS_ENABLED'
+              value: 'true'
+            }
+            {
+              name: 'OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY'
+              value: 'in_memory'
+            }
+            {
               name: 'Database__Provider'
               value: 'Sqlite'
             }
