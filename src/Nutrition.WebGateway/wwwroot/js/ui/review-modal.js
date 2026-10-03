@@ -601,7 +601,10 @@ export class ReviewModalController {
       el.dietitianAdvice.textContent = analysis.dietitianAdvice || 'Wholesome homestyle preparation adhering to ICMR-NIN guidelines.';
     }
 
-    if (el.modal) el.modal.style.display = 'flex';
+    if (el.modal) {
+      document.body.classList.add('modal-open');
+      el.modal.style.display = 'flex';
+    }
   }
 
   close() {
@@ -620,7 +623,10 @@ export class ReviewModalController {
       el.btnConfirm.disabled = false;
       el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
     }
-    if (el.modal) el.modal.style.display = 'none';
+    if (el.modal) {
+      el.modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    }
     this._state.currentMeal = null;
   }
 
@@ -762,7 +768,10 @@ export class ReviewModalController {
       el.dietitianAdvice.textContent = this._state.currentMeal.dietitianAdvice;
     }
 
-    if (el.modal) el.modal.style.display = 'flex';
+    if (el.modal) {
+      document.body.classList.add('modal-open');
+      el.modal.style.display = 'flex';
+    }
   }
 
   /**
@@ -1667,9 +1676,11 @@ export class ReviewModalController {
         });
       } else {
         const mealTypeName = this._state.currentMeal?.mealType || 'Meal';
+        const loggedKcal = data.meal?.totalCalories ?? data.meal?.calories ?? this._state.currentMeal?.totalCalories ?? 0;
+        const loggedProtein = data.meal?.totalProteinGrams ?? this._state.currentMeal?.totalProteinGrams ?? 0;
         this._toast.show({
           title: `${mealTypeName} Logged! 🎉`,
-          message: `Logged ${Math.round(data.totalCalories)} kcal and ${Math.round(data.totalProtein)}g Protein. Compliance score updated!`,
+          message: `Logged ${Math.round(loggedKcal)} kcal and ${Math.round(loggedProtein)}g Protein. Compliance score updated!`,
           actionText: '📊 View Daily Graph',
           onAction: () => this._bus.emit('analytics:switch-period', '1D')
         });
