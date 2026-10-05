@@ -1,0 +1,95 @@
+name: Aspire CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '**/*.csproj'
+      - 'src/**'
+      - 'Dockerfile'
+      - 'Containerfile'
+      - 'infra/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup .NET 11 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "11.x"
+      - name: Restore & Build
+        run: |
+          dotnet restore
+          dotnet build -c Release --no-restore
+      - name: Publish Aspire app
+        run: |
+          dotnet publish src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Release -o out/publish
+      - name: Build container image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: Containerfile
+          push: false
+          tags: dietdost.azurecr.io/diet-dost:${{ github.sha }}
+      - name: Upload image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: diet-dost-image
+          path: out/publish
+
+  cft:
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - name: Download image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: diet-dost-image
+          path: ./publish
+      - name: Start app locally
+        run: |
+          dotnet ./publish/Nutrition.WebGateway.dll &
+          timeout /t 10
+      - name: Run tiered CFT script
+        run: pwsh -File tests/validate_e2e_tiers.ps1
+
+  publish-acr:
+    runs-on: ubuntu-latest
+    needs: cft
+    permissions:
+      packages: write
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: ACR login
+        run: az acr login --name dietdost
+      - name: Tag & Push image
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          docker tag dietdost.azurecr.io/diet-dost:$IMAGE_TAG dietdost.azurecr.io/diet-dost:latest
+          docker push dietdost.azurecr.io/diet-dost:$IMAGE_TAG
+          docker push dietdost.azurecr.io/diet-dost:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: publish-acr
+    steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Deploy Bicep template
+        run: |
+          az deployment group create \
+            --resource-group ${{ secrets.AZURE_RG }} \
+            --template-file infra/aspire.bicep \
+            --parameters containerAppName=diet-dost-app imageTag=${{ github.sha }}
