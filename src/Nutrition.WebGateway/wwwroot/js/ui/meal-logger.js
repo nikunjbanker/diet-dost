@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -405,8 +405,9 @@ export class MealLoggerController {
   }
 
   showRetakePrompt(score, advice) {
-    alert(
-      `📸 Low Visual Confidence (${Math.round(score * 100)}% < 70% required threshold)\n\n${advice}\n\nPlease click OK to retake under better lighting or use Voice / Smart Search.`
-    );
+    // Use toast notification instead of alert for better UX and non-blocking behavior.
+    const message = `📸 Low Visual Confidence (${Math.round(score * 100)}% < 70% required threshold)\n\n${advice}\n\nPlease retake the photo under better lighting or use Voice / Smart Search.`;
+    this._toast.show({ title: 'Retake Photo', message: message, severity: 'warning' });
   }
+
 }
