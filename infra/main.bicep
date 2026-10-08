@@ -64,6 +64,9 @@ module workload 'app.bicep' = {
     allowDemoUsers: allowDemoUsers
     storageMountName: foundation.outputs.storageMountName
     geminiApiKey: geminiApiKey
+    keyVaultUri: foundation.outputs.keyVaultUri
+    managedIdentityId: foundation.outputs.managedIdentityId
+    managedIdentityClientId: foundation.outputs.managedIdentityClientId
   }
 }
 
@@ -77,3 +80,6 @@ output acaEnvironmentName string = foundation.outputs.acaEnvironmentName
 output containerAppName string = workload.outputs.containerAppName
 output acrName string = foundation.outputs.acrName
 output acrLoginServer string = foundation.outputs.acrLoginServer
+output keyVaultName string = foundation.outputs.keyVaultName
+output keyVaultUri string = foundation.outputs.keyVaultUri
+output managedIdentityId string = foundation.outputs.managedIdentityId

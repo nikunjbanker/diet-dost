@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -7,6 +7,7 @@
  */
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Domain.Model.Security;
@@ -15,20 +16,26 @@ using Nutrition.Infrastructure.Persistence;
 namespace Nutrition.Infrastructure.Services;
 
 /// <summary>
-/// Database-backed implementation of ISecretStore.
-/// Reads and writes application secrets directly to the AppSecrets database table.
+/// Database and Configuration-backed implementation of ISecretStore.
+/// Seamlessly checks IConfiguration (Azure Key Vault, Environment Variables, User Secrets) first,
+/// falling back to the AppSecrets database table.
 /// Employs a thread-safe concurrent in-memory cache to ensure near-zero latency on hot read paths.
 /// </summary>
 public class DatabaseSecretStore : ISecretStore
 {
     private readonly DietTrackerDbContext _db;
     private readonly ILogger<DatabaseSecretStore> _logger;
+    private readonly IConfiguration? _configuration;
     private static readonly ConcurrentDictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-    public DatabaseSecretStore(DietTrackerDbContext db, ILogger<DatabaseSecretStore> logger)
+    public DatabaseSecretStore(
+        DietTrackerDbContext db,
+        ILogger<DatabaseSecretStore> logger,
+        IConfiguration? configuration = null)
     {
         _db = db;
         _logger = logger;
+        _configuration = configuration;
     }
 
     public static void ClearCache() => _cache.Clear();
@@ -38,9 +45,21 @@ public class DatabaseSecretStore : ISecretStore
         if (string.IsNullOrWhiteSpace(key))
             return null;
 
+        // 1. Prioritize Azure Key Vault / Environment configuration if present
+        if (_configuration != null)
+        {
+            var configVal = _configuration[key];
+            if (!string.IsNullOrWhiteSpace(configVal))
+            {
+                return configVal;
+            }
+        }
+
+        // 2. Check local in-memory cache
         if (_cache.TryGetValue(key, out var cachedVal))
             return cachedVal;
 
+        // 3. Fall back to AppSecrets database table
         var secret = await _db.AppSecrets.AsNoTracking().FirstOrDefaultAsync(s => s.Key == key, ct);
         if (secret != null)
         {

@@ -176,6 +176,54 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
 }
 
 // ------------------------------------------------------------------------------
+// 7. Azure Key Vault & User-Assigned Managed Identity for Secure Cloud Secrets
+// ------------------------------------------------------------------------------
+resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'id-dietdost-${environment}'
+  location: location
+  tags: {
+    'aspire-resource-name': 'dietdost-identity'
+    environment: environment
+  }
+}
+
+var keyVaultName = take('kvdietdost${uniqueSuffix}', 24)
+
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: keyVaultName
+  location: location
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true
+    enableSoftDelete: true
+    softDeleteRetentionInDays: 7
+    networkAcls: {
+      defaultAction: 'Allow'
+      bypass: 'AzureServices'
+    }
+  }
+  tags: {
+    'aspire-resource-name': 'dietdost-kv'
+    environment: environment
+  }
+}
+
+// Built-in Role Definition: Key Vault Secrets User (4633458b-17de-408a-b874-0445c86b69e6)
+resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, managedIdentity.id, '4633458b-17de-408a-b874-0445c86b69e6')
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// ------------------------------------------------------------------------------
 // Outputs for Application Deployment Pipeline
 // ------------------------------------------------------------------------------
 output acaEnvironmentId string = acaEnvironment.id
@@ -187,3 +235,7 @@ output fileShareName string = fileShare.name
 output storageMountName string = envStorage.name
 output acrName string = acr.name
 output acrLoginServer string = acr.properties.loginServer
+output keyVaultName string = keyVault.name
+output keyVaultUri string = keyVault.properties.vaultUri
+output managedIdentityId string = managedIdentity.id
+output managedIdentityClientId string = managedIdentity.properties.clientId

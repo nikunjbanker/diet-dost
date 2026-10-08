@@ -53,7 +53,6 @@ ENV Database__Provider=Sqlite
 ENV ConnectionStrings__DefaultConnection="Data Source=/app/data/diet_dost.db;Cache=Shared"
 ENV Storage__WebRootPath="/app/data/wwwroot"
 ENV Security__AllowDemoUsers="false"
-ENV Jwt__Key="DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!"
 
 EXPOSE 8080
 

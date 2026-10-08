@@ -7,6 +7,7 @@
  */
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 using Microsoft.Extensions.Configuration;
 using Nutrition.AppHost.Configuration;
 
@@ -23,9 +24,11 @@ public static class WebGatewayResourceExtensions
 
     /// <summary>
     /// Adds and configures the Nutrition.WebGateway project with its HTTP endpoints,
-    /// persistence settings, and AI provider environment variables.
+    /// persistence settings, AI provider environment variables, and optional Azure Key Vault reference.
     /// </summary>
-    public static IResourceBuilder<ProjectResource> AddWebGateway(this IDistributedApplicationBuilder builder)
+    public static IResourceBuilder<ProjectResource> AddWebGateway(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<AzureKeyVaultResource>? keyVault = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -41,6 +44,11 @@ public static class WebGatewayResourceExtensions
             .WithEnvironment("AI__ApiKey", aiOptions.GeminiApiKey ?? string.Empty)
             .WithEnvironment("AI__GoogleAI__ModelId", aiOptions.GeminiModelId)
             .WithEnvironment("AI__GoogleAI__FallbackModelId", aiOptions.GeminiFallbackModelId);
+
+        if (keyVault != null)
+        {
+            webGateway.WithReference(keyVault);
+        }
 
         if (!string.IsNullOrWhiteSpace(aiOptions.AzureApiKey))
         {

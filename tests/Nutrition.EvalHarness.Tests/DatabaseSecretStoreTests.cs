@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -86,6 +86,25 @@ public class DatabaseSecretStoreTests : IDisposable
 
         var updated = await _secretStore.GetSecretAsync(key);
         Assert.Equal("new-secret-value-32-chars-long!", updated);
+    }
+
+    [Fact]
+    public async Task GetSecretAsync_PrioritizesConfigurationOverDatabaseTable()
+    {
+        const string key = "Jwt:Key";
+        const string dbVal = "Database-Fallback-Secret-Key-123456";
+        const string configVal = "KeyVault-Injected-Secret-Key-987654";
+
+        await _secretStore.SetSecretAsync(key, dbVal);
+
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [key] = configVal })
+            .Build();
+
+        var storeWithConfig = new DatabaseSecretStore(_db, NullLogger<DatabaseSecretStore>.Instance, config);
+
+        var retrieved = await storeWithConfig.GetSecretAsync(key);
+        Assert.Equal(configVal, retrieved);
     }
 
     [Fact]

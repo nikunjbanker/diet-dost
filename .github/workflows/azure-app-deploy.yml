@@ -171,10 +171,32 @@ jobs:
             exit 1
           fi
           
+          # Resolve Key Vault URI
+          KV_URI="${{ steps.deploy-infra.outputs.keyVaultUri }}"
+          if [ -z "$KV_URI" ]; then
+            KV_NAME=$(az keyvault list --resource-group "$RG" --query "[0].name" -o tsv)
+            if [ -n "$KV_NAME" ]; then
+              KV_URI="https://${KV_NAME}.vault.azure.net/"
+            fi
+          fi
+
+          # Resolve User-Assigned Managed Identity
+          MI_ID="${{ steps.deploy-infra.outputs.managedIdentityId }}"
+          MI_CLIENT_ID="${{ steps.deploy-infra.outputs.managedIdentityClientId }}"
+          if [ -z "$MI_ID" ]; then
+            MI_ID=$(az identity list --resource-group "$RG" --query "[0].id" -o tsv)
+            MI_CLIENT_ID=$(az identity list --resource-group "$RG" --query "[0].clientId" -o tsv)
+          fi
+
           echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "aca_env_id=$ACA_ENV_ID" >> $GITHUB_OUTPUT
+          echo "kv_uri=$KV_URI" >> $GITHUB_OUTPUT
+          echo "mi_id=$MI_ID" >> $GITHUB_OUTPUT
+          echo "mi_client_id=$MI_CLIENT_ID" >> $GITHUB_OUTPUT
           echo "Resolved ACR: $ACR_NAME"
           echo "Resolved ACA Environment ID: $ACA_ENV_ID"
+          echo "Resolved Key Vault URI: $KV_URI"
+          echo "Resolved Managed Identity: $MI_ID"
 
       - name: 11. Build OCI Container Image (Podman)
         id: build-image
@@ -232,6 +254,9 @@ jobs:
             allowDemoUsers=${{ inputs.allowDemoUsers }}
             storageMountName=dietdoststorage
             geminiApiKey="${{ secrets.GEMINI_API_KEY }}"
+            keyVaultUri=${{ steps.resolve-env.outputs.kv_uri }}
+            managedIdentityId=${{ steps.resolve-env.outputs.mi_id }}
+            managedIdentityClientId=${{ steps.resolve-env.outputs.mi_client_id }}
           failOnStderr: false
 
       - name: 15. Verify Application Health & Revision Status

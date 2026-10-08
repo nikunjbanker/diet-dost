@@ -38,12 +38,29 @@ param storageMountName string = 'dietdoststorage'
 @secure()
 param geminiApiKey string = ''
 
+@description('Azure Key Vault URI (e.g. https://<kv-name>.vault.azure.net/) for cloud secrets.')
+param keyVaultUri string = ''
+
+@description('Resource ID of User-Assigned Managed Identity for Key Vault authentication.')
+param managedIdentityId string = ''
+
+@description('Client ID of User-Assigned Managed Identity for Key Vault authentication.')
+param managedIdentityClientId string = ''
+
 // ------------------------------------------------------------------------------
 // Container App (Web Gateway & Mobile BFF Workload)
 // ------------------------------------------------------------------------------
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
   location: location
+  identity: !empty(managedIdentityId) ? {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${managedIdentityId}': {}
+    }
+  } : {
+    type: 'None'
+  }
   properties: {
     managedEnvironmentId: acaEnvironmentId
     configuration: {
@@ -112,6 +129,14 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AI__Google__ApiKey'
               secretRef: !empty(geminiApiKey) ? 'gemini-api-key' : null
               value: empty(geminiApiKey) ? '' : null
+            }
+            {
+              name: 'KeyVault__VaultUri'
+              value: keyVaultUri
+            }
+            {
+              name: 'AZURE_CLIENT_ID'
+              value: managedIdentityClientId
             }
           ]
           volumeMounts: [

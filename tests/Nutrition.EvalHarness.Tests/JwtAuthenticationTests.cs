@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -319,5 +319,64 @@ public class JwtAuthenticationTests
         Assert.True(adminPrincipal.IsAdminOrSuper());
         Assert.False(userPrincipal.IsAdminOrSuper());
         Assert.False(emptyPrincipal.IsAdminOrSuper());
+    }
+
+    [Fact]
+    public void JwtTokenService_InDeployedEnvironment_WithoutJwtKey_ThrowsInvalidOperationException()
+    {
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockAppEnv = new TestAppEnvironment(isDebug: false, isDevelopment: false);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new JwtTokenService(emptyConfig, mockAppEnv));
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR", ex.Message);
+    }
+
+    [Fact]
+    public void JwtTokenService_InDevelopmentEnvironment_WithoutJwtKey_UsesFallbackKey()
+    {
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockAppEnv = new TestAppEnvironment(isDebug: true, isDevelopment: true);
+
+        var service = new JwtTokenService(emptyConfig, mockAppEnv);
+        Assert.NotNull(service);
+    }
+
+    [Fact]
+    public void SecurityAndAuthExtensions_InDeployedEnvironment_WithoutJwtKey_ThrowsInvalidOperationException()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockHostEnv = new TestHostEnvironment { EnvironmentName = "Production" };
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            services.AddAppSecurityAndAuth(emptyConfig, mockHostEnv));
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR", ex.Message);
+    }
+
+    [Fact]
+    public void SecurityAndAuthExtensions_InDevelopmentEnvironment_WithoutJwtKey_Succeeds()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockHostEnv = new TestHostEnvironment { EnvironmentName = "Development" };
+
+        services.AddAppSecurityAndAuth(emptyConfig, mockHostEnv);
+        Assert.True(services.Count > 0);
+    }
+
+    private sealed class TestAppEnvironment(bool isDebug, bool isDevelopment) : Nutrition.Application.Common.Interfaces.IAppEnvironment
+    {
+        public bool IsDebugMode => isDebug;
+        public bool IsDevelopment => isDevelopment;
+        public bool AllowsDemoUsers => isDebug && isDevelopment;
+        public bool AllowsAdminDemoUsers => isDebug && isDevelopment;
+    }
+
+    private sealed class TestHostEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Development";
+        public string ApplicationName { get; set; } = "Nutrition.WebGateway";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
 }

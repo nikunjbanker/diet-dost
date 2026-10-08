@@ -127,4 +127,7 @@ jobs:
           echo "Storage Mount:    ${{ steps.deploy-infra.outputs.storageMountName }}"
           echo "Static IP:        ${{ steps.deploy-infra.outputs.staticIp }}"
           echo "Custom Domain ID: ${{ steps.deploy-infra.outputs.customDomainVerificationId }}"
+          echo "Key Vault Name:   ${{ steps.deploy-infra.outputs.keyVaultName }}"
+          echo "Key Vault URI:    ${{ steps.deploy-infra.outputs.keyVaultUri }}"
+          echo "Managed Identity: ${{ steps.deploy-infra.outputs.managedIdentityId }}"
           echo "=========================================================="

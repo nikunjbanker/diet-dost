@@ -302,12 +302,23 @@ public static class DatabaseInitializationExtensions
         Nutrition.Application.Common.Interfaces.IAppEnvironment appEnv,
         ILogger logger)
     {
-        var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>
+        var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>();
+
+        if (appEnv.IsDevelopment)
         {
-            ("Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!", "Cryptographic signing key for JWT HMAC-SHA256 tokens"),
-            ("AI:GoogleAI:ApiKey", string.Empty, "Google Gemini Vision API Key"),
-            ("AI:AzureOpenAI:ApiKey", string.Empty, "Azure OpenAI API Key")
-        };
+            defaultSecrets.Add(("Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!", "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"));
+            defaultSecrets.Add(("AI:GoogleAI:ApiKey", string.Empty, "Google Gemini Vision API Key"));
+            defaultSecrets.Add(("AI:AzureOpenAI:ApiKey", string.Empty, "Azure OpenAI API Key"));
+        }
+        else
+        {
+            // In deployed / non-development environments, retrieve secrets exclusively from Azure Key Vault or environment
+            var configuredJwtKey = configuration["Jwt:Key"];
+            if (!string.IsNullOrWhiteSpace(configuredJwtKey))
+            {
+                defaultSecrets.Add(("Jwt:Key", configuredJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (from Key Vault)"));
+            }
+        }
 
         if (appEnv.AllowsDemoUsers)
         {
@@ -403,7 +414,8 @@ public static class DatabaseInitializationExtensions
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
         var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
 
-        var configuredSuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim();
+        var configuredSuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim()
+            ?? configuration["SuperAdminEmail"]?.Trim();
         var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(configuredSuperAdminEmail)
             ? configuredSuperAdminEmail
             : "superadmin@dietdost.app";

@@ -18,8 +18,11 @@ var acaEnv = builder.AddAzureContainerAppEnvironment("cae-dietdost");
 // 2. Declare Azure Storage for persistent SQLite SMB file share
 var storage = builder.AddAzureStorage("dietdost-storage");
 
-// 3. Register Web Gateway (Linear-style PWA, API endpoints & AI Vision subsystem)
-builder.AddWebGateway();
+// 3. Declare Azure Key Vault for application secrets in deployed environments
+var keyVault = builder.AddAzureKeyVault("dietdost-kv");
+
+// 4. Register Web Gateway (Linear-style PWA, API endpoints & AI Vision subsystem)
+builder.AddWebGateway(keyVault);
 
 builder.Build().Run();
 
