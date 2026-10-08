@@ -8,6 +8,7 @@
 using Nutrition.Application;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Common.Options;
 using Nutrition.Application.Services;
 using Nutrition.Infrastructure.AI;
 using Nutrition.Infrastructure.Configuration;
@@ -25,6 +26,9 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        // Strongly-Typed Options Pattern with FluentValidation (JwtOptions, AuthOptions, AiOptions, DatabaseOptions)
+        services.AddDietDostOptions(configuration);
 
         // Centralized Strongly-Typed Configuration & Secrets Accessor
         services.AddSingleton<IDietDostConfiguration, DietDostConfiguration>();
