@@ -171,13 +171,14 @@ jobs:
             exit 1
           fi
           
-          # Resolve Key Vault URI
+          # Resolve Key Vault Name & URI
+          KV_NAME="${{ steps.deploy-infra.outputs.keyVaultName }}"
           KV_URI="${{ steps.deploy-infra.outputs.keyVaultUri }}"
-          if [ -z "$KV_URI" ]; then
+          if [ -z "$KV_NAME" ]; then
             KV_NAME=$(az keyvault list --resource-group "$RG" --query "[0].name" -o tsv)
-            if [ -n "$KV_NAME" ]; then
-              KV_URI="https://${KV_NAME}.vault.azure.net/"
-            fi
+          fi
+          if [ -z "$KV_URI" ] && [ -n "$KV_NAME" ]; then
+            KV_URI="https://${KV_NAME}.vault.azure.net/"
           fi
 
           # Resolve User-Assigned Managed Identity
@@ -190,13 +191,43 @@ jobs:
 
           echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "aca_env_id=$ACA_ENV_ID" >> $GITHUB_OUTPUT
+          echo "kv_name=$KV_NAME" >> $GITHUB_OUTPUT
           echo "kv_uri=$KV_URI" >> $GITHUB_OUTPUT
           echo "mi_id=$MI_ID" >> $GITHUB_OUTPUT
           echo "mi_client_id=$MI_CLIENT_ID" >> $GITHUB_OUTPUT
           echo "Resolved ACR: $ACR_NAME"
           echo "Resolved ACA Environment ID: $ACA_ENV_ID"
-          echo "Resolved Key Vault URI: $KV_URI"
+          echo "Resolved Key Vault: $KV_NAME ($KV_URI)"
           echo "Resolved Managed Identity: $MI_ID"
+
+      - name: 10b. Synchronize Configured Secrets to Azure Key Vault (If Provided)
+        env:
+          KV_NAME: ${{ steps.resolve-env.outputs.kv_name }}
+          JWT_KEY: ${{ secrets.JWT_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+        run: |
+          if [ -n "$KV_NAME" ]; then
+            echo "Checking and synchronizing configured secrets into Azure Key Vault '$KV_NAME'..."
+            if [ -n "$JWT_KEY" ]; then
+              echo "Setting Jwt--Key in Key Vault..."
+              az keyvault secret set --vault-name "$KV_NAME" --name "Jwt--Key" --value "$JWT_KEY" -o none || echo "⚠️ Note: Could not set Jwt--Key (ensure deploy principal has Key Vault Secrets Officer role or populate manually in Azure Portal)"
+            fi
+            if [ -n "$GEMINI_API_KEY" ]; then
+              echo "Setting AI--GoogleAI--ApiKey in Key Vault..."
+              az keyvault secret set --vault-name "$KV_NAME" --name "AI--GoogleAI--ApiKey" --value "$GEMINI_API_KEY" -o none || echo "⚠️ Note: Could not set AI--GoogleAI--ApiKey"
+            fi
+            if [ -n "$AZURE_OPENAI_API_KEY" ]; then
+              echo "Setting AI--AzureOpenAI--ApiKey in Key Vault..."
+              az keyvault secret set --vault-name "$KV_NAME" --name "AI--AzureOpenAI--ApiKey" --value "$AZURE_OPENAI_API_KEY" -o none || echo "⚠️ Note: Could not set AI--AzureOpenAI--ApiKey"
+            fi
+            if [ -n "$SUPER_ADMIN_EMAIL" ]; then
+              echo "Setting Auth--SuperAdminEmail in Key Vault..."
+              az keyvault secret set --vault-name "$KV_NAME" --name "Auth--SuperAdminEmail" --value "$SUPER_ADMIN_EMAIL" -o none || echo "⚠️ Note: Could not set Auth--SuperAdminEmail"
+            fi
+            echo "✅ Azure Key Vault secret synchronization step finished."
+          fi
 
       - name: 11. Build OCI Container Image (Podman)
         id: build-image
