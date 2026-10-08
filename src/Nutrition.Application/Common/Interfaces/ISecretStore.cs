@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -22,7 +22,14 @@ public interface ISecretStore
 public static class SecretKeys
 {
     public const string JwtSigningKey = "Jwt:Key";
+    public const string JwtIssuer = "Jwt:Issuer";
+    public const string JwtAudience = "Jwt:Audience";
+    public const string JwtExpiryMinutes = "Jwt:ExpiryMinutes";
+    public const string SuperAdminEmail = "Auth:SuperAdminEmail";
+    public const string RequireMobileVerification = "Auth:RequireMobileVerification";
     public const string DemoPassword = "Auth:DemoPassword";
     public const string GoogleAiApiKey = "AI:GoogleAI:ApiKey";
     public const string AzureOpenAiApiKey = "AI:AzureOpenAI:ApiKey";
+    public const string DefaultConnection = "ConnectionStrings:DefaultConnection";
+    public const string DatabaseProvider = "Database:Provider";
 }

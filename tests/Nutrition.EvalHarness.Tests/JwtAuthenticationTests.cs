@@ -364,6 +364,62 @@ public class JwtAuthenticationTests
         Assert.True(services.Count > 0);
     }
 
+    [Fact]
+    public void ConfigurationExtensions_InDevelopmentEnvironment_CentralizesDefaultsAndAliases()
+    {
+        var mockDevHost = new TestHostEnvironment { EnvironmentName = "Development" };
+        var builder = new ConfigurationBuilder();
+        Nutrition.WebGateway.Extensions.ConfigurationExtensions.AddDietDostAppConfiguration(builder, mockDevHost);
+        var config = builder.Build();
+
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, config["Jwt:Key"]);
+        Assert.Equal("DietDostGateway", config["Jwt:Issuer"]);
+        Assert.Equal("DietDostClient", config["Jwt:Audience"]);
+        Assert.Equal("1440", config["Jwt:ExpiryMinutes"]);
+        Assert.Equal("superadmin@dietdost.app", config["Auth:SuperAdminEmail"]);
+        Assert.Equal("superadmin@dietdost.app", config["SuperAdminEmail"]);
+        Assert.Equal("false", config["Auth:RequireMobileVerification"]);
+        Assert.Equal("false", config["RequireMobileVerification"]);
+        Assert.Equal("Sqlite", config["Database:Provider"]);
+        Assert.Equal("GoogleAI", config["AI:Provider"]);
+    }
+
+    [Fact]
+    public void DietDostConfiguration_ExposesStronglyTypedProperties_FromMergedConfiguration()
+    {
+        var mockDevHost = new TestHostEnvironment { EnvironmentName = "Development" };
+        var builder = new ConfigurationBuilder();
+        Nutrition.WebGateway.Extensions.ConfigurationExtensions.AddDietDostAppConfiguration(builder, mockDevHost);
+        var config = builder.Build();
+        var mockAppEnv = new TestAppEnvironment(isDebug: true, isDevelopment: true);
+
+        Nutrition.Application.Common.Interfaces.IDietDostConfiguration dietConfig =
+            new Nutrition.Infrastructure.Configuration.DietDostConfiguration(config, mockAppEnv);
+
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, dietConfig.JwtKey);
+        Assert.Equal("DietDostGateway", dietConfig.JwtIssuer);
+        Assert.Equal("DietDostClient", dietConfig.JwtAudience);
+        Assert.Equal(1440, dietConfig.JwtExpiryMinutes);
+        Assert.Equal("superadmin@dietdost.app", dietConfig.SuperAdminEmail);
+        Assert.False(dietConfig.RequireMobileVerification);
+        Assert.True(dietConfig.AllowRegistration);
+        Assert.Equal("Sqlite", dietConfig.DatabaseProvider);
+        Assert.Equal("GoogleAI", dietConfig.AiProvider);
+        Assert.Equal("gemini-3-flash-preview", dietConfig.GoogleAiModelId);
+    }
+
+    [Fact]
+    public void ValidateRequiredDeployedSecrets_InProduction_WhenJwtKeyMissing_Throws()
+    {
+        var mockProdHost = new TestHostEnvironment { EnvironmentName = "Production" };
+        var emptyConfig = new ConfigurationBuilder().Build();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            Nutrition.WebGateway.Extensions.ConfigurationExtensions.ValidateRequiredDeployedSecrets(emptyConfig, mockProdHost));
+
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured", ex.Message);
+    }
+
     private sealed class TestAppEnvironment(bool isDebug, bool isDevelopment) : Nutrition.Application.Common.Interfaces.IAppEnvironment
     {
         public bool IsDebugMode => isDebug;

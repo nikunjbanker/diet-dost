@@ -414,11 +414,8 @@ public static class DatabaseInitializationExtensions
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
         var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
 
-        var configuredSuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim()
-            ?? configuration["SuperAdminEmail"]?.Trim();
-        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(configuredSuperAdminEmail)
-            ? configuredSuperAdminEmail
-            : "superadmin@dietdost.app";
+        var primarySuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim()
+            ?? "superadmin@dietdost.app";
 
         // Seeded end-user demo tier accounts (Free, Basic, Premium) - permitted in showcase environments
         var demoSpecs = new List<DemoUserSpec>

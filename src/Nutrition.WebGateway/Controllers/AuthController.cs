@@ -108,8 +108,7 @@ public class AuthController : ControllerBase
     public IActionResult GetAuthConfig()
     {
         var allowRegistration = _configuration.GetValue<bool>("Auth:AllowRegistration", true);
-        var requireMobileVerification = _configuration.GetValue<bool>("Auth:RequireMobileVerification", false)
-            || _configuration.GetValue<bool>("RequireMobileVerification", false);
+        var requireMobileVerification = _configuration.GetValue<bool>("Auth:RequireMobileVerification", false);
         return Ok(new
         {
             allowRegistration,

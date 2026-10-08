@@ -7,8 +7,10 @@
  */
 using Nutrition.Application;
 using Nutrition.Application.Agents;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Services;
 using Nutrition.Infrastructure.AI;
+using Nutrition.Infrastructure.Configuration;
 using Nutrition.Infrastructure.Persistence;
 using Nutrition.Infrastructure.Security;
 
@@ -23,6 +25,9 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        // Centralized Strongly-Typed Configuration & Secrets Accessor
+        services.AddSingleton<IDietDostConfiguration, DietDostConfiguration>();
 
         // Storage Infrastructure (Swappable SQLite V1 per SDD section 3.1)
         services.AddStorageInfrastructure(configuration);

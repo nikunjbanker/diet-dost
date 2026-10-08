@@ -17,23 +17,12 @@ using Nutrition.WebGateway.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// 0a. Load Application Secrets from Database Table into IConfiguration Hierarchy (Local Fallback)
-var dbConnectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
-builder.Configuration.AddDatabaseSecrets(dbConnectionString);
-
-// 0b. Azure Key Vault Secrets Integration (Deployed / Cloud Environment)
-// In deployed environments (non-development or when KeyVault:VaultUri is configured),
-// retrieve application secrets (Jwt:Key, Auth:SuperAdminEmail, Auth:RequireMobileVerification,
-// AI:GoogleAI:ApiKey, AI:AzureOpenAI:ApiKey, ConnectionStrings, etc.) directly from Azure Key Vault.
-// Azure Key Vault configuration provider takes highest precedence, overriding database defaults and appsettings.
-var keyVaultUri = builder.Configuration["KeyVault:VaultUri"]
-    ?? builder.Configuration["KEY_VAULT_URI"]
-    ?? builder.Configuration.GetConnectionString("dietdost-kv");
-
-if (!string.IsNullOrWhiteSpace(keyVaultUri))
-{
-    builder.Configuration.AddAzureKeyVault(new Uri(keyVaultUri), new DefaultAzureCredential());
-}
+// 0. Centralized Diet-Dost Application & Secrets Configuration
+// In deployed environments (!env.IsDevelopment()): secrets are retrieved from Azure Key Vault using DefaultAzureCredential.
+// In local development (env.IsDevelopment()): secrets are merged from appsettings.Development.json, local database, and dev defaults.
+// Wherever IConfiguration is injected, all merged secrets and settings are available without distributed checks.
+builder.Configuration.AddDietDostAppConfiguration(builder.Environment);
+builder.Configuration.ValidateRequiredDeployedSecrets(builder.Environment);
 
 // 1. Core Framework & Distributed Telemetry (Aspire / OpenTelemetry)
 builder.Services.AddAppTelemetry(builder.Logging, builder.Configuration);

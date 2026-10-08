@@ -32,27 +32,13 @@ public static class SecurityAndAuthExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         var isDev = env?.IsDevelopment() ?? string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
-
-        var jwtIssuer = configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
-        var jwtAudience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
-        var jwtKey = configuration["Jwt:Key"];
-        if (string.IsNullOrWhiteSpace(jwtKey))
-        {
-            jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? Environment.GetEnvironmentVariable("Jwt__Key");
-        }
-        if (string.IsNullOrWhiteSpace(jwtKey))
-        {
-            if (isDev)
-            {
-                jwtKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
-            }
-            else
-            {
-                throw new InvalidOperationException(
-                    "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
-                    "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");
-            }
-        }
+        var jwtIssuer = configuration["Jwt:Issuer"] ?? "DietDostGateway";
+        var jwtAudience = configuration["Jwt:Audience"] ?? "DietDostClient";
+        var jwtKey = configuration["Jwt:Key"]
+            ?? (isDev ? ConfigurationExtensions.DefaultDevJwtKey : null)
+            ?? throw new InvalidOperationException(
+                "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
+                "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");
 
         services.AddAuthentication(options =>
         {

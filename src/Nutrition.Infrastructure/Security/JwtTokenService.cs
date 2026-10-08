@@ -29,27 +29,17 @@ public class JwtTokenService : IJwtTokenService
 
     public JwtTokenService(IConfiguration configuration, Nutrition.Application.Common.Interfaces.IAppEnvironment? appEnv = null)
     {
-        _issuer = configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
-        _audience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
-        var configuredKey = configuration["Jwt:Key"];
-        if (string.IsNullOrWhiteSpace(configuredKey))
-        {
-            configuredKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? Environment.GetEnvironmentVariable("Jwt__Key");
-        }
-        if (string.IsNullOrWhiteSpace(configuredKey))
-        {
-            var isDevelopment = appEnv?.IsDevelopment ?? string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
-            if (isDevelopment)
-            {
-                configuredKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
-            }
-            else
-            {
-                throw new InvalidOperationException(
+        _issuer = configuration["Jwt:Issuer"] ?? "DietDostGateway";
+        _audience = configuration["Jwt:Audience"] ?? "DietDostClient";
+        var configuredKey = configuration["Jwt:Key"]
+            ?? configuration["Jwt__Key"]
+            ?? configuration["JWT_KEY"]
+            ?? (appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+                ? "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!"
+                : throw new InvalidOperationException(
                     "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
-                    "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");
-            }
-        }
+                    "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables."));
+
         _key = configuredKey;
 
         var keyBytes = Encoding.UTF8.GetBytes(_key);
@@ -58,7 +48,7 @@ public class JwtTokenService : IJwtTokenService
             throw new ArgumentException("JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256 security. Ensure Jwt:Key is configured in the AppSecrets database table.", nameof(configuration));
         }
 
-        if (int.TryParse(configuration["Jwt:ExpiryMinutes"] ?? Environment.GetEnvironmentVariable("JWT_EXPIRY_MINUTES"), out var exp) && exp != 0)
+        if (int.TryParse(configuration["Jwt:ExpiryMinutes"], out var exp) && exp != 0)
         {
             _expiryMinutes = exp;
         }
