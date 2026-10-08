@@ -53,6 +53,7 @@ async function main() {
     const edgeProc = spawn(EDGE_PATH, [
         '--headless=new',
         `--remote-debugging-port=${PORT}`,
+        `--user-data-dir=${process.env.TEMP || 'C:\\\\temp'}\\edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',

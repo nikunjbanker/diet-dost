@@ -51,6 +51,7 @@ async function main() {
     const edgeProc = spawn(EDGE_PATH, [
         '--headless=new',
         `--remote-debugging-port=${PORT}`,
+        `--user-data-dir=${process.env.TEMP || 'C:\\\\temp'}\\edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',
@@ -133,7 +134,14 @@ async function main() {
 
             idInput.value = '${email}';
             pwdInput.value = '${password}';
-            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            idInput.dispatchEvent(new Event('input', { bubbles: true }));
+            pwdInput.dispatchEvent(new Event('input', { bubbles: true }));
+            const submitBtn = document.getElementById('btn-submit-signin');
+            if (submitBtn) {
+                submitBtn.click();
+            } else {
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            }
             return true;
         })()`);
     }
@@ -142,6 +150,11 @@ async function main() {
     // TEST 1: MOBILE LOGIN AS BASIC TIER USER
     // -------------------------------------------------------------------------
     console.log('\n[3/10] Step 1: Performing Mobile Login as basic@dietdost.app...');
+    for (let i = 0; i < 30; i++) {
+        const ready = await evaluate(`!!document.getElementById('form-signin') && !!document.getElementById('signin-identifier')`);
+        if (ready) break;
+        await sleep(300);
+    }
     await performLogin('basic@dietdost.app', 'DietDost@Demo2026!');
     await sleep(2500);
 
