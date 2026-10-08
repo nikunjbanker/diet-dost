@@ -20,4 +20,5 @@ public sealed class AuthOptions
     public bool RequireMobileVerification { get; set; } = false;
     public string TermsVersion { get; set; } = "v1.0-202609";
     public string HealthConsentVersion { get; set; } = "v1.0-202609";
+    public string DemoPassword { get; set; } = "DietDost@Demo2026!";
 }

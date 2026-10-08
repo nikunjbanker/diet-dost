@@ -49,6 +49,7 @@ permissions:
 jobs:
   provision-infrastructure:
     name: Aspire Cloud Infrastructure Provisioning
+    if: github.actor == 'nikunjbanker'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     env:

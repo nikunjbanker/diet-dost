@@ -8,6 +8,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Nutrition.Application.Common.Options;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Security;
 using Nutrition.WebGateway.Extensions;
@@ -34,7 +36,8 @@ public class JwtAuthenticationTests
             .AddInMemoryCollection(inMemorySettings)
             .Build();
 
-        _jwtService = new JwtTokenService(_config);
+        var jwtOptions = _config.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        _jwtService = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(jwtOptions));
     }
 
     [Fact]
@@ -161,7 +164,8 @@ public class JwtAuthenticationTests
             })
             .Build();
 
-        var expiredService = new JwtTokenService(expiredConfig);
+        var expiredOptions = expiredConfig.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var expiredService = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(expiredOptions));
 
         var user = new ApplicationUser
         {
@@ -253,7 +257,8 @@ public class JwtAuthenticationTests
             .AddInMemoryCollection(settings)
             .Build();
 
-        var ex = Assert.Throws<ArgumentException>(() => new JwtTokenService(config));
+        var jwtOpts = config.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions { Key = shortKey };
+        var ex = Assert.Throws<ArgumentException>(() => new JwtTokenService(Microsoft.Extensions.Options.Options.Create(jwtOpts)));
         Assert.Contains("32 bytes", ex.Message);
     }
 
@@ -327,7 +332,7 @@ public class JwtAuthenticationTests
         var emptyConfig = new ConfigurationBuilder().Build();
         var mockAppEnv = new TestAppEnvironment(isDebug: false, isDevelopment: false);
 
-        var ex = Assert.Throws<InvalidOperationException>(() => new JwtTokenService(emptyConfig, mockAppEnv));
+        var ex = Assert.Throws<InvalidOperationException>(() => new JwtTokenService(Microsoft.Extensions.Options.Options.Create(new JwtOptions()), mockAppEnv));
         Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR", ex.Message);
     }
 
@@ -337,7 +342,7 @@ public class JwtAuthenticationTests
         var emptyConfig = new ConfigurationBuilder().Build();
         var mockAppEnv = new TestAppEnvironment(isDebug: true, isDevelopment: true);
 
-        var service = new JwtTokenService(emptyConfig, mockAppEnv);
+        var service = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(new JwtOptions()), mockAppEnv);
         Assert.NotNull(service);
     }
 

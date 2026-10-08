@@ -152,4 +152,35 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("default-src 'self'", context.Response.Headers["Content-Security-Policy"].ToString());
         Assert.Contains("dev.diet-dost.in", context.Response.Headers["Content-Security-Policy"].ToString());
     }
+
+    [Fact]
+    public void DeploymentWorkflows_MustBeStrictlyRestrictedToNikunjBanker()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var appWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-app-deploy.yml");
+        var infraWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-infra-deploy.yml");
+
+        Assert.True(File.Exists(appWorkflowPath), $"Expected workflow file at {appWorkflowPath}");
+        Assert.True(File.Exists(infraWorkflowPath), $"Expected workflow file at {infraWorkflowPath}");
+
+        var appContent = File.ReadAllText(appWorkflowPath);
+        var infraContent = File.ReadAllText(infraWorkflowPath);
+
+        Assert.Contains("if: github.actor == 'nikunjbanker'", appContent);
+        Assert.Contains("if: github.actor == 'nikunjbanker'", infraContent);
+    }
+
+    [Fact]
+    public void CodeOwners_MustStrictlyProtectWorkflowsDirectory()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var codeownersPath = Path.Combine(repoRoot, ".github", "CODEOWNERS");
+
+        Assert.True(File.Exists(codeownersPath), $"Expected CODEOWNERS file at {codeownersPath}");
+
+        var codeownersContent = File.ReadAllText(codeownersPath);
+
+        Assert.Contains("/.github/   @nikunjbanker", codeownersContent);
+        Assert.Contains("* @nikunjbanker", codeownersContent);
+    }
 }

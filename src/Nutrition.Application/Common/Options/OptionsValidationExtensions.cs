@@ -70,8 +70,7 @@ public static class OptionsValidationExtensions
             .Configure(options =>
             {
                 configuration.GetSection(DatabaseOptions.SectionName).Bind(options);
-                var connStr = configuration.GetConnectionString("DefaultConnection")
-                    ?? configuration["ConnectionStrings:DefaultConnection"];
+                var connStr = configuration.GetConnectionString("DefaultConnection");
                 if (!string.IsNullOrWhiteSpace(connStr))
                 {
                     options.ConnectionString = connStr;

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -7,9 +7,11 @@
  */
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Common.Options;
 using Nutrition.Application.Features.Auth.DTOs;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Profile;
@@ -36,7 +38,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpService _otpService;
-    private readonly IConfiguration _config;
+    private readonly AuthOptions _authOptions;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
 
     public RegisterUserCommandHandler(
@@ -46,7 +48,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
         IUnitOfWork uow,
         IPasswordHasher passwordHasher,
         IOtpService otpService,
-        IConfiguration config,
+        IOptions<AuthOptions> authOptions,
         ILogger<RegisterUserCommandHandler> logger)
     {
         _userRepo = userRepo;
@@ -55,7 +57,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
         _uow = uow;
         _passwordHasher = passwordHasher;
         _otpService = otpService;
-        _config = config;
+        _authOptions = authOptions?.Value ?? new AuthOptions();
         _logger = logger;
     }
 
@@ -86,8 +88,8 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
             return Result<RegisterResultDto>.Failure("An account with this email address already exists. Please log in or reset your password.", "EmailAlreadyRegistered", 409);
         }
 
-        var termsVersion = _config["Auth:TermsVersion"] ?? "v1.0-202609";
-        var healthConsentVersion = _config["Auth:HealthConsentVersion"] ?? "v1.0-202609";
+        var termsVersion = _authOptions.TermsVersion ?? "v1.0-202609";
+        var healthConsentVersion = _authOptions.HealthConsentVersion ?? "v1.0-202609";
         var ipAddress = request.IpAddress ?? "127.0.0.1";
         var userAgent = request.UserAgent ?? "Unknown";
 

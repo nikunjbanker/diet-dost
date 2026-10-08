@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -13,8 +13,10 @@ using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Options;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
@@ -27,9 +29,11 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
     private readonly ILogger<MicrosoftAgentFoodVisionService> _logger;
     private readonly ILoggerFactory _loggerFactory;
     private readonly HttpClient _httpClient;
+    private readonly AiOptions _aiOptions;
 
     public MicrosoftAgentFoodVisionService(
         IConfiguration config,
+        IOptions<AiOptions> aiOptions,
         ILogger<MicrosoftAgentFoodVisionService> logger,
         ILoggerFactory loggerFactory,
         HttpClient? httpClient = null)
@@ -38,6 +42,16 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         _logger = logger;
         _loggerFactory = loggerFactory;
         _httpClient = httpClient ?? new HttpClient();
+        _aiOptions = aiOptions?.Value ?? config.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+    }
+
+    public MicrosoftAgentFoodVisionService(
+        IConfiguration config,
+        ILogger<MicrosoftAgentFoodVisionService> logger,
+        ILoggerFactory loggerFactory,
+        HttpClient? httpClient = null)
+        : this(config, Microsoft.Extensions.Options.Options.Create(config.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions()), logger, loggerFactory, httpClient)
+    {
     }
 
     public MicrosoftAgentFoodVisionService(
@@ -50,12 +64,11 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
 
     private string? ResolveApiKey()
     {
+        if (IsValidApiKey(_aiOptions.GoogleAI?.ApiKey))
+            return _aiOptions.GoogleAI!.ApiKey!.Trim();
+
         var candidates = new[]
         {
-            _config["AI:GoogleAI:ApiKey"],
-            _config["AI:ApiKey"],
-            _config["Gemini:ApiKey"],
-            _config["GoogleAI:ApiKey"],
             Environment.GetEnvironmentVariable("AI__GoogleAI__ApiKey"),
             Environment.GetEnvironmentVariable("AI__ApiKey"),
             Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
@@ -174,7 +187,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                     var result = await provider.AnalyzePhotoAsync(imageBytes, mimeType, systemPrompt, model, cts.Token);
                     if (result != null && result.IdentifiedItems != null && result.IdentifiedItems.Count > 0)
                     {
-                        if (bool.TryParse(_config["AI:ShowModelDetails"], out var showModel) ? showModel : true)
+                        if (_aiOptions.ShowModelDetails)
                         {
                             result.DetectedByModel = model;
                         }
@@ -210,7 +223,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
 
         // Intelligent high-fidelity local clinical nutrition engine with continuous learned memory
         var localResult = GenerateIntelligentLocalAnalysis(imageBytes, regionalContext, userContext, userLearnedCorrections, mealType, fileName);
-        if (bool.TryParse(_config["AI:ShowModelDetails"], out var showLocalModel) ? showLocalModel : true)
+        if (_aiOptions.ShowModelDetails)
         {
             localResult.DetectedByModel = "Local Clinical Engine (Offline)";
         }
@@ -294,7 +307,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
                                             parsed.TotalCalories = parsed.IdentifiedItems.Sum(i => i.Calories);
                                         }
 
-                                         if (bool.TryParse(_config["AI:ShowModelDetails"], out var showModel) ? showModel : true)
+                                         if (_aiOptions.ShowModelDetails)
                                          {
                                              parsed.DetectedByModel = model;
                                          }
@@ -329,7 +342,7 @@ public class MicrosoftAgentFoodVisionService : IFoodVisionAgent
         }
 
         var localParsed = ParseDescriptionLocally(description, mealType, userContext, userLearnedCorrections);
-        if (bool.TryParse(_config["AI:ShowModelDetails"], out var showLocalModel) ? showLocalModel : true)
+        if (_aiOptions.ShowModelDetails)
         {
             localParsed.DetectedByModel = "Local Clinical Engine (Offline)";
         }

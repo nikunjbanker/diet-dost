@@ -8,6 +8,7 @@
 using Azure.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Nutrition.Application.Common.Options;
 using Nutrition.Infrastructure.Configuration;
 
 namespace Nutrition.WebGateway.Extensions;
@@ -155,7 +156,8 @@ public static class ConfigurationExtensions
 
         if (!env.IsDevelopment())
         {
-            var jwtKey = configuration["Jwt:Key"];
+            var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+            var jwtKey = jwtOptions.Key;
             if (string.IsNullOrWhiteSpace(jwtKey))
             {
                 throw new InvalidOperationException(

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Options;
 
 namespace Nutrition.Infrastructure.Persistence;
 
@@ -26,34 +27,34 @@ public static class StorageInfrastructureExtensions
     /// <returns>The same service collection for fluent registration.</returns>
     public static IServiceCollection AddStorageInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var provider = configuration["Database:Provider"] ?? "Sqlite";
+        var dbOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
+        var provider = !string.IsNullOrWhiteSpace(dbOptions.Provider) ? dbOptions.Provider : "Sqlite";
+        var connectionString = !string.IsNullOrWhiteSpace(dbOptions.ConnectionString)
+            ? dbOptions.ConnectionString
+            : configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
 
         switch (provider.ToLowerInvariant())
         {
             case "sqlite":
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite(configuration.GetConnectionString("DefaultConnection") 
-                        ?? "Data Source=diettracker.db"));
+                    options.UseSqlite(connectionString));
                 break;
 
             case "postgresql":
                 // Reserved for cloud deployment with Npgsql
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite(configuration.GetConnectionString("DefaultConnection") 
-                        ?? "Data Source=diettracker.db"));
+                    options.UseSqlite(connectionString));
                 break;
 
             case "sqlserver":
                 // Reserved for enterprise SQL Server deployment
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite(configuration.GetConnectionString("DefaultConnection") 
-                        ?? "Data Source=diettracker.db"));
+                    options.UseSqlite(connectionString));
                 break;
 
             default:
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite(configuration.GetConnectionString("DefaultConnection") 
-                        ?? "Data Source=diettracker.db"));
+                    options.UseSqlite(connectionString));
                 break;
         }
 

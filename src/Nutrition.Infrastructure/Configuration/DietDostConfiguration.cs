@@ -21,10 +21,10 @@ public sealed class DietDostConfiguration : IDietDostConfiguration
 {
     private readonly IConfiguration _configuration;
     private readonly IAppEnvironment? _appEnv;
-    private readonly JwtOptions? _jwtOptions;
-    private readonly AuthOptions? _authOptions;
-    private readonly AiOptions? _aiOptions;
-    private readonly DatabaseOptions? _databaseOptions;
+    private readonly JwtOptions _jwtOptions;
+    private readonly AuthOptions _authOptions;
+    private readonly AiOptions _aiOptions;
+    private readonly DatabaseOptions _databaseOptions;
 
     public const string DefaultDevJwtKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
     public const string DefaultSuperAdminEmail = "superadmin@dietdost.app";
@@ -36,117 +36,81 @@ public sealed class DietDostConfiguration : IDietDostConfiguration
         IOptions<DatabaseOptions> dbOptions,
         IConfiguration configuration,
         IAppEnvironment? appEnv = null)
-        : this(configuration, appEnv)
     {
-        _jwtOptions = jwtOptions?.Value;
-        _authOptions = authOptions?.Value;
-        _aiOptions = aiOptions?.Value;
-        _databaseOptions = dbOptions?.Value;
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _appEnv = appEnv;
+        _jwtOptions = jwtOptions?.Value ?? configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        _authOptions = authOptions?.Value ?? configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+        _aiOptions = aiOptions?.Value ?? configuration.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+        _databaseOptions = dbOptions?.Value ?? configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
     }
 
     public DietDostConfiguration(IConfiguration configuration, IAppEnvironment? appEnv = null)
     {
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _appEnv = appEnv;
+        _jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        _authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+        _aiOptions = configuration.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+        _databaseOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
     }
 
     public string JwtKey =>
-        !string.IsNullOrWhiteSpace(_jwtOptions?.Key)
+        !string.IsNullOrWhiteSpace(_jwtOptions.Key)
             ? _jwtOptions.Key
-            : (_configuration["Jwt:Key"]
-               ?? _configuration["JWT_KEY"]
-               ?? _configuration["Jwt__Key"]
-               ?? (_appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
-                   ? DefaultDevJwtKey
-                   : throw new InvalidOperationException("CRITICAL CONFIGURATION ERROR: 'Jwt:Key' is not configured.")));
+            : (_appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+                ? DefaultDevJwtKey
+                : throw new InvalidOperationException("CRITICAL CONFIGURATION ERROR: 'Jwt:Key' is not configured."));
 
     public string JwtIssuer =>
-        _jwtOptions?.Issuer ?? _configuration["Jwt:Issuer"] ?? "DietDostGateway";
+        !string.IsNullOrWhiteSpace(_jwtOptions.Issuer) ? _jwtOptions.Issuer : "DietDostGateway";
 
     public string JwtAudience =>
-        _jwtOptions?.Audience ?? _configuration["Jwt:Audience"] ?? "DietDostClient";
+        !string.IsNullOrWhiteSpace(_jwtOptions.Audience) ? _jwtOptions.Audience : "DietDostClient";
 
     public int JwtExpiryMinutes =>
-        _jwtOptions?.ExpiryMinutes ?? (int.TryParse(_configuration["Jwt:ExpiryMinutes"], out var exp) && exp > 0 ? exp : 1440);
+        _jwtOptions.ExpiryMinutes > 0 ? _jwtOptions.ExpiryMinutes : 1440;
 
     public string SuperAdminEmail =>
-        _authOptions?.SuperAdminEmail
-        ?? _configuration["Auth:SuperAdminEmail"]
-        ?? _configuration["SuperAdminEmail"]
-        ?? Environment.GetEnvironmentVariable("SUPER_ADMIN_EMAIL")
-        ?? DefaultSuperAdminEmail;
+        !string.IsNullOrWhiteSpace(_authOptions.SuperAdminEmail) ? _authOptions.SuperAdminEmail : DefaultSuperAdminEmail;
 
-    public bool RequireMobileVerification =>
-        _authOptions?.RequireMobileVerification
-        ?? (_configuration.GetValue<bool>("Auth:RequireMobileVerification", false)
-            || _configuration.GetValue<bool>("RequireMobileVerification", false));
+    public bool RequireMobileVerification => _authOptions.RequireMobileVerification;
 
-    public bool AllowRegistration =>
-        _authOptions?.AllowRegistration
-        ?? _configuration.GetValue<bool>("Auth:AllowRegistration", true);
+    public bool AllowRegistration => _authOptions.AllowRegistration;
 
     public string DefaultConnection =>
-        _databaseOptions?.ConnectionString
-        ?? _configuration.GetConnectionString("DefaultConnection")
-        ?? _configuration["ConnectionStrings:DefaultConnection"]
-        ?? "Data Source=diettracker.db";
+        !string.IsNullOrWhiteSpace(_databaseOptions.ConnectionString)
+            ? _databaseOptions.ConnectionString
+            : _configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
 
     public string DatabaseProvider =>
-        _databaseOptions?.Provider
-        ?? _configuration["Database:Provider"]
-        ?? "Sqlite";
+        !string.IsNullOrWhiteSpace(_databaseOptions.Provider) ? _databaseOptions.Provider : "Sqlite";
 
     public string AiProvider =>
-        _aiOptions?.Provider ?? _configuration["AI:Provider"] ?? "GoogleAI";
+        !string.IsNullOrWhiteSpace(_aiOptions.Provider) ? _aiOptions.Provider : "GoogleAI";
 
     public string GoogleAiModelId =>
-        _aiOptions?.GoogleAI?.ModelId
-        ?? _configuration["AI:GoogleAI:ModelId"]
-        ?? _configuration["AI:ModelId"]
-        ?? "gemini-3-flash-preview";
+        !string.IsNullOrWhiteSpace(_aiOptions.GoogleAI?.ModelId) ? _aiOptions.GoogleAI.ModelId : "gemini-3-flash-preview";
 
     public string GoogleAiFallbackModelId =>
-        _aiOptions?.GoogleAI?.FallbackModelId
-        ?? _configuration["AI:GoogleAI:FallbackModelId"]
-        ?? _configuration["AI:FallbackModelId"]
-        ?? "gemini-3.6-flash";
+        !string.IsNullOrWhiteSpace(_aiOptions.GoogleAI?.FallbackModelId) ? _aiOptions.GoogleAI.FallbackModelId : "gemini-3.6-flash";
 
-    public string? GoogleAiEndpoint =>
-        _aiOptions?.GoogleAI?.Endpoint
-        ?? _configuration["AI:GoogleAI:Endpoint"]
-        ?? _configuration["AI:Endpoint"]
-        ?? "https://generativelanguage.googleapis.com/v1beta/models";
+    public string? GoogleAiEndpoint => _aiOptions.GoogleAI?.Endpoint;
 
-    public string? GoogleAiApiKey =>
-        _aiOptions?.GoogleAI?.ApiKey
-        ?? _configuration["AI:GoogleAI:ApiKey"]
-        ?? _configuration["AI:ApiKey"]
-        ?? _configuration["Gemini:ApiKey"]
-        ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+    public string? GoogleAiApiKey => _aiOptions.GoogleAI?.ApiKey;
 
     public string AzureOpenAiDeploymentName =>
-        _aiOptions?.AzureOpenAI?.DeploymentName
-        ?? _configuration["AI:AzureOpenAI:DeploymentName"]
-        ?? "gpt-5.6-luna";
+        !string.IsNullOrWhiteSpace(_aiOptions.AzureOpenAI?.DeploymentName) ? _aiOptions.AzureOpenAI.DeploymentName : "gpt-5.6-luna";
 
-    public string? AzureOpenAiEndpoint =>
-        _aiOptions?.AzureOpenAI?.Endpoint
-        ?? _configuration["AI:AzureOpenAI:Endpoint"]
-        ?? "https://mf-proj-nikunj-ai-demo--resource.services.ai.azure.com/openai/v1";
+    public string? AzureOpenAiEndpoint => _aiOptions.AzureOpenAI?.Endpoint;
 
-    public string? AzureOpenAiApiKey =>
-        _aiOptions?.AzureOpenAI?.ApiKey
-        ?? _configuration["AI:AzureOpenAI:ApiKey"]
-        ?? Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY");
+    public string? AzureOpenAiApiKey => _aiOptions.AzureOpenAI?.ApiKey;
 
-    public int AiMaxTokens =>
-        _aiOptions?.MaxTokens ?? (int.TryParse(_configuration["AI:MaxTokens"], out var mt) && mt > 0 ? mt : 8192);
+    public int AiMaxTokens => _aiOptions.MaxTokens > 0 ? _aiOptions.MaxTokens : 8192;
 
-    public double AiTemperature =>
-        _aiOptions?.Temperature ?? (double.TryParse(_configuration["AI:Temperature"], out var temp) ? temp : 0.2);
+    public double AiTemperature => _aiOptions.Temperature;
 
-    public bool AiShowModelDetails =>
-        _aiOptions?.ShowModelDetails ?? (!bool.TryParse(_configuration["AI:ShowModelDetails"], out var show) || show);
+    public bool AiShowModelDetails => _aiOptions.ShowModelDetails;
 
     public string? this[string key] => _configuration[key];
 }

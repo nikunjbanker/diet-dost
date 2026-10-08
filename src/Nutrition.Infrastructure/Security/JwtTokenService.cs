@@ -9,7 +9,10 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Nutrition.Application.Common.Options;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 
@@ -27,14 +30,23 @@ public class JwtTokenService : IJwtTokenService
     private readonly int _expiryMinutes;
     private readonly SymmetricSecurityKey _signingKey;
 
-    public JwtTokenService(IConfiguration configuration, Nutrition.Application.Common.Interfaces.IAppEnvironment? appEnv = null)
+    /// <summary>
+    /// Primary DI constructor utilizing strongly-typed JwtOptions.
+    /// </summary>
+    [ActivatorUtilitiesConstructor]
+    public JwtTokenService(
+        IOptions<JwtOptions> jwtOptions,
+        Nutrition.Application.Common.Interfaces.IAppEnvironment? appEnv = null)
     {
-        _issuer = configuration["Jwt:Issuer"] ?? "DietDostGateway";
-        _audience = configuration["Jwt:Audience"] ?? "DietDostClient";
-        var configuredKey = configuration["Jwt:Key"]
-            ?? configuration["Jwt__Key"]
-            ?? configuration["JWT_KEY"]
-            ?? (appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+        ArgumentNullException.ThrowIfNull(jwtOptions);
+        var options = jwtOptions.Value ?? throw new ArgumentNullException(nameof(jwtOptions));
+
+        _issuer = !string.IsNullOrWhiteSpace(options.Issuer) ? options.Issuer : "DietDostGateway";
+        _audience = !string.IsNullOrWhiteSpace(options.Audience) ? options.Audience : "DietDostClient";
+
+        var configuredKey = !string.IsNullOrWhiteSpace(options.Key)
+            ? options.Key
+            : (appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
                 ? "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!"
                 : throw new InvalidOperationException(
                     "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
@@ -45,18 +57,10 @@ public class JwtTokenService : IJwtTokenService
         var keyBytes = Encoding.UTF8.GetBytes(_key);
         if (keyBytes.Length < 32)
         {
-            throw new ArgumentException("JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256 security. Ensure Jwt:Key is configured in the AppSecrets database table.", nameof(configuration));
+            throw new ArgumentException("JWT signing key must be at least 32 bytes (256 bits) for HMAC-SHA256 security. Ensure Jwt:Key is configured in the AppSecrets database table.", nameof(jwtOptions));
         }
 
-        if (int.TryParse(configuration["Jwt:ExpiryMinutes"], out var exp) && exp != 0)
-        {
-            _expiryMinutes = exp;
-        }
-        else
-        {
-            _expiryMinutes = 1440; // Default: 24 hours
-        }
-
+        _expiryMinutes = options.ExpiryMinutes != 0 ? options.ExpiryMinutes : 1440;
         _signingKey = new SymmetricSecurityKey(keyBytes);
     }
 

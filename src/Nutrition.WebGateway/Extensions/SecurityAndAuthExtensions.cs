@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Nutrition.Application.Common.Options;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Security;
 
@@ -32,10 +33,12 @@ public static class SecurityAndAuthExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         var isDev = env?.IsDevelopment() ?? string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
-        var jwtIssuer = configuration["Jwt:Issuer"] ?? "DietDostGateway";
-        var jwtAudience = configuration["Jwt:Audience"] ?? "DietDostClient";
-        var jwtKey = configuration["Jwt:Key"]
-            ?? (isDev ? ConfigurationExtensions.DefaultDevJwtKey : null)
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var jwtIssuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer) ? jwtOptions.Issuer : "DietDostGateway";
+        var jwtAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience) ? jwtOptions.Audience : "DietDostClient";
+        var jwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+            ? jwtOptions.Key
+            : (isDev ? ConfigurationExtensions.DefaultDevJwtKey : null)
             ?? throw new InvalidOperationException(
                 "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
                 "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");

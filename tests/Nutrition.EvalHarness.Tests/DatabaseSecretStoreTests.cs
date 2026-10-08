@@ -147,8 +147,8 @@ public class DatabaseSecretStoreTests : IDisposable
             Assert.True(jwtKey.Length >= 32);
             Assert.Equal("DietDost@Demo2026!", demoPassword);
 
-            // JwtTokenService should successfully initialize using the key loaded from database
-            var jwtService = new JwtTokenService(config);
+            var jwtOptions = Microsoft.Extensions.Options.Options.Create(config.GetSection(Nutrition.Application.Common.Options.JwtOptions.SectionName).Get<Nutrition.Application.Common.Options.JwtOptions>() ?? new Nutrition.Application.Common.Options.JwtOptions { Key = jwtKey });
+            var jwtService = new JwtTokenService(jwtOptions);
             Assert.NotNull(jwtService);
         }
         finally

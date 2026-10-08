@@ -54,6 +54,7 @@ permissions:
 jobs:
   build-test-and-deploy:
     name: Aspire Application Build, Security Gate & Deploy
+    if: github.actor == 'nikunjbanker'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     env:

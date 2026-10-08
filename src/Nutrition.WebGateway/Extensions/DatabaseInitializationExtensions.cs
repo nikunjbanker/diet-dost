@@ -9,6 +9,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Common.Options;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
@@ -304,16 +305,24 @@ public static class DatabaseInitializationExtensions
     {
         var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>();
 
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var aiOptions = configuration.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+
         if (appEnv.IsDevelopment)
         {
-            defaultSecrets.Add(("Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!", "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"));
-            defaultSecrets.Add(("AI:GoogleAI:ApiKey", string.Empty, "Google Gemini Vision API Key"));
-            defaultSecrets.Add(("AI:AzureOpenAI:ApiKey", string.Empty, "Azure OpenAI API Key"));
+            var devJwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+                ? jwtOptions.Key
+                : "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
+
+            defaultSecrets.Add(("Jwt:Key", devJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"));
+            defaultSecrets.Add(("AI:GoogleAI:ApiKey", aiOptions.GoogleAI?.ApiKey ?? string.Empty, "Google Gemini Vision API Key"));
+            defaultSecrets.Add(("AI:AzureOpenAI:ApiKey", aiOptions.AzureOpenAI?.ApiKey ?? string.Empty, "Azure OpenAI API Key"));
         }
         else
         {
             // In deployed / non-development environments, retrieve secrets exclusively from Azure Key Vault or environment
-            var configuredJwtKey = configuration["Jwt:Key"];
+            var configuredJwtKey = jwtOptions.Key;
             if (!string.IsNullOrWhiteSpace(configuredJwtKey))
             {
                 defaultSecrets.Add(("Jwt:Key", configuredJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (from Key Vault)"));
@@ -322,7 +331,7 @@ public static class DatabaseInitializationExtensions
 
         if (appEnv.AllowsDemoUsers)
         {
-            defaultSecrets.Add(("Auth:DemoPassword", "DietDost@Demo2026!", "Deterministic password for seeded demo tier accounts (Debug/Dev only)"));
+            defaultSecrets.Add(("Auth:DemoPassword", authOptions.DemoPassword, "Deterministic password for seeded demo tier accounts (Debug/Dev only)"));
         }
 
         foreach (var (key, fallbackValue, description) in defaultSecrets)
@@ -330,13 +339,10 @@ public static class DatabaseInitializationExtensions
             var existing = await db.AppSecrets.FirstOrDefaultAsync(s => s.Key == key);
             if (existing == null)
             {
-                var configuredValue = configuration[key];
-                var finalValue = !string.IsNullOrWhiteSpace(configuredValue) ? configuredValue : fallbackValue;
-
                 await db.AppSecrets.AddAsync(new AppSecret
                 {
                     Key = key,
-                    Value = finalValue,
+                    Value = fallbackValue,
                     Description = description,
                     CreatedAtUtc = DateTime.UtcNow,
                     UpdatedAtUtc = DateTime.UtcNow
@@ -414,8 +420,10 @@ public static class DatabaseInitializationExtensions
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
         var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
 
-        var primarySuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim()
-            ?? "superadmin@dietdost.app";
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(authOptions.SuperAdminEmail)
+            ? authOptions.SuperAdminEmail.Trim()
+            : "superadmin@dietdost.app";
 
         // Seeded end-user demo tier accounts (Free, Basic, Premium) - permitted in showcase environments
         var demoSpecs = new List<DemoUserSpec>
@@ -515,8 +523,9 @@ public static class DatabaseInitializationExtensions
             await DeactivatePrivilegedDemoUsersAsync(db, logger);
         }
 
-        var demoPassword = configuration["Auth:DemoPassword"]
-            ?? (await db.AppSecrets.Where(s => s.Key == "Auth:DemoPassword").Select(s => s.Value).FirstOrDefaultAsync())
+        var demoPassword = !string.IsNullOrWhiteSpace(authOptions.DemoPassword)
+            ? authOptions.DemoPassword
+            : (await db.AppSecrets.Where(s => s.Key == "Auth:DemoPassword").Select(s => s.Value).FirstOrDefaultAsync())
             ?? "DietDost@Demo2026!";
 
         var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
@@ -559,9 +568,9 @@ public static class DatabaseInitializationExtensions
                         IsMobileVerified = true,
                         IsActive = true,
                         TermsAcceptedAtUtc = DateTime.UtcNow,
-                        TermsVersionAccepted = configuration["Auth:TermsVersion"] ?? "v1.0-202609",
+                        TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
                         HealthConsentAcceptedAtUtc = DateTime.UtcNow,
-                        HealthConsentVersionAccepted = configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
+                        HealthConsentVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.HealthConsentVersion) ? authOptions.HealthConsentVersion : "v1.0-202609",
                         ConsentIpAddress = "127.0.0.1",
                         ConsentUserAgent = "SystemBootstrap",
                         CreatedAtUtc = DateTime.UtcNow
