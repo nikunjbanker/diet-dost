@@ -132,6 +132,7 @@ jobs:
           parameters: >-
             environment=${{ inputs.environment }}
             location=${{ steps.ensure-rg.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}
+            fileShareQuotaGb=1
           failOnStderr: false
 
       - name: 10. Resolve ACR & ACA Environment Details

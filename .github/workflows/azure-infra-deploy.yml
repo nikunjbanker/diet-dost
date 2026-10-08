@@ -32,10 +32,10 @@ on:
         type: string
         default: 'dev'
       fileShareQuotaGb:
-        description: 'Persistent SQLite SMB file share quota in GB'
+        description: 'Persistent SQLite SMB file share quota in GB (1 GB for dev)'
         required: false
         type: number
-        default: 10
+        default: 1
       acrName:
         description: 'Azure Container Registry name (optional, auto-generated if empty)'
         required: false

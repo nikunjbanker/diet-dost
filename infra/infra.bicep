@@ -16,8 +16,8 @@ param environment string = 'dev'
 @description('Azure region for all resources.')
 param location string = resourceGroup().location
 
-@description('Storage quota for Azure Files SMB share in GB.')
-param fileShareQuotaGb int = 10
+@description('Storage quota for Azure Files SMB share in GB (defaults to 1 GB for dev environment).')
+param fileShareQuotaGb int = 1
 
 @description('Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used.')
 param acrName string = ''
