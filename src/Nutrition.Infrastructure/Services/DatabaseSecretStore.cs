@@ -80,7 +80,7 @@ public class DatabaseSecretStore : ISecretStore
         // 2. Prioritize Azure Key Vault / Environment configuration if present
         if (_configuration != null)
         {
-            var configVal = _configuration[key];
+            var configVal = _configuration.GetValue<string>(key);
             if (!string.IsNullOrWhiteSpace(configVal))
             {
                 return configVal;

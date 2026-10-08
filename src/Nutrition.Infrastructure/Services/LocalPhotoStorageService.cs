@@ -1,13 +1,14 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Common.Options;
 
 namespace Nutrition.Infrastructure.Services;
 
@@ -20,11 +21,15 @@ public class LocalPhotoStorageService : IPhotoStorageService
     private readonly string _webRootPath;
     private readonly ILogger<LocalPhotoStorageService> _logger;
 
-    public LocalPhotoStorageService(IConfiguration configuration, ILogger<LocalPhotoStorageService> logger)
+    public LocalPhotoStorageService(
+        IOptions<StorageOptions> storageOptions,
+        ILogger<LocalPhotoStorageService> logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _webRootPath = configuration?["Storage:WebRootPath"]
-            ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        var configuredPath = storageOptions?.Value?.WebRootPath;
+        _webRootPath = !string.IsNullOrWhiteSpace(configuredPath)
+            ? configuredPath
+            : Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
     }
 
     public async Task<string> SaveMealPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)

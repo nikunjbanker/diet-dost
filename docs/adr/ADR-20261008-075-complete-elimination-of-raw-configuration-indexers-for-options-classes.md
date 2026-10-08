@@ -64,6 +64,10 @@ Direct configuration indexer access violates clean architecture principles:
    - Eliminated raw fallback loops indexing `_config["AI:..."]`, binding cleanly to `AiOptions`.
 6. **`Nutrition.AppHost` Isolation**:
    - Implemented self-contained section binding in `AppHostAiOptions` without taking an invalid project reference to `Nutrition.Application`.
+7. **`StorageOptions` & `LocalPhotoStorageService`**:
+   - Implemented strongly-typed `StorageOptions` with `StorageOptionsValidator` (FluentValidation) and refactored `LocalPhotoStorageService` to inject `IOptions<StorageOptions>`, removing `configuration?["Storage:WebRootPath"]`.
+8. **`SqlitePragmaInterceptor` for Resilient SQLite Concurrency**:
+   - Implemented `SqlitePragmaInterceptor` inheriting `DbConnectionInterceptor` to execute `PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;` on every SQLite connection opened by EF Core. This guarantees zero `SQLITE_BUSY` / `SQLite Error 5` lock collisions during concurrent multi-threaded composite queries in Web BFF and Mobile BFF.
 
 ---
 
@@ -76,5 +80,5 @@ Direct configuration indexer access violates clean architecture principles:
 
 ## 6. Verification & Validation Evidence
 - **Build Output**: 0 Warnings, 0 Errors across all 7 projects targeting `.NET 11`.
-- **Unit/Eval Tests**: 206 / 206 tests passing (36 Domain Tests, 170 EvalHarness Tests).
+- **Unit/Eval Tests**: 209 / 209 tests passing (36 Domain Tests, 173 EvalHarness Tests).
 - **Live CFT Suite (`tests/validate_e2e_tiers.ps1`)**: 100% pass across all 5 demo user tiers (`free`, `basic`, `premium`, `admin.demo`, `superadmin`).

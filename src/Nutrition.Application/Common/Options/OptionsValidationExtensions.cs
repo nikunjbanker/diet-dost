@@ -79,6 +79,12 @@ public static class OptionsValidationExtensions
             .ValidateWithFluentValidation()
             .ValidateOnStart();
 
+        // 6. Register and validate StorageOptions
+        services.AddOptions<StorageOptions>()
+            .Bind(configuration.GetSection(StorageOptions.SectionName))
+            .ValidateWithFluentValidation()
+            .ValidateOnStart();
+
         return services;
     }
 }

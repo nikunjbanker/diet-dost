@@ -55,7 +55,8 @@ public class MobileBffCompositeTests : IDisposable
         services.AddLogging();
 
         services.AddDbContext<DietTrackerDbContext>(options =>
-            options.UseSqlite(connectionString));
+            options.UseSqlite(connectionString)
+                   .AddInterceptors(new SqlitePragmaInterceptor()));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();

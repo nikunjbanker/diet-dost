@@ -37,7 +37,8 @@ public static class StorageInfrastructureExtensions
         {
             case "sqlite":
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite(connectionString));
+                    options.UseSqlite(connectionString)
+                           .AddInterceptors(new SqlitePragmaInterceptor()));
                 break;
 
             case "postgresql":

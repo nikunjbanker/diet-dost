@@ -188,12 +188,23 @@ public class OptionsPatternFluentValidationTests
         var authOptions = provider.GetRequiredService<IOptions<AuthOptions>>().Value;
         var aiOptions = provider.GetRequiredService<IOptions<AiOptions>>().Value;
         var dbOptions = provider.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+        var storageOptions = provider.GetRequiredService<IOptions<StorageOptions>>().Value;
 
         Assert.Equal("DietDostGateway", jwtOptions.Issuer);
         Assert.Equal("superadmin@dietdost.app", authOptions.SuperAdminEmail);
         Assert.Equal("GoogleAI", aiOptions.Provider);
         Assert.Equal("Sqlite", dbOptions.Provider);
         Assert.Equal("Data Source=diettracker.db", dbOptions.ConnectionString);
+        Assert.NotNull(storageOptions);
+    }
+
+    [Fact]
+    public void StorageOptionsValidator_ValidOptions_PassesValidation()
+    {
+        var validator = new StorageOptionsValidator();
+        var options = new StorageOptions { WebRootPath = "/app/wwwroot" };
+        var result = validator.Validate(options);
+        Assert.True(result.IsValid);
     }
 
     [Fact]
