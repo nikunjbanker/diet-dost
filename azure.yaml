@@ -11,4 +11,5 @@ name: diet-dost
 services:
   app:
     project: src/Nutrition.AppHost/Nutrition.AppHost.csproj
+    language: dotnet
     host: containerapp
