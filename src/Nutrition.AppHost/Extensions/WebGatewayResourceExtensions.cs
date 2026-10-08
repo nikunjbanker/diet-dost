@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -57,6 +57,14 @@ public static class WebGatewayResourceExtensions
             webGateway.WithEnvironment("AI__AzureOpenAI__DeploymentName", aiOptions.AzureDeploymentName);
         }
 
+        // Configure Azure Container Apps publication settings
+        webGateway.PublishAsAzureContainerApp((infrastructure, containerApp) =>
+        {
+            containerApp.Template.Scale.MinReplicas = 1;
+            containerApp.Template.Scale.MaxReplicas = 1;
+        });
+
         return webGateway;
     }
 }
+

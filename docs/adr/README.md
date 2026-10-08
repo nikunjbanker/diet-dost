@@ -73,6 +73,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-067** | Universal Mobile Modal Ergonomics, Layering Isolation & Dynamic AI Nutrition Recalculation | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md) |
 | **ADR-068** | Azure Container Apps Deployment with Persistent SQLite SMB Volume Mount & Custom Domain TLS | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261003-068-azure-container-apps-deployment-and-sqlite-smb-persistence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-068-azure-container-apps-deployment-and-sqlite-smb-persistence.md) |
 | **ADR-069** | Released Environment Privileged Demo User Prohibition & Showcase End-User Tier Isolation | `[SECURITY]` | `ACCEPTED` | [`ADR-20261003-069-released-environment-privileged-demo-user-prohibition.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261003-069-released-environment-privileged-demo-user-prohibition.md) |
+| **ADR-070** | .NET Aspire Cloud Deployment Pipeline & Two-Stage Infra vs. Application Workflow | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261008-070-aspire-native-deployment-pipeline-and-two-stage-workflow.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-070-aspire-native-deployment-pipeline-and-two-stage-workflow.md) |
 
 
 

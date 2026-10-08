@@ -5,20 +5,37 @@
 # in compliance with, at your election, the "GNU Affero General Public
 # License v3.0 only" or the "Server Side Public License, v 1".
 # ==============================================================================
-# GitHub Actions CI/CD: Automated Azure Container Apps & Persistent SMB Deployment
+# GitHub Actions CI/CD: Aspire Application Build & Deployment Pipeline
+# Target: Azure Container Apps Workload Revision + Persistent SQLite SMB Mount
+# Driven by: .NET Aspire AppHost & infra/app.bicep
 # Strictly On-Demand (workflow_dispatch only) with Mandatory OWASP Pre-Deployment Gates
 # ==============================================================================
 
-name: Build and Deploy to Azure Container Apps
+name: Aspire - Build & Deploy Application
 
 on:
   workflow_dispatch:
     inputs:
+      provisionInfra:
+        description: 'Ensure / provision required cloud infrastructure before deploying app'
+        required: false
+        type: boolean
+        default: true
       allowDemoUsers:
         description: 'Enable seeded 5-tier demo accounts for dev showcase'
         required: false
         type: boolean
         default: true
+      enableCustomDomain:
+        description: 'Enable custom domain binding (dev.diet-dost.in)'
+        required: false
+        type: boolean
+        default: false
+      environment:
+        description: 'Target environment name (e.g. dev, prod)'
+        required: false
+        type: string
+        default: 'dev'
 
 permissions:
   id-token: write
@@ -26,7 +43,7 @@ permissions:
 
 jobs:
   build-test-and-deploy:
-    name: Build, Security Gate & Deploy (ACA + Persistent SQLite SMB)
+    name: Aspire Application Build, Security Gate & Deploy
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -37,7 +54,13 @@ jobs:
         with:
           dotnet-version: '11.0.x'
 
-      - name: 3. OWASP Security Gate - Audit NuGet Dependencies (OWASP A06)
+      - name: 3. Install / Verify Aspire CLI
+        run: |
+          echo "Installing or updating Aspire CLI..."
+          dotnet tool install -g aspire.cli || dotnet tool update -g aspire.cli
+          aspire --version
+
+      - name: 4. OWASP Security Gate - Audit NuGet Dependencies (OWASP A06)
         run: |
           echo "Scanning all package dependencies for known CVE vulnerabilities..."
           AUDIT_LOG=$(dotnet list package --vulnerable --include-transitive)
@@ -49,24 +72,23 @@ jobs:
           fi
           echo "✅ OWASP Dependency Security Gate Passed: 0 known vulnerabilities found."
 
-      - name: 4. Execute Full Security & Functional Test Suites (100% Pass Standard)
+      - name: 5. Execute Full Security & Functional Test Suites (100% Pass Standard)
         run: |
           echo "Running 170+ unit, domain, and security gating test suites..."
           dotnet test --configuration Release --verbosity normal
 
-      - name: 5. Azure CLI Authentication
+      - name: 6. Aspire Publish - Validate AppHost Model & Generate Manifests
+        run: |
+          echo "Evaluating Aspire AppHost deployment pipeline steps..."
+          aspire publish --apphost src/Nutrition.AppHost --output-path ./aspire-output --non-interactive
+          echo "✅ Aspire application pipeline steps validated."
+
+      - name: 7. Azure CLI Authentication
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: 6. Ensure Resource Group Exists
-        run: |
-          az group create \
-            --name "${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}" \
-            --location "${{ vars.AZURE_LOCATION || 'centralindia' }}" \
-            --output table
-
-      - name: 7. Build OCI Container Image (Podman)
+      - name: 8. Build OCI Container Image (Podman)
         id: build-image
         run: |
           ACR_NAME="${{ secrets.ACR_NAME }}"
@@ -80,7 +102,7 @@ jobs:
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
 
-      - name: 8. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
+      - name: 9. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
         run: |
           echo "Installing Trivy security scanner..."
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /tmp/trivy-bin
@@ -94,7 +116,7 @@ jobs:
 
           echo "✅ Container Security Gate Passed: 0 critical unpatched vulnerabilities detected."
 
-      - name: 9. Push OCI Container Image to ACR (Podman)
+      - name: 10. Push OCI Container Image to ACR (Podman)
         run: |
           ACR_NAME="${{ secrets.ACR_NAME }}"
           IMAGE_TAG="${{ steps.build-image.outputs.image_tag }}"
@@ -107,22 +129,69 @@ jobs:
           podman push "$IMAGE_TAG"
           podman push "$IMAGE_LATEST"
 
-      - name: 10. Deploy Infrastructure & Container App via Bicep
+      - name: 11. Ensure Resource Group Exists
+        if: ${{ inputs.provisionInfra != false }}
+        run: |
+          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          LOCATION="${{ vars.AZURE_LOCATION || 'centralindia' }}"
+          echo "Ensuring resource group '$RG' exists in '$LOCATION'..."
+          az group create --name "$RG" --location "$LOCATION" --output table
+
+      - name: 12. Ensure & Provision Required Cloud Infrastructure (Aspire Foundation)
+        if: ${{ inputs.provisionInfra != false }}
+        id: deploy-infra
         uses: azure/arm-deploy@v3
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
-          template: ./infra/main.bicep
+          template: ./infra/infra.bicep
+          parameters: >-
+            environment=${{ inputs.environment }}
+          failOnStderr: false
+
+      - name: 13. Resolve ACA Environment & Storage Details
+        id: resolve-env
+        run: |
+          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          ENV_NAME="cae-dietdost-${{ inputs.environment }}"
+          
+          # If infra was provisioned in step 12, use its output; otherwise resolve dynamically
+          ACA_ENV_ID="${{ steps.deploy-infra.outputs.acaEnvironmentId }}"
+          if [ -z "$ACA_ENV_ID" ]; then
+            echo "Resolving ACA Managed Environment '$ENV_NAME' from Azure CLI..."
+            ACA_ENV_ID=$(az containerapp env show \
+              --name "$ENV_NAME" \
+              --resource-group "$RG" \
+              --query "id" -o tsv)
+          fi
+          
+          if [ -z "$ACA_ENV_ID" ]; then
+            echo "❌ ACA Environment '$ENV_NAME' not found in '$RG'!"
+            echo "Please set 'provisionInfra: true' or run the 'Aspire - Provision Azure Infrastructure' workflow first."
+            exit 1
+          fi
+          
+          echo "aca_env_id=$ACA_ENV_ID" >> $GITHUB_OUTPUT
+          echo "Resolved ACA Environment ID: $ACA_ENV_ID"
+
+      - name: 14. Deploy Application Container App via Bicep
+        uses: azure/arm-deploy@v3
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
+          template: ./infra/app.bicep
           parameters: >-
             appName=app-dietdost-web
+            acaEnvironmentId=${{ steps.resolve-env.outputs.aca_env_id }}
             containerImage=${{ steps.build-image.outputs.image_tag }}
             customDomain=dev.diet-dost.in
+            enableCustomDomain=${{ inputs.enableCustomDomain }}
             allowDemoUsers=${{ inputs.allowDemoUsers }}
-            fileShareQuotaGb=10
+            storageMountName=dietdoststorage
             geminiApiKey="${{ secrets.GEMINI_API_KEY }}"
           failOnStderr: false
 
-      - name: 11. Verify Deployment Health
+      - name: 15. Verify Application Health & Revision Status
         run: |
           APP_NAME="app-dietdost-web"
           RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
@@ -140,4 +209,8 @@ jobs:
             --resource-group "$RG" \
             --query "properties.configuration.ingress.fqdn" -o tsv)
           
-          echo "Application is live at: https://$APP_FQDN"
+          echo "=========================================================="
+          echo "  DIET-DOST APPLICATION IS LIVE AND VERIFIED!             "
+          echo "=========================================================="
+          echo "FQDN: https://$APP_FQDN"
+          echo "=========================================================="

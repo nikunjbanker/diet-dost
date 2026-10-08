@@ -436,67 +436,63 @@ Azure Container Apps handles automatic 90-day renewal with zero maintenance.
 
 ---
 
-## 7. Automated CI/CD Pipeline Blueprint (GitHub Actions)
+## 7. Automated Aspire CI/CD Pipeline Architecture (GitHub Actions)
 
-Create `.github/workflows/azure-deploy.yml`:
+Diet-Dost implements the authoritative **.NET Aspire Cloud Deployment Pipeline** ([aspire.dev/deployment/deploy-with-aspire/](https://aspire.dev/deployment/deploy-with-aspire/)) decomposed into two specialized on-demand workflows:
 
-```yaml
-name: Build and Deploy Diet-Dost to Azure Container Apps
+```mermaid
+graph TD
+    subgraph Aspire_AppHost ["Aspire AppHost Application Model (src/Nutrition.AppHost)"]
+        Builder[builder.AddAzureContainerAppEnvironment]
+        Storage[builder.AddAzureStorage]
+        Web[webGateway.PublishAsAzureContainerApp]
+    end
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+    subgraph Workflow_Infra ["Pipeline 1: Aspire - Provision Azure Infrastructure (.github/workflows/azure-infra-deploy.yml)"]
+        InfraEval[aspire publish --apphost src/Nutrition.AppHost]
+        InfraBicep[ARM Deploy: infra/infra.bicep]
+        InfraOut[Output: CAE Environment, SMB Share, Static IP, Custom Domain ID]
+        InfraEval --> InfraBicep --> InfraOut
+    end
 
-permissions:
-  id-token: write
-  contents: read
+    subgraph Workflow_App ["Pipeline 2: Aspire - Build & Deploy Application (.github/workflows/azure-app-deploy.yml)"]
+        SecurityGate[OWASP NuGet Audit & 100% Test Pass]
+        AppEval[aspire publish --apphost src/Nutrition.AppHost]
+        OCIBuild[Podman Build & Trivy Image Scan]
+        ACRPush[Podman Push to ACR]
+        AutoInfra[Ensure / Provision Foundation: infra/infra.bicep]
+        AppBicep[ARM Deploy: infra/app.bicep]
+        Verify[Health & Revision FQDN Verification]
+        SecurityGate --> AppEval --> OCIBuild --> ACRPush --> AutoInfra --> AppBicep --> Verify
+    end
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 11 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '11.0.x'
-
-      - name: Run Unit & Integration Tests (100% Pass Standard)
-        run: dotnet test --configuration Release --verbosity normal
-
-      - name: Log in to Azure CLI
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v2
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      - name: Build and Push Docker Image
-        run: |
-          IMAGE_TAG="${{ secrets.ACR_LOGIN_SERVER }}/diet-dost-web:${{ github.sha }}"
-          IMAGE_LATEST="${{ secrets.ACR_LOGIN_SERVER }}/diet-dost-web:latest"
-          
-          docker build -t $IMAGE_TAG -t $IMAGE_LATEST -f Containerfile .
-          docker push $IMAGE_TAG
-          docker push $IMAGE_LATEST
-
-      - name: Deploy to Azure Container Apps (Zero Downtime)
-        uses: azure/container-apps-deploy-action@v2
-        with:
-          acrName: ${{ secrets.ACR_NAME }}
-          containerAppName: app-dietdost-web
-          resourceGroup: rg-dietdost-prod
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/diet-dost-web:${{ github.sha }}
+    Aspire_AppHost -.-> Workflow_Infra
+    Aspire_AppHost -.-> Workflow_App
 ```
+
+### 7.1 Pipeline 1: Infrastructure Provisioning (`.github/workflows/azure-infra-deploy.yml`)
+- **Purpose**: Provisions / updates foundational cloud infrastructure without touching the application workload.
+- **Trigger**: Strictly on-demand (`workflow_dispatch`).
+- **Steps**:
+  1. Installs .NET 11 SDK & Aspire CLI.
+  2. Executes `aspire publish --apphost src/Nutrition.AppHost` to validate AppHost and generate manifests.
+  3. Deploys [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) (VNet, Storage Account with SMB share `dietdost-data`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`).
+  4. Emits infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID).
+
+### 7.2 Pipeline 2: Application Build & Deployment (`.github/workflows/azure-app-deploy.yml`)
+- **Purpose**: Builds, tests, scans, and deploys the Diet-Dost application container revision with persistent SQLite SMB volume mount.
+- **Trigger**: Strictly on-demand (`workflow_dispatch`).
+- **Automatic Infrastructure Guarantee**: Includes `provisionInfra: true` (default `true`) which automatically verifies and provisions the foundation infrastructure (`infra/infra.bicep`) before deploying the application workload (`infra/app.bicep`).
+- **Pre-Deployment Security Gates**:
+  1. **OWASP A06 Dependency Audit**: Scans all NuGet packages for known CVEs via `dotnet list package --vulnerable --include-transitive`.
+  2. **100% Pass Test Standard**: Runs all unit, domain, and security test suites via `dotnet test --configuration Release`.
+  3. **Aspire Application Model Validation**: Runs `aspire publish` to evaluate AppHost configuration.
+  4. **Podman Container Image Build**: Compiles OCI image via root `Containerfile`.
+  5. **Trivy Container Security Gate**: Scans container image for CRITICAL vulnerabilities.
+  6. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
+  7. **Ensure / Provision Infrastructure**: Executes `infra/infra.bicep` (if `provisionInfra: true`).
+  8. **Deploy Workload Revision**: Deploys [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, and applying custom domain TLS.
+  9. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
 
 ---
 

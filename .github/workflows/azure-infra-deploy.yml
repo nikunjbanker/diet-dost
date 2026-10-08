@@ -1,0 +1,94 @@
+# ==============================================================================
+# Copyright (c) 2026 diet-dost and/or its contributors.
+# Licensed under the "GNU Affero General Public License v3.0 only" and
+# the "Server Side Public License, v 1"; you may not use this file except
+# in compliance with, at your election, the "GNU Affero General Public
+# License v3.0 only" or the "Server Side Public License, v 1".
+# ==============================================================================
+# GitHub Actions CI/CD: Aspire Infrastructure Provisioning Pipeline
+# Target: ACA Environment + Persistent Azure Files SMB Share + VNet Perimeter
+# Driven by: .NET Aspire AppHost & infra/infra.bicep
+# Strictly On-Demand (workflow_dispatch only)
+# ==============================================================================
+
+name: Aspire - Provision Azure Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment name (e.g. dev, prod)'
+        required: true
+        type: string
+        default: 'dev'
+      fileShareQuotaGb:
+        description: 'Persistent SQLite SMB file share quota in GB'
+        required: false
+        type: number
+        default: 10
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  provision-infrastructure:
+    name: Aspire Cloud Infrastructure Provisioning
+    runs-on: ubuntu-latest
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 2. Setup .NET 11 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '11.0.x'
+
+      - name: 3. Install / Verify Aspire CLI
+        run: |
+          echo "Installing or updating Aspire CLI..."
+          dotnet tool install -g aspire.cli || dotnet tool update -g aspire.cli
+          aspire --version
+
+      - name: 4. Aspire Publish - Generate & Validate Infrastructure Manifests
+        run: |
+          echo "Evaluating AppHost application model and generating Aspire Bicep manifests..."
+          aspire publish --apphost src/Nutrition.AppHost --output-path ./aspire-output --non-interactive
+          echo "✅ Aspire deployment pipeline steps executed successfully."
+
+      - name: 5. Azure CLI Authentication
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 6. Ensure Resource Group Exists
+        run: |
+          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          LOCATION="${{ vars.AZURE_LOCATION || 'centralindia' }}"
+          echo "Ensuring resource group '$RG' exists in '$LOCATION'..."
+          az group create --name "$RG" --location "$LOCATION" --output table
+
+      - name: 7. Provision Cloud Infrastructure via Bicep
+        id: deploy-infra
+        uses: azure/arm-deploy@v3
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
+          template: ./infra/infra.bicep
+          parameters: >-
+            environment=${{ inputs.environment }}
+            fileShareQuotaGb=${{ inputs.fileShareQuotaGb }}
+          failOnStderr: false
+
+      - name: 8. Verify & Output Infrastructure Endpoints
+        run: |
+          echo "=========================================================="
+          echo "  ASPIRE CLOUD INFRASTRUCTURE PROVISIONING COMPLETE       "
+          echo "=========================================================="
+          echo "ACA Environment:  ${{ steps.deploy-infra.outputs.acaEnvironmentName }}"
+          echo "Storage Account:  ${{ steps.deploy-infra.outputs.storageAccountName }}"
+          echo "SMB File Share:   ${{ steps.deploy-infra.outputs.fileShareName }}"
+          echo "Storage Mount:    ${{ steps.deploy-infra.outputs.storageMountName }}"
+          echo "Static IP:        ${{ steps.deploy-infra.outputs.staticIp }}"
+          echo "Custom Domain ID: ${{ steps.deploy-infra.outputs.customDomainVerificationId }}"
+          echo "=========================================================="
