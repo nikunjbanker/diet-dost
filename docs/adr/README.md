@@ -77,6 +77,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-071** | Azure Key Vault Secret Governance & .NET Aspire Integration in Deployed Environments | `[SECURITY]` | `ACCEPTED` | [`ADR-20261008-071-azure-key-vault-secret-governance-and-aspire-integration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-071-azure-key-vault-secret-governance-and-aspire-integration.md) |
 | **ADR-072** | Centralized Application Configuration, Secret Governance & Strongly-Typed Ports | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-072-centralized-configuration-and-key-vault-secret-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-072-centralized-configuration-and-key-vault-secret-governance.md) |
 | **ADR-073** | Strongly-Typed Options Pattern & FluentValidation Configuration Governance | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-073-options-pattern-and-fluentvalidation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-073-options-pattern-and-fluentvalidation.md) |
+| **ADR-074** | GitHub Environment Variables & Passwordless Azure OIDC Pipeline Authentication | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261008-074-github-environment-variables-and-azure-oidc-pipeline-authentication.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-074-github-environment-variables-and-azure-oidc-pipeline-authentication.md) |
 
 
 

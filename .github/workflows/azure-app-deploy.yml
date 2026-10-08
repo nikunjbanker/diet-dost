@@ -55,6 +55,11 @@ jobs:
   build-test-and-deploy:
     name: Aspire Application Build, Security Gate & Deploy
     runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'dev' }}
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
     steps:
       - name: 1. Checkout Repository
         uses: actions/checkout@v4
@@ -93,7 +98,16 @@ jobs:
           aspire publish --apphost src/Nutrition.AppHost --output-path ./aspire-output --non-interactive
           echo "✅ Aspire application pipeline steps validated."
 
-      - name: 7. Azure CLI Authentication
+      - name: 7. Azure CLI Authentication (OIDC / Federated Credentials)
+        if: ${{ vars.AZURE_CLIENT_ID != '' || secrets.AZURE_CLIENT_ID != '' }}
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: 7b. Azure CLI Authentication (Fallback: Service Principal JSON)
+        if: ${{ (vars.AZURE_CLIENT_ID == '' && secrets.AZURE_CLIENT_ID == '') && secrets.AZURE_CREDENTIALS != '' }}
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -102,6 +116,11 @@ jobs:
         if: ${{ inputs.provisionInfra != false }}
         id: ensure-rg
         run: |
+          SUB_ID="${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}"
+          if [ -n "$SUB_ID" ]; then
+            echo "Setting Azure subscription context to '$SUB_ID'..."
+            az account set --subscription "$SUB_ID"
+          fi
           RG="${{ inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
           LOCATION="${{ inputs.location || vars.AZURE_LOCATION || 'centralindia' }}"
           echo "=========================================================="
@@ -126,7 +145,7 @@ jobs:
         id: deploy-infra
         uses: azure/arm-deploy@v3
         with:
-          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
           template: ./infra/infra.bicep
           parameters: >-
@@ -206,7 +225,7 @@ jobs:
           JWT_KEY: ${{ secrets.JWT_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL || vars.SUPER_ADMIN_EMAIL }}
           REQUIRE_MOBILE_VERIFICATION: ${{ secrets.REQUIRE_MOBILE_VERIFICATION || vars.REQUIRE_MOBILE_VERIFICATION }}
         run: |
           if [ -n "$KV_NAME" ]; then
@@ -278,7 +297,7 @@ jobs:
       - name: 14. Deploy Application Container App via Bicep
         uses: azure/arm-deploy@v3
         with:
-          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
           template: ./infra/app.bicep
           parameters: >-
