@@ -1,5 +1,10 @@
 **/.git
 **/.github
+**/.agents
+**/docs
+**/infra
+**/tests
+**/aspire-output
 **/.vs
 **/.vscode
 **/.gemini
@@ -11,5 +16,9 @@
 **/*.db-wal
 **/logs
 **/scratch
+*.md
+*.slnx
+*.sln
+azure.yaml
+aspire.config.json
 test_meal.jpg
-tests/
