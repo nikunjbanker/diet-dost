@@ -19,8 +19,12 @@ param location string = resourceGroup().location
 @description('Storage quota for Azure Files SMB share in GB.')
 param fileShareQuotaGb int = 10
 
+@description('Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used.')
+param acrName string = ''
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = take('stgdietdost${uniqueSuffix}', 24)
+var actualAcrName = !empty(acrName) ? acrName : take('crdietdost${uniqueSuffix}', 50)
 var fileShareName = 'dietdost-data'
 var logAnalyticsName = 'log-dietdost-${environment}'
 var acaEnvName = 'cae-dietdost-${environment}'
@@ -154,6 +158,24 @@ resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
 }
 
 // ------------------------------------------------------------------------------
+// 6. Azure Container Registry (ACR) for Container Images
+// ------------------------------------------------------------------------------
+resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
+  name: actualAcrName
+  location: location
+  sku: {
+    name: 'Basic'
+  }
+  properties: {
+    adminUserEnabled: true
+  }
+  tags: {
+    'aspire-resource-name': 'cae-dietdost-acr'
+    environment: environment
+  }
+}
+
+// ------------------------------------------------------------------------------
 // Outputs for Application Deployment Pipeline
 // ------------------------------------------------------------------------------
 output acaEnvironmentId string = acaEnvironment.id
@@ -163,3 +185,5 @@ output staticIp string = acaEnvironment.properties.staticIp
 output storageAccountName string = storageAccount.name
 output fileShareName string = fileShare.name
 output storageMountName string = envStorage.name
+output acrName string = acr.name
+output acrLoginServer string = acr.properties.loginServer

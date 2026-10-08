@@ -33,17 +33,21 @@ param allowDemoUsers bool = true
 @description('Storage quota for Azure Files SMB share in GB.')
 param fileShareQuotaGb int = 10
 
+@description('Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used.')
+param acrName string = ''
+
 @description('Optional Gemini API Key for AI nutrition feedback.')
 @secure()
 param geminiApiKey string = ''
 
-// 1. Foundation Infrastructure (VNet, Storage, SMB File Share, Log Analytics, ACA Environment)
+// 1. Foundation Infrastructure (VNet, Storage, SMB File Share, Log Analytics, ACA Environment, ACR)
 module foundation 'infra.bicep' = {
   name: 'foundation-deployment'
   params: {
     environment: environment
     location: location
     fileShareQuotaGb: fileShareQuotaGb
+    acrName: acrName
   }
 }
 
@@ -71,3 +75,5 @@ output storageAccountName string = foundation.outputs.storageAccountName
 output fileShareName string = foundation.outputs.fileShareName
 output acaEnvironmentName string = foundation.outputs.acaEnvironmentName
 output containerAppName string = workload.outputs.containerAppName
+output acrName string = foundation.outputs.acrName
+output acrLoginServer string = foundation.outputs.acrLoginServer

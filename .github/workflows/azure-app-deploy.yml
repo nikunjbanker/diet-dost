@@ -16,6 +16,16 @@ name: Aspire - Build & Deploy Application
 on:
   workflow_dispatch:
     inputs:
+      resourceGroupName:
+        description: 'Azure Resource Group name (e.g. rg-dietdost-dev)'
+        required: false
+        type: string
+        default: 'rg-dietdost-dev'
+      location:
+        description: 'Azure region/location (e.g. centralindia)'
+        required: false
+        type: string
+        default: 'centralindia'
       provisionInfra:
         description: 'Ensure / provision required cloud infrastructure before deploying app'
         required: false
@@ -88,74 +98,63 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: 8. Build OCI Container Image (Podman)
-        id: build-image
-        run: |
-          ACR_NAME="${{ secrets.ACR_NAME }}"
-          IMAGE_TAG="${ACR_NAME}.azurecr.io/diet-dost-web:${{ github.sha }}"
-          IMAGE_LATEST="${ACR_NAME}.azurecr.io/diet-dost-web:latest"
-
-          # Build container image with Podman
-          podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
-          podman save -o app-image.tar "$IMAGE_TAG"
-
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
-
-      - name: 9. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
-        run: |
-          echo "Installing Trivy security scanner..."
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /tmp/trivy-bin
-          
-          echo "Scanning container image for CRITICAL OS and library vulnerabilities..."
-          /tmp/trivy-bin/trivy image \
-            --input app-image.tar \
-            --severity CRITICAL \
-            --exit-code 1 \
-            --ignore-unfixed
-
-          echo "✅ Container Security Gate Passed: 0 critical unpatched vulnerabilities detected."
-
-      - name: 10. Push OCI Container Image to ACR (Podman)
-        run: |
-          ACR_NAME="${{ secrets.ACR_NAME }}"
-          IMAGE_TAG="${{ steps.build-image.outputs.image_tag }}"
-          IMAGE_LATEST="${{ steps.build-image.outputs.image_latest }}"
-
-          # Login to ACR via Azure CLI credentials using Podman
-          ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
-          echo "$ACR_PASSWORD" | podman login "${ACR_NAME}.azurecr.io" -u "$ACR_NAME" --password-stdin
-
-          podman push "$IMAGE_TAG"
-          podman push "$IMAGE_LATEST"
-
-      - name: 11. Ensure Resource Group Exists
+      - name: 8. Ensure Azure Resource Group Exists (Create if Missing)
         if: ${{ inputs.provisionInfra != false }}
+        id: ensure-rg
         run: |
-          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
-          LOCATION="${{ vars.AZURE_LOCATION || 'centralindia' }}"
-          echo "Ensuring resource group '$RG' exists in '$LOCATION'..."
-          az group create --name "$RG" --location "$LOCATION" --output table
+          RG="${{ inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          LOCATION="${{ inputs.location || vars.AZURE_LOCATION || 'centralindia' }}"
+          echo "=========================================================="
+          echo "Checking if Azure Resource Group '$RG' exists in '$LOCATION'..."
+          echo "=========================================================="
+          if az group exists --name "$RG"; then
+            echo "✅ Resource Group '$RG' already exists."
+          else
+            echo "⚡ Resource Group '$RG' does not exist. Creating now in '$LOCATION'..."
+            az group create \
+              --name "$RG" \
+              --location "$LOCATION" \
+              --tags environment="${{ inputs.environment }}" project="diet-dost" managed-by="aspire" \
+              --output table
+            echo "✅ Created Resource Group '$RG'."
+          fi
+          echo "rg_name=$RG" >> $GITHUB_OUTPUT
+          echo "rg_location=$LOCATION" >> $GITHUB_OUTPUT
 
-      - name: 12. Ensure & Provision Required Cloud Infrastructure (Aspire Foundation)
+      - name: 9. Ensure & Provision Required Cloud Infrastructure (Aspire Foundation)
         if: ${{ inputs.provisionInfra != false }}
         id: deploy-infra
         uses: azure/arm-deploy@v3
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
+          resourceGroupName: ${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
           template: ./infra/infra.bicep
           parameters: >-
             environment=${{ inputs.environment }}
+            location=${{ steps.ensure-rg.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}
           failOnStderr: false
 
-      - name: 13. Resolve ACA Environment & Storage Details
+      - name: 10. Resolve ACR & ACA Environment Details
         id: resolve-env
         run: |
-          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          RG="${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
           ENV_NAME="cae-dietdost-${{ inputs.environment }}"
           
-          # If infra was provisioned in step 12, use its output; otherwise resolve dynamically
+          # Resolve ACR Name
+          ACR_NAME="${{ secrets.ACR_NAME }}"
+          if [ -z "$ACR_NAME" ]; then
+            ACR_NAME="${{ steps.deploy-infra.outputs.acrName }}"
+          fi
+          if [ -z "$ACR_NAME" ]; then
+            ACR_NAME=$(az acr list --resource-group "$RG" --query "[0].name" -o tsv)
+          fi
+          
+          if [ -z "$ACR_NAME" ]; then
+            echo "❌ ACR not found in '$RG'!"
+            exit 1
+          fi
+          
+          # Resolve ACA Environment ID
           ACA_ENV_ID="${{ steps.deploy-infra.outputs.acaEnvironmentId }}"
           if [ -z "$ACA_ENV_ID" ]; then
             echo "Resolving ACA Managed Environment '$ENV_NAME' from Azure CLI..."
@@ -171,14 +170,57 @@ jobs:
             exit 1
           fi
           
+          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
           echo "aca_env_id=$ACA_ENV_ID" >> $GITHUB_OUTPUT
+          echo "Resolved ACR: $ACR_NAME"
           echo "Resolved ACA Environment ID: $ACA_ENV_ID"
+
+      - name: 11. Build OCI Container Image (Podman)
+        id: build-image
+        run: |
+          ACR_NAME="${{ steps.resolve-env.outputs.acr_name }}"
+          IMAGE_TAG="${ACR_NAME}.azurecr.io/diet-dost-web:${{ github.sha }}"
+          IMAGE_LATEST="${ACR_NAME}.azurecr.io/diet-dost-web:latest"
+
+          # Build container image with Podman
+          podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
+          podman save -o app-image.tar "$IMAGE_TAG"
+
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
+
+      - name: 12. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
+        run: |
+          echo "Installing Trivy security scanner..."
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /tmp/trivy-bin
+          
+          echo "Scanning container image for CRITICAL OS and library vulnerabilities..."
+          /tmp/trivy-bin/trivy image \
+            --input app-image.tar \
+            --severity CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed
+
+          echo "✅ Container Security Gate Passed: 0 critical unpatched vulnerabilities detected."
+
+      - name: 13. Push OCI Container Image to ACR (Podman)
+        run: |
+          ACR_NAME="${{ steps.resolve-env.outputs.acr_name }}"
+          IMAGE_TAG="${{ steps.build-image.outputs.image_tag }}"
+          IMAGE_LATEST="${{ steps.build-image.outputs.image_latest }}"
+
+          # Login to ACR via Azure CLI credentials using Podman
+          ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
+          echo "$ACR_PASSWORD" | podman login "${ACR_NAME}.azurecr.io" -u "$ACR_NAME" --password-stdin
+
+          podman push "$IMAGE_TAG"
+          podman push "$IMAGE_LATEST"
 
       - name: 14. Deploy Application Container App via Bicep
         uses: azure/arm-deploy@v3
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
+          resourceGroupName: ${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
           template: ./infra/app.bicep
           parameters: >-
             appName=app-dietdost-web
@@ -194,7 +236,7 @@ jobs:
       - name: 15. Verify Application Health & Revision Status
         run: |
           APP_NAME="app-dietdost-web"
-          RG="${{ vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          RG="${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
           
           echo "Checking Container App revision status..."
           REVISION_HEALTH=$(az containerapp revision list \
