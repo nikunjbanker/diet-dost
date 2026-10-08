@@ -181,6 +181,9 @@ public class SecurityEnvironmentAndHeaderTests
         var codeownersContent = File.ReadAllText(codeownersPath);
 
         Assert.Contains("/.github/   @nikunjbanker", codeownersContent);
+        Assert.Contains("/.github/workflows/                             @nikunjbanker", codeownersContent);
+        Assert.Contains("/.github/workflows/azure-app-deploy.yml         @nikunjbanker", codeownersContent);
+        Assert.Contains("/.github/workflows/azure-infra-deploy.yml        @nikunjbanker", codeownersContent);
         Assert.Contains("* @nikunjbanker", codeownersContent);
     }
 }

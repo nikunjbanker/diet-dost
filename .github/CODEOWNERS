@@ -18,3 +18,14 @@
 /.github/   @nikunjbanker
 /AGENTS.md  @nikunjbanker
 /LICENSE    @nikunjbanker
+
+# Critical CI/CD & Deployment Workflows Protection
+# Highest precedence (bottom of file): Strictly locks all GitHub Actions pipelines,
+# workflow directories, and Azure deployment automation exclusively to @nikunjbanker.
+/.github/workflows/                             @nikunjbanker
+/.github/workflows/*.yml                        @nikunjbanker
+/.github/workflows/*.yaml                       @nikunjbanker
+/.github/workflows/azure-app-deploy.yml         @nikunjbanker
+/.github/workflows/azure-infra-deploy.yml        @nikunjbanker
+/.github/actions/                               @nikunjbanker
+
