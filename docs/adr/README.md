@@ -79,6 +79,7 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-073** | Strongly-Typed Options Pattern & FluentValidation Configuration Governance | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-073-options-pattern-and-fluentvalidation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-073-options-pattern-and-fluentvalidation.md) |
 | **ADR-074** | GitHub Environment Variables & Passwordless Azure OIDC Pipeline Authentication | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261008-074-github-environment-variables-and-azure-oidc-pipeline-authentication.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-074-github-environment-variables-and-azure-oidc-pipeline-authentication.md) |
 | **ADR-075** | Complete Elimination of Raw Configuration Indexers for Strongly-Typed Options | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-075-complete-elimination-of-raw-configuration-indexers-for-options-classes.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-075-complete-elimination-of-raw-configuration-indexers-for-options-classes.md) |
+| **ADR-076** | Configuration Architecture SDD & Process Boundary Specification | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md) |
 
 
 
