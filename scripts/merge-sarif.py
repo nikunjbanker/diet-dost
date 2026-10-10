@@ -16,6 +16,32 @@ import json
 import os
 import sys
 
+SARIF_210_VALID_RUN_KEYS = {
+    "tool", "invocations", "conversion", "language",
+    "versionControlProvenance", "originalUriBaseIds", "artifacts",
+    "logicalLocations", "graphs", "results", "automationDetails",
+    "runAggregates", "baselineGuid", "redactions", "defaultEncoding",
+    "defaultSourceLanguage", "newlineSequences", "columnKind",
+    "externalPropertyFileReferences", "threadFlowLocations",
+    "taxonomies", "addresses", "translations", "policies",
+    "webRequests", "webResponses", "specialLocations", "properties"
+}
+
+SARIF_210_VALID_RESULT_KEYS = {
+    "ruleId", "ruleIndex", "rule", "kind", "level", "message",
+    "analysisTarget", "locations", "guid", "correlationGuid",
+    "occurrenceCount", "partialFingerprints", "fingerprints",
+    "stacks", "codeFlows", "graphs", "graphTraversals",
+    "relatedLocations", "suppressions", "baselineState", "rank",
+    "attachments", "workItemUris", "hostedViewerUri", "artifacts",
+    "fixes", "provenance", "properties"
+}
+
+SARIF_210_VALID_LOCATION_KEYS = {
+    "id", "physicalLocation", "logicalLocations", "message",
+    "annotations", "relationships", "properties"
+}
+
 def normalize_run(run: dict) -> dict:
     tool = run.get("tool", {})
     if "driver" not in tool:
@@ -28,26 +54,63 @@ def normalize_run(run: dict) -> dict:
             "name": name,
             "version": version
         }
-    run.pop("rules", None)
+    
     cleaned_results = []
-    for res in run.get("results", []):
+    for raw_res in run.get("results", []):
+        if not isinstance(raw_res, dict):
+            continue
+        res = dict(raw_res)
+
+        # Map legacy suppressionStates to SARIF 2.1.0 suppressions
+        if "suppressionStates" in res:
+            states = res.pop("suppressionStates")
+            if "suppressions" not in res and isinstance(states, list):
+                res["suppressions"] = [
+                    {"kind": "inSource", "status": "accepted"} if s == "suppressedInSource"
+                    else {"kind": "external", "status": "accepted"} if s == "suppressedInSuppressionFile"
+                    else {"kind": "inSource"}
+                    for s in states
+                ]
+
+        # Map level
+        lvl = res.get("level")
+        if lvl == "info":
+            res["level"] = "note"
+        elif lvl not in ("none", "note", "warning", "error"):
+            res["level"] = "warning"
+
+        # Format message
         msg = res.get("message")
         if isinstance(msg, str):
             res["message"] = {"text": msg}
+        elif not isinstance(msg, dict) or ("text" not in msg and "id" not in msg):
+            res["message"] = {"text": str(msg) if msg is not None else ""}
+
+        # Format locations
         locations = res.get("locations", [])
         cleaned_locs = []
-        for loc in locations:
+        for raw_loc in locations:
+            if not isinstance(raw_loc, dict):
+                continue
+            loc = dict(raw_loc)
             if "resultFile" in loc:
                 rf = loc.pop("resultFile")
                 loc["physicalLocation"] = {
                     "artifactLocation": {"uri": rf.get("uri", "")},
                     "region": rf.get("region", {})
                 }
+            loc = {k: v for k, v in loc.items() if k in SARIF_210_VALID_LOCATION_KEYS}
             cleaned_locs.append(loc)
         res["locations"] = cleaned_locs
-        cleaned_results.append(res)
+
+        # Strip any extra property not allowed by OASIS SARIF 2.1.0 schema (e.g. ruleKey)
+        sanitized_res = {k: v for k, v in res.items() if k in SARIF_210_VALID_RESULT_KEYS}
+        cleaned_results.append(sanitized_res)
+
     run["results"] = cleaned_results
-    return run
+    # Strip any extra property on run not in SARIF 2.1.0 (such as legacy rules)
+    sanitized_run = {k: v for k, v in run.items() if k in SARIF_210_VALID_RUN_KEYS}
+    return sanitized_run
 
 def create_empty_sarif(output_file: str, tool_name: str, version: str) -> None:
     sarif_doc = {

@@ -248,7 +248,11 @@ public static class DatabaseInitializationExtensions
         }
 
         using var checkTableCmd = connection.CreateCommand();
-        checkTableCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+        checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
+        var p = checkTableCmd.CreateParameter();
+        p.ParameterName = "@tableName";
+        p.Value = tableName;
+        checkTableCmd.Parameters.Add(p);
         var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
         return count > 0;
     }
@@ -264,7 +268,11 @@ public static class DatabaseInitializationExtensions
         var tableExists = false;
         using (var checkTableCmd = connection.CreateCommand())
         {
-            checkTableCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+            checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
+            var p = checkTableCmd.CreateParameter();
+            p.ParameterName = "@tableName";
+            p.Value = tableName;
+            checkTableCmd.Parameters.Add(p);
             var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
             tableExists = count > 0;
         }
@@ -274,10 +282,17 @@ public static class DatabaseInitializationExtensions
             return;
         }
 
+        if (!System.Text.RegularExpressions.Regex.IsMatch(tableName, @"^[a-zA-Z0-9_]+$"))
+        {
+            throw new ArgumentException("Invalid table name identifier", nameof(tableName));
+        }
+
         var columnExists = false;
         using (var cmd = connection.CreateCommand())
         {
+#pragma warning disable CA2100 // Table name is validated against strict alphanumeric identifier pattern; SQLite PRAGMA does not support parameterized table names
             cmd.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+#pragma warning restore CA2100
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
