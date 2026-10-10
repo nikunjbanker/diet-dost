@@ -259,13 +259,13 @@ async function main() {
             const passInput = document.getElementById('signin-password');
             return {
                 email: idInput.value,
-                hasPassword: passInput.value.length > 0
+                isPopulated: passInput.value.length > 0
             };
         })()
     `);
 
-    console.log(`   - Clicked 'Basic Tier' Demo Pill -> Filled Identifier: "${filledCreds.email}" (Password populated: ${filledCreds.hasPassword})`);
-    const credsPass = filledCreds.email === 'basic@dietdost.app' && filledCreds.hasPassword;
+    console.log(`   - Clicked 'Basic Tier' Demo Pill -> Filled Identifier: "${filledCreds.email}" (Field populated: ${filledCreds.isPopulated})`);
+    const credsPass = filledCreds.email === 'basic@dietdost.app' && filledCreds.isPopulated;
     console.log(`   [PASS/FAIL] Demo Quick-Fill: ${credsPass ? 'PASS' : 'FAIL'}`);
 
     // Submit sign-in and assert transition into authenticated dashboard

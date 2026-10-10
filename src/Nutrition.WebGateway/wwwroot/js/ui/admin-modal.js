@@ -27,6 +27,16 @@ export class AdminModalController {
     return role === 'SuperAdmin' || role === 2 || role === '2';
   }
 
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   initElements() {
     this.modal = document.getElementById('admin-modal');
     this.btnClose = document.getElementById('btn-close-admin-modal');
@@ -207,7 +217,8 @@ export class AdminModalController {
 
       this.bindUserActionHandlers();
     } catch (err) {
-      this.usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 2rem;">Error loading users: ${err.message}</td></tr>`;
+      const safeMsg = this.escapeHtml(err?.message || 'Unknown error');
+      this.usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 2rem;">Error loading users: ${safeMsg}</td></tr>`;
     }
   }
 
@@ -482,7 +493,8 @@ export class AdminModalController {
 
       this.bindTierActionHandlers();
     } catch (err) {
-      this.tierCardsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #f87171; padding: 2rem;">Failed to load tier configs: ${err.message}</div>`;
+      const safeMsg = this.escapeHtml(err?.message || 'Unknown error');
+      this.tierCardsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #f87171; padding: 2rem;">Failed to load tier configs: ${safeMsg}</div>`;
     }
   }
 

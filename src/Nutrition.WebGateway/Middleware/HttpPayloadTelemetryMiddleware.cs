@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -121,14 +121,25 @@ public class HttpPayloadTelemetryMiddleware
             sw.Stop();
 
             // Emit structured log with captured payloads
+            var sanitizedPath = path.Replace("\r", string.Empty).Replace("\n", string.Empty);
             _logger.LogInformation(
                 "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms | RequestBody: {RequestBody} | ResponseBody: {ResponseBody}",
                 context.Request.Method,
-                path,
+                sanitizedPath,
                 context.Response.StatusCode,
                 sw.Elapsed.TotalMilliseconds,
-                string.IsNullOrWhiteSpace(requestPayload) ? "[empty]" : requestPayload,
-                string.IsNullOrWhiteSpace(responsePayload) ? "[empty]" : responsePayload);
+                SanitizeForLog(requestPayload),
+                SanitizeForLog(responsePayload));
         }
+    }
+
+    private static string SanitizeForLog(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return "[empty]";
+        }
+
+        return input.Replace("\r", string.Empty).Replace("\n", " ");
     }
 }

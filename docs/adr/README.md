@@ -82,6 +82,8 @@ Each ADR documents a distinct architectural decision and maintains one of the fo
 | **ADR-076** | Configuration Architecture SDD & Process Boundary Specification | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md) |
 | **ADR-077** | Secret-Only Governance for SuperAdmin Email and Mobile Verification | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-077-secret-only-governance-for-superadmin-email-and-mobile-verification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-077-secret-only-governance-for-superadmin-email-and-mobile-verification.md) |
 | **ADR-078** | Sole-Authority Governance for Secrets and Environment Variables Restricted to @nikunjbanker | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md) |
+| **ADR-079** | Remediation of CodeQL Code Scanning Security Alerts | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-079-remediation-of-codeql-code-scanning-security-alerts.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-079-remediation-of-codeql-code-scanning-security-alerts.md) |
+
 
 ---
 
