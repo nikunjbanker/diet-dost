@@ -126,7 +126,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
      - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
      - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, etc.).
      - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
-     - Write a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (Fragment Pattern for 100% merge-conflict immunity) and register it in `docs/adr/README.md` and `docs/sdd/07_living_documentation_log.md`.
+     - Write a dedicated atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (where `<domain>` is `architecture`, `security`, `devops`, `presentation`, or `governance`), and execute `pwsh -File scripts/sync-adr-index.ps1` to automatically update `docs/adr/index.json` and `docs/adr/README.md`.
 5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash
@@ -167,9 +167,10 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **License Governance & Header Enforcement**: Governed by [`.agents/skills/diet-dost-license-governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-license-governance/SKILL.md) (dual AGPLv3 / SSPL v1 compliance, block comment formatting, and automated validation scripts).
 12. **Living Documentation & Architectural Decision Records (ADR) Architecture (Token Economics & Merge Conflict Immunity)**:
     - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
-    - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
+    - **The Domain-Partitioned Fragment Pattern**: Every new architectural modification, feature, or defect fix must create a dedicated atomic ADR fragment inside its corresponding domain directory: `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (where `<domain>` is `architecture`, `security`, `devops`, `presentation`, or `governance`).
+    - **Automated Machine-Readable Indexing**: Maintainers and agents do NOT manually edit markdown tables. Run `pwsh -File scripts/sync-adr-index.ps1` (or `python3 scripts/sync-adr-index.py`) to automatically regenerate the machine-readable `docs/adr/index.json` (~4 KB) and partitioned `docs/adr/README.md`.
     - **Quantitative Benefits**:
-      - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting diffs on rebase.
+      - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting table diffs on rebase.
       - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
       - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
     - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/adr/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/archive/living_log_2026_09_archive.md), while [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) act as lean indexes and standard registries.
