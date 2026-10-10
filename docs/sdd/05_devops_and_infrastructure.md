@@ -278,6 +278,9 @@ The Container App mounts the Azure Files SMB share as a persistent volume:
 - **Host**: `dev.dietdost.app`
 - **Certificate Type**: Managed Certificate (`Microsoft.App/managedEnvironments/managedCertificates`)
 - **Validation**: Domain validation via CNAME (`dev.dietdost.app` $\to$ `<app-fqdn>`) and TXT record (`asuid.dev.dietdost.app` $\to$ domain verification ID).
-- **Auto-Renewal**: Azure automatically renews certificates with 0 operational overhead.
+### 7.5 Pre-Deployment PowerShell Configuration Runbook
+For full step-by-step pre-deployment configuration, Azure Entra ID federated credentials creation, RBAC delegation, 256-bit cryptographic JWT key generation, and post-deployment smoke tests in native PowerShell (zero bash dependencies), refer to:
+- **Authoritative Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
+- **Pre-Flight Automation Script**: [`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)
 
 

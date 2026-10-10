@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T13:54:13.444882+00:00",
-  "totalAdrs": 46,
+  "generatedAt": "2026-10-10T14:08:45.438646+00:00",
+  "totalAdrs": 47,
   "categoryCounts": {
     "architecture": 14,
     "security": 13,
-    "devops": 3,
+    "devops": 4,
     "presentation": 4,
     "governance": 12
   },
@@ -561,6 +561,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261010-085-checkov-iac-hardening-keyvault-firewall-and-github-runner-modernization.md",
       "relativePath": "docs/adr/security/ADR-20261010-085-checkov-iac-hardening-keyvault-firewall-and-github-runner-modernization.md"
+    },
+    {
+      "id": "ADR-086",
+      "number": 86,
+      "title": "Azure Pre-Deployment PowerShell Automation & Master Configuration Runbook",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-10",
+      "subsystem": "Devops",
+      "filename": "ADR-20261010-086-azure-pre-deployment-powershell-automation-and-configuration-runbook.md",
+      "relativePath": "docs/adr/devops/ADR-20261010-086-azure-pre-deployment-powershell-automation-and-configuration-runbook.md"
     }
   ]
 }

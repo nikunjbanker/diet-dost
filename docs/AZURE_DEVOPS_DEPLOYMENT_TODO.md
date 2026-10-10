@@ -12,6 +12,8 @@
 > **Target Cloud Host**: Azure Container Apps (ACA) / Serverless Kubernetes  
 > **Runtime**: .NET 11 RC (`net11.0`) on Linux Container  
 > **Domain & Security**: Custom Domain Mapping with Free Azure Managed TLS 1.3  
+> **Authoritative Pre-Deployment PowerShell Guide**: [docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)  
+> **Automation Script**: [scripts/setup-azure-pre-deployment.ps1](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)  
 
 ---
 
