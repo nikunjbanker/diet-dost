@@ -149,6 +149,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-077** | Secret-Only Governance for SuperAdmin Email and Mobile Verification | `ACCEPTED` | [`ADR-20261010-077-secret-only-governance-for-superadmin-email-and-mobile-verification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-077-secret-only-governance-for-superadmin-email-and-mobile-verification.md) |
 | **ADR-078** | Sole-Authority Governance for Secrets and Environment Variables Restricted to @nikunjbanker | `ACCEPTED` | [`ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md) |
 | **ADR-079** | Remediation of CodeQL Code Scanning Security Alerts | `ACCEPTED` | [`ADR-20261010-079-remediation-of-codeql-code-scanning-security-alerts.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-079-remediation-of-codeql-code-scanning-security-alerts.md) |
+| **ADR-080** | ESLint Code Scanning Workflow and SARIF Integration | `ACCEPTED` | [`ADR-20261010-080-eslint-code-scanning-workflow-and-sarif-integration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-080-eslint-code-scanning-workflow-and-sarif-integration.md) |
 
 
 ---

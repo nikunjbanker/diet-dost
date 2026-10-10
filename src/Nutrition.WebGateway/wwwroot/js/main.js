@@ -14,7 +14,7 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { ApiClient, apiClient, getWebDashboard } from './services/api.js?v=1.5.0';
+import { apiClient } from './services/api.js?v=1.5.0';
 import { AuthService } from './services/auth-service.js?v=1.5.0';
 import { AdminService } from './services/admin-service.js?v=1.5.0';
 import { MealsService } from './services/meals-service.js?v=1.5.0';
@@ -186,7 +186,7 @@ async function initApp() {
   const quotaModal = container.resolve('quotaModal');
 
   const dailyHud = container.resolve('dailyHud');
-  const mealLogger = container.resolve('mealLogger');
+  container.resolve('mealLogger');
   const reviewModal = container.resolve('reviewModal');
   const analyticsChart = container.resolve('analyticsChart');
   const profileModal = container.resolve('profileModal');
@@ -195,7 +195,6 @@ async function initApp() {
 
   // Helper: Synchronize user header badges and visibility
   function updateUserUI(user, featureFlags = null, quota = null) {
-    const avatarEl = document.getElementById('header-user-avatar');
     const nameEl = document.getElementById('header-user-name');
     const tierPillEl = document.getElementById('header-tier-pill');
     const quotaBadgeEl = document.getElementById('ai-quota-badge');

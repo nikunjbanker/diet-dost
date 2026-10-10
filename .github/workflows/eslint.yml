@@ -1,0 +1,57 @@
+# ==============================================================================
+# Copyright (c) 2026 diet-dost and/or its contributors.
+# Licensed under the "GNU Affero General Public License v3.0 only" and
+# the "Server Side Public License, v 1"; you may not use this file except
+# in compliance with, at your election, the "GNU Affero General Public
+# License v3.0 only" or the "Server Side Public License, v 1".
+# ==============================================================================
+# GitHub Actions: ESLint Code Scanning Workflow
+# Scans JavaScript/TypeScript source files and generates SARIF report
+# for GitHub Code Scanning (Security -> Code scanning alerts).
+# ==============================================================================
+
+name: ESLint
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    # Scans pull requests targeting main branch
+    branches: [ "main" ]
+  schedule:
+    - cron: '28 17 * * 5'
+  workflow_dispatch:
+
+jobs:
+  eslint:
+    name: Run eslint scanning
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read # Required for private repository Action run status
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install ESLint & SARIF Formatter
+        run: |
+          npm install eslint@8.57.0 @microsoft/eslint-formatter-sarif@3.1.0
+
+      - name: Run ESLint
+        env:
+          SARIF_ESLINT_IGNORE_SUPPRESSED: "true"
+        run: |
+          npx eslint . \
+            --config .eslintrc.js \
+            --ext .js,.jsx,.ts,.tsx,.mjs \
+            --format @microsoft/eslint-formatter-sarif \
+            --output-file eslint-results.sarif \
+            --no-error-on-unmatched-pattern
+        continue-on-error: true
+
+      - name: Upload analysis results to GitHub
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: eslint-results.sarif
+          wait-for-processing: true

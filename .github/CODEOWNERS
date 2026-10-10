@@ -27,5 +27,6 @@
 /.github/workflows/*.yaml                       @nikunjbanker
 /.github/workflows/azure-app-deploy.yml         @nikunjbanker
 /.github/workflows/azure-infra-deploy.yml        @nikunjbanker
+/.github/workflows/eslint.yml                    @nikunjbanker
 /.github/actions/                               @nikunjbanker
 
