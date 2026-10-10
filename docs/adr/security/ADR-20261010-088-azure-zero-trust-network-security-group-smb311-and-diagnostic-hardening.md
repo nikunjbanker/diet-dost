@@ -28,7 +28,7 @@ Following comprehensive analysis from an **Azure Network & Security Expert** per
 ### 2.1 Zero-Trust Network Security Group (`nsg-dietdost-${environment}`)
 Added `Microsoft.Network/networkSecurityGroups@2023-05-01` attached directly to `snet-aca-infra`:
 - **Inbound Rules**:
-  - `Allow-HTTP-HTTPS-Inbound` (Priority 100): Allows TCP 80 and 443 for managed TLS ingress.
+  - `Allow-HTTPS-Inbound` (Priority 100): Allows TCP 443 for managed TLS ingress while restricting HTTP port 80 (satisfies Checkov `CKV_AZURE_160`).
   - `Allow-AzureLoadBalancer-Inbound` (Priority 110): Allows health probe traffic from `AzureLoadBalancer`.
   - Default Azure NSG rules block all other inbound traffic.
 - **Outbound Rules**:

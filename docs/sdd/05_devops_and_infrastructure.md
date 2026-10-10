@@ -297,7 +297,7 @@ graph TD
         subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
             ACA_App["Diet-Dost Container App<br/>(.NET 11 WebGateway)<br/>Single Replica: min=1, max=1"]
         end
-        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9)<br/>Inbound: 80, 443, AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
+        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>Inbound: 443 (HTTPS), AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
         NSG --- Subnet_Infra
     end
 
@@ -326,7 +326,7 @@ graph TD
 - **Compliance**: Natively satisfies Checkov benchmark rule `CKV_AZURE_9` (*Ensure that Virtual Network subnets are associated with a Network Security Group*).
 - **Rule Set**:
   - **Inbound**:
-    - `Allow-HTTP` (Port 80) & `Allow-HTTPS` (Port 443) from `Internet` to `VirtualNetwork`.
+    - `Allow-HTTPS` (Port 443) from `Internet` to `VirtualNetwork` (satisfies `CKV_AZURE_160`: HTTP port 80 restricted).
     - `Allow-Azure-Load-Balancer` from `AzureLoadBalancer` to `VirtualNetwork`.
     - `Deny-All-Inbound` (implicit default).
   - **Outbound**:

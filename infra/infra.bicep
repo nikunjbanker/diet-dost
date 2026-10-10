@@ -40,7 +40,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
   properties: {
     securityRules: [
       {
-        name: 'Allow-HTTP-HTTPS-Inbound'
+        name: 'Allow-HTTPS-Inbound'
         properties: {
           priority: 100
           direction: 'Inbound'
@@ -49,10 +49,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
           sourceAddressPrefix: '*'
           sourcePortRange: '*'
           destinationAddressPrefix: '*'
-          destinationPortRanges: [
-            '80'
-            '443'
-          ]
+          destinationPortRange: '443'
         }
       }
       {

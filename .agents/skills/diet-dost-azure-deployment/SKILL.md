@@ -270,7 +270,7 @@ az containerapp create \
 The foundation infrastructure in [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) implements a defense-in-depth, Zero-Trust network boundary designed for dev-test free-tier containment ($0 incremental cost):
 1. **Network Security Group (`nsg-dietdost-${environment}`)**:
    - Attached to ACA infrastructure subnet `snet-aca-infra` to comply with Checkov `CKV_AZURE_9`.
-   - **Inbound Rules**: Allows HTTP (80), HTTPS (443), and `AzureLoadBalancer`.
+   - **Inbound Rules**: Allows HTTPS (443) and `AzureLoadBalancer` (satisfies Checkov `CKV_AZURE_160` by restricting HTTP port 80).
    - **Outbound Rules**: Allows Port 445 strictly to `Storage` service tag; Port 443 to `AzureCloud` and `Internet` (for Gemini AI APIs); Port 53 (DNS); and Port 123 (NTP).
 2. **Azure Files SMB 3.1.1 Encryption & Soft-Delete**:
    - Configures SMB 3.1.1 protocol encryption (`AES-128-GCM` / `AES-256-GCM`) across `fileServices`.

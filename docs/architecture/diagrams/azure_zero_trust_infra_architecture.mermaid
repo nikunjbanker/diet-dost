@@ -14,7 +14,7 @@ graph TD
 
     subgraph VNet_Perimeter ["2. Azure Virtual Network Perimeter (10.0.0.0/16)"]
         subgraph NSG_Boundary ["Network Security Group: nsg-dietdost-dev"]
-            NSG_In["Stateful Inbound Firewall<br/>• Allow HTTP/HTTPS (80, 443)<br/>• Allow AzureLoadBalancer<br/>• Deny All Other Inbound"]
+            NSG_In["Stateful Inbound Firewall<br/>• Allow HTTPS (443)<br/>• Port 80 Restricted (CKV_AZURE_160)<br/>• Allow AzureLoadBalancer<br/>• Deny All Other Inbound"]
             NSG_Out["Stateful Outbound Firewall<br/>• Allow Storage SMB (445)<br/>• Allow AzureCloud HTTPS (443)<br/>• Allow DNS (53) & NTP (123)<br/>• Allow Internet HTTPS (443) for AI APIs"]
         end
 
