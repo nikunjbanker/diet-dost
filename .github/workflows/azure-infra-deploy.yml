@@ -140,8 +140,10 @@ jobs:
               --output table
             echo "✅ Created Resource Group '$RG'."
           fi
-          echo "rg_name=$RG" >> "$GITHUB_OUTPUT"
-          echo "rg_location=$LOCATION" >> "$GITHUB_OUTPUT"
+          {
+            echo "rg_name=$RG"
+            echo "rg_location=$LOCATION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 7. Provision Cloud Infrastructure via Bicep
         id: deploy-infra

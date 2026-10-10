@@ -171,8 +171,10 @@ jobs:
               --output table
             echo "✅ Created Resource Group '$RG'."
           fi
-          echo "rg_name=$RG" >> "$GITHUB_OUTPUT"
-          echo "rg_location=$LOCATION" >> "$GITHUB_OUTPUT"
+          {
+            echo "rg_name=$RG"
+            echo "rg_location=$LOCATION"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 9. Ensure & Provision Required Cloud Infrastructure (Aspire Foundation)
         if: ${{ inputs.provisionInfra != false }}
@@ -242,12 +244,14 @@ jobs:
             MI_CLIENT_ID=$(az identity list --resource-group "$RG" --query "[0].clientId" -o tsv)
           fi
 
-          echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
-          echo "aca_env_id=$ACA_ENV_ID" >> "$GITHUB_OUTPUT"
-          echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
-          echo "kv_uri=$KV_URI" >> "$GITHUB_OUTPUT"
-          echo "mi_id=$MI_ID" >> "$GITHUB_OUTPUT"
-          echo "mi_client_id=$MI_CLIENT_ID" >> "$GITHUB_OUTPUT"
+          {
+            echo "acr_name=$ACR_NAME"
+            echo "aca_env_id=$ACA_ENV_ID"
+            echo "kv_name=$KV_NAME"
+            echo "kv_uri=$KV_URI"
+            echo "mi_id=$MI_ID"
+            echo "mi_client_id=$MI_CLIENT_ID"
+          } >> "$GITHUB_OUTPUT"
           echo "Resolved ACR: $ACR_NAME"
           echo "Resolved ACA Environment ID: $ACA_ENV_ID"
           echo "Resolved Key Vault: $KV_NAME ($KV_URI)"
@@ -298,8 +302,10 @@ jobs:
           podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
           podman save -o app-image.tar "$IMAGE_TAG"
 
-          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
-          echo "image_latest=$IMAGE_LATEST" >> "$GITHUB_OUTPUT"
+          {
+            echo "image_tag=$IMAGE_TAG"
+            echo "image_latest=$IMAGE_LATEST"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 12. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
         run: |
