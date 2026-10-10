@@ -112,18 +112,29 @@ pwsh -File scripts/setup-azure-pre-deployment.ps1
 ### 3.1 Architecture Overview
 ```mermaid
 graph TD
-    User([End User / Mobile Browser]) -->|HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in]
-    Domain -->|CNAME + TXT Verification| ACA_Ingress[ACA Environment Ingress<br/>Free Managed TLS 1.3 Certificate]
+    User([End User / Mobile Browser]) -->|Direct HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in<br/>Direct Ingress: No Front Door / No App Gateway]
+    Domain -->|CNAME + TXT Verification| ACA_Ingress[ACA Managed Ingress (Envoy)<br/>Free Managed TLS 1.3 Certificate]
     
-    subgraph ACA_Perimeter ["Azure Container Apps Environment (cae-dietdost-prod)"]
-        ACA_Ingress --> AppContainer[Diet-Dost WebGateway Container<br/>.NET 11 Runtime / Port 8080<br/>Replicas: min=1, max=1]
-        
-        AppContainer -.->|Managed Identity| KV[Azure Key Vault<br/>Gemini & App Secrets]
-        AppContainer -.->|OTLP Telemetry| AppInsights[Azure Log Analytics / Monitor]
+    subgraph VNet_Perimeter ["VNet Perimeter & Zero-Trust NSG (nsg-dietdost-dev)"]
+        subgraph NSG_Rules ["NSG Stateful Firewall"]
+            InRules["Inbound: 100 HTTPS, 110 AzureLoadBalancer, 120 VNet Internal, 4000 DENY ALL"]
+            OutRules["Outbound: 100 SMB 445, 110 AzureCloud 443, 120 DNS 53, 130 NTP 123, 140 Gemini AI 443, 150 VNet Internal, 4000 DENY ALL"]
+        end
+
+        subgraph ACA_Perimeter ["Azure Container Apps Environment (cae-dietdost-dev)"]
+            ACA_Ingress --> AppContainer[Diet-Dost WebGateway Container<br/>.NET 11 Runtime / Port 8080<br/>Replicas: min=1, max=1]
+            
+            AppContainer -.->|Assigned Managed Identity| MI[User-Assigned Identity<br/>id-dietdost-dev]
+            MI -.->|Role: AcrPull (7f951dda...)| ACR[Azure Container Registry<br/>crdietdost* (Admin Disabled)]
+            ACR -->|Secure OCI Image Pull via Port 443| AppContainer
+            MI -.->|Role: Key Vault Secrets User| KV[Azure Key Vault<br/>kvdietdost*]
+            AppContainer -.->|Secret Resolution| KV
+            AppContainer -.->|OTLP Telemetry| AppInsights[Azure Log Analytics / Monitor]
+        end
     end
     
-    subgraph Azure_Storage ["Azure Storage Account (stgdietdostprod)"]
-        AppContainer -->|Volume Mount: /app/data| FileShare[Azure Files SMB Share<br/>sqlite-data-share<br/>- diet_dost.db<br/>- uploads/]
+    subgraph Azure_Storage ["Azure Storage Account (stgdietdost*)"]
+        AppContainer -->|Volume Mount: /app/data (AES-GCM)| FileShare[Azure Files SMB Share<br/>dietdost-data<br/>- diet_dost.db<br/>- uploads/]
     end
 ```
 

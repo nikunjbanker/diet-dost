@@ -327,15 +327,18 @@ graph TD
 - **Rule Set**:
   - **Inbound**:
     - `Allow-HTTPS` (Port 443) from `Internet` to `VirtualNetwork` (satisfies `CKV_AZURE_160`: HTTP port 80 restricted).
-    - `Allow-Azure-Load-Balancer` from `AzureLoadBalancer` to `VirtualNetwork`.
-    - `Deny-All-Inbound` (implicit default).
+    - `Allow-HTTPS-Inbound` (Priority 100, Port 443) from `*` to `VirtualNetwork`.
+    - `Allow-AzureLoadBalancer-Inbound` (Priority 110) from `AzureLoadBalancer` health probes.
+    - `Allow-VNet-Internal-Inbound` (Priority 120) between cluster pods and control plane.
+    - `Deny-All-Other-Inbound` (Priority 4000, Explicit Catch-All Deny).
   - **Outbound**:
-    - `Allow-Storage-SMB` (Port 445) restricted strictly to `Storage` service tag.
-    - `Allow-AzureCloud-HTTPS` (Port 443) restricted to `AzureCloud` service tag (Key Vault, ACR, OTLP).
-    - `Allow-AI-APIs-HTTPS` (Port 443) outbound to `Internet` for Gemini 2.5 Flash / Flash Lite REST calls.
-    - `Allow-DNS` (Port 53) outbound for core name resolution.
-    - `Allow-NTP` (Port 123) outbound for clock synchronization.
-    - `Deny-All-Outbound` (implicit default).
+    - `Allow-Storage-SMB-Outbound` (Priority 100, Port 445) restricted strictly to `Storage` service tag for persistent SQLite mount.
+    - `Allow-AzureCloud-HTTPS-Outbound` (Priority 110, Port 443) restricted to `AzureCloud` service tag (Key Vault, ACR image pulls, Entra ID, Log Analytics).
+    - `Allow-DNS-Outbound` (Priority 120, Port 53) for core name resolution.
+    - `Allow-NTP-Outbound` (Priority 130, Port 123) for clock synchronization.
+    - `Allow-Internet-HTTPS-Outbound` (Priority 140, Port 443) outbound to `Internet` for Google AI Gemini API REST calls.
+    - `Allow-VNet-Internal-Outbound` (Priority 150) for intra-VNet cluster communication.
+    - `Deny-All-Other-Outbound` (Priority 4000, Explicit Catch-All Deny to override Azure default AllowInternetOutBound).
 
 ### 8.2 Azure Files SMB 3.1.1 Cryptographic Channel Hardening
 - **Protocol Encryption**: Enforces SMB 3.1.1 wire encryption with negotiated ciphers `AES-128-GCM` and `AES-256-GCM` across `fileServices` in `infra/infra.bicep`.
@@ -346,14 +349,18 @@ graph TD
 - **Audit Logging**: Configured `Microsoft.Insights/diagnosticSettings` (`diag-kv-dev`) streaming `AuditEvent` categories and all metrics directly into the existing Log Analytics Workspace (`log-dietdost-dev`) within the free 5 GB/month ingestion tier.
 - **Automated Intrusion Alerting**: Deployed `Microsoft.Insights/metricAlerts` (`alert-kv-unauthorized-dev`) monitoring the Key Vault Service Api Hit metric with dimensions `StatusCode = 401, 403`. Fires automatically if unauthorized attempts exceed 5 in a 5-minute window, consuming 0 additional cost (within Azure's first 10 free platform metric alerts).
 
-### 8.4 Container App Ingress Perimeter Hardening
+### 8.4 Direct ACA Ingress & ACR Image Pull Delivery Architecture
+- **Direct ACA Managed Envoy Ingress**: External traffic from `dev.diet-dost.in` routes directly to the ACA Managed Environment's built-in Envoy proxy. Zero intermediate hops—**neither Azure Front Door nor Azure Application Gateway is provisioned or utilized**, eliminating unnecessary cost and latency. Free Azure Managed TLS 1.3 certificates terminate directly at the ACA Envoy layer.
+- **Passwordless ACR Image Pull Mechanics**: Azure Container Registry (`crdietdost*`) runs with `adminUserEnabled: false` (zero static passwords). The Container App (`app-dietdost-web`) pulls images securely via its assigned User-Assigned Managed Identity (`id-dietdost-dev`) which possesses the built-in `AcrPull` role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`) scoped directly to the registry. CI/CD pushes images using ephemeral tokens generated via `az acr login --expose-token`.
 - **IP Security Restrictions**: Added configurable `ipSecurityRestrictions` array to `infra/app.bicep`. Allows operators to enforce IP allowlisting/denylisting on the external ingress controller at 0 cost.
 
 ### 8.5 Architectural Visual Artifacts
 The full architectural blueprint is codified in the following repository visual artifacts:
 - **Mermaid Source Diagram**: [`docs/architecture/diagrams/azure_zero_trust_infra_architecture.mermaid`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/azure_zero_trust_infra_architecture.mermaid)
 - **High-Resolution Architecture Diagram**: [`docs/architecture/diagrams/azure_zero_trust_infra_architecture.jpg`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/azure_zero_trust_infra_architecture.jpg)
-- **Architectural Decision Record**: [`docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md)
+- **Architectural Decision Records**:
+  - [`docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md)
+  - [`docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md)
 
 
 

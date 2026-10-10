@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T19:26:32.472325+00:00",
-  "totalAdrs": 52,
+  "generatedAt": "2026-10-10T20:26:51.654684+00:00",
+  "totalAdrs": 53,
   "categoryCounts": {
-    "architecture": 15,
+    "architecture": 16,
     "security": 16,
     "devops": 4,
     "presentation": 4,
@@ -633,6 +633,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261011-089-security-tooling-modernization-and-deprecation-resolution.md",
       "relativePath": "docs/adr/security/ADR-20261011-089-security-tooling-modernization-and-deprecation-resolution.md"
+    },
+    {
+      "id": "ADR-090",
+      "number": 90,
+      "title": "Azure Zero-Trust NSG Outbound Rules, Passwordless ACR Image Pull, and Direct ACA Ingress Architecture",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-11",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md",
+      "relativePath": "docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md"
     }
   ]
 }

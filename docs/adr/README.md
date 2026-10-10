@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 52 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 53 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **15** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **16** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **16** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **4** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -61,6 +61,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-076** | Codification of Configuration, Options Pattern & Secret Management Architecture SDD | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md) |
 | **ADR-084** | Multi-Agent Readiness (Antigravity, Copilot, Claude), Native Health Probes, and BFF Contract Testing | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261010-084-multi-agent-readiness-health-probes-and-bff-contract-snapshot-tests.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261010-084-multi-agent-readiness-health-probes-and-bff-contract-snapshot-tests.md) |
 | **ADR-089** | Automated Architecture Diagram Synchronization, Semantic Solution Alignment, and Agentic Governance | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261010-089-automated-architecture-diagram-synchronization-and-agentic-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261010-089-automated-architecture-diagram-synchronization-and-agentic-governance.md) |
+| **ADR-090** | Azure Zero-Trust NSG Outbound Rules, Passwordless ACR Image Pull, and Direct ACA Ingress Architecture | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*

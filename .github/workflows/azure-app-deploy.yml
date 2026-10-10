@@ -99,7 +99,7 @@ jobs:
       - name: 4b. Pre-Deployment Security Gate - Secret Leak Scan (Gitleaks)
         run: |
           echo "Scanning workspace for accidental secret or credential leaks..."
-          GITLEAKS_VERSION="8.18.4"
+          GITLEAKS_VERSION="8.30.1"
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
           tar -xzf gitleaks.tar.gz gitleaks
           sudo mv gitleaks /usr/local/bin/
@@ -110,8 +110,8 @@ jobs:
       - name: 4c. Pre-Deployment Security Gate - Client Code Static Analysis (ESLint)
         run: |
           echo "Validating client-side JavaScript assets with ESLint..."
-          npm install eslint@8.57.0
-          npx eslint . --config .eslintrc.js --ext .js --no-error-on-unmatched-pattern
+          npm install eslint@9.20.0
+          npx eslint .
           echo "✅ Pre-Deployment ESLint Gate Passed: 0 code quality violations."
 
       - name: 4d. Pre-Deployment Security Gate - Bicep IaC Schema & Compilation Validation

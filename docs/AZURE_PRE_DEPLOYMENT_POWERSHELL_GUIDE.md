@@ -201,13 +201,11 @@ Execute these steps in PowerShell to configure required environment variables an
 # 1. Verify GitHub CLI Authentication
 gh auth status
 
-# 2. Set / Confirm GitHub Environment Variables
+# 2. Set / Confirm GitHub Environment Variables (Strictly Non-Sensitive per ADR-077)
 Write-Host "Configuring GitHub Environment Variables for '$EnvironmentName'..." -ForegroundColor Cyan
 gh variable set AZURE_CLIENT_ID --repo $GitHubRepo --env $EnvironmentName --body $AppRegistrationId
 gh variable set AZURE_SUBSCRIPTION_ID --repo $GitHubRepo --env $EnvironmentName --body $SubscriptionId
 gh variable set AZURE_TENANT_ID --repo $GitHubRepo --env $EnvironmentName --body $TenantId
-gh variable set SUPER_ADMIN_EMAIL --repo $GitHubRepo --env $EnvironmentName --body "superadmin@dietdost.app"
-gh variable set REQUIRE_MOBILE_VERIFICATION --repo $GitHubRepo --env $EnvironmentName --body "false"
 
 # 3. Generate Cryptographically Secure 256-bit (48-byte) JWT Signing Key
 $bytes = New-Object byte[] 48
@@ -219,7 +217,12 @@ Write-Host "Generated 256-bit JWT Key: $SecureJwtKey" -ForegroundColor Yellow
 gh secret set JWT_KEY --repo $GitHubRepo --env $EnvironmentName --body $SecureJwtKey
 Write-Host "✅ JWT_KEY successfully saved in GitHub environment '$EnvironmentName'!" -ForegroundColor Green
 
-# 5. Save GEMINI_API_KEY Secret to GitHub Environment
+# 5. Save Administrative Identity Secrets (Strictly Secret-Governed per ADR-077)
+gh secret set SUPER_ADMIN_EMAIL --repo $GitHubRepo --env $EnvironmentName --body "superadmin@dietdost.app"
+gh secret set REQUIRE_MOBILE_VERIFICATION --repo $GitHubRepo --env $EnvironmentName --body "false"
+Write-Host "✅ Administrative secrets successfully saved in GitHub environment '$EnvironmentName'!" -ForegroundColor Green
+
+# 6. Save GEMINI_API_KEY Secret to GitHub Environment
 # Replace with your actual Google Gemini API key:
 $MyGeminiApiKey = "YOUR_ACTUAL_GEMINI_API_KEY_HERE"
 

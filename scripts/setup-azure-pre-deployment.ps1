@@ -12,18 +12,29 @@
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
-    [string]$SubscriptionId    = "",
-    [string]$TenantId          = "",
-    [string]$AppRegistrationId = "",
-    [string]$GitHubRepo        = "nikunjbanker/diet-dost",
-    [string]$EnvironmentName   = "dev",
-    [string]$GitBranch         = "feature/aca-deployment-sqlite-smb-dev-domain",
-    [string]$GeminiApiKey      = "",
+    [string]$SubscriptionId            = "",
+    [string]$TenantId                  = "",
+    [string]$AppRegistrationId         = "",
+    [string]$GitHubRepo                = "nikunjbanker/diet-dost",
+    [string]$EnvironmentName           = "dev",
+    [string]$GitBranch                 = "",
+    [string]$SuperAdminEmail           = "superadmin@dietdost.app",
+    [string]$RequireMobileVerification = "false",
+    [string]$GeminiApiKey              = "",
+    [string]$AzureOpenAiApiKey         = "",
     [switch]$SkipAzLogin,
     [switch]$DryRun
 )
 
 $ErrorActionPreference = "Stop"
+
+# Dynamically resolve active Git branch if not explicitly specified
+if ([string]::IsNullOrWhiteSpace($GitBranch)) {
+    $GitBranch = (git branch --show-current 2>$null)
+    if ([string]::IsNullOrWhiteSpace($GitBranch)) {
+        $GitBranch = "main"
+    }
+}
 
 Write-Host "==============================================================================" -ForegroundColor Cyan
 Write-Host "      DIET-DOST ENTERPRISE CLOUD PRE-DEPLOYMENT SETUP (POWERSHELL)           " -ForegroundColor Cyan
@@ -159,13 +170,11 @@ foreach ($role in $roles) {
 # ------------------------------------------------------------------------------
 Write-Host "`n[4/5] Configuring GitHub Environment Variables & Secrets..." -ForegroundColor Cyan
 
-# 4a. Environment Variables
+# 4a. Environment Variables (Strictly Non-Sensitive per ADR-077 & ADR-078)
 $envVars = @{
-    "AZURE_CLIENT_ID"             = $AppRegistrationId
-    "AZURE_SUBSCRIPTION_ID"        = $SubscriptionId
-    "AZURE_TENANT_ID"              = $TenantId
-    "SUPER_ADMIN_EMAIL"           = "superadmin@dietdost.app"
-    "REQUIRE_MOBILE_VERIFICATION" = "false"
+    "AZURE_CLIENT_ID"       = $AppRegistrationId
+    "AZURE_SUBSCRIPTION_ID" = $SubscriptionId
+    "AZURE_TENANT_ID"       = $TenantId
 }
 
 foreach ($kv in $envVars.GetEnumerator()) {
@@ -175,6 +184,12 @@ foreach ($kv in $envVars.GetEnumerator()) {
         gh variable set $kv.Key --repo $GitHubRepo --env $EnvironmentName --body $kv.Value
         Write-Host "  ✅ GitHub Variable '$($kv.Key)' set." -ForegroundColor Green
     }
+}
+
+# Purge any legacy plaintext variables if present from previous configurations (ADR-077 compliance)
+if (-not $DryRun) {
+    gh variable delete SUPER_ADMIN_EMAIL --repo $GitHubRepo --env $EnvironmentName 2>$null
+    gh variable delete REQUIRE_MOBILE_VERIFICATION --repo $GitHubRepo --env $EnvironmentName 2>$null
 }
 
 # 4b. Cryptographic JWT Signing Key
@@ -189,7 +204,24 @@ if ($DryRun) {
     Write-Host "  ✅ Cryptographic JWT_KEY (256-bit HMAC) generated and stored." -ForegroundColor Green
 }
 
-# 4c. Gemini API Key
+# 4c. Administrative Identity & Verification (Strictly Secret-Governed per ADR-077)
+if (-not [string]::IsNullOrWhiteSpace($SuperAdminEmail)) {
+    if ($DryRun) {
+        Write-Host "  [DryRun] Would set SUPER_ADMIN_EMAIL secret to '$SuperAdminEmail'" -ForegroundColor Magenta
+    } else {
+        gh secret set SUPER_ADMIN_EMAIL --repo $GitHubRepo --env $EnvironmentName --body $SuperAdminEmail
+        Write-Host "  ✅ SUPER_ADMIN_EMAIL encrypted secret stored in environment '$EnvironmentName'." -ForegroundColor Green
+    }
+}
+
+if ($DryRun) {
+    Write-Host "  [DryRun] Would set REQUIRE_MOBILE_VERIFICATION secret to '$RequireMobileVerification'" -ForegroundColor Magenta
+} else {
+    gh secret set REQUIRE_MOBILE_VERIFICATION --repo $GitHubRepo --env $EnvironmentName --body $RequireMobileVerification
+    Write-Host "  ✅ REQUIRE_MOBILE_VERIFICATION encrypted secret stored in environment '$EnvironmentName'." -ForegroundColor Green
+}
+
+# 4d. Gemini API Key
 if ([string]::IsNullOrWhiteSpace($GeminiApiKey)) {
     Write-Host "  ℹ️ Note: GEMINI_API_KEY was not passed via parameter." -ForegroundColor Yellow
     Write-Host "     To set it manually, execute:" -ForegroundColor Yellow
@@ -200,6 +232,16 @@ if ([string]::IsNullOrWhiteSpace($GeminiApiKey)) {
     } else {
         gh secret set GEMINI_API_KEY --repo $GitHubRepo --env $EnvironmentName --body $GeminiApiKey
         Write-Host "  ✅ GEMINI_API_KEY secret stored in environment '$EnvironmentName'." -ForegroundColor Green
+    }
+}
+
+# 4e. Azure OpenAI API Key (Optional)
+if (-not [string]::IsNullOrWhiteSpace($AzureOpenAiApiKey)) {
+    if ($DryRun) {
+        Write-Host "  [DryRun] Would set AZURE_OPENAI_API_KEY secret" -ForegroundColor Magenta
+    } else {
+        gh secret set AZURE_OPENAI_API_KEY --repo $GitHubRepo --env $EnvironmentName --body $AzureOpenAiApiKey
+        Write-Host "  ✅ AZURE_OPENAI_API_KEY secret stored in environment '$EnvironmentName'." -ForegroundColor Green
     }
 }
 

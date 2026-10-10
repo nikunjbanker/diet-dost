@@ -66,6 +66,32 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
         }
       }
       {
+        name: 'Allow-VNet-Internal-Inbound'
+        properties: {
+          priority: 120
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: '*'
+          sourceAddressPrefix: 'VirtualNetwork'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'VirtualNetwork'
+          destinationPortRange: '*'
+        }
+      }
+      {
+        name: 'Deny-All-Other-Inbound'
+        properties: {
+          priority: 4000
+          direction: 'Inbound'
+          access: 'Deny'
+          protocol: '*'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '*'
+        }
+      }
+      {
         name: 'Allow-Storage-SMB-Outbound'
         properties: {
           priority: 100
@@ -128,6 +154,32 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
           sourcePortRange: '*'
           destinationAddressPrefix: 'Internet'
           destinationPortRange: '443'
+        }
+      }
+      {
+        name: 'Allow-VNet-Internal-Outbound'
+        properties: {
+          priority: 150
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: '*'
+          sourceAddressPrefix: 'VirtualNetwork'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'VirtualNetwork'
+          destinationPortRange: '*'
+        }
+      }
+      {
+        name: 'Deny-All-Other-Outbound'
+        properties: {
+          priority: 4000
+          direction: 'Outbound'
+          access: 'Deny'
+          protocol: '*'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '*'
         }
       }
     ]
