@@ -115,12 +115,6 @@ jobs:
         with:
           dotnet-version: '11.0.x'
 
-      - name: Initialize CodeQL (C#)
-        uses: github/codeql-action/init@24c54180a607b1449ed407dd24f251e4e9147c8d # v3.28.11
-        with:
-          languages: csharp
-          build-mode: manual
-
       - name: Execute SecurityCodeScan Analysis (All Projects)
         run: |
           mkdir -p sarif-results
@@ -132,11 +126,6 @@ jobs:
           dotnet tool install --global microsoft.cst.devskim.cli || true
           devskim analyze -I src -O sarif-results/devskim.sarif -f sarif -s Critical,Important -g "**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/aspire-output/**" || true
           python3 scripts/merge-sarif.py sarif-results security-code-scan.sarif
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v3.28.11
-        with:
-          category: "/language:csharp"
 
       - name: Upload SecurityCodeScan SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
