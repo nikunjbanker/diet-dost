@@ -79,6 +79,11 @@ public static class ServiceCollectionExtensions
         services.AddHttpContextAccessor();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ICurrentUserService, Services.CurrentUserService>();
 
+        // Native ASP.NET Core Health Checks (/healthz liveness & /ready readiness)
+        services.AddHealthChecks()
+            .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("WebGateway service is live."), tags: ["live"])
+            .AddCheck<Health.DatabaseHealthCheck>("database", tags: ["ready"]);
+
         return services;
     }
 }

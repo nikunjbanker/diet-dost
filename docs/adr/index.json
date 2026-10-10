@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T12:59:48.404189+00:00",
-  "totalAdrs": 44,
+  "generatedAt": "2026-10-10T13:19:40.096868+00:00",
+  "totalAdrs": 45,
   "categoryCounts": {
-    "architecture": 13,
+    "architecture": 14,
     "security": 12,
     "devops": 3,
     "presentation": 4,
@@ -537,6 +537,18 @@
       "subsystem": "Architecture Documentation (",
       "filename": "ADR-20261010-083-subsystem-domain-adr-hierarchy-and-automated-indexing.md",
       "relativePath": "docs/adr/governance/ADR-20261010-083-subsystem-domain-adr-hierarchy-and-automated-indexing.md"
+    },
+    {
+      "id": "ADR-084",
+      "number": 84,
+      "title": "Multi-Agent Readiness (Antigravity, Copilot, Claude), Native Health Probes, and BFF Contract Testing",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-10T18:50:00+05:30",
+      "subsystem": "WebGateway, Application, Infrastructure, DevContainer, CI/CD, Documentation",
+      "filename": "ADR-20261010-084-multi-agent-readiness-health-probes-and-bff-contract-snapshot-tests.md",
+      "relativePath": "docs/adr/architecture/ADR-20261010-084-multi-agent-readiness-health-probes-and-bff-contract-snapshot-tests.md"
     }
   ]
 }

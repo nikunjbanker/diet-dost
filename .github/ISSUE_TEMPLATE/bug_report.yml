@@ -1,0 +1,45 @@
+name: "🐛 Bug Report"
+description: "File a defect, security anomaly, or clinical calculation issue"
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a defect in Diet-Dost. Please provide clear reproduction steps.
+  - type: textarea
+    id: description
+    attributes:
+      label: "Bug Description"
+      description: "A clear and concise description of what the defect is."
+      placeholder: "Observed behavior vs expected behavior..."
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Reproduction Steps"
+      description: "Steps to reproduce the behavior:"
+      placeholder: |
+        1. Login as 'free@dietdost.app'
+        2. Upload meal photo '...'
+        3. Observe HTTP 500 error...
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "Environment"
+      options:
+        - "Local Dev (Aspire AppHost :18888 / WebGateway :5240)"
+        - "Azure Container Apps (dev.dietdost.app)"
+        - "CI/CD Pipeline (GitHub Actions)"
+        - "Unit / Eval Test Harness (dotnet test)"
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: "Logs & Diagnostic Output"
+      description: "Paste relevant sanitized terminal logs or OpenTelemetry trace summaries (PII redacted)."
+      render: text

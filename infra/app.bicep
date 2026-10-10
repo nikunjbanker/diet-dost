@@ -151,6 +151,28 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               mountPath: '/app/data'
             }
           ]
+          probes: [
+            {
+              type: 'Liveness'
+              httpGet: {
+                path: '/healthz'
+                port: 8080
+              }
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              failureThreshold: 3
+            }
+            {
+              type: 'Readiness'
+              httpGet: {
+                path: '/ready'
+                port: 8080
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 15
+              failureThreshold: 3
+            }
+          ]
         }
       ]
       scale: {

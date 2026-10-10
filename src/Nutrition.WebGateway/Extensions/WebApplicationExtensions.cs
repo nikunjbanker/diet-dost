@@ -46,6 +46,16 @@ public static class WebApplicationExtensions
         // Enforce Per-IP Partitioned Rate Limiting on authentication endpoints (OWASP A04)
         app.UseAppRateLimiter();
 
+        // Native Health Check Endpoints (Azure Container Apps / Kubernetes Probes)
+        app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        });
+        app.MapHealthChecks("/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("ready")
+        });
+
         // Controller Endpoints & SPA Fallback
         app.MapControllers();
         app.MapFallbackToFile("index.html");

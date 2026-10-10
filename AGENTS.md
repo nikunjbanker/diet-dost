@@ -10,6 +10,15 @@
 
 This solution-level instruction file defines mandatory engineering and Git workflows for any AI agent or human contributor working on the **Diet-Dost** repository.
 
+> [!TIP]
+> **Modular Antigravity Rules**: Domain-specific rule subsets are maintained modularly inside [`.agents/rules/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/):
+> - [`git-workflow.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/git-workflow.md): Git branching, lineage assertion, stacked PRs, and merge rules.
+> - [`clinical-dietetics-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/clinical-dietetics-rules.md): ICMR-NIN 2024, WHO Asian-Indian thresholds, Zero-Assumption Intake.
+> - [`security-and-ai-defense-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/security-and-ai-defense-rules.md): PromptShield, OWASP LLM, Sole Authority Key Vault, 8-job CI scan.
+> - [`clean-architecture-cqrs-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/clean-architecture-cqrs-rules.md): Native CQRS, Thin Controllers, UTC persistence, SQLite SMB mount.
+> - [`token-economics-and-adr-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/token-economics-and-adr-rules.md): Zero prompt bloat, domain ADR fragments, index.json.
+> - [`ui-ux-design-system.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/ui-ux-design-system.md): Linear.app Obsidian surface ladder, hairline borders, typography.
+
 ---
 
 ## 1. Mandatory Git Branching & PR-Only Merge Workflow

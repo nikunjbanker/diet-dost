@@ -1,0 +1,50 @@
+name: "🚀 Feature Request"
+description: "Suggest a feature, enhancement, or architectural capability for Diet-Dost"
+title: "[FEATURE]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a feature for Diet-Dost! All features must comply with **ICMR-NIN 2024 / WHO clinical standards**, **Clean Architecture**, and **OWASP LLM PromptShield defense**.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem Statement"
+      description: "Is your feature request related to a specific clinical limitation, user pain point, or platform gap?"
+      placeholder: "Clear description of what the user is trying to accomplish..."
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: "Proposed Architectural / Feature Solution"
+      description: "Describe the solution you'd like to see, including affected layers (Domain, Application CQRS, WebGateway, Infrastructure, Presentation)."
+      placeholder: "Detailed solution specification..."
+    validations:
+      required: true
+  - type: dropdown
+    id: subsystem
+    attributes:
+      label: "Affected Subsystem"
+      options:
+        - "🏛️ Architecture & Domain Logic (Clean Architecture, CQRS, Clinical Engine)"
+        - "🛡️ Security & Identity (Auth, Key Vault, PromptShield, OWASP)"
+        - "🚀 DevOps & Cloud Infrastructure (Azure Container Apps, Bicep, CI/CD)"
+        - "🎨 Presentation & UI/UX (Linear Design System, PWA, Mobile)"
+        - "📱 Mobile BFF (iOS / Android API Contracts)"
+    validations:
+      required: true
+  - type: checkboxes
+    id: acceptance_criteria
+    attributes:
+      label: "Acceptance & Quality Criteria"
+      options:
+        - label: "Conforms to .NET 11 with 0 build warnings"
+          required: true
+        - label: "Includes automated unit and integration tests"
+          required: true
+        - label: "Validates against all 5 demo user tiers via validate_e2e_tiers.ps1"
+          required: true
+        - label: "Records atomic ADR fragment in docs/adr/<domain>/"
+          required: true
