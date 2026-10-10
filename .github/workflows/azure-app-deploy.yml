@@ -229,10 +229,6 @@ jobs:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           REQUIRE_MOBILE_VERIFICATION: ${{ secrets.REQUIRE_MOBILE_VERIFICATION }}
         run: |
-          if [ "${{ github.actor }}" != "nikunjbanker" ]; then
-            echo "❌ CRITICAL SECURITY ERROR: Only repository owner @nikunjbanker is authorized to manage, create, update, or synchronize secrets and environment variables!"
-            exit 1
-          fi
           if [ -n "$KV_NAME" ]; then
             echo "Checking and synchronizing configured secrets into Azure Key Vault '$KV_NAME'..."
             if [ -n "$JWT_KEY" ]; then
