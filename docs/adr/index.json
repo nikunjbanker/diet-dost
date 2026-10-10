@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T17:24:02.097260+00:00",
-  "totalAdrs": 50,
+  "generatedAt": "2026-10-10T18:25:52.044528+00:00",
+  "totalAdrs": 51,
   "categoryCounts": {
-    "architecture": 14,
+    "architecture": 15,
     "security": 15,
     "devops": 4,
     "presentation": 4,
@@ -609,6 +609,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md",
       "relativePath": "docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md"
+    },
+    {
+      "id": "ADR-089",
+      "number": 89,
+      "title": "Automated Architecture Diagram Synchronization, Semantic Solution Alignment, and Agentic Governance",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-10",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261010-089-automated-architecture-diagram-synchronization-and-agentic-governance.md",
+      "relativePath": "docs/adr/architecture/ADR-20261010-089-automated-architecture-diagram-synchronization-and-agentic-governance.md"
     }
   ]
 }

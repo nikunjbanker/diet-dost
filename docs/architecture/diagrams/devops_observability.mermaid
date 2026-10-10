@@ -17,13 +17,15 @@ graph TD
     end
 
     subgraph Azure_Cloud_Production ["Azure Cloud Production Environment (Serverless & Persistent)"]
-        ACA["Azure Container Apps (ACA)<br/>- Ingress: HTTPS Port 5240 with Free Managed TLS<br/>- minReplicas: 1, maxReplicas: 1 (Single Replica Invariant)<br/>- Custom Domain: dev.dietdost.app"]
-        SMB_Mount[("Azure Files Persistent SMB Volume<br/>Mount Path: /app/data<br/>File: diet_dost.db (PRAGMA journal_mode=DELETE)")]
-        AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>Secrets: JWT_KEY, GEMINI_API_KEY")]
+        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Zero-Trust Subnet Isolation (CKV_AZURE_9 & CKV_AZURE_160)"]
+        ACA["Azure Container Apps (ACA)<br/>- Ingress: HTTPS Port 443 with Free Managed TLS<br/>- minReplicas: 1, maxReplicas: 1 (Single Replica Invariant)<br/>- Custom Domain: dev.dietdost.app"]
+        SMB_Mount[("Azure Files Persistent SMB Volume<br/>Mount Path: /app/data<br/>SMB 3.1.1 AES-GCM Wire Encryption & 7-Day Soft-Delete")]
+        AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>AuditEvent Diagnostics & 401/403 Metric Alert")]
         ACR_Registry[("Azure Container Registry (ACR)<br/>Passwordless Image Pull via User-Assigned MI (acrPullRole)")]
         
         AppDeploy -->|Deploys Image| ACA
-        ACA -->|Mounted Volume| SMB_Mount
+        NSG --- ACA
+        ACA -->|Mounted Volume (SMB 3.1.1)| SMB_Mount
         ACA -.->|Passwordless Managed Identity| AKV
         ACA -.->|Pulls Image| ACR_Registry
     end
@@ -32,7 +34,7 @@ graph TD
         Host["Aspire.Hosting.AppHost (net11.0 / Sdk 13.5.4)"]
         OTel["OpenTelemetry OTLP Collector"]
         Dash["Aspire Observability Dashboard (Port 18888)<br/>(Virtualize JS Patched: 0 Interop Errors)"]
-        TestSuites["Validation Test Suites<br/>- 234 Automated Tests (Domain & Eval Harness)<br/>- Multi-Tier E2E CFT Suite (validate_e2e_tiers.ps1)<br/>- AI Security Defense Pre-Commit Validator"]
+        TestSuites["Validation Test Suites<br/>- 242 Automated Tests (Domain & Eval Harness)<br/>- Multi-Tier E2E CFT Suite Across 5 User Tiers<br/>- AI Security Defense Pre-Commit Validator"]
     end
 
     subgraph Microservice_Processes ["Aspire Managed Microservices"]

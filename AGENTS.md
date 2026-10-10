@@ -19,6 +19,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
 > - [`token-economics-and-adr-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/token-economics-and-adr-rules.md): Zero prompt bloat, domain ADR fragments, index.json.
 > - [`ui-ux-design-system.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/ui-ux-design-system.md): Linear.app Obsidian surface ladder, hairline borders, typography.
 > - [`skill-synchronization-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/skill-synchronization-governance.md): Living runbooks, zero skill drift, token economics, archival rules.
+> - [`architecture-diagram-synchronization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/architecture-diagram-synchronization.md): Canonical Mermaid diagrams, ADR-086 syntax, automated documentation sync, and pre-commit verification.
 
 ---
 
@@ -240,4 +241,14 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **New Skill Addition Protocol**: Introduce a new skill folder in `.agents/skills/` with a valid `SKILL.md` when a new, distinct engineering domain or major subsystem is established (e.g. `diet-dost-devsecops-pipeline` for static analysis & SAST gates).
     - **Archival & Deprecation Protocol**: When an architectural pattern, library, or script is superseded, update the skill to document the current pattern and move obsolete playbooks into an `archive/` subfolder.
     - **Token Economics Compliance**: Maintain YAML frontmatter `description` fields under 150 words with dense trigger keywords. Deep architectural specifications and schemas belong in `docs/sdd/*.md` and `docs/adr/*.md` (0 baseline tokens), while skills provide tactical, procedural code recipes and checklists.
+21. **Mandatory Architecture Diagram Auto-Sync & Living Alignment Rule**:
+    - **Canonical Source of Truth Invariant**: The authoritative representations of Diet-Dost's system topology, security boundaries, Azure cloud infrastructure, and execution flows reside exclusively in [`docs/architecture/diagrams/*.mermaid`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/).
+    - **ADR-086 Syntax Invariant**: Line 1 of every `.mermaid` file **MUST** be the Mermaid root directive (e.g. `graph TB`, `sequenceDiagram`, `flowchart TD`) and line 2 must be the `%%` dual license header. Never prepend blank lines or comments before line 1.
+    - **Automated Synchronization Mandate**: Whenever introducing architectural modifications (layers, ports/adapters, controllers, Bicep resources, NSG rules, persistence stores, or test metrics), contributors and AI agents **MUST** update the canonical `.mermaid` diagrams and execute:
+      ```powershell
+      pwsh -File scripts/sync-architecture-diagrams.ps1 -Sync
+      ```
+      This automatically synchronizes embedded Mermaid blocks across `README.md` and `docs/sdd/02_solution_architecture.md`, eliminating manual copy-paste errors and preventing documentation drift.
+    - **Automated Pre-Commit & CI Gating**: The validation script `scripts/verify-ai-security-defense.ps1` runs `sync-architecture-diagrams.ps1 -Verify` as Vector 6. If any canonical diagram has syntax defects, violates ADR-086, omits required solution elements, or has drifted from embedded documentation, the commit and CI pipeline are **immediately rejected**.
+
 

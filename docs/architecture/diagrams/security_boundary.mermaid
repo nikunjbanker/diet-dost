@@ -48,8 +48,9 @@ graph LR
     end
 
     subgraph Cloud_Persistence_Zone ["Encrypted & Isolated Persistence Zone"]
-        AzureFiles[("Azure Files Persistent SMB Mount<br/>/app/data/diet_dost.db (SQLite DELETE Journal)")]
-        KeyVault[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>JWT_KEY, GEMINI_API_KEY, Database Secrets")]
+        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Subnet Isolation (Checkov CKV_AZURE_9 & CKV_AZURE_160)"]
+        AzureFiles[("Azure Files Persistent SMB Mount<br/>/app/data/diet_dost.db (SMB 3.1.1 AES-GCM Wire Encryption & 7-Day Soft-Delete)")]
+        KeyVault[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>AuditEvent Diagnostics & 401/403 Metric Alert")]
         ACR[("Azure Container Registry (ACR)<br/>Passwordless Pull via User-Assigned MI (acrPullRole)")]
         BlobData[("Local AppData / Azure Blob Media Storage")]
     end
@@ -69,3 +70,4 @@ graph LR
     GlobalFilter --> AzureFiles
     CQRS -.->|Passwordless Managed Identity| KeyVault
     FileCheck --> BlobData
+    NSG --- AzureFiles

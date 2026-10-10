@@ -19,6 +19,14 @@ The solution architecture integrates core architectural dimensions into a cohesi
 
 ```mermaid
 graph TB
+%%
+%% Copyright (c) 2026 diet-dost and/or its contributors.
+%% Licensed under the "GNU Affero General Public License v3.0 only" and
+%% the "Server Side Public License, v 1"; you may not use this file except
+%% in compliance with, at your election, the "GNU Affero General Public
+%% License v3.0 only" or the "Server Side Public License, v 1".
+%%
+
     %% =========================================================================
     %% MASTER SOLUTION ARCHITECTURE: DIET DOST (.NET 11 & ASPIRE)
     %% Clean Architecture, Native CQRS, Azure Container Apps, SQLite SMB Mount, Key Vault
@@ -66,9 +74,11 @@ graph TB
         SEC_VaultAuth["Sole Authority Secret Governance (@nikunjbanker)<br/>Azure Key Vault with Purge Protection & Passwordless Managed Identity"]
     end
 
-    subgraph LAYER_GATEWAY ["3. PRESENTATION GATEWAY (Nutrition.WebGateway)"]
+    subgraph LAYER_GATEWAY ["3. PRESENTATION GATEWAY & BACKEND-FOR-FRONTEND (Nutrition.WebGateway)"]
         direction TB
-        CONTROLLERS["Thin REST Controllers (.NET 11)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController, WebBffController)"]
+        CONTROLLERS["Thin REST Controllers (.NET 11)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController)"]
+        BFF_Composite["Web BFF Composite Hydration (/api/web/v1/dashboard)<br/>Parallel Task.WhenAll CQRS Execution & Sub-50ms Payload"]
+        BFF_Mobile["Mobile BFF Facade (/api/mobile/v1/*)<br/>Compact Cellular DTOs & Hardware Token Handshake"]
         MW_Pipeline["HTTP Middleware Pipeline<br/>(Authentication, Rate Limiting, Exception Handling RFC 7807, HttpPayloadTelemetry)"]
         CONFIG_DB["Configuration Architecture<br/>(Strongly-Typed Options Pattern + FluentValidation + Azure Key Vault Provider)"]
     end
@@ -120,7 +130,7 @@ graph TB
         end
     end
 
-    subgraph LAYER_INFRASTRUCTURE ["6. INFRASTRUCTURE & CLOUD DEPLOYMENT (Nutrition.Infrastructure & Azure)"]
+    subgraph LAYER_INFRASTRUCTURE ["6. INFRASTRUCTURE & ZERO-TRUST CLOUD (Nutrition.Infrastructure & Azure)"]
         direction TB
         ADAPTER_Secrets["KeyVault & DatabaseSecretStore Adapters<br/>(ConcurrentDictionary In-Memory Cache)"]
         ADAPTER_Env["AppEnvironment Adapter<br/>(#if DEBUG Preprocessor & IHostEnvironment)"]
@@ -130,10 +140,12 @@ graph TB
         ADAPTER_Agent["Microsoft Agent Framework Vision Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
         
         DB_Context["DietTrackerDbContext<br/>(Universal UTC ValueConverter, Schema-Aware PRAGMA, Collection ValueComparers)"]
+        AZURE_NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Zero-Trust Firewall (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>HTTPS Inbound 443 | Port 445 Storage | 443 Cloud & Gemini AI"]
         AZURE_ACA["Azure Container Apps (Serverless MicroVM)<br/>Single Replica Invariant (min:1, max:1)<br/>Custom Domain: dev.dietdost.app with Free Managed TLS"]
-        AZURE_SMB[("Azure Files Persistent SMB Share<br/>Mount: /app/data/diet_dost.db<br/>PRAGMA journal_mode=DELETE (Zero Data Loss)")]
-        AZURE_AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>Managed Identity Access")]
+        AZURE_SMB[("Azure Files Persistent SMB Share<br/>Mount: /app/data/diet_dost.db<br/>SMB 3.1.1 AES-128/256-GCM Wire Encryption<br/>7-Day Soft-Delete Protection (Zero Data Loss)")]
+        AZURE_AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>Managed Identity Access & AuditEvent Diagnostics")]
         AZURE_ACR[("Azure Container Registry (ACR)<br/>Passwordless Image Pull (acrPullRole)")]
+        AZURE_ALERT["Azure Monitor Threat Metric Alert<br/>Key Vault 401/403 Unauthorized Spikes (>5 in 5m)"]
     end
 
     subgraph LAYER_ORCHESTRATION ["7. DEVOPS, GOVERNANCE & OBSERVABILITY (.NET Aspire 13.5.4)"]
@@ -141,7 +153,7 @@ graph TB
         ASPIRE_Host[".NET Aspire AppHost (net11.0 / Sdk 13.5.4)<br/>(Distributed Orchestration & Typed Topology)"]
         ASPIRE_Dash["Aspire Developer Dashboard (:18888)<br/>(Live Resources, Distributed Traces, GenAI Semantic Spans)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')"]
-        TEST_Harness["Validation Harnesses<br/>(234 Automated Tests across 7 Projects + validate_e2e_tiers.ps1)"]
+        TEST_Harness["Validation Harnesses<br/>(242 Automated Tests across 7 Projects + validate_e2e_tiers.ps1 Across 5 Demo User Tiers)"]
         ADR_Registry["Subsystem Domain ADR Architecture (docs/adr/)<br/>(architecture, security, devops, presentation, governance)<br/>docs/adr/index.json Machine-Readable Registry (~4 KB)"]
     end
 
@@ -161,7 +173,7 @@ graph TB
     CQRS_Engine --> CMD_MealUpload
     CQRS_Engine --> CMD_SaveProfile
     CQRS_Engine --> QRY_Ledger
-    
+
     CMD_Login --> SEC_DebugGuard
     CMD_Login --> PORTS
     CMD_MealUpload --> SEC_AIGuard
@@ -179,8 +191,11 @@ graph TB
     ADAPTER_Secrets --> DB_Context
     DB_Context --> AZURE_SMB
     ADAPTER_Secrets -.->|Runtime Secrets| AZURE_AKV
-    AZURE_ACA -->|Volume Mount| AZURE_SMB
+    AZURE_NSG --- AZURE_ACA
+    AZURE_ACA -->|Volume Mount (SMB 3.1.1)| AZURE_SMB
     AZURE_ACA -.->|Pulls Image| AZURE_ACR
+    AZURE_AKV -.->|Diagnostic Audit Logs| OTEL_Collector
+    AZURE_AKV -.->|Monitored By| AZURE_ALERT
     ADAPTER_Agent --> CLOUD_AI["Google Gemini Multimodal Vision API"]
 
     CMD_SaveProfile --> CLINICAL

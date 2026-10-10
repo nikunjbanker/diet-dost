@@ -1,4 +1,4 @@
-﻿<#
+<#
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -16,6 +16,7 @@
     3. AI Security Disablers & Suppression Comments (@ts-ignore, eslint-disable, nosec)
     4. OWASP Top 10 for LLM Defenses (Prompt Injection delimiters, PII isolation, Quota gating)
     5. AI Agent State & Session Bleed (.agents/state, session transcripts, token dumps)
+    6. Living Architecture Diagram Synchronization & Solution Alignment (Zero Documentation Drift)
 .PARAMETER Mode
     "All" scans the full repository; "Staged" scans only git staged files for pre-commit.
 #>
@@ -305,6 +306,22 @@ if ($Mode -eq "Staged") {
         $msg = "VEC-5 Agent Artifact Bleed: Committed AI internal artifact '$tracked' detected in git index."
         $violations.Add($msg)
         Write-Host "  ❌ $msg" -ForegroundColor Red
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Vector 6: Living Architecture Diagram Synchronization & Solution Alignment
+# -----------------------------------------------------------------------------
+Write-Host "`n[Vector 6/6] Checking Architecture Diagram Alignment & Documentation Sync..." -ForegroundColor Yellow
+$diagramSyncScript = Join-Path $PSScriptRoot "sync-architecture-diagrams.ps1"
+if (Test-Path $diagramSyncScript) {
+    & pwsh -File $diagramSyncScript -Verify
+    if ($LASTEXITCODE -ne 0) {
+        $msg = "VEC-6 Diagram Drift: Architecture diagrams in docs/architecture/diagrams/*.mermaid have drifted from solution or documentation. Run 'pwsh -File scripts/sync-architecture-diagrams.ps1 -Sync'."
+        $violations.Add($msg)
+        Write-Host "  ❌ $msg" -ForegroundColor Red
+    } else {
+        Write-Host "  ✅ All architecture diagrams verified syntactically valid and 100% aligned with solution." -ForegroundColor Green
     }
 }
 

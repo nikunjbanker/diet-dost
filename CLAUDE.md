@@ -31,6 +31,10 @@ pwsh -File tests/validate_e2e_tiers.ps1
 
 # Sync ADR index and domain registry
 pwsh -File scripts/sync-adr-index.ps1
+
+# Sync and verify architecture diagrams
+pwsh -File scripts/sync-architecture-diagrams.ps1 -Sync
+pwsh -File scripts/sync-architecture-diagrams.ps1 -Verify
 ```
 
 ## Solution Architecture & Key Invariants
@@ -63,6 +67,10 @@ pwsh -File scripts/sync-adr-index.ps1
    - Linear.app Obsidian dark surface ladder: Canvas `#010102`, Surface 1 `#0f1011`, Surface 2 `#141516`.
    - Native ES Modules with zero bundler. HTML partials via `main.js` `[data-include]`.
    - Hairline borders (`1px solid rgba(255,255,255,0.06)`). Muted accents (Violet `#5e6ad2`, Emerald `#27c380`).
+8. **Living Architecture Diagrams**:
+   - Canonical sources in `docs/architecture/diagrams/*.mermaid`. Line 1 must be root directive (ADR-086).
+   - Keep diagrams aligned with code changes and run `pwsh -File scripts/sync-architecture-diagrams.ps1 -Sync`.
+
 
 ## Git & PR Governance
 
