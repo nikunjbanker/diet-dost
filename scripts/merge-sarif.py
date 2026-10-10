@@ -131,37 +131,46 @@ def create_empty_sarif(output_file: str, tool_name: str, version: str) -> None:
     print(f"Created fallback empty SARIF for {tool_name} at {output_file}")
 
 def merge_sarif(results_dir: str, output_file: str) -> None:
-    merged_runs = []
+    all_results = []
+    seen_rules = {}
     for file in sorted(glob.glob(os.path.join(results_dir, "*.sarif"))):
         try:
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)
                 for r in data.get("runs", []):
-                    merged_runs.append(normalize_run(r))
+                    normalized = normalize_run(r)
+                    all_results.extend(normalized.get("results", []))
+                    driver = normalized.get("tool", {}).get("driver", {})
+                    for rule in driver.get("rules", []):
+                        if isinstance(rule, dict) and "id" in rule and rule["id"] not in seen_rules:
+                            seen_rules[rule["id"]] = rule
         except Exception as e:
             print(f"Warning reading {file}: {e}", file=sys.stderr)
 
-    if not merged_runs:
-        merged_runs = [{
-            "tool": {
-                "driver": {
-                    "name": "MicrosoftRoslynSecurity",
-                    "version": "11.0.0"
-                }
-            },
-            "results": []
-        }]
+    unified_driver = {
+        "name": "MicrosoftRoslynSecurity",
+        "version": "11.0.0"
+    }
+    if seen_rules:
+        unified_driver["rules"] = list(seen_rules.values())
+
+    unified_run = {
+        "tool": {
+            "driver": unified_driver
+        },
+        "results": all_results
+    }
 
     sarif_doc = {
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
         "version": "2.1.0",
-        "runs": merged_runs
+        "runs": [unified_run]
     }
 
     with open(output_file, "w", encoding="utf-8") as f:
         json.dump(sarif_doc, f, indent=2)
 
-    print(f"Aggregated {len(merged_runs)} SARIF run(s) across all projects into {output_file}")
+    print(f"Aggregated {len(all_results)} result(s) across all projects into a single SARIF 2.1.0 run at {output_file}")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--empty":
