@@ -5,6 +5,7 @@
 [![ICMR-NIN 2024](https://img.shields.io/badge/Clinical_Standards-ICMR--NIN_2024_%26_WHO-10b981)](https://www.nin.res.in/)
 [![Design System](https://img.shields.io/badge/Aesthetic-Linear.app_Dark_Glassmorphism-6366f1)](https://linear.app)
 [![License: AGPLv3 / SSPL v1](https://img.shields.io/badge/License-AGPLv3%20%2F%20SSPL%20v1-blue.svg)](LICENSE)
+[![Security Policy](https://img.shields.io/badge/Security-Policy-success.svg)](SECURITY.md)
 
 > **Diet Dost** (डाइट दोस्त / ડાયેટ દોસ્ત) is an enterprise-grade nutrition companion engineered specifically for the Indian population and South Asian metabolic phenotypes. It bridges clinical dietetics (ICMR-NIN 2024 and WHO guidelines) with modern multimodal AI meal vision (Microsoft Agent Framework powered by Google AI Gemini models).
 
@@ -292,3 +293,5 @@ Diet Dost strictly adheres to living documentation practices. Every architectura
 ## 📄 License & Governance
 
 This project is dual-licensed under the **GNU Affero General Public License v3.0 only (AGPLv3)** and the **Server Side Public License, v 1 (SSPL)**. See [LICENSE](LICENSE) and [CONTRIBUTING.md](CONTRIBUTING.md) for full terms. License governance and automated header verification are maintained via `.agents/skills/diet-dost-license-governance/`.
+
+For vulnerability reporting procedures and comprehensive security architecture standards, please review our repository [SECURITY.md](SECURITY.md).
