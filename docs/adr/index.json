@@ -1,13 +1,13 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T14:42:09.043352+00:00",
-  "totalAdrs": 48,
+  "generatedAt": "2026-10-10T17:12:34.407018+00:00",
+  "totalAdrs": 49,
   "categoryCounts": {
     "architecture": 14,
     "security": 14,
     "devops": 4,
     "presentation": 4,
-    "governance": 12
+    "governance": 13
   },
   "records": [
     {
@@ -585,6 +585,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261010-086-zero-hardcoded-secret-governance-dynamic-azure-context-and-mermaid-syntax-hardening.md",
       "relativePath": "docs/adr/security/ADR-20261010-086-zero-hardcoded-secret-governance-dynamic-azure-context-and-mermaid-syntax-hardening.md"
+    },
+    {
+      "id": "ADR-087",
+      "number": 87,
+      "title": "Product Skill Synchronization Governance, Living Runbook Standards, and DevSecOps Pipeline Codification",
+      "category": "governance",
+      "status": "ACCEPTED",
+      "changeType": "[GOVERNANCE]",
+      "date": "2026-10-10",
+      "subsystem": "Governance",
+      "filename": "ADR-20261010-087-skill-synchronization-governance-and-devsecops-pipeline-codification.md",
+      "relativePath": "docs/adr/governance/ADR-20261010-087-skill-synchronization-governance-and-devsecops-pipeline-codification.md"
     }
   ]
 }

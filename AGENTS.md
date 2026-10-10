@@ -18,6 +18,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
 > - [`clean-architecture-cqrs-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/clean-architecture-cqrs-rules.md): Native CQRS, Thin Controllers, UTC persistence, SQLite SMB mount.
 > - [`token-economics-and-adr-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/token-economics-and-adr-rules.md): Zero prompt bloat, domain ADR fragments, index.json.
 > - [`ui-ux-design-system.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/ui-ux-design-system.md): Linear.app Obsidian surface ladder, hairline borders, typography.
+> - [`skill-synchronization-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/skill-synchronization-governance.md): Living runbooks, zero skill drift, token economics, archival rules.
 
 ---
 
@@ -233,5 +234,10 @@ This solution-level instruction file defines mandatory engineering and Git workf
       - **Google AI StrictSafetySettings**: Google Gemini API payloads must declare explicit `safetySettings` blocking harassment, hate speech, sexually explicit, and dangerous content at `BLOCK_LOW_AND_ABOVE`.
     - **CI/CD Security-Scan Gating**: The unified `security-scan.yml` pipeline executes `ai-security-defense` as a mandatory blocking job across the entire solution. Any violation fails the pipeline, blocks PR merges, posts a failing verdict in the PR comment, and halts all downstream cloud deployments.
     - **Automated CI Enforcement**: Unit and eval tests (`AiPromptShieldAndContentSafetyTests.cs` and `SecurityEnvironmentAndHeaderTests.cs`) continuously execute `verify-ai-security-defense.ps1` and assert 100% compliance across all 5 defense vectors.
-
+20. **Mandatory Product Skill Synchronization & Living Runbook Lifecycle Governance Rule**:
+    - **Living Runbook Invariant**: All product skills located in `.agents/skills/` are authoritative, executable runbooks that AI agents and human contributors rely upon for architecture, security, test execution, and deployment.
+    - **Mandatory Same-PR Synchronization**: Whenever any modification, feature, defect fix, or pipeline change touches architecture boundaries, security policies, test harnesses, infrastructure scripts, or design tokens, the corresponding skill in `.agents/skills/` MUST be updated or created in the **exact same Pull Request**. Never defer skill updates.
+    - **New Skill Addition Protocol**: Introduce a new skill folder in `.agents/skills/` with a valid `SKILL.md` when a new, distinct engineering domain or major subsystem is established (e.g. `diet-dost-devsecops-pipeline` for static analysis & SAST gates).
+    - **Archival & Deprecation Protocol**: When an architectural pattern, library, or script is superseded, update the skill to document the current pattern and move obsolete playbooks into an `archive/` subfolder.
+    - **Token Economics Compliance**: Maintain YAML frontmatter `description` fields under 150 words with dense trigger keywords. Deep architectural specifications and schemas belong in `docs/sdd/*.md` and `docs/adr/*.md` (0 baseline tokens), while skills provide tactical, procedural code recipes and checklists.
 

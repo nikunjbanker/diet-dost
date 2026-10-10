@@ -1,3 +1,11 @@
+﻿<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
 # ADR-20261010-086: Zero-Hardcoded Secret Governance, Dynamic Azure Cloud Context Resolution, and Mermaid Diagram Line-1 Syntax Hardening
 
 - **Status**: Accepted

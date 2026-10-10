@@ -94,6 +94,21 @@ az storage blob upload --account-name <storage> --container-name db-backups --fi
 
 ## 3. Option 1: Azure Container Apps (ACA) + Azure Files (Recommended)
 
+### 3.0 Automated Pre-Deployment Setup via PowerShell (`scripts/setup-azure-pre-deployment.ps1`)
+Before triggering CI/CD pipelines, configure foundational Azure resources, Entra ID app registrations, federated OIDC credentials, and Key Vault using the automated PowerShell script:
+- **Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
+- **Script**: [`scripts/setup-azure-pre-deployment.ps1`](scripts/setup-azure-pre-deployment.ps1)
+- **Zero Hardcoded Secrets Policy**:
+  - The script dynamically resolves `$SubscriptionId`, `$TenantId`, and `$AppRegistrationId` via authenticated `az account show` and `az ad app list` queries.
+  - No subscription IDs, tenant IDs, or client secrets are hardcoded in code or documentation.
+  - Automatically provisions Azure Key Vault with `enablePurgeProtection: true` and 90-day soft-delete.
+  - Establishes OIDC Federated Identity Credential for GitHub Actions (`repo:nikunjbanker/diet-dost:environment:production`).
+
+```powershell
+# Execute pre-deployment setup locally (sole operator: @nikunjbanker)
+pwsh -File scripts/setup-azure-pre-deployment.ps1
+```
+
 ### 3.1 Architecture Overview
 ```mermaid
 graph TD
@@ -519,4 +534,16 @@ Per Section 2 Rule 17 of `AGENTS.md` and ADR-078:
 - **Zero-Unilateral Creation / Modification**: AI agents, external contributors, and automated jobs must NEVER create, update, or delete environment variables or secrets (`gh secret`, `gh variable`, `az keyvault secret`) without explicit instruction from or execution by `@nikunjbanker`.
 - **Encrypted Secret Enforcement**: Sensitive values (`JWT_KEY`, `GEMINI_API_KEY`, `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`) must reside strictly in GitHub encrypted secrets and Azure Key Vault, never as plaintext environment variables.
 - **Workflow Gating**: Deployment workflows (`azure-app-deploy.yml`, `azure-infra-deploy.yml`) enforce `github.actor == 'nikunjbanker'` at job and step levels.
+
+---
+
+## 10. Living ADR Synchronization & Governance
+
+Whenever making architectural, deployment, or infrastructure changes:
+1. Record a dedicated atomic fragment in `docs/adr/devops/ADR-<YYYYMMDD>-<NNN>-<slug>.md`.
+2. Execute automated manifest synchronization:
+   ```powershell
+   pwsh -File scripts/sync-adr-index.ps1
+   ```
+3. Verify `docs/adr/index.json` and `docs/adr/README.md` are updated with 0 errors.
 

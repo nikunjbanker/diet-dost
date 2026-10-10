@@ -71,3 +71,8 @@ pwsh -File scripts/sync-adr-index.ps1
 - For stacked PRs on an in-flight branch, branch off `origin/feature/<parent>` and use `gh stack link`.
 - In case of doubt or ambiguity, ask the user before making unilateral architectural decisions.
 - Record architectural changes in atomic fragments: `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` and run `scripts/sync-adr-index.ps1`.
+
+## Skills & Living Runbook Synchronization
+
+- **Continuous Skill Sync**: Whenever modifying architecture, security policies, tests, or pipelines, ensure corresponding skills in `.agents/skills/` are synchronized in the same branch/PR per `.agents/rules/skill-synchronization-governance.md`.
+- **DevSecOps Pipeline**: Local security scanning runs `verify-ai-security-defense.ps1` and CI gate runs 8 analyzers (`.github/workflows/security-scan.yml`) governed by `diet-dost-devsecops-pipeline` skill and `SECURITY.md`.

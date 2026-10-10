@@ -1,4 +1,4 @@
-﻿---
+---
 name: post-pr-ui-validation
 description: >
   Validates UI changes after a pull request is created or updated.
@@ -91,6 +91,20 @@ Prioritize:
 4. visual regression tests
 5. relevant regression tests
 6. broader UI suite when practical
+
+### Diet-Dost Repository Test Suite Matrix
+When validating Diet-Dost UI PRs on local dev server (`http://localhost:5240`):
+
+| Test Script | Scope & Purpose |
+| :--- | :--- |
+| `tests/validate_e2e_tiers.ps1` | Multi-tier validation across all 5 demo user tiers (Free, Basic, Premium, Admin, SuperAdmin). |
+| `node tests/verify_cft_core_features.mjs` | Core features: meal logging, macro calculations, photo upload gating, PDF/CSV export. |
+| `node tests/verify_cft_viewports.mjs` | Responsive viewports (375x667, 390x844, 768x1024, 1280x800), layout integrity, no horizontal overflow. |
+| `node tests/verify_mobile_cft_core_flows.mjs` | Mobile ergonomics: bottom navigation bar, bottom sheet modals, thumb-zone controls. |
+| `node tests/verify_registration_and_cft.mjs` | Registration flow, dual DPDPA 2023 legal consent checkboxes, transparency modal. |
+| `node tests/audit_design_system_compliance.mjs` | Obsidian dark surface ladder, hairline borders, typography tokens per `DESIGN.md`. |
+| `node tests/verify_auth_gate_design.mjs` | Auth gate UI tokens, layout, and visual appearance before session start. |
+| `node tests/verify_admin_tier_governance.mjs` | Admin & SuperAdmin governance console, user directory, AI quota meters. |
 
 Do not skip a required validation solely because a narrower test passed.
 

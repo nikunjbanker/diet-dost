@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 48 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 49 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -35,7 +35,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **14** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **4** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
-| **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **12** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
+| **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
 ---
 
@@ -118,6 +118,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-052** | Zero-Throwaway Engineering, Cross-Phase Reusability & Forward-Roadmap Compatibility Mandate | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md) |
 | **ADR-060** | Re-sequence Responsive Web & Mobile BFF Ahead of Azure Deployment | `[ROADMAP]` | `ACCEPTED` | [`ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md) |
 | **ADR-083** | Subsystem Domain ADR Hierarchy, Automated Indexing Engine & Table Deduplication | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20261010-083-subsystem-domain-adr-hierarchy-and-automated-indexing.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20261010-083-subsystem-domain-adr-hierarchy-and-automated-indexing.md) |
+| **ADR-087** | Product Skill Synchronization Governance, Living Runbook Standards, and DevSecOps Pipeline Codification | `[GOVERNANCE]` | `ACCEPTED` | [`ADR-20261010-087-skill-synchronization-governance-and-devsecops-pipeline-codification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20261010-087-skill-synchronization-governance-and-devsecops-pipeline-codification.md) |
 
 ---
 
