@@ -147,8 +147,7 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-075** | Complete Elimination of Raw Configuration Indexers for Strongly-Typed Options | `ACCEPTED` | [`ADR-20261008-075-complete-elimination-of-raw-configuration-indexers-for-options-classes.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261008-075-complete-elimination-of-raw-configuration-indexers-for-options-classes.md) |
 | **ADR-076** | Configuration Architecture SDD & Process Boundary Specification | `ACCEPTED` | [`ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261009-076-configuration-architecture-sdd-and-process-boundary-specification.md) |
 | **ADR-077** | Secret-Only Governance for SuperAdmin Email and Mobile Verification | `ACCEPTED` | [`ADR-20261010-077-secret-only-governance-for-superadmin-email-and-mobile-verification.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-077-secret-only-governance-for-superadmin-email-and-mobile-verification.md) |
-
-
+| **ADR-078** | Sole-Authority Governance for Secrets and Environment Variables Restricted to @nikunjbanker | `ACCEPTED` | [`ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md) |
 
 ---
 

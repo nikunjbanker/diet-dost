@@ -509,3 +509,14 @@ After deployment, perform these mandatory operational checks:
 3. **Application Logs**:
    - Stream live logs: `az containerapp logs show --name app-dietdost-web --resource-group rg-dietdost-prod --follow`.
    - Verify `SQLite database schema verified and initialized successfully with 0 errors.` appears on startup.
+
+---
+
+## 9. Environment Variables & Secrets Sole-Authority Protocol (@nikunjbanker Only)
+
+Per Section 2 Rule 17 of `AGENTS.md` and ADR-078:
+- **Sole Permitted Operator**: Strictly and exclusively `@nikunjbanker`.
+- **Zero-Unilateral Creation / Modification**: AI agents, external contributors, and automated jobs must NEVER create, update, or delete environment variables or secrets (`gh secret`, `gh variable`, `az keyvault secret`) without explicit instruction from or execution by `@nikunjbanker`.
+- **Encrypted Secret Enforcement**: Sensitive values (`JWT_KEY`, `GEMINI_API_KEY`, `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`) must reside strictly in GitHub encrypted secrets and Azure Key Vault, never as plaintext environment variables.
+- **Workflow Gating**: Deployment workflows (`azure-app-deploy.yml`, `azure-infra-deploy.yml`) enforce `github.actor == 'nikunjbanker'` at job and step levels.
+

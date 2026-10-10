@@ -186,4 +186,27 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("/.github/workflows/azure-infra-deploy.yml        @nikunjbanker", codeownersContent);
         Assert.Contains("* @nikunjbanker", codeownersContent);
     }
+
+    [Fact]
+    public void SecretAndEnvironmentVariableGovernance_MustBeStrictlyRestrictedToNikunjBanker()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var appWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-app-deploy.yml");
+        var agentsMdPath = Path.Combine(repoRoot, "AGENTS.md");
+
+        Assert.True(File.Exists(appWorkflowPath), $"Expected workflow file at {appWorkflowPath}");
+        Assert.True(File.Exists(agentsMdPath), $"Expected AGENTS.md at {agentsMdPath}");
+
+        var appContent = File.ReadAllText(appWorkflowPath);
+        var agentsContent = File.ReadAllText(agentsMdPath);
+
+        // Step 10b runtime bash actor guard asserting @nikunjbanker
+        Assert.Contains("if [ \"${{ github.actor }}\" != \"nikunjbanker\" ]; then", appContent);
+        Assert.Contains("Only repository owner @nikunjbanker is authorized", appContent);
+
+        // AGENTS.md rule 17 governance assertion
+        Assert.Contains("Mandatory Secret & Environment Variable Governance Rule (Sole Authority: @nikunjbanker)", agentsContent);
+        Assert.Contains("Strictly and exclusively `@nikunjbanker`", agentsContent);
+    }
 }
+

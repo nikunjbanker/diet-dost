@@ -265,3 +265,32 @@ This document is a **living specification**. Whenever architectural changes touc
 4. **Living Log Synchronization**:
    - Record an atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md`.
    - Update `docs/sdd/07_living_documentation_log.md` and `docs/sdd/00_sdd_index.md`.
+
+---
+
+## 10. Sole Authority Governance Mandate (@nikunjbanker Exclusive Access)
+
+In accordance with Section 2 Rule 17 of [`AGENTS.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/AGENTS.md) and ADR-078:
+
+### 10.1 Single-Owner Authority Model
+- **Authorized Individual**: Exclusively and strictly `@nikunjbanker` (Repository Owner and Lead Architect).
+- **Protected Surface Area**:
+  1. **GitHub Environment Secrets & Variables**: `gh secret set`, `gh secret delete`, `gh variable set`, `gh variable delete` across `dev`, `staging`, `prod`.
+  2. **GitHub Repository Secrets & Variables**: Organization/Repository level configuration.
+  3. **Azure Key Vault Secrets**: `az keyvault secret set`, `az keyvault secret delete`.
+  4. **Azure Container Apps Configuration**: Application settings and secret volume references.
+  5. **Database Secret Store**: Master keys and dynamic secret persistence in SQLite `AppSecrets`.
+
+### 10.2 Defense-in-Depth Enforcement Mechanisms
+1. **GitHub Native RBAC & CODEOWNERS**:
+   - Only repository administrators (`@nikunjbanker`) possess GitHub API write permissions to manage environment secrets and variables.
+   - `.github/CODEOWNERS` strictly assigns all workflows, `.github/`, and deployment files to `@nikunjbanker`.
+2. **Workflow-Level Actor Guard**:
+   - Both `azure-app-deploy.yml` and `azure-infra-deploy.yml` enforce `if: github.actor == 'nikunjbanker'` at the job level.
+3. **Step-Level Runtime Bash Guard**:
+   - Step 10b (`Synchronize Configured Secrets to Azure Key Vault`) asserts `[ "${{ github.actor }}" != "nikunjbanker" ]` and immediately halts execution with an exit code 1 if triggered by any other actor.
+4. **Automated CI Regression Barrier**:
+   - `Nutrition.EvalHarness.Tests.SecurityEnvironmentAndHeaderTests.SecretAndEnvironmentVariableGovernance_MustBeStrictlyRestrictedToNikunjBanker` runs on every PR and build, preventing removal or weakening of these restrictions.
+5. **Zero-Plaintext Rule**:
+   - No sensitive key (including `JWT_KEY`, `GEMINI_API_KEY`, `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`) may be set as a plaintext environment variable or committed to source control.
+

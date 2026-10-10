@@ -194,8 +194,10 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Mandatory Pre-UI Inspection**: Contributors and AI agents MUST inspect `DESIGN.md` and the existing design system tokens in `styles.css` prior to introducing or altering any visual components.
     - **Zero-Ad-Hoc Visual Conventions**: Never introduce arbitrary bright or saturated colors, atmospheric gradients, or custom non-standard border radiuses. Use the canonical four-step surface ladder (`canvas` #010102 → `surface-1` #0f1011 → `surface-2` #141516 → `surface-3` #18191a → `surface-4` #191a1b), hairline borders (`#23252a`), and Linear lavender-blue (`#5e6ad2`) chromatic accent.
     - **Mandatory Verification**: Every UI modification must be verified for `DESIGN.md` token compliance, responsive layout across all viewports (Mobile, Tablet, Desktop), touch target minimums ($\ge 44 \times 44\,\text{px}$), and accessibility contrast.
-
-
-
-
+17. **Mandatory Secret & Environment Variable Governance Rule (Sole Authority: @nikunjbanker)**:
+    - **Sole Authority Mandate**: Strictly and exclusively `@nikunjbanker` (Repository Owner & Lead Architect) has permission or authority to create, update, delete, view, or rotate any GitHub Environment Secrets, Repository Secrets, GitHub Environment Variables, Repository Variables, Azure Key Vault Secrets, or Azure Container App configuration settings.
+    - **Zero-Unilateral Action Mandate**: AI agents, contributors, collaborators, and automated workflows are **strictly prohibited** from creating, updating, deleting, or exposing secrets or environment variables. No agent or contributor shall execute commands such as `gh secret set`, `gh secret delete`, `gh variable set`, `gh variable delete`, `az keyvault secret set`, or `az keyvault secret delete` unless explicitly instructed, authorized, or executed directly in an authenticated session belonging exclusively to `@nikunjbanker`.
+    - **Zero-Plaintext Secret Mandate**: High-entropy or confidential variables (including `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`, `JWT_KEY`, `GEMINI_API_KEY`, `AZURE_OPENAI_API_KEY`) must NEVER be stored as plaintext environment variables (`gh variable set`) or in unencrypted source files (`appsettings.json`); they must reside exclusively as encrypted GitHub Secrets and Azure Key Vault secrets managed solely by `@nikunjbanker`.
+    - **Workflow Actor Gating**: All CI/CD workflows and deployment pipelines (`azure-app-deploy.yml`, `azure-infra-deploy.yml`) that access, synchronize, or deploy secrets and environment variables MUST enforce explicit job-level (`if: github.actor == 'nikunjbanker'`) and step-level actor verification guards.
+    - **Automated CI Regression Barrier**: Unit and integration tests (`SecurityEnvironmentAndHeaderTests.cs`) must continuously assert and fail CI if any deployment pipeline or configuration sync step omits this actor restriction.
 

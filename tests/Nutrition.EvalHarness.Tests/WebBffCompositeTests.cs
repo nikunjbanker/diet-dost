@@ -32,6 +32,7 @@ using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
 
+[Collection("TierConfigTests")]
 public class WebBffCompositeTests : IDisposable
 {
     private readonly SqliteConnection _connection;
@@ -40,6 +41,7 @@ public class WebBffCompositeTests : IDisposable
 
     public WebBffCompositeTests()
     {
+        TierConfigurationService.ClearCache();
         var connectionString = $"Data Source=file:memdb_bff_{Guid.NewGuid():N}?mode=memory&cache=shared;Default Timeout=30;";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
@@ -79,6 +81,7 @@ public class WebBffCompositeTests : IDisposable
 
     public void Dispose()
     {
+        TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
     }
