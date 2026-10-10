@@ -226,8 +226,8 @@ jobs:
           JWT_KEY: ${{ secrets.JWT_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL || vars.SUPER_ADMIN_EMAIL }}
-          REQUIRE_MOBILE_VERIFICATION: ${{ secrets.REQUIRE_MOBILE_VERIFICATION || vars.REQUIRE_MOBILE_VERIFICATION }}
+          SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
+          REQUIRE_MOBILE_VERIFICATION: ${{ secrets.REQUIRE_MOBILE_VERIFICATION }}
         run: |
           if [ -n "$KV_NAME" ]; then
             echo "Checking and synchronizing configured secrets into Azure Key Vault '$KV_NAME'..."

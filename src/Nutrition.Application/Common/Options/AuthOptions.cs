@@ -16,7 +16,7 @@ public sealed class AuthOptions
     public const string SectionName = "Auth";
 
     public bool AllowRegistration { get; set; } = true;
-    public string SuperAdminEmail { get; set; } = "superadmin@dietdost.app";
+    public string SuperAdminEmail { get; set; } = string.Empty;
     public bool RequireMobileVerification { get; set; } = false;
     public string TermsVersion { get; set; } = "v1.0-202609";
     public string HealthConsentVersion { get; set; } = "v1.0-202609";

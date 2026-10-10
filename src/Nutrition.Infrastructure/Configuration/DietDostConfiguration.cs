@@ -72,7 +72,11 @@ public sealed class DietDostConfiguration : IDietDostConfiguration
         _jwtOptions.ExpiryMinutes > 0 ? _jwtOptions.ExpiryMinutes : 1440;
 
     public string SuperAdminEmail =>
-        !string.IsNullOrWhiteSpace(_authOptions.SuperAdminEmail) ? _authOptions.SuperAdminEmail : DefaultSuperAdminEmail;
+        !string.IsNullOrWhiteSpace(_authOptions.SuperAdminEmail)
+            ? _authOptions.SuperAdminEmail
+            : (_appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+                ? DefaultSuperAdminEmail
+                : throw new InvalidOperationException("CRITICAL CONFIGURATION ERROR: 'Auth:SuperAdminEmail' is not configured."));
 
     public bool RequireMobileVerification => _authOptions.RequireMobileVerification;
 

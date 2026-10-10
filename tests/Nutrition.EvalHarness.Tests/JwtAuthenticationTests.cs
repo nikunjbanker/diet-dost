@@ -425,6 +425,23 @@ public class JwtAuthenticationTests
         Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured", ex.Message);
     }
 
+    [Fact]
+    public void ValidateRequiredDeployedSecrets_InProduction_WhenSuperAdminEmailMissing_Throws()
+    {
+        var mockProdHost = new TestHostEnvironment { EnvironmentName = "Production" };
+        var configWithJwtOnly = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Key"] = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!"
+            })
+            .Build();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            Nutrition.WebGateway.Extensions.ConfigurationExtensions.ValidateRequiredDeployedSecrets(configWithJwtOnly, mockProdHost));
+
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR: 'Auth:SuperAdminEmail' is not configured", ex.Message);
+    }
+
     private sealed class TestAppEnvironment(bool isDebug, bool isDevelopment) : Nutrition.Application.Common.Interfaces.IAppEnvironment
     {
         public bool IsDebugMode => isDebug;

@@ -81,14 +81,17 @@ public static class ConfigurationExtensions
         normalizedMap["Jwt:Audience"] = currentConfig["Jwt:Audience"] ?? "DietDostClient";
         normalizedMap["Jwt:ExpiryMinutes"] = currentConfig["Jwt:ExpiryMinutes"] ?? "1440";
 
-        // 2. Auth & Identity Normalization (SuperAdmin & Mobile Verification)
+        // 2. Auth & Identity Normalization (SuperAdmin & Mobile Verification as Secrets)
         var resolvedSuperAdminEmail = currentConfig["Auth:SuperAdminEmail"]
             ?? currentConfig["SuperAdminEmail"]
             ?? currentConfig["SUPER_ADMIN_EMAIL"]
-            ?? DefaultSuperAdminEmail;
+            ?? (env.IsDevelopment() ? DefaultSuperAdminEmail : null);
 
-        normalizedMap["Auth:SuperAdminEmail"] = resolvedSuperAdminEmail;
-        normalizedMap["SuperAdminEmail"] = resolvedSuperAdminEmail;
+        if (!string.IsNullOrWhiteSpace(resolvedSuperAdminEmail))
+        {
+            normalizedMap["Auth:SuperAdminEmail"] = resolvedSuperAdminEmail;
+            normalizedMap["SuperAdminEmail"] = resolvedSuperAdminEmail;
+        }
 
         var resolvedRequireMobileVerification = currentConfig["Auth:RequireMobileVerification"]
             ?? currentConfig["RequireMobileVerification"]
@@ -147,7 +150,7 @@ public static class ConfigurationExtensions
 
     /// <summary>
     /// Validates mandatory configuration secrets in non-development environments.
-    /// Fails fast during application startup if critical cryptographic keys are missing.
+    /// Fails fast during application startup if critical cryptographic keys or administrative secrets are missing.
     /// </summary>
     public static void ValidateRequiredDeployedSecrets(this IConfiguration configuration, IHostEnvironment env)
     {
@@ -169,6 +172,15 @@ public static class ConfigurationExtensions
             {
                 throw new InvalidOperationException(
                     "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' must be at least 32 bytes (256 bits) for HMAC-SHA256 signing.");
+            }
+
+            var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+            var superAdminEmail = authOptions.SuperAdminEmail;
+            if (string.IsNullOrWhiteSpace(superAdminEmail))
+            {
+                throw new InvalidOperationException(
+                    "CRITICAL SECURITY CONFIGURATION ERROR: 'Auth:SuperAdminEmail' is not configured. " +
+                    "In non-development / deployed environments, the SuperAdmin email secret MUST be provided via Azure Key Vault ('Auth--SuperAdminEmail') or secure secrets.");
             }
         }
     }
