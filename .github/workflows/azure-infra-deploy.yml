@@ -103,15 +103,15 @@ jobs:
           echo "✅ Aspire deployment pipeline steps executed successfully."
 
       - name: 5. Azure CLI Authentication (OIDC / Federated Credentials)
-        if: ${{ vars.AZURE_CLIENT_ID != '' || secrets.AZURE_CLIENT_ID != '' }}
+        if: ${{ env.AZURE_CLIENT_ID != '' }}
         uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: '5b. Azure CLI Authentication (Fallback: Service Principal JSON)'
-        if: ${{ (vars.AZURE_CLIENT_ID == '' && secrets.AZURE_CLIENT_ID == '') && secrets.AZURE_CREDENTIALS != '' }}
+        if: ${{ env.AZURE_CLIENT_ID == '' }}
         uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -140,8 +140,8 @@ jobs:
               --output table
             echo "✅ Created Resource Group '$RG'."
           fi
-          echo "rg_name=$RG" >> $GITHUB_OUTPUT
-          echo "rg_location=$LOCATION" >> $GITHUB_OUTPUT
+          echo "rg_name=$RG" >> "$GITHUB_OUTPUT"
+          echo "rg_location=$LOCATION" >> "$GITHUB_OUTPUT"
 
       - name: 7. Provision Cloud Infrastructure via Bicep
         id: deploy-infra

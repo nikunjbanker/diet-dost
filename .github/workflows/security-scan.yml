@@ -123,40 +123,12 @@ jobs:
       - name: Execute SecurityCodeScan Analysis (All Projects)
         run: |
           mkdir -p sarif-results
-          for proj in $(find src tests -name "*.csproj"); do
+          find src tests -name "*.csproj" | while read -r proj; do
             proj_name=$(basename "$proj" .csproj)
             echo "--> Scanning project: $proj"
             security-scan "$proj" --export="sarif-results/${proj_name}.sarif" || true
           done
-
-          python3 -c '
-          import json, glob, sys
-          merged_runs = []
-          for file in glob.glob("sarif-results/*.sarif"):
-              try:
-                  with open(file, "r", encoding="utf-8") as f:
-                      data = json.load(f)
-                      merged_runs.extend(data.get("runs", []))
-              except Exception as e:
-                  print(f"Warning reading {file}: {e}", file=sys.stderr)
-
-          if not merged_runs:
-              merged_runs = [{
-                  "tool": {"driver": {"name": "SecurityCodeScan", "version": "5.6.7"}},
-                  "results": []
-              }]
-
-          sarif_doc = {
-              "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-              "version": "2.1.0",
-              "runs": merged_runs
-          }
-
-          with open("security-code-scan.sarif", "w", encoding="utf-8") as f:
-              json.dump(sarif_doc, f, indent=2)
-
-          print(f"Aggregated {len(merged_runs)} SARIF run(s) across all projects into security-code-scan.sarif")
-          '
+          python3 scripts/merge-sarif.py sarif-results security-code-scan.sarif
 
       - name: Upload SecurityCodeScan SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab # v3.26.11
@@ -177,7 +149,7 @@ jobs:
 
       - name: Install Trivy CLI
         run: |
-          TRIVY_VERSION="0.56.2"
+          TRIVY_VERSION="0.75.0"
           curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o trivy.tar.gz
           tar -xzf trivy.tar.gz trivy
           sudo mv trivy /usr/local/bin/
@@ -188,7 +160,7 @@ jobs:
         run: |
           trivy fs --format sarif --output trivy-results.sarif --severity CRITICAL,HIGH --ignore-unfixed . || true
           if [ ! -f trivy-results.sarif ]; then
-            echo '{"$schema":"https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json","version":"2.1.0","runs":[{"tool":{"driver":{"name":"Trivy","version":"0.56.2"}},"results":[]}]}' > trivy-results.sarif
+            python3 scripts/merge-sarif.py --empty trivy-results.sarif Trivy "0.75.0"
           fi
 
       - name: Upload Trivy SARIF to GitHub Code Scanning

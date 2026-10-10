@@ -133,15 +133,15 @@ jobs:
           echo "✅ Aspire application pipeline steps validated."
 
       - name: 7. Azure CLI Authentication (OIDC / Federated Credentials)
-        if: ${{ vars.AZURE_CLIENT_ID != '' || secrets.AZURE_CLIENT_ID != '' }}
+        if: ${{ env.AZURE_CLIENT_ID != '' }}
         uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
-          client-id: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: '7b. Azure CLI Authentication (Fallback: Service Principal JSON)'
-        if: ${{ (vars.AZURE_CLIENT_ID == '' && secrets.AZURE_CLIENT_ID == '') && secrets.AZURE_CREDENTIALS != '' }}
+        if: ${{ env.AZURE_CLIENT_ID == '' }}
         uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
@@ -171,8 +171,8 @@ jobs:
               --output table
             echo "✅ Created Resource Group '$RG'."
           fi
-          echo "rg_name=$RG" >> $GITHUB_OUTPUT
-          echo "rg_location=$LOCATION" >> $GITHUB_OUTPUT
+          echo "rg_name=$RG" >> "$GITHUB_OUTPUT"
+          echo "rg_location=$LOCATION" >> "$GITHUB_OUTPUT"
 
       - name: 9. Ensure & Provision Required Cloud Infrastructure (Aspire Foundation)
         if: ${{ inputs.provisionInfra != false }}
@@ -242,12 +242,12 @@ jobs:
             MI_CLIENT_ID=$(az identity list --resource-group "$RG" --query "[0].clientId" -o tsv)
           fi
 
-          echo "acr_name=$ACR_NAME" >> $GITHUB_OUTPUT
-          echo "aca_env_id=$ACA_ENV_ID" >> $GITHUB_OUTPUT
-          echo "kv_name=$KV_NAME" >> $GITHUB_OUTPUT
-          echo "kv_uri=$KV_URI" >> $GITHUB_OUTPUT
-          echo "mi_id=$MI_ID" >> $GITHUB_OUTPUT
-          echo "mi_client_id=$MI_CLIENT_ID" >> $GITHUB_OUTPUT
+          echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
+          echo "aca_env_id=$ACA_ENV_ID" >> "$GITHUB_OUTPUT"
+          echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
+          echo "kv_uri=$KV_URI" >> "$GITHUB_OUTPUT"
+          echo "mi_id=$MI_ID" >> "$GITHUB_OUTPUT"
+          echo "mi_client_id=$MI_CLIENT_ID" >> "$GITHUB_OUTPUT"
           echo "Resolved ACR: $ACR_NAME"
           echo "Resolved ACA Environment ID: $ACA_ENV_ID"
           echo "Resolved Key Vault: $KV_NAME ($KV_URI)"
@@ -298,8 +298,8 @@ jobs:
           podman build -t "$IMAGE_TAG" -t "$IMAGE_LATEST" -f Containerfile .
           podman save -o app-image.tar "$IMAGE_TAG"
 
-          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "image_latest=$IMAGE_LATEST" >> "$GITHUB_OUTPUT"
 
       - name: 12. OWASP Security Gate - OCI Container Image Vulnerability Scan (Trivy)
         run: |
