@@ -44,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code (Full history required for commit scanning)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
@@ -63,7 +63,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Gitleaks SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab # v3.26.11
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: always()
         with:
           sarif_file: gitleaks.sarif
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install ESLint & SARIF Formatter
         run: |
@@ -96,7 +96,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload ESLint SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab # v3.26.11
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: always()
         with:
           sarif_file: eslint-results.sarif
@@ -110,10 +110,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup .NET SDK
-        uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852 # v4.2.0
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
         with:
           dotnet-version: '11.0.x'
 
@@ -131,7 +131,7 @@ jobs:
           python3 scripts/merge-sarif.py sarif-results security-code-scan.sarif
 
       - name: Upload SecurityCodeScan SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab # v3.26.11
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: always()
         with:
           sarif_file: security-code-scan.sarif
@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install Trivy CLI
         run: |
@@ -164,7 +164,7 @@ jobs:
           fi
 
       - name: Upload Trivy SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab # v3.26.11
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -178,7 +178,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Run Checkov Scanner
         uses: bridgecrewio/checkov-action@b406dfe80a3d33640d5b5deb4341f2475cc016a0 # v12.2812.0
@@ -187,10 +187,11 @@ jobs:
           framework: bicep,arm
           output_format: sarif
           output_file_path: checkov.sarif
-          soft_fail: true
+          skip_check: CKV_AZURE_43,CKV_AZURE_139,CKV_AZURE_163,CKV_AZURE_166,CKV_AZURE_189
+          soft_fail: false
 
       - name: Upload Checkov SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab # v3.26.11
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: always()
         with:
           sarif_file: checkov.sarif
@@ -204,7 +205,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install actionlint
         run: |
@@ -227,7 +228,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Execute AI Security Defense Validator
         shell: pwsh
@@ -250,7 +251,7 @@ jobs:
     steps:
       - name: Checkout code
         if: github.event_name == 'pull_request'
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Compile Security Verdict & Console Log
         run: |

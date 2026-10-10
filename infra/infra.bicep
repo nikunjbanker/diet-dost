@@ -59,6 +59,9 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
             {
               service: 'Microsoft.Storage'
             }
+            {
+              service: 'Microsoft.KeyVault'
+            }
           ]
         }
       }
@@ -220,8 +223,13 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     softDeleteRetentionInDays: 7
     enablePurgeProtection: true
     networkAcls: {
-      defaultAction: 'Allow'
+      defaultAction: 'Deny'
       bypass: 'AzureServices'
+      virtualNetworkRules: [
+        {
+          id: vnet.properties.subnets[0].id
+        }
+      ]
     }
   }
   tags: {

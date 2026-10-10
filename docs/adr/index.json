@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T13:19:40.096868+00:00",
-  "totalAdrs": 45,
+  "generatedAt": "2026-10-10T13:54:13.444882+00:00",
+  "totalAdrs": 46,
   "categoryCounts": {
     "architecture": 14,
-    "security": 12,
+    "security": 13,
     "devops": 3,
     "presentation": 4,
     "governance": 12
@@ -549,6 +549,18 @@
       "subsystem": "WebGateway, Application, Infrastructure, DevContainer, CI/CD, Documentation",
       "filename": "ADR-20261010-084-multi-agent-readiness-health-probes-and-bff-contract-snapshot-tests.md",
       "relativePath": "docs/adr/architecture/ADR-20261010-084-multi-agent-readiness-health-probes-and-bff-contract-snapshot-tests.md"
+    },
+    {
+      "id": "ADR-085",
+      "number": 85,
+      "title": "Checkov IaC Hardening, Key Vault Firewall Perimeter, and GitHub Actions Runner Modernization",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-10",
+      "subsystem": "Security",
+      "filename": "ADR-20261010-085-checkov-iac-hardening-keyvault-firewall-and-github-runner-modernization.md",
+      "relativePath": "docs/adr/security/ADR-20261010-085-checkov-iac-hardening-keyvault-firewall-and-github-runner-modernization.md"
     }
   ]
 }

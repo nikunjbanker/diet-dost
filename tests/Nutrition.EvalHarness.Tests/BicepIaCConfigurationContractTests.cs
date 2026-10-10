@@ -92,4 +92,36 @@ public class BicepIaCConfigurationContractTests
         // Sole Authority Security Invariant: Key Vault Purge Protection
         Assert.Contains("enablePurgeProtection: true", bicepContent);
     }
+
+    [Fact]
+    public void InfraBicep_Enforces_KeyVault_FirewallRules_And_SubnetServiceEndpoint()
+    {
+        var repoRoot = GetRepoRoot();
+        var infraBicepPath = Path.Combine(repoRoot, "infra", "infra.bicep");
+        var bicepContent = File.ReadAllText(infraBicepPath);
+
+        // Checkov CKV_AZURE_109 resolution: Service endpoint in delegated VNet subnet
+        Assert.Contains("service: 'Microsoft.KeyVault'", bicepContent);
+
+        // Checkov CKV_AZURE_109 resolution: Key Vault firewall defaultAction Deny + VNet rule
+        Assert.Contains("defaultAction: 'Deny'", bicepContent);
+        Assert.Contains("bypass: 'AzureServices'", bicepContent);
+        Assert.Contains("virtualNetworkRules:", bicepContent);
+    }
+
+    [Fact]
+    public void Checkov_Configuration_Enforces_SoftFailFalse_And_DevTierExclusions()
+    {
+        var repoRoot = GetRepoRoot();
+        var checkovPath = Path.Combine(repoRoot, ".checkov.yaml");
+        Assert.True(File.Exists(checkovPath), $".checkov.yaml must exist at {checkovPath}");
+
+        var checkovContent = File.ReadAllText(checkovPath);
+        Assert.Contains("soft-fail: false", checkovContent);
+        Assert.Contains("CKV_AZURE_43", checkovContent);
+        Assert.Contains("CKV_AZURE_139", checkovContent);
+        Assert.Contains("CKV_AZURE_163", checkovContent);
+        Assert.Contains("CKV_AZURE_166", checkovContent);
+        Assert.Contains("CKV_AZURE_189", checkovContent);
+    }
 }

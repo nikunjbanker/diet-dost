@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 45 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 46 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -32,7 +32,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **14** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
-| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **12** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
+| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **13** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **3** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **12** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
@@ -78,6 +78,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-080** | ESLint Code Scanning Workflow and SARIF Integration | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-080-eslint-code-scanning-workflow-and-sarif-integration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-080-eslint-code-scanning-workflow-and-sarif-integration.md) |
 | **ADR-081** | Git Code Scanning, PR Validation, and Pre-Deployment Security Gates | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-081-git-code-scanning-and-pre-deployment-security-validation-pipeline.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-081-git-code-scanning-and-pre-deployment-security-validation-pipeline.md) |
 | **ADR-082** | AI-Based Development Security Defense, Content Safety Shield & Pre-Commit Gating | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-082-ai-development-defense-content-safety-and-pre-commit-gating.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-082-ai-development-defense-content-safety-and-pre-commit-gating.md) |
+| **ADR-085** | Checkov IaC Hardening, Key Vault Firewall Perimeter, and GitHub Actions Runner Modernization | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-085-checkov-iac-hardening-keyvault-firewall-and-github-runner-modernization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-085-checkov-iac-hardening-keyvault-firewall-and-github-runner-modernization.md) |
 
 ### 🚀 DevOps & Cloud Infrastructure (`docs/adr/devops/`)
 > *Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines.*

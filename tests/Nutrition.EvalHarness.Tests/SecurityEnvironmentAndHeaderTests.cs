@@ -240,12 +240,13 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("pull-requests: write", secScanContent);
 
         // Supply chain security assertion: All actions in security-scan must be pinned to 40-character commit SHAs
-        Assert.Contains("actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", secScanContent);
-        Assert.Contains("actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852", secScanContent);
-        Assert.Contains("github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab", secScanContent);
+        Assert.Contains("actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1", secScanContent);
+        Assert.Contains("actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68", secScanContent);
+        Assert.Contains("github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d", secScanContent);
         Assert.Contains("TRIVY_VERSION=", secScanContent);
         Assert.Contains("trivy fs", secScanContent);
         Assert.Contains("bridgecrewio/checkov-action@b406dfe80a3d33640d5b5deb4341f2475cc016a0", secScanContent);
+        Assert.Contains("soft_fail: false", secScanContent);
         Assert.Contains("Execute SecurityCodeScan Analysis (All Projects)", secScanContent);
 
         // AGENTS.md Rule 18 governance assertion
