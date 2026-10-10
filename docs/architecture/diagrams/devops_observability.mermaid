@@ -1,4 +1,4 @@
-﻿%%
+%%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
 %% the "Server Side Public License, v 1"; you may not use this file except
@@ -6,12 +6,32 @@
 %% License v3.0 only" or the "Server Side Public License, v 1".
 %%
 graph TD
-    subgraph Aspire_AppHost [".NET Aspire Distributed AppHost"]
-        Host["Aspire.Hosting.AppHost (NET 11 RC)"]
+    subgraph CICD_Pipeline ["GitHub Actions Automated CI/CD & Security Gate"]
+        SecurityScan["1. Security & Code Scanning Gate (security-scan.yml)<br/>- Gitleaks | ESLint | SecurityCodeScan (All 7 Projs)<br/>- Trivy | Checkov | actionlint | AI Defense (5 Vectors)<br/>(Blocks Deployment on Any Failure)"]
+        InfraDeploy["2. Infrastructure Deployment (azure-infra-deploy.yml)<br/>- Bicep IaC: ACA Env, Key Vault, Storage SMB, MI, ACR<br/>- Passwordless Azure OIDC Pipeline Authentication"]
+        AppDeploy["3. Application Deployment (azure-app-deploy.yml)<br/>- Container Build & Push to ACR via Entra ID Token<br/>- ACA Update with Persistent SQLite SMB Volume (/app/data)<br/>- Custom Domain TLS Binding (dev.dietdost.app)"]
+        
+        SecurityScan -->|100% Green Gate Passed| InfraDeploy
+        InfraDeploy --> AppDeploy
+    end
+
+    subgraph Azure_Cloud_Production ["Azure Cloud Production Environment (Serverless & Persistent)"]
+        ACA["Azure Container Apps (ACA)<br/>- Ingress: HTTPS Port 5240 with Free Managed TLS<br/>- minReplicas: 1, maxReplicas: 1 (Single Replica Invariant)<br/>- Custom Domain: dev.dietdost.app"]
+        SMB_Mount[("Azure Files Persistent SMB Volume<br/>Mount Path: /app/data<br/>File: diet_dost.db (PRAGMA journal_mode=DELETE)")]
+        AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>Secrets: JWT_KEY, GEMINI_API_KEY")]
+        ACR_Registry[("Azure Container Registry (ACR)<br/>Passwordless Image Pull via User-Assigned MI (acrPullRole)")]
+        
+        AppDeploy -->|Deploys Image| ACA
+        ACA -->|Mounted Volume| SMB_Mount
+        ACA -.->|Passwordless Managed Identity| AKV
+        ACA -.->|Pulls Image| ACR_Registry
+    end
+
+    subgraph Aspire_AppHost [".NET Aspire Local Orchestration & Observability"]
+        Host["Aspire.Hosting.AppHost (net11.0 / Sdk 13.5.4)"]
         OTel["OpenTelemetry OTLP Collector"]
         Dash["Aspire Observability Dashboard (Port 18888)<br/>(Virtualize JS Patched: 0 Interop Errors)"]
-        RedisRes[("Redis Cache Container")]
-        DbRes[("SQLite / PostgreSQL Resource<br/>(Schema-Aware PRAGMA, ValueComparers)")]
+        TestSuites["Validation Test Suites<br/>- 234 Automated Tests (Domain & Eval Harness)<br/>- Multi-Tier E2E CFT Suite (validate_e2e_tiers.ps1)<br/>- AI Security Defense Pre-Commit Validator"]
     end
 
     subgraph Microservice_Processes ["Aspire Managed Microservices"]
@@ -25,11 +45,10 @@ graph TD
     Host -->|Launch & Wire Lifecycle| PS
     Host -->|Launch & Wire Lifecycle| VS
     Host -->|Launch & Wire Lifecycle| AS
-    Host -->|Spin Up| RedisRes
-    Host -->|Attach| DbRes
 
     GW -.->|HTTP Root Traces with Payloads| OTel
     PS -.->|Traces & Metrics| OTel
     VS -.->|GenAI Semantic Spans & Non-PII Scopes| OTel
     AS -.->|Traces & Metrics| OTel
     OTel -->|Aggregate Telemetry| Dash
+    TestSuites -.->|Validates Microservices| GW

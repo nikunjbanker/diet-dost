@@ -1,4 +1,4 @@
-﻿%%
+%%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
 %% the "Server Side Public License, v 1"; you may not use this file except
@@ -23,12 +23,17 @@ sequenceDiagram
     else Device is Online
         ClientDb->>Gateway: POST /api/meals/upload or /analyze-text
         Gateway->>Gateway: Validate Magic Bytes, Strip EXIF & Enforce Rate Limits
-        Gateway->>Gateway: Start Activity 'POST /api/meals/...' with Body Telemetry
-        Gateway->>VisionSvc: Forward Sanitized Stream / Description
-        VisionSvc->>VisionSvc: Start Span 'ai.food_detection' with GenAI Tags
-        VisionSvc->>AgentAI: Analyze Meal (Structured Prompt + Quantity Multiplier + Fallback Cascade)
-        AgentAI-->>VisionSvc: IndianMealAnalysisResult (6 Macros, Portion Multipliers, detectedByModel)
-        VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, Protein, Carbs, Fat, Fiber, Sugar)
+        Gateway->>Gateway: PromptShieldValidator (Check Harmful, Violent, Sexual, Communal & Prompt Injection)
+        alt Prompt Safety Violation Detected
+            Gateway-->>User: HTTP 400 Bad Request (Safety Policy Violation: Content Blocked)
+        else Safety Checks Passed
+            Gateway->>Gateway: Start Activity 'POST /api/meals/...' with Body Telemetry
+            Gateway->>VisionSvc: Forward Sanitized Stream / Description
+            VisionSvc->>VisionSvc: Start Span 'ai.food_detection' with GenAI Tags
+            VisionSvc->>AgentAI: Analyze Meal (StrictSafetySettings + Structured Prompt + Fallback Cascade)
+            AgentAI-->>VisionSvc: IndianMealAnalysisResult (6 Macros, Portion Multipliers, detectedByModel)
+            VisionSvc-->>Gateway: HTTP 200 (Parsed Items, Calories, Protein, Carbs, Fat, Fiber, Sugar)
+        end
         
         alt Confidence Score >= 70%
             Gateway-->>User: Render Review Modal (Quantity Input, 6-Macro Mini-Pills, Model Badge)

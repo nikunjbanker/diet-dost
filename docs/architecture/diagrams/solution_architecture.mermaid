@@ -1,4 +1,4 @@
-﻿%%
+%%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
 %% the "Server Side Public License, v 1"; you may not use this file except
@@ -7,15 +7,24 @@
 %%
 graph TB
     %% =========================================================================
-    %% MASTER SOLUTION ARCHITECTURE: DIET DOST (.NET 11 RC & ASPIRE)
-    %% Clean Architecture, Native CQRS, Database Secret Store, Debug-Only Isolation
+    %% MASTER SOLUTION ARCHITECTURE: DIET DOST (.NET 11 & ASPIRE)
+    %% Clean Architecture, Native CQRS, Azure Container Apps, SQLite SMB Mount, Key Vault
     %% =========================================================================
+
+    subgraph LAYER_CICD ["0. CI/CD & PRE-DEPLOYMENT SECURITY GATE (Zero Deployment on Failure)"]
+        direction TB
+        GATE_Scanners["Security & Code Scanning Pipeline (security-scan.yml)<br/>Gitleaks | ESLint | SecurityCodeScan (All 7 .csproj) | Trivy | Checkov | actionlint | AI Defense"]
+        GATE_Summary["Security Gate Summary Table & PR Comment Publisher<br/>Blocks Azure Deployment if Any Scanner Fails"]
+        GATE_Deploy["Two-Stage Automated Deployment Workflows<br/>Stage 1: azure-infra-deploy.yml (Bicep IaC) | Stage 2: azure-app-deploy.yml (ACA & Custom Domain TLS)"]
+        GATE_Scanners --> GATE_Summary
+        GATE_Summary -->|100% Green PASS| GATE_Deploy
+    end
 
     subgraph LAYER_DESIGN ["1. PRESENTATION LAYER (Linear.app Glassmorphic PWA Client)"]
         direction TB
         UI_Linear["Linear Design System<br/>(Obsidian #08090a, Linear Violet #5e6ad2, Emerald #27c380)<br/>Geist Sans & Tabular Numbers"]
         UI_AuthGate["Obsidian Dark Auth Gate<br/>(Dual DPDPA 2023 Forensic Consent & Tier Engine)"]
-        UI_PWA["PWA Web Client & Mobile Shell<br/>(Camera / Photo Capture, Habit Streak HUD, Macro Gauges)"]
+        UI_PWA["PWA Web Client & Mobile Ergonomics<br/>(Camera Capture, Habit Streak HUD, Macro Gauges, Mobile Bottom Nav)"]
         UI_Tiers["Dynamic Tier Status Badges<br/>(Free, Basic, ⚡ Premium, 👑 SuperAdmin)"]
         UI_Diary["Food Diary & History<br/>(1D/7D/30D/90D/365D Filter, Card/Grid Toggle, Excel Export)"]
         UI_DeleteModal["Custom Obsidian Delete Modal<br/>(Danger Pulse & Deficit Recalculation Advisory)"]
@@ -31,22 +40,24 @@ graph TB
         UI_PWA <-->|Offline Caching & Background Sync| UI_Offline
     end
 
-    subgraph LAYER_SECURITY ["2. SECURITY & BOUNDARY DEFENSE LAYER (OWASP ASVS & Guardrails)"]
+    subgraph LAYER_SECURITY ["2. SECURITY & BOUNDARY DEFENSE LAYER (OWASP ASVS & LLM Defenses)"]
         direction TB
         SEC_Perimeter["Perimeter & Transport Security<br/>(TLS 1.3, Strict CSP, Minimal CORS, Secure HTTPOnly Cookies)"]
         SEC_DualAuth["Dual SmartScheme Authentication<br/>(RFC 7519 JWT Bearer + Secure HttpOnly Cookie)"]
         SEC_DebugGuard["Debug-Only Demo User Security Isolation<br/>(#if DEBUG & IAppEnvironment.AllowsDemoUsers)<br/>Release Mode Seeding Suppression & Auto-Deactivation"]
         SEC_RateLimit["ASP.NET Core RateLimiter<br/>(Polly Sliding Window per User IP / Bearer Token)"]
         SEC_FileArmor["File Ingestion Armor<br/>(Magic Byte Check: JPEG/PNG/WEBP, Max 8MB, EXIF GPS Stripper)"]
-        SEC_AIGuard["AI Prompt Guardrails & Safety<br/>(Prompt Delimiters, Strict JSON Schema, PII Redaction)"]
+        SEC_AIGuard["PromptShieldValidator & Content Safety<br/>(Harmful, Violent, Sexual, Communal & Self-Learning Injection Shields)"]
+        SEC_GoogleSafety["Google AI StrictSafetySettings<br/>(BLOCK_LOW_AND_ABOVE Harassment, Hate Speech, Sex, Dangerous)"]
         SEC_DataFilter["Data Isolation Guardrails<br/>(EF Core Global Query Filters: UserId == CurrentUser.Id)"]
+        SEC_VaultAuth["Sole Authority Secret Governance (@nikunjbanker)<br/>Azure Key Vault with Purge Protection & Passwordless Managed Identity"]
     end
 
     subgraph LAYER_GATEWAY ["3. PRESENTATION GATEWAY (Nutrition.WebGateway)"]
         direction TB
-        CONTROLLERS["Thin REST Controllers (.NET 11 RC)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController)"]
+        CONTROLLERS["Thin REST Controllers (.NET 11)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController, WebBffController)"]
         MW_Pipeline["HTTP Middleware Pipeline<br/>(Authentication, Rate Limiting, Exception Handling RFC 7807, HttpPayloadTelemetry)"]
-        CONFIG_DB["DatabaseConfigurationProvider<br/>(Loads AppSecrets into ASP.NET Core IConfiguration during startup)"]
+        CONFIG_DB["Configuration Architecture<br/>(Strongly-Typed Options Pattern + FluentValidation + Azure Key Vault Provider)"]
     end
 
     subgraph LAYER_APPLICATION ["4. APPLICATION LAYER (Nutrition.Application - Clean Architecture)"]
@@ -96,28 +107,33 @@ graph TB
         end
     end
 
-    subgraph LAYER_INFRASTRUCTURE ["6. INFRASTRUCTURE LAYER (Nutrition.Infrastructure - Adapters)"]
+    subgraph LAYER_INFRASTRUCTURE ["6. INFRASTRUCTURE & CLOUD DEPLOYMENT (Nutrition.Infrastructure & Azure)"]
         direction TB
-        ADAPTER_Secrets["DatabaseSecretStore Adapter<br/>(ConcurrentDictionary In-Memory Cache)"]
+        ADAPTER_Secrets["KeyVault & DatabaseSecretStore Adapters<br/>(ConcurrentDictionary In-Memory Cache)"]
         ADAPTER_Env["AppEnvironment Adapter<br/>(#if DEBUG Preprocessor & IHostEnvironment)"]
         ADAPTER_Repo["EfRepository & EfUnitOfWork<br/>(Generic EF Core Data Access)"]
         ADAPTER_Photo["LocalPhotoStorageService<br/>(Cryptographic SHA-256 Hashed File Storage)"]
         ADAPTER_Jwt["JwtTokenService<br/>(HMAC-SHA256 Token Issuer via ISecretStore)"]
         ADAPTER_Agent["Microsoft Agent Framework Vision Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
         
-        DB_Context["DietTrackerDbContext<br/>(SQLite V1, Universal UTC ValueConverter, Schema-Aware PRAGMA, Collection ValueComparers)"]
-        TABLE_Secrets[("AppSecrets Table<br/>(Jwt:Key, Auth:DemoPassword, AI:GoogleAI:ApiKey)")]
+        DB_Context["DietTrackerDbContext<br/>(Universal UTC ValueConverter, Schema-Aware PRAGMA, Collection ValueComparers)"]
+        AZURE_ACA["Azure Container Apps (Serverless MicroVM)<br/>Single Replica Invariant (min:1, max:1)<br/>Custom Domain: dev.dietdost.app with Free Managed TLS"]
+        AZURE_SMB[("Azure Files Persistent SMB Share<br/>Mount: /app/data/diet_dost.db<br/>PRAGMA journal_mode=DELETE (Zero Data Loss)")]
+        AZURE_AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>Managed Identity Access")]
+        AZURE_ACR[("Azure Container Registry (ACR)<br/>Passwordless Image Pull (acrPullRole)")]
     end
 
-    subgraph LAYER_ORCHESTRATION ["7. DEVOPS & OBSERVABILITY (.NET Aspire 13.5.4)"]
+    subgraph LAYER_ORCHESTRATION ["7. DEVOPS, GOVERNANCE & OBSERVABILITY (.NET Aspire 13.5.4)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (net11.0)<br/>(Distributed Orchestration & Typed Topology)"]
+        ASPIRE_Host[".NET Aspire AppHost (net11.0 / Sdk 13.5.4)<br/>(Distributed Orchestration & Typed Topology)"]
         ASPIRE_Dash["Aspire Developer Dashboard (:18888)<br/>(Live Resources, Distributed Traces, GenAI Semantic Spans)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')"]
-        TEST_Harness["Validation Harnesses<br/>(122 Automated Tests + pwsh validate_e2e_tiers.ps1)"]
+        TEST_Harness["Validation Harnesses<br/>(234 Automated Tests across 7 Projects + validate_e2e_tiers.ps1)"]
+        ADR_Registry["Subsystem Domain ADR Architecture (docs/adr/)<br/>(architecture, security, devops, presentation, governance)<br/>docs/adr/index.json Machine-Readable Registry (~4 KB)"]
     end
 
     %% Flow Connections
+    GATE_Deploy -.->|Deploys Infrastructure & Container| AZURE_ACA
     UI_PWA -->|HTTPS / WSS| SEC_Perimeter
     SEC_Perimeter --> SEC_RateLimit
     SEC_RateLimit --> SEC_DualAuth
@@ -125,7 +141,7 @@ graph TB
     
     CONTROLLERS --> MW_Pipeline
     CONTROLLERS --> CQRS_Engine
-    CONFIG_DB -.->|Injects DB Secrets| CONTROLLERS
+    CONFIG_DB -.->|Injects Options & Secrets| CONTROLLERS
     
     CQRS_Engine --> CMD_Login
     CQRS_Engine --> CMD_Register
@@ -135,6 +151,8 @@ graph TB
 
     CMD_Login --> SEC_DebugGuard
     CMD_Login --> PORTS
+    CMD_MealUpload --> SEC_AIGuard
+    SEC_AIGuard --> SEC_GoogleSafety
     CMD_MealUpload --> PORTS
     CMD_SaveProfile --> PORTS
     QRY_Ledger --> PORTS
@@ -146,7 +164,10 @@ graph TB
 
     ADAPTER_Repo --> DB_Context
     ADAPTER_Secrets --> DB_Context
-    DB_Context --> TABLE_Secrets
+    DB_Context --> AZURE_SMB
+    ADAPTER_Secrets -.->|Runtime Secrets| AZURE_AKV
+    AZURE_ACA -->|Volume Mount| AZURE_SMB
+    AZURE_ACA -.->|Pulls Image| AZURE_ACR
     ADAPTER_Agent --> CLOUD_AI["Google Gemini Multimodal Vision API"]
 
     CMD_SaveProfile --> CLINICAL
@@ -159,4 +180,4 @@ graph TB
     OTEL_Collector --> ASPIRE_Dash
     ASPIRE_Host -->|Orchestrates| CONTROLLERS
     ASPIRE_Host -->|Orchestrates| ASPIRE_Dash
-    TEST_Harness -.->|Validates E2E Tiers| CONTROLLERS
+    TEST_Harness -.->|Validates Solution| CONTROLLERS

@@ -7,10 +7,10 @@
 -->
 
 # SDD Master Index, Roadmap & Traceability Matrix
-> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
+> **Specification Version**: `v1.4.0 (Production & Living SDD)`  
 > **Classification**: Master Software Design Document (SDD) Index  
 > **Approved Domain Focus**: Indian Population, ICMR-NIN 2024 & WHO Medical Standards  
-> **Tech Stack**: .NET 11 RC, .NET Aspire, Swappable SQLite V1 (PWA Offline-First), Microsoft Agent Framework + Google AI Pro, OWASP ASVS, Linear.app Design System  
+> **Tech Stack**: .NET 11, .NET Aspire 13.5.4, Azure Container Apps, Azure Files SMB Persistent SQLite, Azure Key Vault, Google AI Gemini Multimodal, OWASP ASVS, Linear.app Design System  
 
 ---
 
@@ -18,7 +18,7 @@
 
 **Diet Dost** is an enterprise-grade, AI-powered nutrition companion engineered specifically for the Indian population and South Asian metabolic phenotypes. It bridges clinical dietetics (ICMR-NIN 2024 and WHO guidelines) with modern AI multimodal meal vision (Microsoft Agent Framework powered by Google AI Gemini models).
 
-The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assumption intake guarantees, OWASP ASVS Level 2 perimeter security, swappable SQLite/PostgreSQL persistence, and offline-first Progressive Web App (PWA) capabilities.
+The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assumption intake guarantees, OWASP ASVS Level 2 perimeter security, swappable SQLite/PostgreSQL persistence, and offline-first Progressive Web App (PWA) capabilities. Production deployments execute on Azure Container Apps with persistent Azure Files SMB mounts and automated pre-deployment security gating across all 7 projects.
 
 ---
 
@@ -28,23 +28,26 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 |---|---|---|---|
 | [`00_sdd_index.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/00_sdd_index.md) | **Master Index & Traceability** | Executive summary, document inventory, progress matrix, and traceability | `APPROVED` |
 | [`01_clinical_dietetics_spec.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/01_clinical_dietetics_spec.md) | **Clinical Dietetics Specification** | ICMR-NIN 2024 & WHO rules, Mifflin-St Jeor math, clinical adjustments matrix | `APPROVED` |
-| [`02_solution_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/02_solution_architecture.md) | **Solution Architecture Blueprint** | Master multi-dimensional diagrams (Design, Security, App, DevOps, Functional) | `APPROVED` |
+| [`02_solution_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/02_solution_architecture.md) | **Solution Architecture Blueprint** | Master multi-dimensional diagrams (Design, Security, App, DevOps, Functional, ADR Hierarchy) | `APPROVED` |
 | [`03_data_models_and_contracts.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/03_data_models_and_contracts.md) | **Data Models & Contracts** | DDD aggregates, value objects, EF Core schema, JSON contract schema | `APPROVED` |
-| [`04_security_and_compliance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/04_security_and_compliance.md) | **Security & Compliance (OWASP)** | OWASP ASVS blueprint, magic-byte validation, prompt guardrails, rate limits | `APPROVED` |
-| [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 11 AppHost topology, OTel pipelines, Redis caching, Docker runbook | `APPROVED` |
-| [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, Aspire test harness, AI vision benchmarks, clinical unit tests | `APPROVED` |
+| [`04_security_and_compliance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/04_security_and_compliance.md) | **Security & Compliance (OWASP & AI Defense)** | OWASP ASVS blueprint, 8-job security pipeline, PromptShield content safety, Key Vault purge protection | `APPROVED` |
+| [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 13.5.4, Azure Container Apps Bicep IaC, persistent SQLite SMB mount, custom domain TLS | `APPROVED` |
+| [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, 234 automated tests across 7 projects, multi-tier CFT execution, AI defense validator | `APPROVED` |
 | [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Index** | Living documentation standard, index, and bridge to authoritative ADR registry | `SYNCHRONIZED` |
-| [`../adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) | **Architectural Decision Records (ADRs)** | Canonical repository of atomic MADR decisions (`docs/adr/`) and historical archive | `ACTIVE ADRs` |
-| [`08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md) | **Cross-Platform (Web & Mobile) Clean Architecture & Dual BFF Plan** | Unified Web & Mobile architecture review, Dual BFF design, zero duplicate clinical code, and phased Stacked PR tracks | `APPROVED` |
-| [`09_master_implementation_roadmap_and_execution_sequence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md) | **Master Implementation Roadmap & Skill Execution Sequence** | PO MVP Market Roadmap (Alpha 01 Web Showcase MVP deployed live to Azure with custom domain to Alpha 02 Mobile, Beta 01 Cloud DB, and GA 1.0; Zero-Throwaway Reusability Mandate) | `APPROVED (v2.2.0)` |
-| [`10_configuration_and_secret_management_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/10_configuration_and_secret_management_architecture.md) | **Configuration, Options Pattern & Secret Management Architecture** | Authoritative architecture blueprint and live proof for 2-tier process boundaries (AppHost vs WebGateway), 4 configuration mechanisms, environment matrix (Dev vs ACA Prod), strongly-typed Options with FluentValidation, and living update maintenance protocol | `APPROVED & LIVING` |
-| [`../cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) | **CFT: Web BFF & Clean Architecture Verification** | Functional acceptance checklist for Web single-roundtrip hydration, zero client math, and modular UI controls | `ACTIVE CFT` |
-| [`../cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) | **CFT: Mobile MVP Cross-Platform (Android & iOS)** | Functional acceptance checklist for Mobile camera, 1080p SkiaSharp compression, hardware token security, and HUD | `ACTIVE CFT` |
-| [`../cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md) | **CFT: Cross-Platform Functional Parity Matrix** | Master parity scorecard cross-checking Web vs Android vs iOS across all features, tiers, and clinical invariants | `ACTIVE CFT` |
+| [`../adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) | **Architectural Decision Records (ADRs)** | Canonical registry of atomic MADR decisions (`docs/adr/`) and historical archive | `ACTIVE ADRs` |
+| [`../adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json) | **Machine-Readable ADR Manifest** | Lean JSON index (~4 KB) parsing all 44 ADR fragments across 5 domains | `AUTOMATED` |
+| [`../../scripts/sync-adr-index.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/sync-adr-index.ps1) | **ADR Index Synchronization Script** | Automated PowerShell/Python tool synchronizing `docs/adr/index.json` and `README.md` | `OPERATIONAL` |
+| [`../../.github/workflows/security-scan.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/security-scan.yml) | **Pre-Deployment Security Gate** | 8-job pipeline: Gitleaks, ESLint, SecurityCodeScan (7 projects), Trivy, Checkov, actionlint, AI Defense | `ENFORCED` |
+| [`08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md) | **Cross-Platform Clean Architecture & Dual BFF Plan** | Unified Web & Mobile architecture review, Dual BFF design, zero duplicate clinical code | `APPROVED` |
+| [`09_master_implementation_roadmap_and_execution_sequence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/09_master_implementation_roadmap_and_execution_sequence.md) | **Master Implementation Roadmap & Execution Sequence** | PO MVP Market Roadmap (Alpha 01 Web Showcase MVP deployed live to Azure with custom domain) | `APPROVED (v2.2.0)` |
+| [`10_configuration_and_secret_management_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/10_configuration_and_secret_management_architecture.md) | **Configuration & Secret Management Architecture** | Strongly-typed Options + FluentValidation, Sole Authority secret governance, Key Vault provider | `APPROVED & LIVING` |
+| [`../cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) | **CFT: Web BFF & Clean Architecture Verification** | Functional acceptance checklist for Web single-roundtrip hydration, zero client math | `ACTIVE CFT` |
+| [`../cft/cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md) | **CFT: Mobile MVP Cross-Platform (Android & iOS)** | Functional acceptance checklist for Mobile camera, 1080p SkiaSharp compression, hardware token security | `ACTIVE CFT` |
+| [`../cft/cft_cross_platform_functional_parity_matrix.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_cross_platform_functional_parity_matrix.md) | **CFT: Cross-Platform Functional Parity Matrix** | Master parity scorecard cross-checking Web vs Android vs iOS across all features, tiers, and invariants | `ACTIVE CFT` |
 | [`USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/USER_MANAGEMENT_AND_SECURITY_ARCHITECTURE_PLAN.md) | **User Management & Security Architecture Plan** | Complete implementation blueprint for Auth, Tiers, DPDPA dual-consent, and dynamic AI quotas | `APPROVED` |
 | [`ICMR_NIN_2024_FEATURE_ROADMAP.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/ICMR_NIN_2024_FEATURE_ROADMAP.md) | **ICMR-NIN 2024 Feature Roadmap** | Comprehensive 17-guideline feature recommendations, prioritization matrix, and roadmap | `PROPOSED & AUDITED` |
 | [`LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md) | **Local Indian Food Text/Vision SLM Training Guide** | Dataset, local fine-tuning, Agent Framework integration, and evaluation gates | `PROPOSED` |
-| [`AZURE_DEVOPS_DEPLOYMENT_TODO.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md) | **Azure DevOps & Deployment Feature TODO** | Podman 5.7.0, Azure Container Apps, ACR push, custom domain & free managed TLS | `APPROVED & ACTIONABLE` |
+| [`AZURE_DEVOPS_DEPLOYMENT_TODO.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DEVOPS_DEPLOYMENT_TODO.md) | **Azure DevOps & Deployment Feature TODO** | Azure Container Apps, Bicep IaC, ACR push, custom domain & free managed TLS | `APPROVED & ACTIONABLE` |
 
 
 ---
@@ -82,6 +85,12 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **SuperAdmin Governance & Telemetry**| Plan §5 | Complete (User management API, anti-lockout protection, AI audit log) | Verified via Tests |
 | **Obsidian Dark Auth Gate & UI** | Plan §6 | Complete (Dashboard lock, dual-consent modals, quota HUD, admin console) | Verified in Browser |
 | **JWT Cryptographic Authentication & SmartScheme** | Plan §3.4 | Complete (HMAC-SHA256, 24h lifetime, policy forwarding, programmatic token API) | 100% Passed (Unit Tests) |
+| **8-Job Pre-Deployment Security Gate** | SDD §04, Rule 1 | Complete (`security-scan.yml`, Gitleaks, ESLint, SecurityCodeScan across all 7 `.csproj`, Trivy, Checkov, actionlint, AI Defense) | 100% Green in CI Pipeline |
+| **AI Security Defense & Content Safety** | SDD §04, Prompt Shield | Complete (`verify-ai-security-defense.ps1`, `PromptShieldValidator.cs`, pre-commit hook) | 100% Passed (Unit & Eval Tests) |
+| **Azure Container Apps Bicep IaC Deployment** | SDD §05, Roadmap Layer 9 | Complete (`infra.bicep`, `app.bicep`, `azure-infra-deploy.yml`, `azure-app-deploy.yml`, minReplicas=1) | Deployed on dev.dietdost.app |
+| **Persistent SQLite Azure Files SMB Share** | SDD §05, ADR-079 | Complete (`/app/data/diet_dost.db`, `PRAGMA journal_mode=DELETE`, Azure Files SMB Volume) | Zero-Data-Loss Verified |
+| **Azure Key Vault Purge Protection** | SDD §04, ADR-081 | Complete (Purge protection, Sole Authority `@nikunjbanker`, Managed Identity ACR pull) | Infrastructure Audit Passed |
+| **Subsystem Domain ADR Hierarchy & Index** | SDD §07, ADR-083 | Complete (5 domain directories, `index.json` ~4 KB, `scripts/sync-adr-index.ps1`) | 100% Automated Sync |
 
 ---
 
@@ -120,5 +129,10 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Tier Feature Gating (Photo/Excel)** | `Nutrition.WebGateway.Controllers` | `MealsController.ExportMeals()`, `ProgressPhotosController.GetComparison()` | 403 Forbidden Response Verification |
 | **JWT Bearer Token Authentication** | `Nutrition.Infrastructure.Security` | `IJwtTokenService`, `JwtTokenService` | `JwtAuthenticationTests` |
 | **Dual SmartScheme Auth Dispatch** | `Nutrition.WebGateway` | `AddPolicyScheme("SmartScheme")`, `Program.cs` | Integration Verification |
+| **Pre-Deployment Security Gate** | CI/CD Pipeline | `.github/workflows/security-scan.yml`, 8 scanners across all 7 `.csproj` | GitHub Actions Pre-Deployment Gate |
+| **AI Prompt Safety & PromptShield** | `Nutrition.VisionService` & Security | `PromptShieldValidator`, Google AI `StrictSafetySettings` | `AIContentSafetyTests` |
+| **Azure Persistent SMB Mount** | `Nutrition.Infrastructure` & Bicep | Azure Files Volume Mount `/app/data/diet_dost.db`, PRAGMA journal_mode=DELETE | Container Apps Restart Persistence Test |
+| **Sole Authority Secret Governance** | DevOps & Azure Key Vault | Key Vault RBAC, Purge Protection, `@nikunjbanker` sole approver | Azure RBAC Policy Audit |
+| **Subsystem ADR Automated Sync** | Governance & Tooling | `scripts/sync-adr-index.ps1`, `docs/adr/index.json` | ADR Validation Suite |
 
 

@@ -1,4 +1,4 @@
-﻿%%
+%%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
 %% the "Server Side Public License, v 1"; you may not use this file except
@@ -6,13 +6,32 @@
 %% License v3.0 only" or the "Server Side Public License, v 1".
 %%
 graph LR
-    subgraph Untrusted_External ["Untrusted Zone"]
-        Actor["External User / Browser Client"]
+    subgraph CI_CD_Security_Gate ["Pre-Commit & Pre-Deployment Security Gate (Zero-Deployment-on-Failure)"]
+        Gitleaks["Gitleaks: Secrets & Credentials"]
+        ESLint["ESLint: Client JS SAST & SARIF"]
+        SecurityCodeScan["SecurityCodeScan: .NET 11 C# SAST (All 7 Projects)"]
+        Trivy["Trivy: Filesystem, Dependencies & Container CVEs"]
+        Checkov["Checkov: Bicep IaC Security Policies"]
+        Actionlint["actionlint: GitHub Actions Workflow Security"]
+        AIDefense["AI Security Defense: OWASP LLM & Slopsquatting (5 Vectors)"]
+        GateSummary["Security Gate Summary & Deployment Blocker"]
+        
+        Gitleaks --> GateSummary
+        ESLint --> GateSummary
+        SecurityCodeScan --> GateSummary
+        Trivy --> GateSummary
+        Checkov --> GateSummary
+        Actionlint --> GateSummary
+        AIDefense --> GateSummary
     end
 
-    subgraph Perimeter_Defense ["Perimeter & Gateway Defense (OWASP ASVS & DPDPA)"]
-        WAF["TLS 1.3, CSP & Security Headers"]
-        RateLimit["Rate Limiter (Token-Bucket per IP / User)"]
+    subgraph Untrusted_External ["Untrusted Zone"]
+        Actor["External User / Browser Client / Mobile PWA"]
+    end
+
+    subgraph Perimeter_Defense ["Perimeter & Gateway Defense (OWASP ASVS & DPDPA 2023)"]
+        WAF["TLS 1.3, Strict CSP & Security Headers"]
+        RateLimit["Polly Rate Limiter (Token-Bucket per IP / User)"]
         FileCheck["File Armor: Magic Bytes, 8MB Max, EXIF GPS Stripper"]
         SmartAuth["SmartScheme: Bearer JWT (Mobile) + HttpOnly Cookie (Web)"]
     end
@@ -20,17 +39,21 @@ graph LR
     subgraph Service_Boundary ["Microservices Secure Zone (.NET 11 Clean Architecture)"]
         AuthContext["ClaimsPrincipal & Tenant Context"]
         EnvGate["IAppEnvironment (#if DEBUG / Development Gate)<br/>Demo User Release Mode Prohibition (THREAT-12)"]
-        PromptGuard["AI Prompt Delimiters & Strict Schema Validator"]
+        PromptShield["PromptShieldValidator (Content Safety & Shield)<br/>Harmful, Violent, Sexual, Communal & Self-Learning Injections"]
+        GoogleAISafety["Google AI StrictSafetySettings<br/>(BLOCK_LOW_AND_ABOVE across 5 Categories)"]
+        DataPoisonGuard["Adversarial Retraining Data Poisoning Guard"]
         GlobalFilter["EF Core Global Query Filter: UserId == CurrentUser.Id"]
         CQRS["Native CQRS Dispatcher & Fluent Validation Pipeline"]
     end
 
-    subgraph Persistence_Zone ["Encrypted & Isolated Storage Zone"]
-        DbData[("SQLite / PostgreSQL<br/>(User-Scoped Tables & Audit Logs)")]
-        SecretStore[("Database Secret Store<br/>(AppSecrets: Key / Value / ModifiedAt)")]
-        BlobData[("Local AppData / Encrypted Photo Store")]
+    subgraph Cloud_Persistence_Zone ["Encrypted & Isolated Persistence Zone"]
+        AzureFiles[("Azure Files Persistent SMB Mount<br/>/app/data/diet_dost.db (SQLite DELETE Journal)")]
+        KeyVault[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>JWT_KEY, GEMINI_API_KEY, Database Secrets")]
+        ACR[("Azure Container Registry (ACR)<br/>Passwordless Pull via User-Assigned MI (acrPullRole)")]
+        BlobData[("Local AppData / Azure Blob Media Storage")]
     end
 
+    GateSummary -.->|Certifies Build & Image| ACR
     Actor -->|HTTPS / WSS| WAF
     WAF --> RateLimit
     RateLimit --> FileCheck
@@ -38,8 +61,10 @@ graph LR
     SmartAuth --> AuthContext
     AuthContext --> EnvGate
     EnvGate --> CQRS
-    CQRS --> PromptGuard
+    CQRS --> PromptShield
+    PromptShield --> GoogleAISafety
+    PromptShield --> DataPoisonGuard
     CQRS --> GlobalFilter
-    GlobalFilter --> DbData
-    CQRS -.->|Retrieve Keys| SecretStore
+    GlobalFilter --> AzureFiles
+    CQRS -.->|Passwordless Managed Identity| KeyVault
     FileCheck --> BlobData

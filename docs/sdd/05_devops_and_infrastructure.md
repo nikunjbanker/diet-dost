@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -7,9 +7,9 @@
 -->
 
 # DevOps, Infrastructure & Aspire Orchestration
-> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
-> **Host Framework**: .NET Aspire 11 RC (`Aspire.Hosting.AppHost` v13.5.4)  
-> **Runtime**: .NET 11 RC (`net11.0`)  
+> **Specification Version**: `v1.4.0 (Production & Living SDD)`  
+> **Host Framework**: .NET Aspire 13.5.4 (`Aspire.Hosting.AppHost`) & Azure Container Apps  
+> **Runtime**: .NET 11 (`net11.0`)  
 
 ---
 
@@ -247,5 +247,37 @@ graph TD
 2. **Rollback Journal Mode for Network SMB Mounts**: Because SMB/CIFS network storage does not support POSIX shared memory (`.shm` mapping) reliably, `PRAGMA journal_mode = DELETE;` (or `TRUNCATE`) must be used when deploying against Azure Files.
 3. **Write-Ahead Logging (WAL) for Local SSD Mounts**: When deploying to a Linux VM (Option 3), native block storage allows `PRAGMA journal_mode = WAL;`, enabling concurrent reads without blocking writes.
 4. **Volume Mount Separation**: Container images must mount external persistent storage to `/app/data`, with the connection string pointing to `/app/data/diet_dost.db` and static uploads directed to `/app/data/wwwroot/uploads`.
+
+---
+
+## 7. Production Cloud Infrastructure Deployment Specification (Phase 1 Layer 9)
+
+### 7.1 Two-Stage Automated CI/CD Workflows
+Production deployment executes via two decoupled GitHub Actions workflows conditioned on a green pass of the 8-job security gate:
+1. **Stage 1: Infrastructure Deployment (`azure-infra-deploy.yml`)**:
+   - Provisions Azure Resource Group (`rg-dietdost-dev`), Storage Account, Azure Files Share (`dietdost-share`), Managed Environment (`diet-dost-env`), Key Vault (`diet-dost-kv`), and ACR (`dietdostacr`).
+   - Executes `az deployment group create --template-file infra/infra.bicep`.
+2. **Stage 2: Application Deployment (`azure-app-deploy.yml`)**:
+   - Compiles container image targeting Linux x64 and pushes to Azure Container Registry.
+   - Deploys container to Azure Container Apps via `infra/app.bicep`.
+   - Binds custom domain `dev.dietdost.app` with free Azure managed TLS certificate.
+
+### 7.2 Declarative Bicep Infrastructure as Code (IaC)
+- [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, and storage mount definitions on the ACA Managed Environment.
+- [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and custom domain hostname bindings.
+
+### 7.3 Azure Files SMB Volume Mount & Zero-Data-Loss Configuration
+The Container App mounts the Azure Files SMB share as a persistent volume:
+- **Mount Path**: `/app/data`
+- **Database File**: `/app/data/diet_dost.db`
+- **Photos Directory**: `/app/data/photos`
+- **SQLite Journal Pragma**: `PRAGMA journal_mode = DELETE;` configured at startup.
+- **Replica Guarantee**: `minReplicas: 1, maxReplicas: 1` guarantees that only a single process holds file locks on the SMB network share, eliminating SQLite multi-instance file lock corruption.
+
+### 7.4 Custom Domain & Managed TLS Certificate
+- **Host**: `dev.dietdost.app`
+- **Certificate Type**: Managed Certificate (`Microsoft.App/managedEnvironments/managedCertificates`)
+- **Validation**: Domain validation via CNAME (`dev.dietdost.app` $\to$ `<app-fqdn>`) and TXT record (`asuid.dev.dietdost.app` $\to$ domain verification ID).
+- **Auto-Renewal**: Azure automatically renews certificates with 0 operational overhead.
 
 
