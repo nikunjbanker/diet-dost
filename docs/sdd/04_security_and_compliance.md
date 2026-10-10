@@ -121,7 +121,7 @@ To guarantee that no vulnerability, hardcoded secret, or malicious pattern reach
 graph TD
     SCAN1["1. Gitleaks (Secret Detection)"]
     SCAN2["2. ESLint (Frontend AST Inspection)"]
-    SCAN3["3. SecurityCodeScan (All 7 .csproj Projects)"]
+    SCAN3["3. Roslyn Security, DevSkim & CodeQL (All 7 .csproj Projects)"]
     SCAN4["4. Trivy (Container & SBOM CVEs)"]
     SCAN5["5. Checkov (Bicep IaC Security)"]
     SCAN6["6. actionlint (GitHub Actions Syntax)"]

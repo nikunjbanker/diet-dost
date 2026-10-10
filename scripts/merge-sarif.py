@@ -40,8 +40,8 @@ def merge_sarif(results_dir: str, output_file: str) -> None:
         merged_runs = [{
             "tool": {
                 "driver": {
-                    "name": "SecurityCodeScan",
-                    "version": "5.6.7"
+                    "name": "MicrosoftRoslynSecurity",
+                    "version": "11.0.0"
                 }
             },
             "results": []

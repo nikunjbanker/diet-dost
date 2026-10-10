@@ -61,7 +61,7 @@ graph TB
 
     subgraph LAYER_CICD ["0. CI/CD & PRE-DEPLOYMENT SECURITY GATE (Zero Deployment on Failure)"]
         direction TB
-        GATE_Scanners["Security & Code Scanning Pipeline (security-scan.yml)<br/>Gitleaks | ESLint | SecurityCodeScan (All 7 .csproj) | Trivy | Checkov | actionlint | AI Defense"]
+        GATE_Scanners["Security & Code Scanning Pipeline (security-scan.yml)<br/>Gitleaks | ESLint | Roslyn, DevSkim & CodeQL (All 7 .csproj) | Trivy | Checkov | actionlint | AI Defense"]
         GATE_Summary["Security Gate Summary Table & PR Comment Publisher<br/>Blocks Azure Deployment if Any Scanner Fails"]
         GATE_Deploy["Two-Stage Automated Deployment Workflows<br/>Stage 1: azure-infra-deploy.yml (Bicep IaC) | Stage 2: azure-app-deploy.yml (ACA & Custom Domain TLS)"]
         GATE_Scanners --> GATE_Summary

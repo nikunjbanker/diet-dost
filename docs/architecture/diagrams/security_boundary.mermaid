@@ -10,7 +10,7 @@ graph LR
     subgraph CI_CD_Security_Gate ["Pre-Commit & Pre-Deployment Security Gate (Zero-Deployment-on-Failure)"]
         Gitleaks["Gitleaks: Secrets & Credentials"]
         ESLint["ESLint: Client JS SAST & SARIF"]
-        SecurityCodeScan["SecurityCodeScan: .NET 11 C# SAST (All 7 Projects)"]
+        SecurityCodeScan["Roslyn & CodeQL SAST: .NET 11 C# (All 7 Projects)"]
         Trivy["Trivy: Filesystem, Dependencies & Container CVEs"]
         Checkov["Checkov: Bicep IaC Security Policies"]
         Actionlint["actionlint: GitHub Actions Workflow Security"]

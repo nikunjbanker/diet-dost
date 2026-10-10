@@ -68,26 +68,22 @@ graph TD
   ```
 
 ### 2.2 Job 2: ESLint (Frontend JavaScript & Security Linting)
-- **Scope**: Scans all browser client scripts in `src/Nutrition.WebGateway/wwwroot/` and tests in `tests/`.
-- **Key Invariants**: Native ES Modules, no `eval()`, no insecure DOM injection (`innerHTML` with untrusted data), no undeclared variables.
+- **Scope**: Scans all browser client scripts in `src/Nutrition.WebGateway/wwwroot/` and tests using modern zero-dependency flat config ([`eslint.config.mjs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/eslint.config.mjs)).
+- **Key Invariants**: Native ES Modules, no `eval()`, no insecure DOM injection (`innerHTML` with untrusted data), no undeclared variables, zero deprecated npm dependencies.
 - **Local Execution Command**:
   ```bash
-  npx eslint src/Nutrition.WebGateway/wwwroot/js/**/*.js tests/**/*.mjs
+  npx eslint . --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
   ```
 
-### 2.3 Job 3: SecurityCodeScan (.NET 11 SAST across All 7 Projects)
-- **Scope**: Analyzes all 7 C# projects in `DietDost.slnx` for SQL injection, path traversal, insecure cryptography, weak hashing, and unsafe deserialization:
-  - `src/Nutrition.Domain`
-  - `src/Nutrition.Application`
-  - `src/Nutrition.Infrastructure`
-  - `src/Nutrition.WebGateway`
-  - `src/Nutrition.ServiceDefaults`
-  - `tests/Nutrition.Domain.Tests`
-  - `tests/Nutrition.EvalHarness.Tests`
-- **Output**: Generates SARIF log (`security-scan.sarif`).
+### 2.3 Job 3: Microsoft Roslyn Security, DevSkim & CodeQL SAST (.NET 11 C#)
+- **Scope**: Multi-layered C# SAST across all solution projects combining:
+  1. *Microsoft Roslyn CA Security Rules*: Native .NET 11 compiler security analysis (`CA2100` SQL Injection, `CA3001`-`CA3012` OWASP taint, `CA5350`-`CA5405` crypto/TLS rules) via `/p:AnalysisLevel=latest /p:AnalysisModeSecurity=All /p:ErrorLog=...`.
+  2. *Microsoft DevSkim CLI*: First-party Microsoft CST security scanner across source code (`devskim analyze -I src -O sarif-results/devskim.sarif -f sarif`).
+  3. *GitHub CodeQL (C#)*: Semantic taint analysis powered by `github/codeql-action/init` and `analyze`.
+- **Output**: Generates consolidated SARIF 2.1.0 log (`security-code-scan.sarif`).
 - **Local Execution Command**:
   ```bash
-  dotnet build DietDost.slnx --configuration Release /p:RunAnalyzersDuringBuild=true
+  devskim analyze -I src -O sarif-results/devskim.sarif -f sarif -s Critical,Important -g "**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/aspire-output/**"
   ```
 
 ### 2.4 Job 4: Trivy (Filesystem, Dependency & CVE Scanning)

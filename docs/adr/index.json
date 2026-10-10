@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T18:25:52.044528+00:00",
-  "totalAdrs": 51,
+  "generatedAt": "2026-10-10T19:26:32.472325+00:00",
+  "totalAdrs": 52,
   "categoryCounts": {
     "architecture": 15,
-    "security": 15,
+    "security": 16,
     "devops": 4,
     "presentation": 4,
     "governance": 13
@@ -621,6 +621,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261010-089-automated-architecture-diagram-synchronization-and-agentic-governance.md",
       "relativePath": "docs/adr/architecture/ADR-20261010-089-automated-architecture-diagram-synchronization-and-agentic-governance.md"
+    },
+    {
+      "id": "ADR-089",
+      "number": 89,
+      "title": "Security Tooling Modernization, Deprecation Resolution, and Multi-Layer .NET SAST Integration",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-11",
+      "subsystem": "Security",
+      "filename": "ADR-20261011-089-security-tooling-modernization-and-deprecation-resolution.md",
+      "relativePath": "docs/adr/security/ADR-20261011-089-security-tooling-modernization-and-deprecation-resolution.md"
     }
   ]
 }

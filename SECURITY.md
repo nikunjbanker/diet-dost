@@ -77,12 +77,12 @@ Every commit and pull request must clear an automated **8-job Static Analysis & 
 
 ```mermaid
 graph TD
-    SCAN1["1. Gitleaks (Secrets & Credentials)"]
-    SCAN2["2. ESLint (Client JavaScript SAST)"]
-    SCAN3["3. SecurityCodeScan (.NET 11 C# SAST - All 7 Projects)"]
-    SCAN4["4. Trivy (Filesystem, Container & SBOM CVEs)"]
+    SCAN1["1. Gitleaks v8.30.1 (Secrets & Credentials)"]
+    SCAN2["2. ESLint 9+ (Client JavaScript SAST - Flat Config)"]
+    SCAN3["3. Roslyn Security, DevSkim & CodeQL (.NET 11 C# SAST - All 7 Projects)"]
+    SCAN4["4. Trivy v0.75.0 (Filesystem, Container & SBOM CVEs)"]
     SCAN5["5. Checkov (Bicep IaC Security Policies)"]
-    SCAN6["6. actionlint (GitHub Actions Workflow Security)"]
+    SCAN6["6. actionlint v1.7.12 (GitHub Actions Workflow Security)"]
     SCAN7["7. AI Security Defense (OWASP LLM 5-Vector Validator)"]
     SUMMARY["8. Security Gate Summary (Deployment Blocker)"]
     DEPLOY["Azure Cloud Deployment Pipelines"]
@@ -92,12 +92,12 @@ graph TD
     SUMMARY -.->|ANY Scanner FAILS| BLOCKED["DEPLOYMENT BLOCKED (Zero-Deployment-on-Failure)"]
 ```
 
-1. **Gitleaks**: Scans full repository Git history and working tree for leaked API keys, tokens, or credentials with SARIF reporting.
-2. **ESLint**: Strict static analysis of native ES Modules (`.eslintrc.js`) with SARIF output.
-3. **SecurityCodeScan**: Comprehensive .NET 11 C# Roslyn SAST executed across **all 7 solution projects** (`Nutrition.Domain`, `Nutrition.Application`, `Nutrition.Infrastructure`, `Nutrition.VisionService`, `Nutrition.WebGateway`, `Nutrition.Domain.Tests`, `Nutrition.EvalHarness.Tests`).
-4. **Trivy**: Scans filesystem dependencies, packages, and container images for known CVEs.
+1. **Gitleaks (v8.30.1)**: Scans full repository Git history and working tree for leaked API keys, tokens, or credentials with SARIF reporting.
+2. **ESLint (v9+ / v10)**: Strict static analysis of native ES Modules using modern zero-dependency flat config (`eslint.config.mjs`) with SARIF output.
+3. **Microsoft Roslyn Security, DevSkim & CodeQL SAST**: Comprehensive multi-layer .NET 11 C# SAST executed across **all 7 solution projects** combining first-party Microsoft Roslyn CA Security rules (`/p:AnalysisLevel=latest /p:AnalysisModeSecurity=All`), Microsoft DevSkim CLI, and GitHub CodeQL semantic taint analysis.
+4. **Trivy (v0.75.0)**: Scans filesystem dependencies, packages, and container images for known CVEs.
 5. **Checkov**: Validates Infrastructure-as-Code (`infra/*.bicep`) against CIS benchmarks and cloud security best practices with `soft_fail: false`.
-6. **actionlint**: Inspects GitHub Actions workflows for syntax errors, untrusted input interpolation, and script injection risks.
+6. **actionlint (v1.7.12)**: Inspects GitHub Actions workflows for syntax errors, untrusted input interpolation, and script injection risks.
 7. **AI Security Defense**: Executes `scripts/verify-ai-security-defense.ps1` to detect prompt injection bypasses, slopsquatting, and unsafe LLM defaults.
 8. **Security Gate Summary**: Publishes an aggregated verdict comment to pull requests and strictly blocks Azure deployment if any check fails.
 
