@@ -16,11 +16,14 @@ namespace Nutrition.WebGateway.Middleware;
 /// and enriches the current OpenTelemetry Activity span and structured logging.
 /// This surfaces the payloads directly in the Aspire Dashboard Traces inspector.
 /// </summary>
-public class HttpPayloadTelemetryMiddleware
+public partial class HttpPayloadTelemetryMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<HttpPayloadTelemetryMiddleware> _logger;
     private const int MaxPayloadCaptureBytes = 65536; // 64 KB safety limit
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"[^\w\-/\.]")]
+    private static partial System.Text.RegularExpressions.Regex SafePathRegex();
 
     public HttpPayloadTelemetryMiddleware(RequestDelegate next, ILogger<HttpPayloadTelemetryMiddleware> logger)
     {
@@ -127,7 +130,7 @@ public class HttpPayloadTelemetryMiddleware
                 : HttpMethods.IsDelete(context.Request.Method) ? "DELETE"
                 : "OTHER";
 
-            var safePath = System.Text.RegularExpressions.Regex.Replace(path, @"[^\w\-/\.]", "_");
+            var safePath = SafePathRegex().Replace(path, "_");
             _logger.LogInformation(
                 "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms (PayloadBytes: {RequestBytes}/{ResponseBytes})",
                 sanitizedMethod,

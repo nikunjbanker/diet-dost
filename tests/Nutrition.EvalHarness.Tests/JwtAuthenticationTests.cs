@@ -398,8 +398,7 @@ public class JwtAuthenticationTests
         var config = builder.Build();
         var mockAppEnv = new TestAppEnvironment(isDebug: true, isDevelopment: true);
 
-        Nutrition.Application.Common.Interfaces.IDietDostConfiguration dietConfig =
-            new Nutrition.Infrastructure.Configuration.DietDostConfiguration(config, mockAppEnv);
+        var dietConfig = new Nutrition.Infrastructure.Configuration.DietDostConfiguration(config, mockAppEnv);
 
         Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, dietConfig.JwtKey);
         Assert.Equal("DietDostGateway", dietConfig.JwtIssuer);

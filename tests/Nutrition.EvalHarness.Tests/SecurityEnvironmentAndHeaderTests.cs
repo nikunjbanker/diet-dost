@@ -145,12 +145,12 @@ public class SecurityEnvironmentAndHeaderTests
         var context = new DefaultHttpContext();
         await middleware.InvokeAsync(context);
 
-        Assert.Equal("nosniff", context.Response.Headers["X-Content-Type-Options"]);
-        Assert.Equal("DENY", context.Response.Headers["X-Frame-Options"]);
+        Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions);
+        Assert.Equal("DENY", context.Response.Headers.XFrameOptions);
         Assert.Equal("strict-origin-when-cross-origin", context.Response.Headers["Referrer-Policy"]);
         Assert.Contains("geolocation=()", context.Response.Headers["Permissions-Policy"].ToString());
-        Assert.Contains("default-src 'self'", context.Response.Headers["Content-Security-Policy"].ToString());
-        Assert.Contains("dev.diet-dost.in", context.Response.Headers["Content-Security-Policy"].ToString());
+        Assert.Contains("default-src 'self'", context.Response.Headers.ContentSecurityPolicy.ToString());
+        Assert.Contains("dev.diet-dost.in", context.Response.Headers.ContentSecurityPolicy.ToString());
     }
 
     [Fact]

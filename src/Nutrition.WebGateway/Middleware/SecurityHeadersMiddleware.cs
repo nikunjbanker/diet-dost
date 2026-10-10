@@ -23,11 +23,11 @@ public class SecurityHeadersMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-        context.Response.Headers["X-Frame-Options"] = "DENY";
+        context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers.XFrameOptions = "DENY";
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         context.Response.Headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()";
-        context.Response.Headers["Content-Security-Policy"] =
+        context.Response.Headers.ContentSecurityPolicy =
             "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://dev.diet-dost.in https://diet-dost.in http://diet-dost.in;";
 
         await _next(context);

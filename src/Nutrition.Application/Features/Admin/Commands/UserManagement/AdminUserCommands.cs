@@ -288,9 +288,12 @@ public class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateUserComm
         await _profileRepo.AddAsync(profile, ct);
 
         await _uow.SaveChangesAsync(ct);
-
-        _logger.LogInformation("Admin {AdminId} successfully created user {UserId} with role {Role} and tier {Tier}",
-            request.AdminUserId, newUser.Id, newUser.Role, newUser.Tier);
+ 
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Admin {AdminId} successfully created user {UserId} with role {Role} and tier {Tier}",
+                request.AdminUserId, newUser.Id, newUser.Role, newUser.Tier);
+        }
 
         return Result<AdminUserSummaryDto>.Success(new AdminUserSummaryDto(
             Id: newUser.Id,

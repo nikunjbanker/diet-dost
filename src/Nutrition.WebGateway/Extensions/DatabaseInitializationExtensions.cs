@@ -26,8 +26,12 @@ namespace Nutrition.WebGateway.Extensions;
 /// Encapsulates SQLite database schema verification, PRAGMA migrations,
 /// and deterministic seeding of tier policies and demo accounts.
 /// </summary>
-public static class DatabaseInitializationExtensions
+public static partial class DatabaseInitializationExtensions
 {
+    private static readonly string[] ScriptSeparators = [";\r\n", ";\n"];
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^[a-zA-Z0-9_]+$")]
+    private static partial System.Text.RegularExpressions.Regex ValidIdentifierRegex();
 
     public static async Task InitializeAndSeedDatabaseAsync(this IApplicationBuilder app, IConfiguration configuration)
     {
@@ -76,15 +80,15 @@ public static class DatabaseInitializationExtensions
         if (!mealsExist)
         {
             var createScript = db.Database.GenerateCreateScript();
-            var rawStatements = createScript.Split(new[] { ";\r\n", ";\n" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var rawStatements = createScript.Split(ScriptSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             foreach (var rawStatement in rawStatements)
             {
                 if (string.IsNullOrWhiteSpace(rawStatement)) continue;
                 try
                 {
-#pragma warning disable EF1003 // EF Core schema create script execution is internally generated and sanitized
+#pragma warning disable CA2100, EF1003 // Raw statement originates directly from internally generated EF Core DbContext CreateScript and is sanitized
                     await db.Database.ExecuteSqlRawAsync(rawStatement + ";");
-#pragma warning restore EF1003
+#pragma warning restore CA2100, EF1003
                 }
                 catch
                 {
@@ -282,7 +286,7 @@ public static class DatabaseInitializationExtensions
             return;
         }
 
-        if (!System.Text.RegularExpressions.Regex.IsMatch(tableName, @"^[a-zA-Z0-9_]+$"))
+        if (!ValidIdentifierRegex().IsMatch(tableName))
         {
             throw new ArgumentException("Invalid table name identifier", nameof(tableName));
         }
