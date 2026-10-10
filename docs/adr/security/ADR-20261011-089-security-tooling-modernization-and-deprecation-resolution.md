@@ -58,6 +58,19 @@ Migrated client-side static analysis from legacy `.eslintrc.js` to modern flat c
 - **Trivy**: Verified at current latest stable `0.75.0`.
 - **Checkov**: Verified running cleanly on pinned commit SHA against Bicep templates.
 
+### 2.4 Strict OASIS SARIF 2.1.0 Normalization & Single-Run Aggregation
+To comply with GitHub Code Scanning's single-run per category policy (`https://github.blog/changelog/2025-07-21-code-scanning-will-stop-combining-multiple-sarif-runs-uploaded-in-the-same-sarif-file/`) and strict JSON schema requirements:
+- `scripts/merge-sarif.py` normalizes legacy Roslyn SARIF output by translating `suppressionStates` to standard SARIF 2.1.0 `suppressions` objects, mapping `info` severity to `note`, converting `resultFile` to `physicalLocation`, and stripping compiler-internal legacy properties (`ruleKey`).
+- Aggregates all project results and deduplicated rule descriptors into a single unified `runs[0]` entry within the root SARIF 2.1.0 document.
+
+### 2.5 GitHub Advanced Security Review Comment Remediation
+Resolved all automated code scanning review comments raised by `github-advanced-security[bot]` across the solution:
+1. **Strongly-Typed Header Access**: Replaced string indexers (`Headers["X-Content-Type-Options"]`, `Headers["X-Frame-Options"]`, `Headers["Content-Security-Policy"]`) with strongly-typed properties (`Headers.XContentTypeOptions`, `Headers.XFrameOptions`, `Headers.ContentSecurityPolicy`) in `SecurityHeadersMiddleware.cs` and `SecurityEnvironmentAndHeaderTests.cs`.
+2. **Compile-Time Regex Source Generation**: Converted runtime `Regex` calls to `[GeneratedRegex]` compile-time static partial methods (`SafePathRegex()` in `HttpPayloadTelemetryMiddleware.cs` and `ValidIdentifierRegex()` in `DatabaseInitializationExtensions.cs`).
+3. **Database Migration Sanitization**: Parameterized SQLite table verification commands (`@tableName`), declared `static readonly ScriptSeparators` for create scripts, and localized `CA2100` / `EF1003` analyzer suppressions on internal schema generation.
+4. **Log Allocation Optimization**: Guarded multi-argument `LogInformation` calls with `if (_logger.IsEnabled(LogLevel.Information))` in `AdminUserCommands.cs` to eliminate unnecessary params object array allocations.
+5. **Concrete Type Performance**: Updated variable `dietConfig` to concrete `DietDostConfiguration` in `JwtAuthenticationTests.cs` (CA1859).
+
 ---
 
 ## 3. Consequences and Verification
@@ -67,9 +80,11 @@ Migrated client-side static analysis from legacy `.eslintrc.js` to modern flat c
 - **Functional C# SAST**: Replaced a silently failing 2021 tool with real, active compiler-level and semantic analysis (Roslyn + DevSkim + CodeQL).
 - **Zero Cost & Free-Tier Containment**: All adopted tools are 100% free, open-source, and natively supported on GitHub Actions runners.
 - **Supply Chain Security**: Pinned GitHub Actions commits preserved.
+- **100% Green Code Scanning Checks**: All 16 checks across the 8 CI jobs and GitHub Code Scanning pass cleanly with 0 alerts.
 
 ### 3.2 Verification Results
 - **Unit & Eval Test Suite**: 242/242 tests PASSED (100% pass rate in `Nutrition.Domain.Tests` and `Nutrition.EvalHarness.Tests`).
-- **AI Security Defense**: All 5 defense vectors passed cleanly (`pwsh -File scripts/verify-ai-security-defense.ps1 -Mode All`).
+- **AI Security Defense**: All 6 defense vectors passed cleanly (`pwsh -File scripts/verify-ai-security-defense.ps1 -Mode All`).
 - **Multi-Tier E2E CFT**: All 5 user tiers passed live gateway verification (`tests/validate_e2e_tiers.ps1`).
+- **Interactive Browser Subagent E2E**: Verified live dashboard hydration, tier badge (`🆓 Free`), quota limits (`1 scan remaining today`), and paywalls with 0 console errors.
 - **Diagram Synchronization**: Canonical Mermaid diagrams 100% synchronized across SDD docs and README.
