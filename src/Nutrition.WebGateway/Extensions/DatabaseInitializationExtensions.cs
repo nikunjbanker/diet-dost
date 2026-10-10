@@ -291,7 +291,7 @@ public static class DatabaseInitializationExtensions
 
         if (!columnExists)
         {
-#pragma warning disable EF1002
+#pragma warning disable EF1002 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
             await db.Database.ExecuteSqlRawAsync($"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};");
 #pragma warning restore EF1002
         }

@@ -150,6 +150,8 @@ The active register is canonically maintained in [`docs/adr/README.md`](file:///
 | **ADR-078** | Sole-Authority Governance for Secrets and Environment Variables Restricted to @nikunjbanker | `ACCEPTED` | [`ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-078-sole-authority-governance-for-secrets-and-environment-variables.md) |
 | **ADR-079** | Remediation of CodeQL Code Scanning Security Alerts | `ACCEPTED` | [`ADR-20261010-079-remediation-of-codeql-code-scanning-security-alerts.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-079-remediation-of-codeql-code-scanning-security-alerts.md) |
 | **ADR-080** | ESLint Code Scanning Workflow and SARIF Integration | `ACCEPTED` | [`ADR-20261010-080-eslint-code-scanning-workflow-and-sarif-integration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-080-eslint-code-scanning-workflow-and-sarif-integration.md) |
+| **ADR-081** | Git Code Scanning, PR Validation, and Pre-Deployment Security Gates | `ACCEPTED` | [`ADR-20261010-081-git-code-scanning-and-pre-deployment-security-validation-pipeline.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-081-git-code-scanning-and-pre-deployment-security-validation-pipeline.md) |
+| **ADR-082** | AI-Based Development Security Defense, Content Safety Shield & Pre-Commit Gating | `ACCEPTED` | [`ADR-20261010-082-ai-development-defense-content-safety-and-pre-commit-gating.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261010-082-ai-development-defense-content-safety-and-pre-commit-gating.md) |
 
 
 ---

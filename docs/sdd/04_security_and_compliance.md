@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -96,4 +96,18 @@ public static (bool IsValid, string? ErrorMessage, string? MimeType) ValidateIma
     - Otherwise $\to$ forwards to `CookieAuthenticationDefaults.AuthenticationScheme`.
   - Expiration: Configurable via `Jwt:ExpiryMinutes` (default: 1440 minutes = 24h) with 30-second clock skew tolerance.
   - Expired or tampered tokens return structured HTTP 401 Unauthorized without HTML redirection loops.
+
+---
+
+## 5. Enterprise AI Prompt Shield, Content Safety & Self-Learning Protection (OWASP Top 10 for LLM)
+
+- **Zero Harmful / Violent / Sexual / Communal Content Policy**: Every prompt constructed or processed in the Diet-Dost solution MUST pass content safety. No harmful, violent, sexual, or communal hate speech / religious disharmony content is permitted into model prompts.
+- **Pre-Flight Prompt Shield (`PromptShieldValidator`)**: Intercepts natural language inputs before external API dispatch or local execution. Detects and rejects prompt injections, role-play jailbreaks, delimiter tampering, and dangerous keywords with zero token spend:
+  - *Harmful & Violent Content*: Weapons, murder, physical violence, and self-harm rejected.
+  - *Sexually Explicit Content*: Adult, erotic, and pornographic terms rejected.
+  - *Communal & Hate Speech*: Communal violence, religious hatred, and sectarian slurs rejected.
+  - *Prompt Injections & Jailbreaks*: Role override ("DAN"), system override, and prompt extraction attempts rejected.
+- **Continuous Learned Memory & Self-Learning Data Poisoning Defense**: User feedback retraining submissions (`ProcessFeedbackRetrainingAsync`) are validated against adversarial data poisoning guardrails to preserve adaptive heuristics integrity.
+- **Google AI StrictSafetySettings**: Google Gemini API payloads declare explicit `safetySettings` blocking harassment, hate speech, sexually explicit, dangerous content, and civic integrity at `BLOCK_LOW_AND_ABOVE`.
+- **Pre-Commit and CI Gating**: Automated validator (`verify-ai-security-defense.ps1`) runs on `.githooks/pre-commit` and as `ai-security-defense` job in `security-scan.yml` before any commit or cloud deployment is permitted.
 

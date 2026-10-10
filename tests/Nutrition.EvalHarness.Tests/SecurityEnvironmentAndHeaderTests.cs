@@ -184,6 +184,7 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("/.github/workflows/                             @nikunjbanker", codeownersContent);
         Assert.Contains("/.github/workflows/azure-app-deploy.yml         @nikunjbanker", codeownersContent);
         Assert.Contains("/.github/workflows/azure-infra-deploy.yml        @nikunjbanker", codeownersContent);
+        Assert.Contains("/.github/workflows/security-scan.yml             @nikunjbanker", codeownersContent);
         Assert.Contains("* @nikunjbanker", codeownersContent);
     }
 
@@ -210,6 +211,47 @@ public class SecurityEnvironmentAndHeaderTests
         // AGENTS.md rule 17 governance assertion
         Assert.Contains("Mandatory Secret & Environment Variable Governance Rule (Sole Authority: @nikunjbanker)", agentsContent);
         Assert.Contains("Strictly and exclusively `@nikunjbanker`", agentsContent);
+    }
+
+    [Fact]
+    public void DeploymentWorkflows_MustGateOnSecurityScan_AndPinActionCommitHashes()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var appWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-app-deploy.yml");
+        var infraWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-infra-deploy.yml");
+        var secScanWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "security-scan.yml");
+
+        Assert.True(File.Exists(appWorkflowPath), $"Expected workflow file at {appWorkflowPath}");
+        Assert.True(File.Exists(infraWorkflowPath), $"Expected workflow file at {infraWorkflowPath}");
+        Assert.True(File.Exists(secScanWorkflowPath), $"Expected workflow file at {secScanWorkflowPath}");
+
+        var appContent = File.ReadAllText(appWorkflowPath);
+        var infraContent = File.ReadAllText(infraWorkflowPath);
+        var secScanContent = File.ReadAllText(secScanWorkflowPath);
+
+        // Pre-deployment and pre-provisioning security-scan gating assertion
+        Assert.Contains("uses: ./.github/workflows/security-scan.yml", appContent);
+        Assert.Contains("needs: pre-deployment-security-scan", appContent);
+        Assert.Contains("uses: ./.github/workflows/security-scan.yml", infraContent);
+        Assert.Contains("needs: pre-provisioning-security-scan", infraContent);
+
+        // Security gate summary PR comment assertion
+        Assert.Contains("gh pr comment", secScanContent);
+        Assert.Contains("pull-requests: write", secScanContent);
+
+        // Supply chain security assertion: All actions in security-scan must be pinned to 40-character commit SHAs
+        Assert.Contains("actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", secScanContent);
+        Assert.Contains("actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852", secScanContent);
+        Assert.Contains("github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab", secScanContent);
+        Assert.Contains("aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2", secScanContent);
+        Assert.Contains("bridgecrewio/checkov-action@b406dfe80a3d33640d5b5deb4341f2475cc016a0", secScanContent);
+
+        // AGENTS.md Rule 18 governance assertion
+        var agentsMdPath = Path.Combine(repoRoot, "AGENTS.md");
+        Assert.True(File.Exists(agentsMdPath));
+        var agentsContent = File.ReadAllText(agentsMdPath);
+        Assert.Contains("Immutable Security-Scan Pipeline & Mandatory Pre-Execution Security Gating Rule", agentsContent);
+        Assert.Contains("PERMANENT AND IMMUTABLE", agentsContent);
     }
 }
 

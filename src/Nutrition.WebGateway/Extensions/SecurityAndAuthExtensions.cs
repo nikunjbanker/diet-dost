@@ -131,7 +131,14 @@ public static class SecurityAndAuthExtensions
             if (env.IsDevelopment())
             {
                 options.AddPolicy("AppCorsPolicy", policy =>
-                    policy.SetIsOriginAllowed(_ => true)
+                    policy.SetIsOriginAllowed(origin =>
+                          {
+                              if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                              {
+                                  return uri.Host is "localhost" or "127.0.0.1";
+                              }
+                              return false;
+                          })
                           .AllowAnyMethod()
                           .AllowAnyHeader()
                           .AllowCredentials());

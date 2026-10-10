@@ -50,10 +50,18 @@ on:
 permissions:
   id-token: write
   contents: read
+  security-events: write
+  actions: read
 
 jobs:
+  pre-deployment-security-scan:
+    name: Mandatory Pre-Deployment Security Gates
+    uses: ./.github/workflows/security-scan.yml
+    secrets: inherit
+
   build-test-and-deploy:
     name: Aspire Application Build, Security Gate & Deploy
+    needs: pre-deployment-security-scan
     if: github.actor == 'nikunjbanker'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
@@ -63,10 +71,10 @@ jobs:
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
     steps:
       - name: 1. Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: 2. Setup .NET 11 SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852 # v4.2.0
         with:
           dotnet-version: '11.0.x'
 
@@ -88,6 +96,31 @@ jobs:
           fi
           echo "✅ OWASP Dependency Security Gate Passed: 0 known vulnerabilities found."
 
+      - name: 4b. Pre-Deployment Security Gate - Secret Leak Scan (Gitleaks)
+        run: |
+          echo "Scanning workspace for accidental secret or credential leaks..."
+          GITLEAKS_VERSION="8.18.4"
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          rm -f gitleaks.tar.gz
+          gitleaks detect --source . --verbose --no-git --redact
+          echo "✅ Pre-Deployment Secret Gate Passed: 0 secrets detected."
+
+      - name: 4c. Pre-Deployment Security Gate - Client Code Static Analysis (ESLint)
+        run: |
+          echo "Validating client-side JavaScript assets with ESLint..."
+          npm install eslint@8.57.0
+          npx eslint . --config .eslintrc.js --ext .js --no-error-on-unmatched-pattern
+          echo "✅ Pre-Deployment ESLint Gate Passed: 0 code quality violations."
+
+      - name: 4d. Pre-Deployment Security Gate - Bicep IaC Schema & Compilation Validation
+        run: |
+          echo "Validating Bicep cloud infrastructure templates..."
+          az bicep build --file infra/infra.bicep
+          az bicep build --file infra/app.bicep
+          echo "✅ Pre-Deployment Bicep IaC Gate Passed: Templates compiled successfully."
+
       - name: 5. Execute Full Security & Functional Test Suites (100% Pass Standard)
         run: |
           echo "Running 170+ unit, domain, and security gating test suites..."
@@ -101,7 +134,7 @@ jobs:
 
       - name: 7. Azure CLI Authentication (OIDC / Federated Credentials)
         if: ${{ vars.AZURE_CLIENT_ID != '' || secrets.AZURE_CLIENT_ID != '' }}
-        uses: azure/login@v2
+        uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID || secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
@@ -109,7 +142,7 @@ jobs:
 
       - name: 7b. Azure CLI Authentication (Fallback: Service Principal JSON)
         if: ${{ (vars.AZURE_CLIENT_ID == '' && secrets.AZURE_CLIENT_ID == '') && secrets.AZURE_CREDENTIALS != '' }}
-        uses: azure/login@v2
+        uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
@@ -144,7 +177,7 @@ jobs:
       - name: 9. Ensure & Provision Required Cloud Infrastructure (Aspire Foundation)
         if: ${{ inputs.provisionInfra != false }}
         id: deploy-infra
-        uses: azure/arm-deploy@v3
+        uses: Azure/arm-deploy@a1361c2c2cd398621955b16ca32e01c65ea340f5 # v2.0.0
         with:
           subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
@@ -296,7 +329,7 @@ jobs:
           podman push "$IMAGE_LATEST"
 
       - name: 14. Deploy Application Container App via Bicep
-        uses: azure/arm-deploy@v3
+        uses: Azure/arm-deploy@a1361c2c2cd398621955b16ca32e01c65ea340f5 # v2.0.0
         with:
           subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ steps.ensure-rg.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
