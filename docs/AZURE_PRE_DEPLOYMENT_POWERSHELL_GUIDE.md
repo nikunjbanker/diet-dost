@@ -70,9 +70,9 @@
 | **Level 1**<br/>(Subscription) | **Contributor** | Azure RBAC Role | **CRITICAL** | **What**: Subscription-level resource provisioning role.<br/>**Why**: Allows the pipeline to provision Resource Groups, Container Apps, Key Vault, and Storage Accounts. | Executed in Phase 1 via `az role assignment create --role Contributor`. |
 | **Level 1**<br/>(Subscription) | **Role Based Access Control Administrator** | Azure RBAC Role | **CRITICAL** | **What**: Permission to grant Azure RBAC roles.<br/>**Why**: Bicep assigns `Key Vault Secrets User` to the Container App's User-Assigned Managed Identity. Without this, deployment halts with `AuthorizationFailed`. | Executed in Phase 1 via `az role assignment create --role "Role Based Access Control Administrator"`. |
 | **Level 1**<br/>(Subscription) | **Key Vault Secrets Officer** | Azure RBAC Role | **CRITICAL** | **What**: Permission to read and write secrets in Azure Key Vault.<br/>**Why**: Allows Step 10b of deployment workflow to push `Jwt--Key` and `AI--GoogleAI--ApiKey` into Key Vault. | Executed in Phase 1 via `az role assignment create --role "Key Vault Secrets Officer"`. |
-| **Level 2**<br/>(GitHub Env) | `AZURE_CLIENT_ID` | GUID (`35ae72c4-...`) | **YES** | **What**: Service Principal Application Client ID.<br/>**Why**: Required by `azure/login@v2` to identify the workload identity. | Configured in GitHub Environment `dev`. |
-| **Level 2**<br/>(GitHub Env) | `AZURE_SUBSCRIPTION_ID` | GUID (`2b540f50-...`) | **YES** | **What**: Azure Subscription ID.<br/>**Why**: Directs Azure CLI and ARM deployment to the target subscription. | Configured in GitHub Environment `dev`. |
-| **Level 2**<br/>(GitHub Env) | `AZURE_TENANT_ID` | GUID (`46eec2d9-...`) | **YES** | **What**: Microsoft Entra Tenant ID.<br/>**Why**: Identifies the directory for authentication token issuance. | Configured in GitHub Environment `dev`. |
+| **Level 2**<br/>(GitHub Env) | `AZURE_CLIENT_ID` | GUID (`<app-client-id>`) | **YES** | **What**: Service Principal Application Client ID.<br/>**Why**: Required by `azure/login@v2` to identify the workload identity. | Dynamically retrieved via `az ad app list` or GitHub Env `dev`. |
+| **Level 2**<br/>(GitHub Env) | `AZURE_SUBSCRIPTION_ID` | GUID (`<subscription-id>`) | **YES** | **What**: Azure Subscription ID.<br/>**Why**: Directs Azure CLI and ARM deployment to the target subscription. | Dynamically retrieved via `az account show` or GitHub Env `dev`. |
+| **Level 2**<br/>(GitHub Env) | `AZURE_TENANT_ID` | GUID (`<tenant-id>`) | **YES** | **What**: Microsoft Entra Tenant ID.<br/>**Why**: Identifies the directory for authentication token issuance. | Dynamically retrieved via `az account show` or GitHub Env `dev`. |
 | **Level 2**<br/>(GitHub Secret) | `JWT_KEY` | $\ge 32$-byte cryptographic key | **CRITICAL** | **What**: HMAC-SHA256 signing secret for authentication tokens.<br/>**Why**: In Production/Staging, the app enforces strict startup validation and **terminates the container immediately** if missing or $< 32$ bytes. | Generated via PowerShell .NET CSP and saved via `gh secret set`. |
 | **Level 2**<br/>(GitHub Secret) | `GEMINI_API_KEY` | `AIzaSy...` (Google API Key) | **YES** | **What**: Google AI Gemini API secret.<br/>**Why**: Powers AI food recognition, macro breakdown, and Indian dish estimation. | Saved via `gh secret set GEMINI_API_KEY`. |
 | **Level 3**<br/>(Key Vault) | `Jwt--Key` | Key Vault Secret | **AUTOMATIC** | **What**: Mirrored secret pulled at runtime by .NET configuration provider.<br/>**Why**: Keeps credentials out of code and container environment variables. | Synced automatically by pipeline Step 10b. |
@@ -89,31 +89,39 @@
 
 Open your PowerShell terminal (PowerShell 7 `pwsh` or Windows PowerShell) and execute this block once.  
 > [!NOTE]
-> All GitHub CLI (`gh`) commands explicitly declare `--repo nikunjbanker/diet-dost`. This prevents any `fatal: not a git repository` errors regardless of which directory your terminal is currently in.
+> All cloud IDs (Subscription ID, Tenant ID, App Registration ID) are **dynamically resolved from your active Azure session**. Only authorized users authenticated via `az login` can retrieve these identifiers.
 
 ```powershell
 # ==============================================================================
-# Phase 0: Common Session Variables
+# Phase 0: Common Session Variables & Dynamic Azure Cloud Context
 # ==============================================================================
 $ErrorActionPreference = "Stop"
 
-# 1. Target Repository
-$GitHubRepo      = "nikunjbanker/diet-dost"
-$EnvironmentName = "dev"
-$GitBranch       = "feature/aca-deployment-sqlite-smb-dev-domain"
+# 1. Target Repository & Branch
+$GitHubRepo        = "nikunjbanker/diet-dost"
+$EnvironmentName   = "dev"
+$GitBranch         = "feature/aca-deployment-sqlite-smb-dev-domain"
 
-# 2. Azure Subscription & Tenant Details
-$SubscriptionId  = "2b540f50-1a74-4019-945a-3cc48a284a1a"
-$TenantId        = "46eec2d9-d80f-426f-8e22-594361873d90"
+# 2. Azure Target Resource Group & Location
+$ResourceGroup     = "rg-dietdost-dev"
+$Location          = "centralindia"
 
-# 3. Service Principal Client ID (GitHub OIDC identity)
-$ClientId        = "35ae72c4-4f7c-4a26-a589-c805f168db32"
+# 3. Authenticate Azure CLI
+Write-Host "Authenticating Azure CLI..." -ForegroundColor Cyan
+az login
+$SubscriptionId    = az account show --query "id" -o tsv
+$TenantId          = az account show --query "tenantId" -o tsv
+az account set --subscription $SubscriptionId
 
-# 4. Azure Target Resource Group & Location
-$ResourceGroup   = "rg-dietdost-dev"
-$Location        = "centralindia"
+# 4. Dynamically Resolve Entra ID App Registration Client ID
+$AppRegistrationId = az ad app list --display-name "app-dietdost-web" --query "[0].appId" -o tsv
+if (-not $AppRegistrationId) {
+    $AppRegistrationId = az ad sp list --display-name "app-dietdost-web" --query "[0].appId" -o tsv
+}
 
-Write-Host "✅ Variables loaded for environment: $EnvironmentName on repository $GitHubRepo" -ForegroundColor Green
+Write-Host "✅ Active Subscription : $(az account show --query 'name' -o tsv) ($SubscriptionId)" -ForegroundColor Green
+Write-Host "✅ Active Tenant ID    : $TenantId" -ForegroundColor Green
+Write-Host "✅ App Registration ID : $AppRegistrationId" -ForegroundColor Green
 ```
 
 ---
@@ -123,14 +131,8 @@ Write-Host "✅ Variables loaded for environment: $EnvironmentName on repository
 Execute these steps in PowerShell to establish passwordless OIDC trust and assign mandatory RBAC roles:
 
 ```powershell
-# 1. Authenticate Azure CLI and set active subscription
-Write-Host "Logging into Azure CLI..." -ForegroundColor Cyan
-az login
-az account set --subscription $SubscriptionId
-Write-Host "Active Subscription: $(az account show --query 'name' -o tsv) ($SubscriptionId)" -ForegroundColor Green
-
-# 2. Retrieve Service Principal Application Object ID
-$AppObjectId = az ad app show --id $ClientId --query "id" -o tsv
+# 1. Retrieve Service Principal Application Object ID dynamically
+$AppObjectId = az ad app show --id $AppRegistrationId --query "id" -o tsv
 Write-Host "App Object ID: $AppObjectId" -ForegroundColor Cyan
 
 # 3. Create OIDC Federated Identity Credential for GitHub Environment 'dev'
@@ -178,13 +180,13 @@ Remove-Item -Path $tempFileBranch -Force -ErrorAction SilentlyContinue
 $Scope = "/subscriptions/$SubscriptionId"
 
 Write-Host "Granting 'Contributor' role..." -ForegroundColor Cyan
-az role assignment create --assignee $ClientId --role "Contributor" --scope $Scope 2>$null || Write-Host "ℹ️ Contributor role already assigned." -ForegroundColor Yellow
+az role assignment create --assignee $AppRegistrationId --role "Contributor" --scope $Scope 2>$null || Write-Host "ℹ️ Contributor role already assigned." -ForegroundColor Yellow
 
 Write-Host "Granting 'Role Based Access Control Administrator' role..." -ForegroundColor Cyan
-az role assignment create --assignee $ClientId --role "Role Based Access Control Administrator" --scope $Scope 2>$null || Write-Host "ℹ️ RBAC Administrator role already assigned." -ForegroundColor Yellow
+az role assignment create --assignee $AppRegistrationId --role "Role Based Access Control Administrator" --scope $Scope 2>$null || Write-Host "ℹ️ RBAC Administrator role already assigned." -ForegroundColor Yellow
 
 Write-Host "Granting 'Key Vault Secrets Officer' role..." -ForegroundColor Cyan
-az role assignment create --assignee $ClientId --role "Key Vault Secrets Officer" --scope $Scope 2>$null || Write-Host "ℹ️ Key Vault Secrets Officer role already assigned." -ForegroundColor Yellow
+az role assignment create --assignee $AppRegistrationId --role "Key Vault Secrets Officer" --scope $Scope 2>$null || Write-Host "ℹ️ Key Vault Secrets Officer role already assigned." -ForegroundColor Yellow
 
 Write-Host "🎉 Phase 1 Complete: Azure Entra ID & RBAC Roles configured successfully!" -ForegroundColor Green
 ```
@@ -201,7 +203,7 @@ gh auth status
 
 # 2. Set / Confirm GitHub Environment Variables
 Write-Host "Configuring GitHub Environment Variables for '$EnvironmentName'..." -ForegroundColor Cyan
-gh variable set AZURE_CLIENT_ID --repo $GitHubRepo --env $EnvironmentName --body $ClientId
+gh variable set AZURE_CLIENT_ID --repo $GitHubRepo --env $EnvironmentName --body $AppRegistrationId
 gh variable set AZURE_SUBSCRIPTION_ID --repo $GitHubRepo --env $EnvironmentName --body $SubscriptionId
 gh variable set AZURE_TENANT_ID --repo $GitHubRepo --env $EnvironmentName --body $TenantId
 gh variable set SUPER_ADMIN_EMAIL --repo $GitHubRepo --env $EnvironmentName --body "superadmin@dietdost.app"

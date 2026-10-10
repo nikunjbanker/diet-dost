@@ -12,13 +12,13 @@
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
-    [string]$SubscriptionId = "2b540f50-1a74-4019-945a-3cc48a284a1a",
-    [string]$TenantId       = "46eec2d9-d80f-426f-8e22-594361873d90",
-    [string]$ClientId       = "35ae72c4-4f7c-4a26-a589-c805f168db32",
-    [string]$GitHubRepo     = "nikunjbanker/diet-dost",
-    [string]$EnvironmentName = "dev",
-    [string]$GitBranch      = "feature/aca-deployment-sqlite-smb-dev-domain",
-    [string]$GeminiApiKey   = "",
+    [string]$SubscriptionId    = "",
+    [string]$TenantId          = "",
+    [string]$AppRegistrationId = "",
+    [string]$GitHubRepo        = "nikunjbanker/diet-dost",
+    [string]$EnvironmentName   = "dev",
+    [string]$GitBranch         = "feature/aca-deployment-sqlite-smb-dev-domain",
+    [string]$GeminiApiKey      = "",
     [switch]$SkipAzLogin,
     [switch]$DryRun
 )
@@ -31,8 +31,6 @@ Write-Host "====================================================================
 Write-Host "Repository   : $GitHubRepo" -ForegroundColor Yellow
 Write-Host "Environment  : $EnvironmentName" -ForegroundColor Yellow
 Write-Host "Branch       : $GitBranch" -ForegroundColor Yellow
-Write-Host "Subscription : $SubscriptionId" -ForegroundColor Yellow
-Write-Host "Client ID    : $ClientId" -ForegroundColor Yellow
 Write-Host "------------------------------------------------------------------------------"
 
 # ------------------------------------------------------------------------------
@@ -52,9 +50,9 @@ if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
 Write-Host "  ✅ GitHub CLI detected." -ForegroundColor Green
 
 # ------------------------------------------------------------------------------
-# 2. Azure CLI Authentication & Subscription Context
+# 2. Azure CLI Authentication & Dynamic Context Resolution
 # ------------------------------------------------------------------------------
-Write-Host "`n[2/5] Checking Azure Authentication & Subscription..." -ForegroundColor Cyan
+Write-Host "`n[2/5] Checking Azure Authentication & Resolving Cloud Context..." -ForegroundColor Cyan
 
 if (-not $SkipAzLogin) {
     $currentAccount = az account show --query "id" -o tsv 2>$null
@@ -64,16 +62,43 @@ if (-not $SkipAzLogin) {
     }
 }
 
+# Dynamically resolve active subscription and tenant from authenticated session
+if ([string]::IsNullOrWhiteSpace($SubscriptionId)) {
+    $SubscriptionId = (az account show --query "id" -o tsv)
+}
+if ([string]::IsNullOrWhiteSpace($TenantId)) {
+    $TenantId = (az account show --query "tenantId" -o tsv)
+}
+
 az account set --subscription $SubscriptionId
 $activeSubName = az account show --query "name" -o tsv
-Write-Host "  ✅ Azure Subscription set: $activeSubName ($SubscriptionId)" -ForegroundColor Green
+Write-Host "  ✅ Azure Subscription dynamically resolved: $activeSubName ($SubscriptionId)" -ForegroundColor Green
+Write-Host "  ✅ Azure Tenant ID dynamically resolved: $TenantId" -ForegroundColor Green
+
+# Dynamically resolve App Registration Client ID from authenticated session
+if ([string]::IsNullOrWhiteSpace($AppRegistrationId)) {
+    Write-Host "  Dynamically querying Entra ID for deployment App Registration..." -ForegroundColor Yellow
+    if ($env:AZURE_CLIENT_ID) {
+        $AppRegistrationId = $env:AZURE_CLIENT_ID
+    } else {
+        $AppRegistrationId = (az ad app list --all --query "[?contains(displayName, 'dietdost')].appId" -o tsv 2>$null | Select-Object -First 1)
+        if (-not $AppRegistrationId) {
+            $AppRegistrationId = (az ad sp list --all --query "[?contains(displayName, 'dietdost')].appId" -o tsv 2>$null | Select-Object -First 1)
+        }
+    }
+}
+
+if ([string]::IsNullOrWhiteSpace($AppRegistrationId)) {
+    throw "Unable to dynamically resolve AppRegistrationId from active Azure session. Please run 'az login' with an authorized account or pass -AppRegistrationId <id>."
+}
+Write-Host "  ✅ App Registration Client ID dynamically resolved: $AppRegistrationId" -ForegroundColor Green
 
 # ------------------------------------------------------------------------------
 # 3. Entra ID App Federated Credentials & Subscription RBAC Roles
 # ------------------------------------------------------------------------------
 Write-Host "`n[3/5] Configuring Entra ID Federated Credentials & Subscription RBAC..." -ForegroundColor Cyan
 
-$AppObjectId = az ad app show --id $ClientId --query "id" -o tsv
+$AppObjectId = az ad app show --id $AppRegistrationId --query "id" -o tsv
 Write-Host "  Service Principal App Object ID: $AppObjectId" -ForegroundColor Yellow
 
 # Helper function to create federated credential safely
@@ -124,7 +149,7 @@ foreach ($role in $roles) {
         Write-Host "  [DryRun] Would assign role '$role' on scope $Scope" -ForegroundColor Magenta
     } else {
         Write-Host "  Verifying role '$role'..." -ForegroundColor Yellow
-        az role assignment create --assignee $ClientId --role $role --scope $Scope 2>$null
+        az role assignment create --assignee $AppRegistrationId --role $role --scope $Scope 2>$null
         Write-Host "  ✅ Role '$role' confirmed." -ForegroundColor Green
     }
 }
@@ -136,7 +161,7 @@ Write-Host "`n[4/5] Configuring GitHub Environment Variables & Secrets..." -Fore
 
 # 4a. Environment Variables
 $envVars = @{
-    "AZURE_CLIENT_ID"             = $ClientId
+    "AZURE_CLIENT_ID"             = $AppRegistrationId
     "AZURE_SUBSCRIPTION_ID"        = $SubscriptionId
     "AZURE_TENANT_ID"              = $TenantId
     "SUPER_ADMIN_EMAIL"           = "superadmin@dietdost.app"

@@ -1,3 +1,4 @@
+graph LR
 %%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
@@ -5,7 +6,7 @@
 %% in compliance with, at your election, the "GNU Affero General Public
 %% License v3.0 only" or the "Server Side Public License, v 1".
 %%
-graph LR
+
     subgraph CI_CD_Security_Gate ["Pre-Commit & Pre-Deployment Security Gate (Zero-Deployment-on-Failure)"]
         Gitleaks["Gitleaks: Secrets & Credentials"]
         ESLint["ESLint: Client JS SAST & SARIF"]

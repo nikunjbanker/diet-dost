@@ -137,7 +137,7 @@ subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID 
 
 - **Workflow Validation**: Verified syntax and schema compliance across `.github/workflows/azure-infra-deploy.yml` and `.github/workflows/azure-app-deploy.yml`.
 - **Environment Verification**: Confirmed active environment variables in `dev` via `gh variable list --env dev`:
-  - `AZURE_CLIENT_ID`: `35ae72c4-4f7c-4a26-a589-c805f168db32`
-  - `AZURE_SUBSCRIPTION_ID`: `2b540f50-1a74-4019-945a-3cc48a284a1a`
-  - `AZURE_TENANT_ID`: `46eec2d9-d80f-426f-8e22-594361873d90`
+  - `AZURE_CLIENT_ID`: `<azure-client-id>` (dynamically resolved)
+  - `AZURE_SUBSCRIPTION_ID`: `<azure-subscription-id>` (dynamically resolved)
+  - `AZURE_TENANT_ID`: `<azure-tenant-id>` (dynamically resolved)
 - **Build & Tests**: Solution builds with 0 warnings, 0 errors, and passes all 206 unit/integration tests.

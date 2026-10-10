@@ -1,3 +1,4 @@
+graph TD
 %%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
@@ -5,7 +6,7 @@
 %% in compliance with, at your election, the "GNU Affero General Public
 %% License v3.0 only" or the "Server Side Public License, v 1".
 %%
-graph TD
+
     subgraph CICD_Pipeline ["GitHub Actions Automated CI/CD & Security Gate"]
         SecurityScan["1. Security & Code Scanning Gate (security-scan.yml)<br/>- Gitleaks | ESLint | SecurityCodeScan (All 7 Projs)<br/>- Trivy | Checkov | actionlint | AI Defense (5 Vectors)<br/>(Blocks Deployment on Any Failure)"]
         InfraDeploy["2. Infrastructure Deployment (azure-infra-deploy.yml)<br/>- Bicep IaC: ACA Env, Key Vault, Storage SMB, MI, ACR<br/>- Passwordless Azure OIDC Pipeline Authentication"]
