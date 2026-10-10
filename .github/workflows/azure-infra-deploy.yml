@@ -110,7 +110,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: 5b. Azure CLI Authentication (Fallback: Service Principal JSON)
+      - name: '5b. Azure CLI Authentication (Fallback: Service Principal JSON)'
         if: ${{ (vars.AZURE_CLIENT_ID == '' && secrets.AZURE_CLIENT_ID == '') && secrets.AZURE_CREDENTIALS != '' }}
         uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:

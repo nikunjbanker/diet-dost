@@ -76,6 +76,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           }
         ] : []
       }
+      registries: !empty(managedIdentityId) ? [
+        {
+          server: split(containerImage, '/')[0]
+          identity: managedIdentityId
+        }
+      ] : []
       secrets: !empty(geminiApiKey) ? [
         {
           name: 'gemini-api-key'

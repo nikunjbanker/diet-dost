@@ -140,7 +140,7 @@ jobs:
           tenant-id: ${{ vars.AZURE_TENANT_ID || secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: 7b. Azure CLI Authentication (Fallback: Service Principal JSON)
+      - name: '7b. Azure CLI Authentication (Fallback: Service Principal JSON)'
         if: ${{ (vars.AZURE_CLIENT_ID == '' && secrets.AZURE_CLIENT_ID == '') && secrets.AZURE_CREDENTIALS != '' }}
         uses: azure/login@d19a4f1b3c068b799dff7574ac265b0144f415fe # v2.2.0
         with:
@@ -321,9 +321,9 @@ jobs:
           IMAGE_TAG="${{ steps.build-image.outputs.image_tag }}"
           IMAGE_LATEST="${{ steps.build-image.outputs.image_latest }}"
 
-          # Login to ACR via Azure CLI credentials using Podman
-          ACR_PASSWORD=$(az acr credential show --name "$ACR_NAME" --query "passwords[0].value" -o tsv)
-          echo "$ACR_PASSWORD" | podman login "${ACR_NAME}.azurecr.io" -u "$ACR_NAME" --password-stdin
+          # Login to ACR via Azure CLI Entra ID token using Podman (zero admin credentials required)
+          ACR_TOKEN=$(az acr login --name "$ACR_NAME" --expose-token --output tsv --query accessToken)
+          echo "$ACR_TOKEN" | podman login "${ACR_NAME}.azurecr.io" -u "00000000-0000-0000-0000-000000000000" --password-stdin
 
           podman push "$IMAGE_TAG"
           podman push "$IMAGE_LATEST"

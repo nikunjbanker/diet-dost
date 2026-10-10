@@ -123,8 +123,7 @@ public class AuthController : ControllerBase
     {
         if (!_configuration.GetValue<bool>("Auth:AllowRegistration", true))
         {
-            var sanitizedEmail = request.Email?.Replace("\r", string.Empty).Replace("\n", string.Empty);
-            _logger.LogWarning("Blocked registration attempt for {Email} because public sign-up is disabled.", sanitizedEmail);
+            _logger.LogWarning("[SECURITY] Blocked registration attempt because public sign-up is disabled.");
             return StatusCode(StatusCodes.Status403Forbidden, new
             {
                 error = "REGISTRATION_DISABLED",

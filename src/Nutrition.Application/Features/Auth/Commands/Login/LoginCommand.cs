@@ -74,14 +74,14 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
         var isPrivilegedDemo = user.IsPrivilegedDemoAccount || ApplicationUser.IsPrivilegedDemoEmail(identifier);
         if (isPrivilegedDemo && !_appEnvironment.AllowsAdminDemoUsers)
         {
-            _logger.LogWarning("[SECURITY] Blocked login attempt to privileged admin/superadmin demo account in release/deployed mode: {Email}", user.Email);
+            _logger.LogWarning("[SECURITY] Blocked login attempt to privileged admin/superadmin demo account in release/deployed mode for UserId: {UserId}", user.Id);
             return Result<LoginResultDto>.Failure("Admin and SuperAdmin demo accounts are strictly prohibited in released versions.", "DemoAccessForbidden", 403);
         }
 
         var isDemo = user.IsDemoAccount || ApplicationUser.IsDemoEmail(identifier);
         if (isDemo && !_appEnvironment.AllowsDemoUsers)
         {
-            _logger.LogWarning("[SECURITY] Blocked login attempt to demo account outside Debug/Development mode: {Email}", user.Email);
+            _logger.LogWarning("[SECURITY] Blocked login attempt to demo account outside Debug/Development mode for UserId: {UserId}", user.Id);
             return Result<LoginResultDto>.Failure("Demo accounts are strictly disabled in Release mode to prevent data breach.", "DemoAccessForbidden", 403);
         }
 

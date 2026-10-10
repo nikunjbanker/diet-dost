@@ -120,16 +120,22 @@ public class HttpPayloadTelemetryMiddleware
             context.Response.Body = originalBodyStream;
             sw.Stop();
 
-            // Emit structured log with captured payloads
-            var sanitizedPath = path.Replace("\r", string.Empty).Replace("\n", string.Empty);
+            // Emit structured log with metrics and byte sizes (raw payloads stored in OpenTelemetry activity tags)
+            var sanitizedMethod = HttpMethods.IsGet(context.Request.Method) ? "GET"
+                : HttpMethods.IsPost(context.Request.Method) ? "POST"
+                : HttpMethods.IsPut(context.Request.Method) ? "PUT"
+                : HttpMethods.IsDelete(context.Request.Method) ? "DELETE"
+                : "OTHER";
+
+            var safePath = System.Text.RegularExpressions.Regex.Replace(path, @"[^\w\-/\.]", "_");
             _logger.LogInformation(
-                "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms | RequestBody: {RequestBody} | ResponseBody: {ResponseBody}",
-                context.Request.Method,
-                sanitizedPath,
+                "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms (PayloadBytes: {RequestBytes}/{ResponseBytes})",
+                sanitizedMethod,
+                safePath,
                 context.Response.StatusCode,
                 sw.Elapsed.TotalMilliseconds,
-                SanitizeForLog(requestPayload),
-                SanitizeForLog(responsePayload));
+                context.Request.ContentLength ?? 0,
+                responseMemoryStream.Length);
         }
     }
 

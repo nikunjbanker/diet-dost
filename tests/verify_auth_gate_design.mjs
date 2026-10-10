@@ -264,7 +264,7 @@ async function main() {
         })()
     `);
 
-    console.log(`   - Clicked 'Basic Tier' Demo Pill -> Filled Identifier: "${filledCreds.email}" (Field populated: ${filledCreds.isPopulated})`);
+    console.log(`   - Clicked 'Basic Tier' Demo Pill -> Quick-Fill active (Identifier populated: ${Boolean(filledCreds.email)}, Field populated: ${filledCreds.isPopulated})`);
     const credsPass = filledCreds.email === 'basic@dietdost.app' && filledCreds.isPopulated;
     console.log(`   [PASS/FAIL] Demo Quick-Fill: ${credsPass ? 'PASS' : 'FAIL'}`);
 

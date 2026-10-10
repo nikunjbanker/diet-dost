@@ -75,10 +75,9 @@ public class WebBffController : ControllerBase
 
         var sanitizedPeriod = period switch
         {
-            "7D" => "7D",
             "30D" => "30D",
             "90D" => "90D",
-            _ => (period ?? "7D").Replace("\r", string.Empty).Replace("\n", string.Empty)
+            _ => "7D"
         };
 
         _logger.LogInformation("Web BFF dashboard requested for user {UserId} (Tier: {Tier}, Role: {Role}, Period: {Period})",

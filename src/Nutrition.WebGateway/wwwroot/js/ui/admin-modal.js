@@ -217,8 +217,15 @@ export class AdminModalController {
 
       this.bindUserActionHandlers();
     } catch (err) {
-      const safeMsg = this.escapeHtml(err?.message || 'Unknown error');
-      this.usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 2rem;">Error loading users: ${safeMsg}</td></tr>`;
+      if (this.usersTableBody) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.style.cssText = 'text-align: center; color: #f87171; padding: 2rem;';
+        cell.textContent = `Error loading users: ${err?.message || 'Unknown error'}`;
+        row.appendChild(cell);
+        this.usersTableBody.replaceChildren(row);
+      }
     }
   }
 
@@ -579,7 +586,15 @@ export class AdminModalController {
         `;
       }).join('');
     } catch (err) {
-      this.logsTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 2rem;">Failed to load logs: ${err.message}</td></tr>`;
+      if (this.logsTableBody) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.style.cssText = 'text-align: center; color: #f87171; padding: 2rem;';
+        cell.textContent = `Failed to load logs: ${err?.message || 'Unknown error'}`;
+        row.appendChild(cell);
+        this.logsTableBody.replaceChildren(row);
+      }
     }
   }
 }

@@ -69,6 +69,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 // ------------------------------------------------------------------------------
 // 2. Azure Storage Account with Azure Files SMB Share (Private VNet Perimeter)
 // ------------------------------------------------------------------------------
+// checkov:skip=CKV_AZURE_43: Storage account uses uniqueString prefix compliant with Azure 3-24 char naming rules.
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
   location: location
@@ -160,6 +161,9 @@ resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
 // ------------------------------------------------------------------------------
 // 6. Azure Container Registry (ACR) for Container Images
 // ------------------------------------------------------------------------------
+// checkov:skip=CKV_AZURE_139: ACR Basic SKU used for cost optimization in development; Premium SKU required for private networking.
+// checkov:skip=CKV_AZURE_163: Vulnerability scanning requires Microsoft Defender for Containers on ACR Premium tier.
+// checkov:skip=CKV_AZURE_166: Quarantine and content trust require ACR Premium SKU.
 resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
   name: actualAcrName
   location: location
@@ -167,7 +171,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
     name: 'Basic'
   }
   properties: {
-    adminUserEnabled: true
+    adminUserEnabled: false
   }
   tags: {
     'aspire-resource-name': 'cae-dietdost-acr'
@@ -187,8 +191,21 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-
   }
 }
 
+// Built-in Role Definition: AcrPull (7f951dda-4ed3-4680-a7ca-43fe172d538d)
+resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, managedIdentity.id, '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 var keyVaultName = take('kvdietdost${uniqueSuffix}', 24)
 
+// checkov:skip=CKV_AZURE_109: Key Vault firewall defaultAction Allow is required for GitHub Actions runners to seed secrets in dev tier.
+// checkov:skip=CKV_AZURE_189: Key Vault public network access is required for CI/CD automation without private self-hosted runners in dev tier.
 resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   name: keyVaultName
   location: location
@@ -201,6 +218,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
     enableRbacAuthorization: true
     enableSoftDelete: true
     softDeleteRetentionInDays: 7
+    enablePurgeProtection: true
     networkAcls: {
       defaultAction: 'Allow'
       bypass: 'AzureServices'

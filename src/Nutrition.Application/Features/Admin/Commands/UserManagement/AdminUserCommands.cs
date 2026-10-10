@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -289,8 +289,8 @@ public class AdminCreateUserCommandHandler : ICommandHandler<AdminCreateUserComm
 
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Admin {AdminId} successfully created user {Email} with role {Role} and tier {Tier}",
-            request.AdminUserId, newUser.Email, newUser.Role, newUser.Tier);
+        _logger.LogInformation("Admin {AdminId} successfully created user {UserId} with role {Role} and tier {Tier}",
+            request.AdminUserId, newUser.Id, newUser.Role, newUser.Tier);
 
         return Result<AdminUserSummaryDto>.Success(new AdminUserSummaryDto(
             Id: newUser.Id,

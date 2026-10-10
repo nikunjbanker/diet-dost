@@ -243,8 +243,10 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", secScanContent);
         Assert.Contains("actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852", secScanContent);
         Assert.Contains("github/codeql-action/upload-sarif@cf12ceefebab2c867b9c35d7f907e059681d37ab", secScanContent);
-        Assert.Contains("aquasecurity/trivy-action@915b19bbe73b92a6cf82a1bc12b087c9a19a5fe2", secScanContent);
+        Assert.Contains("TRIVY_VERSION=", secScanContent);
+        Assert.Contains("trivy fs", secScanContent);
         Assert.Contains("bridgecrewio/checkov-action@b406dfe80a3d33640d5b5deb4341f2475cc016a0", secScanContent);
+        Assert.Contains("Execute SecurityCodeScan Analysis (All Projects)", secScanContent);
 
         // AGENTS.md Rule 18 governance assertion
         var agentsMdPath = Path.Combine(repoRoot, "AGENTS.md");
