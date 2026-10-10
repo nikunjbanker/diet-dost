@@ -29,9 +29,116 @@ var fileShareName = 'dietdost-data'
 var logAnalyticsName = 'log-dietdost-${environment}'
 var acaEnvName = 'cae-dietdost-${environment}'
 var vnetName = 'vnet-dietdost-${environment}'
+var nsgName = 'nsg-dietdost-${environment}'
 
 // ------------------------------------------------------------------------------
-// 1. Virtual Network with Delegated Subnet for ACA and Storage Service Endpoint
+// 1. Network Security Group (NSG) with Zero-Trust Subnet Isolation
+// ------------------------------------------------------------------------------
+resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
+  name: nsgName
+  location: location
+  properties: {
+    securityRules: [
+      {
+        name: 'Allow-HTTP-HTTPS-Inbound'
+        properties: {
+          priority: 100
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRanges: [
+            '80'
+            '443'
+          ]
+        }
+      }
+      {
+        name: 'Allow-AzureLoadBalancer-Inbound'
+        properties: {
+          priority: 110
+          direction: 'Inbound'
+          access: 'Allow'
+          protocol: '*'
+          sourceAddressPrefix: 'AzureLoadBalancer'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '*'
+        }
+      }
+      {
+        name: 'Allow-Storage-SMB-Outbound'
+        properties: {
+          priority: 100
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'Storage'
+          destinationPortRange: '445'
+        }
+      }
+      {
+        name: 'Allow-AzureCloud-HTTPS-Outbound'
+        properties: {
+          priority: 110
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'AzureCloud'
+          destinationPortRange: '443'
+        }
+      }
+      {
+        name: 'Allow-DNS-Outbound'
+        properties: {
+          priority: 120
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: '*'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '53'
+        }
+      }
+      {
+        name: 'Allow-NTP-Outbound'
+        properties: {
+          priority: 130
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Udp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: '*'
+          destinationPortRange: '123'
+        }
+      }
+      {
+        name: 'Allow-Internet-HTTPS-Outbound'
+        properties: {
+          priority: 140
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'Internet'
+          destinationPortRange: '443'
+        }
+      }
+    ]
+  }
+}
+
+// ------------------------------------------------------------------------------
+// 2. Virtual Network with Delegated Subnet for ACA and Storage Service Endpoint
 // ------------------------------------------------------------------------------
 resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   name: vnetName
@@ -47,6 +154,9 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
         name: 'snet-aca-infra'
         properties: {
           addressPrefix: '10.0.0.0/23'
+          networkSecurityGroup: {
+            id: nsg.id
+          }
           delegations: [
             {
               name: 'aca-delegation'
@@ -70,7 +180,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
 }
 
 // ------------------------------------------------------------------------------
-// 2. Azure Storage Account with Azure Files SMB Share (Private VNet Perimeter)
+// 3. Azure Storage Account with Azure Files SMB 3.1.1 Encrypted Share
 // ------------------------------------------------------------------------------
 // checkov:skip=CKV_AZURE_43: Storage account uses uniqueString prefix compliant with Azure 3-24 char naming rules.
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
@@ -100,6 +210,21 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
 resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
   parent: storageAccount
   name: 'default'
+  properties: {
+    protocolSettings: {
+      smb: {
+        versions: 'SMB3.1.1'
+        channelEncryption: 'AES-128-GCM;AES-256-GCM'
+        multichannel: {
+          enabled: false
+        }
+      }
+    }
+    shareDeleteRetentionPolicy: {
+      enabled: true
+      days: 7
+    }
+  }
 }
 
 resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-01-01' = {
@@ -111,7 +236,7 @@ resource fileShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-0
 }
 
 // ------------------------------------------------------------------------------
-// 3. Log Analytics Workspace
+// 4. Log Analytics Workspace
 // ------------------------------------------------------------------------------
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
   name: logAnalyticsName
@@ -125,7 +250,7 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
 }
 
 // ------------------------------------------------------------------------------
-// 4. Azure Container Apps Managed Environment
+// 5. Azure Container Apps Managed Environment
 // ------------------------------------------------------------------------------
 resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   name: acaEnvName
@@ -146,7 +271,7 @@ resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
 }
 
 // ------------------------------------------------------------------------------
-// 5. Durable Storage Mount Link (Azure Files SMB -> ACA Environment)
+// 6. Durable Storage Mount Link (Azure Files SMB -> ACA Environment)
 // ------------------------------------------------------------------------------
 resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
   parent: acaEnvironment
@@ -162,7 +287,7 @@ resource envStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
 }
 
 // ------------------------------------------------------------------------------
-// 6. Azure Container Registry (ACR) for Container Images
+// 7. Azure Container Registry (ACR) for Container Images
 // ------------------------------------------------------------------------------
 // checkov:skip=CKV_AZURE_139: ACR Basic SKU used for cost optimization in development; Premium SKU required for private networking.
 // checkov:skip=CKV_AZURE_163: Vulnerability scanning requires Microsoft Defender for Containers on ACR Premium tier.
@@ -183,7 +308,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-01-01-preview' = {
 }
 
 // ------------------------------------------------------------------------------
-// 7. Azure Key Vault & User-Assigned Managed Identity for Secure Cloud Secrets
+// 8. Azure Key Vault & User-Assigned Managed Identity for Secure Cloud Secrets
 // ------------------------------------------------------------------------------
 resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
   name: 'id-dietdost-${environment}'
@@ -250,6 +375,74 @@ resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-0
 }
 
 // ------------------------------------------------------------------------------
+// 9. Key Vault Diagnostic Logging (Audit Security Baseline)
+// ------------------------------------------------------------------------------
+resource keyVaultDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  name: 'diag-kv-${environment}'
+  scope: keyVault
+  properties: {
+    workspaceId: logAnalytics.id
+    logs: [
+      {
+        category: 'AuditEvent'
+        enabled: true
+      }
+      {
+        category: 'AzurePolicyEvaluationDetails'
+        enabled: true
+      }
+    ]
+    metrics: [
+      {
+        category: 'AllMetrics'
+        enabled: true
+      }
+    ]
+  }
+}
+
+// ------------------------------------------------------------------------------
+// 10. Automated Security Metric Alert: Key Vault Unauthorized Access
+// ------------------------------------------------------------------------------
+resource keyVaultUnauthorizedAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: 'alert-kv-unauthorized-${environment}'
+  location: 'global'
+  properties: {
+    description: 'Alert when Key Vault unauthorized requests (401/403) exceed security baseline threshold.'
+    severity: 1
+    enabled: true
+    scopes: [
+      keyVault.id
+    ]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT5M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'HighUnauthorizedRequests'
+          metricName: 'ServiceApiResult'
+          dimensions: [
+            {
+              name: 'StatusCodeRange'
+              operator: 'Include'
+              values: [
+                '401'
+                '403'
+              ]
+            }
+          ]
+          operator: 'GreaterThan'
+          threshold: 5
+          timeAggregation: 'Total'
+          criterionType: 'StaticThresholdCriterion'
+        }
+      ]
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------
 // Outputs for Application Deployment Pipeline
 // ------------------------------------------------------------------------------
 output acaEnvironmentId string = acaEnvironment.id
@@ -265,3 +458,5 @@ output keyVaultName string = keyVault.name
 output keyVaultUri string = keyVault.properties.vaultUri
 output managedIdentityId string = managedIdentity.id
 output managedIdentityClientId string = managedIdentity.properties.clientId
+output nsgId string = nsg.id
+output nsgName string = nsg.name

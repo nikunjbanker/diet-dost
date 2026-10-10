@@ -31,6 +31,9 @@ param enableCustomDomain bool = false
 @description('Flag indicating whether 5-tier demo user accounts are enabled for showcase testing.')
 param allowDemoUsers bool = true
 
+@description('Optional list of IP security restrictions for Container App ingress (e.g. allowed CIDRs or WAF reverse proxies).')
+param ipSecurityRestrictions array = []
+
 @description('Name of the durable storage mount linked to the ACA environment.')
 param storageMountName string = 'dietdoststorage'
 
@@ -69,6 +72,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         targetPort: 8080
         transport: 'auto'
         allowInsecure: false
+        ipSecurityRestrictions: !empty(ipSecurityRestrictions) ? ipSecurityRestrictions : null
         customDomains: enableCustomDomain ? [
           {
             name: customDomain

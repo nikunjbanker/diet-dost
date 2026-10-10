@@ -283,4 +283,77 @@ For full step-by-step pre-deployment configuration, Azure Entra ID federated cre
 - **Authoritative Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
 - **Pre-Flight Automation Script**: [`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)
 
+---
+
+## 8. Zero-Trust Cloud Network & Security Infrastructure Architecture
+
+Diet-Dost implements a defense-in-depth, Zero-Trust network and cloud security topology designed specifically for the dev-test free-tier environment ($0 incremental cost) while adhering to enterprise CIS Microsoft Azure Foundations Benchmark and Checkov IaC security standards:
+
+```mermaid
+graph TD
+    Client["End User Browser / PWA Client"] -->|"HTTPS / Port 443<br/>TLS 1.3 Strict"| ACA_Ingress["ACA Managed Environment Ingress<br/>(dev.dietdost.app / FQDN)<br/>IP Security Restrictions Filter"]
+
+    subgraph Azure_VNet ["Azure Virtual Network: vnet-dietdost-dev (10.0.0.0/16)"]
+        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
+            ACA_App["Diet-Dost Container App<br/>(.NET 11 WebGateway)<br/>Single Replica: min=1, max=1"]
+        end
+        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9)<br/>Inbound: 80, 443, AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
+        NSG --- Subnet_Infra
+    end
+
+    ACA_Ingress --> ACA_App
+
+    subgraph Storage_Boundary ["Azure Storage Account: stgdietdostdev (Standard_LRS)"]
+        SMB_Share["Azure Files SMB 3.1.1 Share: dietdost-data<br/>AES-128-GCM / AES-256-GCM Channel Encryption<br/>7-Day Soft-Delete Protection<br/>Mounted: /app/data (diet_dost.db)"]
+    end
+
+    subgraph Security_Perimeter ["Security & Audit Perimeter"]
+        KV["Azure Key Vault: kv-dietdost-dev<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdmin"]
+        LAW["Log Analytics Workspace: log-dietdost-dev<br/>5 GB/Month Free Tier Retention"]
+        Alert["Azure Monitor Metric Alert<br/>KV Unauthorized Access (401/403 > 5 in 5m)<br/>Included in Free Metric Alerts Quota"]
+    end
+
+    ACA_App -->|"SMB 3.1.1 Encrypted Channel (Port 445)"| SMB_Share
+    ACA_App -->|"System-Assigned Managed Identity"| KV
+    KV -->|"Diagnostic Stream (AuditEvent & AllMetrics)"| LAW
+    KV -.->|"Monitored by"| Alert
+    ACA_App -->|"OTLP Traces & Diagnostic Logs"| LAW
+    ACA_App -->|"Outbound HTTPS (Port 443)"| GeminiAPI["Google Gemini AI APIs (PromptShield Protected)"]
+```
+
+### 8.1 Network Security Group (NSG) with Zero-Trust Subnet Isolation
+- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-dev`) attached directly to subnet `snet-aca-infra`.
+- **Compliance**: Natively satisfies Checkov benchmark rule `CKV_AZURE_9` (*Ensure that Virtual Network subnets are associated with a Network Security Group*).
+- **Rule Set**:
+  - **Inbound**:
+    - `Allow-HTTP` (Port 80) & `Allow-HTTPS` (Port 443) from `Internet` to `VirtualNetwork`.
+    - `Allow-Azure-Load-Balancer` from `AzureLoadBalancer` to `VirtualNetwork`.
+    - `Deny-All-Inbound` (implicit default).
+  - **Outbound**:
+    - `Allow-Storage-SMB` (Port 445) restricted strictly to `Storage` service tag.
+    - `Allow-AzureCloud-HTTPS` (Port 443) restricted to `AzureCloud` service tag (Key Vault, ACR, OTLP).
+    - `Allow-AI-APIs-HTTPS` (Port 443) outbound to `Internet` for Gemini 2.5 Flash / Flash Lite REST calls.
+    - `Allow-DNS` (Port 53) outbound for core name resolution.
+    - `Allow-NTP` (Port 123) outbound for clock synchronization.
+    - `Deny-All-Outbound` (implicit default).
+
+### 8.2 Azure Files SMB 3.1.1 Cryptographic Channel Hardening
+- **Protocol Encryption**: Enforces SMB 3.1.1 wire encryption with negotiated ciphers `AES-128-GCM` and `AES-256-GCM` across `fileServices` in `infra/infra.bicep`.
+- **Kerberos & NTLM Policy**: Enforces Kerberos ticket authentication and disables legacy NTLMv1 fallbacks.
+- **Accidental Deletion Defense**: Configured 7-day share soft-delete retention policy, protecting the live SQLite database (`diet_dost.db`) and user meal photos against catastrophic accidental share deletion.
+
+### 8.3 Azure Key Vault Audit Diagnostics & Metric Alerts
+- **Audit Logging**: Configured `Microsoft.Insights/diagnosticSettings` (`diag-kv-dev`) streaming `AuditEvent` categories and all metrics directly into the existing Log Analytics Workspace (`log-dietdost-dev`) within the free 5 GB/month ingestion tier.
+- **Automated Intrusion Alerting**: Deployed `Microsoft.Insights/metricAlerts` (`alert-kv-unauthorized-dev`) monitoring the Key Vault Service Api Hit metric with dimensions `StatusCode = 401, 403`. Fires automatically if unauthorized attempts exceed 5 in a 5-minute window, consuming 0 additional cost (within Azure's first 10 free platform metric alerts).
+
+### 8.4 Container App Ingress Perimeter Hardening
+- **IP Security Restrictions**: Added configurable `ipSecurityRestrictions` array to `infra/app.bicep`. Allows operators to enforce IP allowlisting/denylisting on the external ingress controller at 0 cost.
+
+### 8.5 Architectural Visual Artifacts
+The full architectural blueprint is codified in the following repository visual artifacts:
+- **Mermaid Source Diagram**: [`docs/architecture/diagrams/azure_zero_trust_infra_architecture.mermaid`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/azure_zero_trust_infra_architecture.mermaid)
+- **High-Resolution Architecture Diagram**: [`docs/architecture/diagrams/azure_zero_trust_infra_architecture.jpg`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/azure_zero_trust_infra_architecture.jpg)
+- **Architectural Decision Record**: [`docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md)
+
+
 

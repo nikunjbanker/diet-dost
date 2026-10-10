@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T17:12:34.407018+00:00",
-  "totalAdrs": 49,
+  "generatedAt": "2026-10-10T17:24:02.097260+00:00",
+  "totalAdrs": 50,
   "categoryCounts": {
     "architecture": 14,
-    "security": 14,
+    "security": 15,
     "devops": 4,
     "presentation": 4,
     "governance": 13
@@ -597,6 +597,18 @@
       "subsystem": "Governance",
       "filename": "ADR-20261010-087-skill-synchronization-governance-and-devsecops-pipeline-codification.md",
       "relativePath": "docs/adr/governance/ADR-20261010-087-skill-synchronization-governance-and-devsecops-pipeline-codification.md"
+    },
+    {
+      "id": "ADR-088",
+      "number": 88,
+      "title": "Azure Zero-Trust Network Security Group, SMB 3.1.1 Channel Encryption, and Diagnostic Auditing Hardening",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-10",
+      "subsystem": "Security",
+      "filename": "ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md",
+      "relativePath": "docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md"
     }
   ]
 }

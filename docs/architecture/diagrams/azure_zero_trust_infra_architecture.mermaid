@@ -1,0 +1,62 @@
+graph TD
+%%
+%% Copyright (c) 2026 diet-dost and/or its contributors.
+%% Licensed under the "GNU Affero General Public License v3.0 only" and
+%% the "Server Side Public License, v 1"; you may not use this file except
+%% in compliance with, at your election, the "GNU Affero General Public
+%% License v3.0 only" or the "Server Side Public License, v 1".
+%%
+
+    subgraph External_Traffic ["1. External Client & DNS Layer"]
+        Client(["End User / Mobile PWA / Browser Client"]) -->|HTTPS 443| DNS["Custom Domain: dev.diet-dost.in<br/>CNAME + TXT Verification"]
+        DNS -->|TLS 1.3 Traffic| ACA_Ingress["ACA Managed Ingress<br/>Free Managed TLS 1.3 Certificate<br/>IP Security Restrictions (Configurable)"]
+    end
+
+    subgraph VNet_Perimeter ["2. Azure Virtual Network Perimeter (10.0.0.0/16)"]
+        subgraph NSG_Boundary ["Network Security Group: nsg-dietdost-dev"]
+            NSG_In["Stateful Inbound Firewall<br/>• Allow HTTP/HTTPS (80, 443)<br/>• Allow AzureLoadBalancer<br/>• Deny All Other Inbound"]
+            NSG_Out["Stateful Outbound Firewall<br/>• Allow Storage SMB (445)<br/>• Allow AzureCloud HTTPS (443)<br/>• Allow DNS (53) & NTP (123)<br/>• Allow Internet HTTPS (443) for AI APIs"]
+        end
+
+        subgraph ACA_Subnet ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
+            ACA_Env["ACA Managed Environment: cae-dietdost-dev<br/>Service Endpoints: Microsoft.Storage, Microsoft.KeyVault"]
+            
+            subgraph Workload_Container ["Diet-Dost Web Gateway & Mobile BFF Workload"]
+                AppContainer["WebGateway Container (.NET 11 Runtime)<br/>Target Port: 8080<br/>Single Replica Invariant: min=1, max=1<br/>Probes: /healthz & /ready"]
+            end
+        end
+    end
+
+    subgraph Data_Storage ["3. Encrypted Cloud Persistence Layer"]
+        StorageAcc["Azure Storage Account: Standard_LRS<br/>VNet Firewall: Deny Default + VNet Subnet Rule"]
+        FileServices["Azure Files SMB 3.1.1 Service<br/>• AES-128-GCM / AES-256-GCM Channel Encryption<br/>• 7-Day File Share Soft-Delete Policy"]
+        FileShare["SMB Share: dietdost-data<br/>• diet_dost.db (SQLite ACID Single-Writer)<br/>• wwwroot/uploads/ (Meal & Progress Photos)"]
+    end
+
+    subgraph Security_Identity ["4. Identity & Secrets Management"]
+        MI["User-Assigned Managed Identity<br/>id-dietdost-dev<br/>Zero Hardcoded Credentials"]
+        ACR["Azure Container Registry (Basic SKU)<br/>crdietdost*<br/>Admin User: Disabled"]
+        KV["Azure Key Vault: kvdietdost* (Standard)<br/>• RBAC Authorization<br/>• Purge Protection & 7-Day Soft Delete<br/>• Network ACLs: VNet Subnet Rule"]
+    end
+
+    subgraph Monitoring_Alerts ["5. Observability & Threat Detection"]
+        LogAnalytics["Azure Log Analytics Workspace<br/>log-dietdost-dev (PerGB2018 / 30-Day Retention)"]
+        DiagKV["Key Vault Diagnostic Settings<br/>diag-kv-dev<br/>Streams AuditEvent & AllMetrics"]
+        AlertKV["Azure Monitor Metric Alert<br/>alert-kv-unauthorized-dev<br/>Severity 1: 401/403 Spikes > 5 in 5m"]
+    end
+
+    %% Network & Traffic Flows
+    ACA_Ingress --> AppContainer
+    AppContainer -->|SMB 3.1.1 Encrypted Mount: /app/data| FileShare
+    StorageAcc --> FileServices --> FileShare
+
+    %% Identity & Secrets Flows
+    AppContainer -.->|Managed Identity Auth| MI
+    MI -.->|Role: AcrPull| ACR
+    MI -.->|Role: Key Vault Secrets User| KV
+    AppContainer -.->|Secret Resolution| KV
+
+    %% Telemetry & Auditing Flows
+    AppContainer -.->|App Logs & Console Streams| LogAnalytics
+    KV -.->|Diagnostic Stream: AuditEvent| DiagKV -.-> LogAnalytics
+    KV -.->|ServiceApiResult Metrics| AlertKV

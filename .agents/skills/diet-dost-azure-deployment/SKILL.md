@@ -266,6 +266,22 @@ az containerapp create \
   --volume-name dietdoststorage
 ```
 
+### 3.5 Zero-Trust Network & Security Infrastructure Baseline (Bicep IaC)
+The foundation infrastructure in [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) implements a defense-in-depth, Zero-Trust network boundary designed for dev-test free-tier containment ($0 incremental cost):
+1. **Network Security Group (`nsg-dietdost-${environment}`)**:
+   - Attached to ACA infrastructure subnet `snet-aca-infra` to comply with Checkov `CKV_AZURE_9`.
+   - **Inbound Rules**: Allows HTTP (80), HTTPS (443), and `AzureLoadBalancer`.
+   - **Outbound Rules**: Allows Port 445 strictly to `Storage` service tag; Port 443 to `AzureCloud` and `Internet` (for Gemini AI APIs); Port 53 (DNS); and Port 123 (NTP).
+2. **Azure Files SMB 3.1.1 Encryption & Soft-Delete**:
+   - Configures SMB 3.1.1 protocol encryption (`AES-128-GCM` / `AES-256-GCM`) across `fileServices`.
+   - Enforces Kerberos ticket authentication and disables legacy NTLMv1.
+   - Enables 7-day share soft-delete retention to prevent accidental loss of `diet_dost.db`.
+3. **Key Vault Audit Diagnostics & Metric Alerts**:
+   - Streams `AuditEvent` and all metrics from Key Vault to Log Analytics (`diag-kv-${environment}`).
+   - Deploys Azure Monitor Metric Alert (`alert-kv-unauthorized-${environment}`) triggering when Key Vault 401/403 responses exceed 5 in a 5-minute window (within free platform metric alerts quota).
+4. **Ingress IP Security Restrictions**:
+   - [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep) supports configurable `ipSecurityRestrictions` for exterior IP allowlisting.
+
 ---
 
 ## 4. Option 2: Azure App Service Linux (F1 Free / B1 Basic)
