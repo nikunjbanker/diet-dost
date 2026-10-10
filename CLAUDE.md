@@ -16,7 +16,7 @@ This document provides concise, actionable instructions for Claude Code when dev
 # Build (Mandatory 0 warnings, 0 errors)
 dotnet build DietDost.slnx
 
-# Run tests (234 automated tests across 7 projects)
+# Run tests (240 automated tests across 7 projects)
 dotnet test --nologo
 
 # Run specific project tests
