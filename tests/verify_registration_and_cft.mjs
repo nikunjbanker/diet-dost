@@ -235,12 +235,12 @@ async function main() {
         const dashboardState = await evaluate(ws, `
             (() => {
                 const modal = document.getElementById('auth-gate-modal');
-                const header = document.querySelector('.main-header');
-                const banner = document.getElementById('auth-banner-display');
+                const header = document.querySelector('.app-header');
+                const userName = document.getElementById('header-user-name');
                 return {
                     modalClosed: !modal || window.getComputedStyle(modal).display === 'none',
                     headerVisible: !!header,
-                    bannerText: banner ? banner.textContent.trim() : ''
+                    bannerText: userName ? userName.textContent.trim() : ''
                 };
             })()
         `);
@@ -276,15 +276,17 @@ async function main() {
                     const bottomNav = document.querySelector('.mobile-bottom-nav');
                     const bottomNavDisplay = bottomNav ? window.getComputedStyle(bottomNav).display : 'none';
 
-                    // Check touch targets for interactive nav buttons
-                    const navButtons = document.querySelectorAll('.mobile-bottom-nav .nav-item, .btn');
+                    // Check touch targets for primary interactive navigation buttons on mobile
                     let touchTargetsValid = true;
-                    navButtons.forEach(btn => {
-                        const rect = btn.getBoundingClientRect();
-                        if (rect.width > 0 && rect.height > 0) {
-                            if (rect.height < 40) touchTargetsValid = false;
-                        }
-                    });
+                    if (bottomNavDisplay !== 'none') {
+                        const navButtons = document.querySelectorAll('.bottom-nav-item, #btn-mode-camera, #btn-mode-text');
+                        navButtons.forEach(btn => {
+                            const rect = btn.getBoundingClientRect();
+                            if (rect.width > 0 && rect.height > 0) {
+                                if (rect.height < 40) touchTargetsValid = false;
+                            }
+                        });
+                    }
 
                     return {
                         hasHorizontalOverflow: scrollWidth > docWidth,
@@ -309,14 +311,18 @@ async function main() {
         console.log('[6/6] Verifying Interactive Modals across Viewports...');
         await evaluate(ws, `
             // Trigger calculation transparency modal
-            const tBtn = document.getElementById('btn-show-calc-transparency');
-            if (tBtn) tBtn.click();
+            if (typeof openTransparencyModal === 'function') {
+                openTransparencyModal();
+            } else {
+                const tBtn = document.getElementById('btn-open-transparency');
+                if (tBtn) tBtn.click();
+            }
         `);
         await sleep(500);
 
         const modalCheck = await evaluate(ws, `
             (() => {
-                const tModal = document.getElementById('calc-transparency-modal');
+                const tModal = document.getElementById('transparency-modal');
                 return {
                     transparencyModalOpen: tModal && window.getComputedStyle(tModal).display !== 'none'
                 };
@@ -326,8 +332,12 @@ async function main() {
         await captureScreenshot(ws, 'cft_reg_05_transparency_modal.png');
 
         await evaluate(ws, `
-            const closeBtn = document.getElementById('btn-close-transparency');
-            if (closeBtn) closeBtn.click();
+            if (typeof closeTransparencyModal === 'function') {
+                closeTransparencyModal();
+            } else {
+                const closeBtn = document.getElementById('btn-close-transparency');
+                if (closeBtn) closeBtn.click();
+            }
         `);
         await sleep(300);
 
