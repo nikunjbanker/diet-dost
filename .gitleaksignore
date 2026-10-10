@@ -1,0 +1,3 @@
+# Gitleaks ignore file for false positives in historical documentation commits
+e8f1ba0580ae0450b67e1ee5eadaae7142cb7e74:.agents/skills/diet-dost-responsive-web-mobile-readiness/references/api-mobile-readiness-playbook.md:generic-api-key:133
+c1b0d307e17c9ca8fd3e63289cf4d2810d42e3ef:.agents/skills/diet-dost-responsive-web-mobile-readiness/references/api-mobile-readiness-playbook.md:generic-api-key:133
