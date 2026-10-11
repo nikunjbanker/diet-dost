@@ -85,6 +85,24 @@
 
 ## 2. Step-by-Step Pre-Deployment Execution Guide (PowerShell)
 
+> [!TIP]
+> ### ⚡ Automated Execution via Script (`setup-azure-pre-deployment.ps1`)
+> If you prefer an automated setup, use our repository pre-flight script [`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1):
+> ```powershell
+> # 1. Inspect existing cloud state safely without mutations (DryRun mode):
+> pwsh -File scripts/setup-azure-pre-deployment.ps1 -DryRun
+>
+> # 2. Execute full automated setup (idempotent):
+> pwsh -File scripts/setup-azure-pre-deployment.ps1
+> ```
+> The `-DryRun` switch dynamically queries and displays:
+> - Existing Entra ID Federated Credentials (`gh-dietdost-dev-env`, `gh-dietdost-branch-cred`) and their subjects.
+> - Existing Azure RBAC roles on the subscription scope (`Contributor`, `Role Based Access Control Administrator`, `Key Vault Secrets Officer`).
+> - Existing GitHub environment variables (`AZURE_CLIENT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_TENANT_ID`).
+> - Existing GitHub environment secrets (`JWT_KEY`, `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`, `GEMINI_API_KEY`) with last updated timestamps.
+>
+> Alternatively, follow the manual step-by-step phases below.
+
 ### Phase 0: Initialize Common PowerShell Session Variables
 
 Open your PowerShell terminal (PowerShell 7 `pwsh` or Windows PowerShell) and execute this block once.  
