@@ -112,7 +112,7 @@ pwsh -File scripts/setup-azure-pre-deployment.ps1
 ### 3.1 Architecture Overview
 ```mermaid
 graph TD
-    User([End User / Mobile Browser]) -->|Direct HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in<br/>Direct Ingress: No Front Door / No App Gateway]
+    User([End User / Mobile Browser]) -->|Direct HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in<br/>Direct CNAME + TXT Verification]
     Domain -->|CNAME + TXT Verification| ACA_Ingress[ACA Managed Ingress (Envoy)<br/>Free Managed TLS 1.3 Certificate]
     
     subgraph VNet_Perimeter ["VNet Perimeter & Zero-Trust NSG (nsg-dietdost-dev)"]

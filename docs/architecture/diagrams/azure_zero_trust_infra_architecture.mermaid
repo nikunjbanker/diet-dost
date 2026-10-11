@@ -8,8 +8,8 @@ graph TD
 %%
 
     subgraph External_Traffic ["1. External Client & Direct ACA Ingress Layer"]
-        Client(["End User / Mobile PWA / Browser Client"]) -->|Direct HTTPS 443| DNS["Custom Domain: dev.diet-dost.in<br/>CNAME + TXT Verification (No Front Door / No App Gateway)"]
-        DNS -->|Direct TLS 1.3 Traffic| ACA_Ingress["ACA Built-in Managed Ingress (Envoy Proxy)<br/>Free Managed TLS 1.3 Certificate (SNI Bound)<br/>IP Security Restrictions (Configurable)"]
+        Client(["End User / Mobile PWA / Browser Client"]) -->|Direct HTTPS 443| DNS["Custom Domain: dev.diet-dost.in<br/>Direct CNAME + TXT Verification"]
+        DNS -->|Direct TLS 1.3 Traffic| ACA_Ingress["Azure Container Apps Built-in Managed Envoy Ingress<br/>Free Managed TLS 1.3 Certificate (SNI Bound)<br/>IP Security Restrictions (Configurable)"]
     end
 
     subgraph VNet_Perimeter ["2. Azure Virtual Network Perimeter (10.0.0.0/16)"]
