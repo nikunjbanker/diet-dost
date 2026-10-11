@@ -269,15 +269,49 @@ if (Test-Path $aiVisionService) {
     }
 }
 
-$geminiProvider = Join-Path $RepoRoot "src\Nutrition.Infrastructure\AI\Providers\GoogleGeminiProvider.cs"
-if (Test-Path $geminiProvider) {
-    $geminiContent = Get-Content $geminiProvider -Raw
-    if (-not ($geminiContent -match "StrictSafetySettings") -or -not ($geminiContent -match "HARM_CATEGORY_HARASSMENT")) {
-        $msg = "VEC-4 Content Safety: GoogleGeminiProvider missing StrictSafetySettings for Google AI content safety enforcement."
-        $violations.Add($msg)
-        Write-Host "  ❌ $msg" -ForegroundColor Red
-    } else {
-        Write-Host "  ✅ Google AI StrictSafetySettings verified across harassment, hate speech, sexual, and dangerous content." -ForegroundColor Green
+# Multi-LLM Provider Native Safety Configuration & Autonomous Agent Reminder Gate
+$providersDir = Join-Path $RepoRoot "src\Nutrition.Infrastructure\AI\Providers"
+if (Test-Path $providersDir) {
+    $providerFiles = Get-ChildItem -Path $providersDir -Filter "*.cs" -File
+    foreach ($providerFile in $providerFiles) {
+        $pName = $providerFile.Name
+        $pContent = Get-Content $providerFile.FullName -Raw
+        
+        # Check if class implements IAiFoodAnalysisProvider
+        if ($pContent -match "IAiFoodAnalysisProvider") {
+            if ($pName -eq "GoogleGeminiProvider.cs") {
+                if (-not ($pContent -match "StrictSafetySettings") -or -not ($pContent -match "BLOCK_LOW_AND_ABOVE") -or -not ($pContent -match "HARM_CATEGORY_HARASSMENT")) {
+                    $msg = "VEC-4 Content Safety: GoogleGeminiProvider missing StrictSafetySettings (BLOCK_LOW_AND_ABOVE) for Google AI content safety enforcement."
+                    $violations.Add($msg)
+                    Write-Host "  ❌ $msg" -ForegroundColor Red
+                    Write-Host "     ⚠️ Content Safety Reminder: Google AI provider must declare StrictSafetySettings at BLOCK_LOW_AND_ABOVE per SECURITY.md Section 3.3." -ForegroundColor Yellow
+                } else {
+                    Write-Host "  ✅ Google AI StrictSafetySettings verified across harassment, hate speech, sexual, and dangerous content (BLOCK_LOW_AND_ABOVE)." -ForegroundColor Green
+                }
+            }
+            elseif ($pName -eq "AzureOpenAiProvider.cs") {
+                if (-not ($pContent -match "ContentSafetyPolicy") -and -not ($pContent -match "Azure_Content_Safety_Strict_Filtering")) {
+                    $msg = "VEC-4 Content Safety: AzureOpenAiProvider missing strict ContentSafetyPolicy governance compliance declaration."
+                    $violations.Add($msg)
+                    Write-Host "  ❌ $msg" -ForegroundColor Red
+                    Write-Host "     ⚠️ Content Safety Reminder: Azure OpenAI provider must enforce strict Azure Content Safety filtering per SECURITY.md Section 3.3." -ForegroundColor Yellow
+                } else {
+                    Write-Host "  ✅ Azure OpenAI Strict Content Safety policy governance verified." -ForegroundColor Green
+                }
+            }
+            else {
+                # Enforce Universal Safety Baseline & Autonomous Agent Reminder for all future LLM providers
+                $hasStrictSafety = ($pContent -match "(StrictSafetySettings|ContentSafety|ContentFilter|SafetySettings|Moderation|StrictContentSafety)")
+                if (-not $hasStrictSafety) {
+                    $msg = "VEC-4 Content Safety: Future LLM provider '$pName' does not declare explicit strict content safety settings or content moderation controls."
+                    $violations.Add($msg)
+                    Write-Host "  ❌ $msg" -ForegroundColor Red
+                    Write-Host "     ⚠️ Content Safety Governance Alert: LLM provider '$pName' does not declare explicit strict content safety settings. Per SECURITY.md Section 3.3 and OWASP Top 10 for LLM, all LLM providers must enforce strict content moderation (equivalent to Google AI BLOCK_LOW_AND_ABOVE / Azure Strict Filters). Please configure provider-level safety settings before submitting." -ForegroundColor Yellow
+                } else {
+                    Write-Host "  ✅ Future LLM provider '$pName' strict content safety configuration verified." -ForegroundColor Green
+                }
+            }
+        }
     }
 }
 

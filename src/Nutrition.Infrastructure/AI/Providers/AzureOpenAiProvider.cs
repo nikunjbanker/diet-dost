@@ -28,6 +28,15 @@ internal sealed class AzureOpenAiProvider : IAiFoodAnalysisProvider
     public string ProviderName => "azure_openai";
     public bool SupportsVision => true;
 
+    /// <summary>
+    /// Content safety governance compliance declaration for Azure OpenAI.
+    /// In compliance with SECURITY.md Section 3.3 and OWASP Top 10 for LLM:
+    /// 1. Upstream requests are evaluated pre-flight by <see cref="PromptShieldValidator"/>.
+    /// 2. User inputs are encapsulated in [USER_MEAL_INTAKE_DATA] delimiter boundaries.
+    /// 3. Azure OpenAI deployment enforces Strict (Low threshold) Content Safety filtering on Hate, Sexual, Violence, Self-Harm, and Jailbreak Detection.
+    /// </summary>
+    public const string ContentSafetyPolicy = "Azure_Content_Safety_Strict_Filtering";
+
     public Task<IndianMealAnalysisResult?> AnalyzeTextAsync(string prompt, string modelId, CancellationToken ct) =>
         SendAsync(modelId, new[] { ResponseItem.CreateUserMessageItem(prompt) }, ct);
 

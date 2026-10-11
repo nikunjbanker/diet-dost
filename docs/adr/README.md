@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 53 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 54 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -32,7 +32,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **16** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
-| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **16** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
+| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **17** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **4** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
@@ -84,6 +84,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-086** | Zero-Hardcoded Secret Governance, Dynamic Azure Cloud Context Resolution, and Mermaid Diagram Line-1 Syntax Hardening | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-086-zero-hardcoded-secret-governance-dynamic-azure-context-and-mermaid-syntax-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-086-zero-hardcoded-secret-governance-dynamic-azure-context-and-mermaid-syntax-hardening.md) |
 | **ADR-088** | Azure Zero-Trust Network Security Group, SMB 3.1.1 Channel Encryption, and Diagnostic Auditing Hardening | `[SECURITY]` | `ACCEPTED` | [`ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md) |
 | **ADR-089** | Security Tooling Modernization, Deprecation Resolution, and Multi-Layer .NET SAST Integration | `[SECURITY]` | `ACCEPTED` | [`ADR-20261011-089-security-tooling-modernization-and-deprecation-resolution.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261011-089-security-tooling-modernization-and-deprecation-resolution.md) |
+| **ADR-091** | Strict Safe Harbor Policy, Multi-LLM Content Safety Standards, and Autonomous Agent Validation Mandate | `[SECURITY]` | `ACCEPTED` | [`ADR-20261011-091-strict-safe-harbor-and-multi-llm-content-safety-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261011-091-strict-safe-harbor-and-multi-llm-content-safety-governance.md) |
 
 ### 🚀 DevOps & Cloud Infrastructure (`docs/adr/devops/`)
 > *Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines.*

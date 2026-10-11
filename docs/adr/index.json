@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T20:26:51.654684+00:00",
-  "totalAdrs": 53,
+  "generatedAt": "2026-10-10T21:27:02.607598+00:00",
+  "totalAdrs": 54,
   "categoryCounts": {
     "architecture": 16,
-    "security": 16,
+    "security": 17,
     "devops": 4,
     "presentation": 4,
     "governance": 13
@@ -645,6 +645,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md",
       "relativePath": "docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md"
+    },
+    {
+      "id": "ADR-091",
+      "number": 91,
+      "title": "Strict Safe Harbor Policy, Multi-LLM Content Safety Standards, and Autonomous Agent Validation Mandate",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-11",
+      "subsystem": "Security",
+      "filename": "ADR-20261011-091-strict-safe-harbor-and-multi-llm-content-safety-governance.md",
+      "relativePath": "docs/adr/security/ADR-20261011-091-strict-safe-harbor-and-multi-llm-content-safety-governance.md"
     }
   ]
 }

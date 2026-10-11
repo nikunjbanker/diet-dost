@@ -61,10 +61,41 @@ To accelerate triage and resolution, please include:
 - **Alpha & Beta Versions**: Resolved during normal active development sprints; security patches are rolled forward into subsequent preview builds.
 - **Coordinated Disclosure**: We adhere to standard 90-day coordinated vulnerability disclosure, collaborating on advisory details once a verified patch has been packaged and deployed.
 
-### 2.4 Safe Harbor Policy
-If you conduct security research in good faith:
-- We will not pursue legal action against you for accidental violations or responsible testing.
-- We ask that you avoid accessing, modifying, or destroying user data, degrading system availability (DoS), or testing against production user accounts without consent.
+### 2.4 Safe Harbor Policy & Responsible Security Research Terms
+
+Diet-Dost values the contributions of the cybersecurity research community and is committed to fostering a safe, collaborative environment for coordinated vulnerability disclosure. We provide safe harbor protection for security research conducted in accordance with this policy.
+
+#### 2.4.1 Good-Faith Safe Harbor Protection
+If you conduct security research in genuine good faith, adhere strictly to coordinated disclosure principles, and comply fully with the guidelines outlined below:
+- **Authorization**: We consider your research activities to be **authorized conduct** under applicable computer security and access laws.
+- **Protection from Legal Action**: Diet-Dost will **not initiate civil lawsuits or pursue criminal complaints** against you for accidental, inadvertent, or good-faith violations arising from responsible security testing within scope.
+- **Support & Collaboration**: If legal action is initiated by a third party against you for research activities conducted strictly under this policy, we will make this safe harbor commitment known to confirm your authorized standing.
+
+#### 2.4.2 Strict Scope Boundaries & Prohibited Activities
+Safe harbor protection is **strictly conditioned** upon honoring the following non-negotiable boundaries. Researchers must strictly refrain from:
+1. **Accessing or Exfiltrating Private Data**: Accessing, viewing, downloading, retaining, altering, or exfiltrating any user data, personally identifiable information (PII), sensitive personal health or dietary records, credentials, or encryption keys. If sensitive data is inadvertently discovered, **stop testing immediately**, avoid copying or caching the data, and report the finding confidentially to our security team.
+2. **Disrupting System Availability (DoS/DDoS)**: Executing volumetric, resource-exhaustion, stress, or distributed denial-of-service attacks that impair, degrade, or disrupt system availability, latency, or responsiveness for legitimate users.
+3. **Data Modification or Destruction**: Deleting, corrupting, altering, or destroying database entries, Azure SMB file shares, cache stores, or infrastructure configurations.
+4. **Extortion & Unlawful Demands**: Demanding financial compensation, bounties, or perks under threat of disclosure, withholding vulnerability details, or holding project assets hostage (including ransomware or coercive bug-bounty holding tactics).
+5. **Social Engineering & Physical Attacks**: Performing phishing, spear-phishing, social engineering, credential stuffing, or physical security attacks against maintainers, contributors, or hosting facilities.
+6. **Testing Beyond Designated Scope**: Testing against production user accounts other than isolated sandbox or test accounts created and controlled entirely by the researcher.
+7. **Premature Public Disclosure**: Disclosing vulnerability technical details, proof-of-concept exploits, or sensitive architectural specifics to third parties or the public before a verified patch has been packaged and deployed under coordinated disclosure timelines.
+
+#### 2.4.3 Legal Reservation & Statutory Enforcement Clause
+Diet-Dost encourages constructive, ethical security research and seeks to work cooperatively with researchers. However, safe harbor protections apply **exclusively** to activities conducted in full compliance with Sections 2.4.1 and 2.4.2.
+
+> [!IMPORTANT]
+> **Reservation of Statutory Rights and Remedies**:
+> Any testing, research, or system interaction conducted in bad faith, outside the defined scope, in breach of user privacy, or in intentional disregard of the prohibited activities listed above falls entirely outside this Safe Harbor policy.
+>
+> In such events, Diet-Dost expressly reserves all legal rights, claims, remedies, and statutory actions available under applicable domestic and international law, including without limitation civil claims for damages, injunctive relief, and formal referral to law enforcement authorities under:
+> - **The Information Technology Act, 2000 (India)** (including without limitation Sections 43, 66, 66B, 66C, 66D, 70, and 72A, and subsequent amendments),
+> - **The Digital Personal Data Protection Act, 2023 (DPDPA, India)** (for breaches affecting user health and personal data),
+> - **The Computer Fraud and Abuse Act (CFAA, 18 U.S.C. § 1030)** (United States), and
+> - Equivalent cybercrime, unauthorized access, and data privacy statutes in the applicable jurisdiction.
+>
+> Non-compliance with this policy results in the immediate and automatic forfeiture of all safe harbor protections.
+
 
 ---
 
@@ -113,11 +144,51 @@ graph TD
 ---
 
 ### 3.3 Enterprise AI Prompt Shield & Content Safety (OWASP Top 10 for LLM)
-Multimodal meal ingestion uses the Microsoft Agent Framework with Google AI Gemini:
-- **Zero Harmful / Violent / Sexual / Communal Content**: Every prompt is evaluated by `PromptShieldValidator` prior to model dispatch. Natural language containing weapons, violence, adult content, or communal/religious disharmony is rejected with zero token consumption.
-- **Prompt Injection Delimiter Isolation**: User-submitted dish descriptions and feedback are isolated with strict delimiter boundaries to prevent system prompt extraction or role override ("DAN" attacks).
-- **Google AI StrictSafetySettings**: Declared on all Gemini API calls at `BLOCK_LOW_AND_ABOVE` across harassment, hate speech, sexual content, and dangerous activities.
-- **Self-Learning Data Poisoning Protection**: Continual feedback retraining loops validate correction data against adversarial poisoning heuristics.
+
+Multimodal food intake analysis and clinical dietetics reasoning utilize the Microsoft Agent Framework across multiple Large Language Model (LLM) backends (Google AI Gemini, Azure OpenAI Service, and future inference engines). Diet-Dost enforces a **defense-in-depth content safety architecture** aligned with the OWASP Top 10 for LLM Applications:
+
+#### 3.3.1 Universal Content Safety & Prompt Shielding Invariants
+1. **Pre-Flight Prompt Shield Invariant (`PromptShieldValidator`)**:
+   - Every text prompt and multimodal input is evaluated synchronously by `PromptShieldValidator` prior to model dispatch, incurring **zero token consumption** on rejection.
+   - Deterministically intercepts and blocks:
+     - *Harmful & Violent Content*: Weapons, explosive fabrication, assault, self-harm, and violent acts.
+     - *Sexually Explicit Content*: Adult media, pornography, and sexually explicit phrasing.
+     - *Communal & Hate Speech*: Religious disharmony, communal slurs, discrimination, and hate speech.
+     - *Prompt Injections & Jailbreaks (OWASP LLM01)*: "DAN" exploits, developer role override, system prompt extraction, delimiter escaping, and multi-turn jailbreak payloads.
+2. **Prompt Injection Delimiter Isolation**:
+   - User-supplied dish descriptions, dietary notes, and feedback are strictly isolated inside `[USER_MEAL_INTAKE_DATA]` delimiter blocks in system prompts, ensuring the model never interprets user input as system instructions.
+3. **Self-Learning Data Poisoning Protection (OWASP LLM03)**:
+   - Continual feedback retraining loops and nutritional correction memories validate all ingested correction data via `PromptShieldValidator.ValidateFeedback` to prevent adversarial memory poisoning.
+
+#### 3.3.2 Multi-LLM Provider Native Safety Configuration Baseline
+Diet-Dost mandates that **all active and future LLM providers** enforce strict content safety settings at the native SDK/API level before token generation:
+- **Google AI Gemini**:
+  - Configures explicit `StrictSafetySettings` on every `generateContent` API invocation set to `BLOCK_LOW_AND_ABOVE` across:
+    - `HARM_CATEGORY_HARASSMENT`
+    - `HARM_CATEGORY_HATE_SPEECH`
+    - `HARM_CATEGORY_SEXUALLY_EXPLICIT`
+    - `HARM_CATEGORY_DANGEROUS_CONTENT`
+    - `HARM_CATEGORY_CIVIC_INTEGRITY`
+- **Azure OpenAI Service**:
+  - Enforces Azure AI Content Safety filters configured with **Strict (Low threshold)** blocking across all primary harm categories (`Hate`, `Sexual`, `Violence`, `Self-Harm`) along with active `Prompt Shield / Jailbreak Detection`.
+- **Future LLMs (Anthropic Claude, DeepSeek, AWS Bedrock, Meta Llama, Local ONNX/Ollama)**:
+  - Any future provider implementing `IAiFoodAnalysisProvider` or agentic reasoning **MUST declare and enforce equivalent strict safety controls** (provider-level moderation APIs, system-level safety policies, or strict content filtering thresholds).
+  - Operating with permissive defaults, unconfigured safety settings, or disabled moderation filters is **strictly prohibited**.
+
+#### 3.3.3 Autonomous Agent Validation & Proactive Reminder Mandate
+To guarantee zero security drift during AI-assisted software engineering and human contributions:
+- **Autonomous Agent Verification Rule**: AI agents (Antigravity, Cursor, GitHub Copilot, etc.) and CI scanners are **mandated** to inspect all AI provider implementations under [`src/Nutrition.Infrastructure/AI/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Infrastructure/AI/) and [`src/Nutrition.Application/Agents/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Application/Agents/).
+- **Validation Checklist**:
+  1. *Provider Safety Settings Asserted*: Verify that every class implementing `IAiFoodAnalysisProvider` configures explicit, strict safety settings or content moderation controls.
+  2. *Delimiter Isolation Asserted*: Verify that user inputs are encapsulated within `[USER_MEAL_INTAKE_DATA]` delimiters.
+  3. *Pre-Flight Validation Asserted*: Verify that `PromptShieldValidator.ValidateInput` and `ValidateFeedback` guard all intake pipelines.
+- **Proactive Developer Reminder & Blocker Protocol**:
+  If a developer, contributor, or agent adds or refactors an LLM provider without explicit strict content safety settings or with relaxed thresholds:
+  - The AI agent **MUST proactively remind and alert the developer** before generating or approving code:
+    > *"⚠️ **Content Safety Governance Alert**: LLM provider `{ProviderName}` does not declare explicit strict content safety settings. Per SECURITY.md Section 3.3 and OWASP Top 10 for LLM, all LLM providers must enforce strict content moderation (equivalent to Google AI BLOCK_LOW_AND_ABOVE / Azure Strict Content Filters). Please configure provider-level safety settings before submitting."*
+  - The agent **MUST refuse to finalize or approve** any PR that leaves LLM safety settings unconfigured, disabled, or reliant on permissive vendor defaults.
+- **Continuous CI Automated Gate**:
+  - Validated automatically on every commit by `scripts/verify-ai-security-defense.ps1` under **Vector 4** in the pre-commit and pre-deployment security scan.
 
 ---
 
