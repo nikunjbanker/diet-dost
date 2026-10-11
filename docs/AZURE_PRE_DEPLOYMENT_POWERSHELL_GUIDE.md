@@ -21,7 +21,7 @@
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ LEVEL 1: Azure Entra ID & Subscription (Passwordless OIDC Trust & RBAC Roles)          │
-│ - App Registration: Service Principal (SP) Object & Client ID                          │
+│ - App Registration: Service Principal ('sp-dev-dietdost-github-deployer') & Client ID  │
 │ - Federated Credential: repo:nikunjbanker/diet-dost:environment:dev                    │
 │ - Roles: Contributor, Role Based Access Control Administrator, Key Vault Secrets Officer│
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
@@ -113,15 +113,16 @@ $SubscriptionId    = az account show --query "id" -o tsv
 $TenantId          = az account show --query "tenantId" -o tsv
 az account set --subscription $SubscriptionId
 
-# 4. Dynamically Resolve Entra ID App Registration Client ID
-$AppRegistrationId = az ad app list --display-name "app-dietdost-web" --query "[0].appId" -o tsv
+# 4. Dynamically Resolve Entra ID App Registration Client ID ('sp-dev-dietdost-github-deployer')
+$AppRegistrationName = "sp-dev-dietdost-github-deployer"
+$AppRegistrationId   = az ad app list --display-name $AppRegistrationName --query "[0].appId" -o tsv
 if (-not $AppRegistrationId) {
-    $AppRegistrationId = az ad sp list --display-name "app-dietdost-web" --query "[0].appId" -o tsv
+    $AppRegistrationId = az ad sp list --display-name $AppRegistrationName --query "[0].appId" -o tsv
 }
 
 Write-Host "✅ Active Subscription : $(az account show --query 'name' -o tsv) ($SubscriptionId)" -ForegroundColor Green
 Write-Host "✅ Active Tenant ID    : $TenantId" -ForegroundColor Green
-Write-Host "✅ App Registration ID : $AppRegistrationId" -ForegroundColor Green
+Write-Host "✅ App Registration ID : $AppRegistrationId ($AppRegistrationName)" -ForegroundColor Green
 ```
 
 ---
@@ -245,34 +246,60 @@ Write-Host "🎉 Phase 2 Complete: GitHub Environment Variables & Secrets ready!
 
 ---
 
-### Phase 3: Trigger the Aspire Deployment Workflow (Level 3 & 4)
+### Phase 3: Trigger the Two-Stage Aspire Deployment Pipelines (Level 3 & 4)
 
-Now trigger the Aspire Deployment Workflow directly from PowerShell.  
-> [!IMPORTANT]
-> For the initial deployment run, keep `enableCustomDomain="false"` because Azure generates the unique Container App FQDN and verification token during this first deployment.
+In accordance with enterprise DevOps best practices and [ADR-070](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261008-070-aspire-native-deployment-pipeline-and-two-stage-workflow.md), infrastructure foundation and application workload releases are decoupled into two distinct stages:
+
+#### Stage 1: Provision Infrastructure Foundation (`azure-infra-deploy.yml`)
+Provisions the Virtual Network (`vnet-dietdost-infra`), Delegated Subnet (`snet-aca-infra`), Zero-Trust NSG perimeter, Azure Container Apps Environment (`cae-dietdost-dev`), Storage Account with SMB share (`dietdost-data`), Azure Key Vault, and Azure Container Registry.
 
 ```powershell
-Write-Host "🚀 Dispatching Aspire Build & Deploy Pipeline on branch '$GitBranch'..." -ForegroundColor Cyan
+Write-Host "🚀 Stage 1: Dispatching Infrastructure Provisioning Pipeline ('azure-infra-deploy.yml')..." -ForegroundColor Cyan
+
+gh workflow run "azure-infra-deploy.yml" `
+  --repo $GitHubRepo `
+  --ref $GitBranch `
+  -f resourceGroupName=$ResourceGroup `
+  -f location=$Location `
+  -f environment=$EnvironmentName `
+  -f fileShareQuotaGb=1
+
+Write-Host "✅ Infrastructure workflow dispatched!" -ForegroundColor Green
+Start-Sleep -Seconds 5
+$infraRunId = gh run list --repo $GitHubRepo --workflow="azure-infra-deploy.yml" --limit 1 --json databaseId --jq ".[0].databaseId"
+Write-Host "Monitoring Infrastructure Run ID: $infraRunId" -ForegroundColor Yellow
+
+# Watch live infrastructure output:
+gh run watch $infraRunId --repo $GitHubRepo
+```
+
+#### Stage 2: Build Container, Run Tests & Deploy Application (`azure-app-deploy.yml`)
+Runs the full security suite and unit tests, builds the .NET 11 chiseled container image, pushes to ACR, and deploys the Container App (`app-dietdost-web`) with persistent SQLite SMB volume mount (`/app/data`).
+
+> [!IMPORTANT]
+> - Since infrastructure was already provisioned and verified in Stage 1, we set `-f provisionInfra="false"`.
+> - For the initial deployment run, keep `enableCustomDomain="false"` because Azure generates the unique Container App FQDN and verification token during this first deployment.
+
+```powershell
+Write-Host "🚀 Stage 2: Dispatching Application Build & Deploy Pipeline ('azure-app-deploy.yml')..." -ForegroundColor Cyan
 
 gh workflow run "azure-app-deploy.yml" `
   --repo $GitHubRepo `
   --ref $GitBranch `
   -f resourceGroupName=$ResourceGroup `
   -f location=$Location `
-  -f provisionInfra="true" `
+  -f provisionInfra="false" `
   -f allowDemoUsers="true" `
   -f enableCustomDomain="false" `
   -f environment=$EnvironmentName
 
-Write-Host "✅ Pipeline dispatched successfully!" -ForegroundColor Green
-Write-Host "Tracking latest workflow run..." -ForegroundColor Cyan
-
+Write-Host "✅ Application deploy pipeline dispatched successfully!" -ForegroundColor Green
 Start-Sleep -Seconds 5
-$runId = gh run list --repo $GitHubRepo --workflow="azure-app-deploy.yml" --limit 1 --json databaseId --jq ".[0].databaseId"
-Write-Host "Monitoring Run ID: $runId" -ForegroundColor Yellow
+$appRunId = gh run list --repo $GitHubRepo --workflow="azure-app-deploy.yml" --limit 1 --json databaseId --jq ".[0].databaseId"
+Write-Host "Monitoring Application Run ID: $appRunId" -ForegroundColor Yellow
 
-# Watch live output in PowerShell:
-gh run watch $runId --repo $GitHubRepo
+# Watch live application output:
+gh run watch $appRunId --repo $GitHubRepo
 ```
 
 ---

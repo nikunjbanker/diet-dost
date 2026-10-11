@@ -14,6 +14,7 @@
 param (
     [string]$SubscriptionId            = "",
     [string]$TenantId                  = "",
+    [string]$AppRegistrationName       = "sp-dev-dietdost-github-deployer",
     [string]$AppRegistrationId         = "",
     [string]$GitHubRepo                = "nikunjbanker/diet-dost",
     [string]$EnvironmentName           = "dev",
@@ -88,13 +89,19 @@ Write-Host "  ✅ Azure Tenant ID dynamically resolved: $TenantId" -ForegroundCo
 
 # Dynamically resolve App Registration Client ID from authenticated session
 if ([string]::IsNullOrWhiteSpace($AppRegistrationId)) {
-    Write-Host "  Dynamically querying Entra ID for deployment App Registration..." -ForegroundColor Yellow
+    Write-Host "  Dynamically querying Entra ID for deployment App Registration '$AppRegistrationName'..." -ForegroundColor Yellow
     if ($env:AZURE_CLIENT_ID) {
         $AppRegistrationId = $env:AZURE_CLIENT_ID
     } else {
-        $AppRegistrationId = (az ad app list --all --query "[?contains(displayName, 'dietdost')].appId" -o tsv 2>$null | Select-Object -First 1)
+        $AppRegistrationId = (az ad app list --display-name $AppRegistrationName --query "[0].appId" -o tsv 2>$null)
         if (-not $AppRegistrationId) {
-            $AppRegistrationId = (az ad sp list --all --query "[?contains(displayName, 'dietdost')].appId" -o tsv 2>$null | Select-Object -First 1)
+            $AppRegistrationId = (az ad sp list --display-name $AppRegistrationName --query "[0].appId" -o tsv 2>$null)
+        }
+        if (-not $AppRegistrationId) {
+            $AppRegistrationId = (az ad app list --all --query "[?contains(displayName, '$AppRegistrationName')].appId" -o tsv 2>$null | Select-Object -First 1)
+        }
+        if (-not $AppRegistrationId) {
+            $AppRegistrationId = (az ad app list --all --query "[?contains(displayName, 'dietdost')].appId" -o tsv 2>$null | Select-Object -First 1)
         }
     }
 }
@@ -252,14 +259,24 @@ Write-Host "`n[5/5] Verification Summary" -ForegroundColor Cyan
 Write-Host "==============================================================================" -ForegroundColor Green
 Write-Host "🎉 PRE-DEPLOYMENT PREREQUISITES ARE FULLY CONFIGURED!" -ForegroundColor Green
 Write-Host "==============================================================================" -ForegroundColor Green
-Write-Host "You are now ready to trigger the deployment pipeline in GitHub Actions:" -ForegroundColor Yellow
+Write-Host "You are now ready to trigger the two-stage deployment pipelines in GitHub Actions:" -ForegroundColor Yellow
 Write-Host @"
+# Stage 1: Provision Infrastructure Foundation (VNet, ACA Environment, SMB Storage, Key Vault, ACR)
+gh workflow run 'azure-infra-deploy.yml' `
+  --repo $GitHubRepo `
+  --ref $GitBranch `
+  -f resourceGroupName=rg-dietdost-$EnvironmentName `
+  -f location=centralindia `
+  -f environment=$EnvironmentName `
+  -f fileShareQuotaGb=1
+
+# Stage 2: Build Container, Run Tests & Deploy Application Workload (ACA App Revision)
 gh workflow run 'azure-app-deploy.yml' `
   --repo $GitHubRepo `
   --ref $GitBranch `
   -f resourceGroupName=rg-dietdost-$EnvironmentName `
   -f location=centralindia `
-  -f provisionInfra=true `
+  -f provisionInfra=false `
   -f allowDemoUsers=true `
   -f enableCustomDomain=false `
   -f environment=$EnvironmentName
