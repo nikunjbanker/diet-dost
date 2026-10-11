@@ -98,3 +98,25 @@ This skill provides 7 actionable, imperative reference playbooks located in `ref
    Mobile network requests must minimize over-the-air payload size through single-roundtrip composite endpoints, payload field minification, and HTTP 304 Not Modified caching.
 4. **Thumb-Zone Usability**:
    Core actions (log meal, switch dates, review macros) must be comfortably reachable with one thumb on devices up to 6.7 inches.
+
+---
+
+## 4. Automated CFT Verification & Living ADR Synchronization
+
+### 4.1 Automated Responsive & Mobile Test Harness
+Execute automated Puppeteer verification against `http://localhost:5240`:
+- **Viewport Layout & Overflow Test**:
+  ```bash
+  node tests/verify_cft_viewports.mjs
+  ```
+- **Mobile Bottom Nav & Sheet Modal Core Flows**:
+  ```bash
+  node tests/verify_mobile_cft_core_flows.mjs
+  ```
+- **Mobile BFF Headless Endpoints**:
+  ```bash
+  node tests/verify_mobile_bff.mjs
+  ```
+
+### 4.2 Living ADR Synchronization
+Record responsive and presentation architectural changes in `docs/adr/presentation/ADR-<YYYYMMDD>-<NNN>-<slug>.md` and run `pwsh -File scripts/sync-adr-index.ps1`.

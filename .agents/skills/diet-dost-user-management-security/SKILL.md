@@ -1,4 +1,4 @@
-﻿---
+---
 name: diet-dost-user-management-security
 version: 1.6.0
 status: Final Approved Production Specification & Security Rulebook
@@ -24,7 +24,7 @@ description: >-
 
 # Diet Dost — User Management & Security Architecture Rulebook
 > **Specification Version**: `v1.6.0-APPROVED-SPEC`
-> **Standards**: OWASP Top 10 (2021), OWASP AI LLM Top 10 (2025), India DPDPA 2023, ISO/IEC 27001 Baseline, JWT RFC 7519, OpenID Connect Core 1.0
+> **Standards**: OWASP Top 10 (2021), OWASP AI LLM Top 10 (2025), India DPDPA 2023, ISO/IEC 27001 Baseline, JWT RFC 7519, OpenID Connect Core 1.0, Repository Security Policy ([`SECURITY.md`](SECURITY.md))
 > **Target Framework**: `.NET 11 RC` (`net11.0`) · Standalone `.NET Aspire 13.5.4`
 > **Super/God User Config**: Dynamic via `Auth:SuperAdminEmail` / env `SUPER_ADMIN_EMAIL`
 
@@ -38,10 +38,11 @@ description: >-
 > 2. All C# projects target `<TargetFramework>net11.0</TargetFramework>`.
 > 3. Build must produce **0 warnings, 0 errors**.
 > 4. After implementation, run `dotnet test` and confirm 100% pass before pushing.
-> 5. Synchronize Living SDD (`docs/sdd/*.md`) and append a log entry to `docs/sdd/07_living_documentation_log.md`.
+> 5. **Living ADR Synchronization**: Record an atomic ADR fragment in `docs/adr/security/ADR-<YYYYMMDD>-<NNN>-<slug>.md`, synchronize `docs/sdd/*.md`, and execute `pwsh -File scripts/sync-adr-index.ps1`.
 > 6. **Mandatory End-to-End User Tier Validation**: After any change, refactoring, new feature implementation, or bug fix, execute live end-to-end verification of the running application across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Verify actual product behavior: token issuance, quota meters, feature gating (photo compare, meal export paywalls), admin role authorization, and ensure 0 runtime/console errors.
-> 7. **Major Change Auto-Detection & Living Artifact Synchronization**: Proactively detect major changes (secret storage, auth gates, environment isolation, demo account restrictions, tier quotas) and automatically synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, and `docs/sdd/*.md` without requiring manual prompts.
-> 8. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol**: In case of ANY ambiguity, doubt, or multiple implementation paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
+> 7. **Security Defense & CI Static Analysis Gate**: Run `pwsh -File scripts/verify-ai-security-defense.ps1 -Mode All` locally to assert PromptShield and safety settings. Ensure 0 errors across the 8-job CI scan matrix (`.github/workflows/security-scan.yml`).
+> 8. **Major Change Auto-Detection & Living Artifact Synchronization**: Proactively detect major changes (secret storage, auth gates, environment isolation, demo account restrictions, tier quotas) and automatically synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, and `docs/sdd/*.md` without requiring manual prompts.
+> 9. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol**: In case of ANY ambiguity, doubt, or multiple implementation paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
 
 ---
 
@@ -543,9 +544,9 @@ public record QuotaStatus(
 | `docs/sdd/02_solution_architecture.md` | Architecture diagrams if topology changed |
 | `docs/sdd/03_data_models_and_contracts.md` | Entity schema if new fields/entities added |
 | `docs/sdd/04_security_and_compliance.md` | OWASP matrix, legal consent, JWT config |
-| `docs/sdd/07_living_documentation_log.md` | New `[LOG-YYYYMMDD-NNN]` entry |
+| `docs/adr/security/ADR-*.md` | Atomic ADR fragment for security decisions |
 
-### 13.2 Log Entry Format (`07_living_documentation_log.md`)
+### 13.2 Atomic ADR Fragment Format & Index Synchronization (`pwsh -File scripts/sync-adr-index.ps1`)
 ```markdown
 ## [LOG-YYYYMMDD-NNN] <Short Title>
 - **Date**: YYYY-MM-DD
@@ -633,7 +634,8 @@ When implementing or modifying any feature touching auth, identity, or security:
 - [ ] Test coverage for new code (see Section 12 harness requirements)
 - [ ] `dotnet test` — 0 failures, 0 warnings, 0 errors
 - [ ] Mandatory End-to-End User Tier Validation executed across all 5 demo user tiers with 100% pass rate
-- [ ] Living SDD updated (`04_security_and_compliance.md` + log entry in `07_living_documentation_log.md`)
+- [ ] Local AI security defense test executed (`pwsh -File scripts/verify-ai-security-defense.ps1 -Mode All`)
+- [ ] Atomic ADR fragment recorded in `docs/adr/security/ADR-*.md` and indexed via `pwsh -File scripts/sync-adr-index.ps1`
 - [ ] Branch pushed and PR opened (no direct merge to `main`)
 
 ---

@@ -114,7 +114,7 @@ This skill guides the design, architecture, documentation, and development of a 
      2. `docs/architecture/diagrams/*.mermaid` (all affected system and flow diagrams).
      3. `docs/sdd/*.md` (Living SDD system specifications, security threat matrix, and data models).
      4. `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
-      5. Write a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` and register in `docs/adr/README.md` and `docs/sdd/07_living_documentation_log.md` (Fragment Pattern for 100% merge-conflict immunity).
+      5. Write a dedicated atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` and execute `pwsh -File scripts/sync-adr-index.ps1` (Fragment Pattern for 100% merge-conflict immunity).
       6. End-to-end verification across all 5 demo user tiers and automated test harnesses.
 8. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol (Strict Ask Rule)**:
    - In case of ANY ambiguity, doubt, conflicting options (such as whether a branch should be stacked vs independent, or resolving structural conflicts), **STOP and ask the user for confirmation** using interactive modal tools (`ask_question`).
@@ -147,7 +147,7 @@ This skill guides the design, architecture, documentation, and development of a 
       - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting diffs on rebase.
       - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
       - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
-    - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/adr/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/archive/living_log_2026_09_archive.md), while [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) act as lean indexes and standard registries.
+    - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/adr/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/archive/living_log_2026_09_archive.md), while [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json) and [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) act as lean indexes and standard registries.
 
 ---
 
@@ -977,7 +977,7 @@ When implementing components from this skill, follow this strict loop:
    - Verify OpenTelemetry spans: AI Vision processing latency within SLA, database query execution times, zero unhandled errors.
 7. **Step 6: Continuous Documentation Synchronization (Zero Drift Mandate)**:
    - **MANDATORY**: After passing the test harness and before closing any work, the developer or agent **MUST** update the project's Software Design Documents (`docs/sdd/*.md`) and regenerate affected architecture diagrams.
-   - Update `docs/sdd/07_living_documentation_log.md` with the feature summary, bug fix root-cause analysis, and harness verification results.
+   - Record an atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` and execute `pwsh -File scripts/sync-adr-index.ps1`.
 8. **Step 7: Task Convergence Gate**:
    - The branch is ready for submission only when both the executable code passes 100% of tests AND the SDD documentation accurately reflects the new system state.
 9. **Step 8: Push Branch & PR-Only Merge Gate (MANDATORY)**:
@@ -1005,7 +1005,7 @@ Any codebase implemented under this skill **MUST** establish and maintain a dedi
 │   │   ├── 04_security_and_compliance.md       # OWASP ASVS Matrix, Threat Model & Guardrails
 │   │   ├── 05_devops_and_infrastructure.md     # .NET Aspire 11 AppHost, OTel, Docker & CI/CD
 │   │   ├── 06_test_harness_and_evals.md        # Aspire Testing, Multimodal Vision Evals & Unit Suites
-│   │   └── 07_living_documentation_log.md      # Living Synchronization Log (Features & Bug Fixes)
+│   │   └── 07_living_documentation_log.md      # Living Log Archive & ADR Domain Registry
 │   └── architecture/
 │       └── diagrams/
 │           ├── solution_architecture.mermaid   # Standalone Master Architecture Mermaid Source
@@ -1079,7 +1079,7 @@ Any codebase implemented under this skill **MUST** establish and maintain a dedi
   - OWASP automated security penetration and fuzzing test cases.
   - Command-line test execution instructions (`dotnet test --logger "console;verbosity=detailed"`).
 
-#### 8. `docs/sdd/07_living_documentation_log.md` (Continuous Living Log)
+#### 8. `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (Domain ADR Fragments)
 - **Purpose**: Append-only chronological ledger of every feature implementation, architectural change, and bug/defect fix.
 - **Format**: See Section 9.2 for the mandatory entry format.
 
@@ -1097,13 +1097,13 @@ To prevent documentation decay, any development or maintenance activity under th
      1. Analyze and record the **Root Cause Analysis (RCA)**.
      2. Update the relevant SDD specification (e.g., if a medication interaction bug was fixed, update `01_clinical_dietetics_spec.md`; if an offline sync error occurred, update `03_data_models_and_contracts.md`).
      3. Add regression test cases to the test harness in `06_test_harness_and_evals.md`.
-     4. Append an entry to `07_living_documentation_log.md`.
+     4. Record an atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` and run `pwsh -File scripts/sync-adr-index.ps1`.
 3. **Architecture Diagram Evolution Rule**:
    - If a microservice, gateway route, database entity, security guardrail, or external AI provider is added, modified, or decommissioned:
      - The master Mermaid diagram in `docs/sdd/02_solution_architecture.md` and `docs/architecture/diagrams/*.mermaid` **MUST be updated immediately**.
 
-### 9.2 Standard Entry Schema for `docs/sdd/07_living_documentation_log.md`
-Every change must append a record following this exact format:
+### 9.2 Domain-Partitioned ADR Fragment Standard (`docs/adr/<domain>/ADR-*.md`)
+Every architectural change must record a standalone fragment indexed via `pwsh -File scripts/sync-adr-index.ps1`:
 
 ```markdown
 ### [LOG-YYYYMMDD-###] <Descriptive Title of Change>
@@ -1297,7 +1297,7 @@ When any trigger fires, the agent **MUST** complete all of the following steps:
 4. **Harmonize Solution Skills (`.agents/skills/*.md`)**:
    - Update `indian-diet-calorie-tracker/SKILL.md`, `diet-dost-clean-architecture/SKILL.md`, and `diet-dost-user-management-security/SKILL.md` to ensure rules, contracts, and patterns remain synchronized with the codebase.
 5. **Append Entry to Living SDD Log**:
-   - Append a complete entry with timestamp, change type, modified files, diagrams synchronized, and test results to `docs/sdd/07_living_documentation_log.md`.
+   - Record an atomic ADR fragment in `docs/adr/<domain>/` and run `pwsh -File scripts/sync-adr-index.ps1`.
 6. **Execute Automated & E2E Verification**:
    - Run `dotnet test` (targeting .NET 11, 0 warnings, 0 errors).
    - Run `pwsh -File tests/validate_e2e_tiers.ps1` against live running application to verify all 5 tiers.

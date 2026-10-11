@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -52,7 +52,7 @@ public class ForgotPasswordCommandHandler : ICommandHandler<ForgotPasswordComman
         // Anti-enumeration (OWASP A07): always acknowledge generically
         if (user == null || !user.IsActive || !user.IsEmailVerified)
         {
-            _logger.LogInformation("[AUTH] ForgotPassword: no eligible active user for email {Email}", request.Email);
+            _logger.LogInformation("[AUTH] ForgotPassword: no eligible active user found for password reset request.");
             return Result<ForgotPasswordResultDto>.Success(new ForgotPasswordResultDto(
                 "If a matching active account exists, a reset code has been sent to its email address.",
                 null

@@ -31,6 +31,11 @@ diettracker.db
 ## Secrets / Local configuration
 appsettings.local.json
 appsettings.Development.json
+aspire-manifest.json
+**/aspire-manifest.json
+aspire-output/
+**/aspire-output/
+aspire.config.json
 
 ## Uploads
 src/Nutrition.WebGateway/wwwroot/uploads/

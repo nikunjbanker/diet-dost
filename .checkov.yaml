@@ -1,0 +1,39 @@
+# ==============================================================================
+# Copyright (c) 2026 diet-dost and/or its contributors.
+# Licensed under the "GNU Affero General Public License v3.0 only" and
+# the "Server Side Public License, v 1"; you may not use this file except
+# in compliance with, at your election, the "GNU Affero General Public
+# License v3.0 only" or the "Server Side Public License, v 1".
+# ==============================================================================
+# Diet-Dost Checkov Infrastructure-as-Code (IaC) Configuration
+# Enforces strict cloud policy validation while formally documenting
+# architectural development/free-tier cost containment invariants.
+# ==============================================================================
+
+directory:
+  - infra
+
+framework:
+  - bicep
+  - arm
+
+# Strict enforcement: fail immediately on commit if any unapproved violation occurs
+soft-fail: false
+
+skip-check:
+  # CKV_AZURE_43: Storage account uses uniqueString prefix compliant with Azure 3-24 char naming rules.
+  # Checkov static AST parser cannot resolve dynamic uniqueString(resourceGroup().id) expressions.
+  - CKV_AZURE_43
+
+  # CKV_AZURE_139: ACR Basic SKU used for dev-tier cost containment; disabling public network requires Premium SKU.
+  - CKV_AZURE_139
+
+  # CKV_AZURE_163: Vulnerability scanning requires Microsoft Defender for Containers on ACR Premium tier.
+  - CKV_AZURE_163
+
+  # CKV_AZURE_166: Quarantine and image content trust require ACR Premium SKU.
+  - CKV_AZURE_166
+
+  # CKV_AZURE_189: Key Vault publicNetworkAccess requires Private Endpoint & Private DNS Zone (Premium network cost).
+  # Dev tier uses VNet Service Endpoints with networkAcls.defaultAction: 'Deny' and VNet subnet rules.
+  - CKV_AZURE_189

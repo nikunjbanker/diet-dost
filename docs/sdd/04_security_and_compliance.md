@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -7,9 +7,9 @@
 -->
 
 # Security & Compliance Specification (OWASP ASVS)
-> **Specification Version**: `v1.3.1 (Production & Living SDD)`  
+> **Specification Version**: `v1.4.0 (Production & Living SDD)`  
 > **Standard**: OWASP Top 10 & ASVS Level 2 Baseline  
-> **Scope**: Multimodal Ingestion, Prompt Defense, Rate Limiting, Storage Isolation, PII-Free Telemetry, Temporal Consistency, Static SVG Armor  
+> **Scope**: Multimodal Ingestion, Prompt Defense, Rate Limiting, Storage Isolation, PII-Free Telemetry, Temporal Consistency, Static SVG Armor, Pre-Deployment Security Gate, Purge Protection  
 
 ---
 
@@ -96,4 +96,70 @@ public static (bool IsValid, string? ErrorMessage, string? MimeType) ValidateIma
     - Otherwise $\to$ forwards to `CookieAuthenticationDefaults.AuthenticationScheme`.
   - Expiration: Configurable via `Jwt:ExpiryMinutes` (default: 1440 minutes = 24h) with 30-second clock skew tolerance.
   - Expired or tampered tokens return structured HTTP 401 Unauthorized without HTML redirection loops.
+
+---
+
+## 5. Enterprise AI Prompt Shield, Content Safety & Self-Learning Protection (OWASP Top 10 for LLM)
+
+- **Zero Harmful / Violent / Sexual / Communal Content Policy**: Every prompt constructed or processed in the Diet-Dost solution MUST pass content safety. No harmful, violent, sexual, or communal hate speech / religious disharmony content is permitted into model prompts.
+- **Pre-Flight Prompt Shield (`PromptShieldValidator`)**: Intercepts natural language inputs before external API dispatch or local execution. Detects and rejects prompt injections, role-play jailbreaks, delimiter tampering, and dangerous keywords with zero token spend:
+  - *Harmful & Violent Content*: Weapons, murder, physical violence, and self-harm rejected.
+  - *Sexually Explicit Content*: Adult, erotic, and pornographic terms rejected.
+  - *Communal & Hate Speech*: Communal violence, religious hatred, and sectarian slurs rejected.
+  - *Prompt Injections & Jailbreaks*: Role override ("DAN"), system override, and prompt extraction attempts rejected.
+- **Continuous Learned Memory & Self-Learning Data Poisoning Defense**: User feedback retraining submissions (`ProcessFeedbackRetrainingAsync`) are validated against adversarial data poisoning guardrails to preserve adaptive heuristics integrity.
+- **Google AI StrictSafetySettings**: Google Gemini API payloads declare explicit `safetySettings` blocking harassment, hate speech, sexually explicit, dangerous content, and civic integrity at `BLOCK_LOW_AND_ABOVE`.
+- **Pre-Commit and CI Gating**: Automated validator (`verify-ai-security-defense.ps1`) runs on `.githooks/pre-commit` and as `ai-security-defense` job in `security-scan.yml` before any commit or cloud deployment is permitted.
+
+---
+
+## 6. Pre-Deployment Security Gate & Automated Code Scanning Pipeline
+
+To guarantee that no vulnerability, hardcoded secret, or malicious pattern reaches production, Diet-Dost enforces an **8-job Pre-Deployment Security Gate** in [`.github/workflows/security-scan.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/security-scan.yml):
+
+```mermaid
+graph TD
+    SCAN1["1. Gitleaks (Secret Detection)"]
+    SCAN2["2. ESLint (Frontend AST Inspection)"]
+    SCAN3["3. Roslyn Security, DevSkim & CodeQL (All 7 .csproj Projects)"]
+    SCAN4["4. Trivy (Container & SBOM CVEs)"]
+    SCAN5["5. Checkov (Bicep IaC Security)"]
+    SCAN6["6. actionlint (GitHub Actions Syntax)"]
+    SCAN7["7. AI Security Defense (5-Vector Verification)"]
+    SUMMARY["8. Security Gate Summary & PR Comment Publisher"]
+    DEPLOY["Two-Stage Azure Deployment Workflows"]
+
+    SCAN1 & SCAN2 & SCAN3 & SCAN4 & SCAN5 & SCAN6 & SCAN7 --> SUMMARY
+    SUMMARY -->|100% Green PASS| DEPLOY
+    SUMMARY -.->|ANY Scanner FAILS| BLOCKED["DEPLOYMENT BLOCKED (HTTP 403 / Red Gate)"]
+```
+
+### 6.1 Multi-Project Static Analysis Coverage
+Security scanning targets **all 7 projects** in the solution (`DietDost.slnx`):
+1. `src/Nutrition.Domain/Nutrition.Domain.csproj`
+2. `src/Nutrition.Application/Nutrition.Application.csproj`
+3. `src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj`
+4. `src/Nutrition.VisionService/Nutrition.VisionService.csproj`
+5. `src/Nutrition.WebGateway/Nutrition.WebGateway.csproj`
+6. `tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj`
+7. `tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj`
+
+### 6.2 Zero-Deployment-on-Failure Mandate
+Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application deployment (`azure-app-deploy.yml`) can start unless `security-scan.yml` completes with 100% PASS. Any scanner failure publishes an actionable markdown table as a PR comment and immediately cancels deployment pipelines.
+
+---
+
+## 7. Sole Authority Secret Governance Policy
+
+- **Sole Approver & Authority**: Contributor `@nikunjbanker` holds sole administrative authority over solution secrets, Azure Key Vault access policies, and production configurations.
+- **Zero Hardcoded Secrets Policy**: Hardcoded API keys, JWT signing keys, or connection strings in code or Git commits are strictly forbidden and blocked by Gitleaks.
+- **Runtime Secret Resolution**: Secrets are injected via environment variables or resolved dynamically at startup from Azure Key Vault using managed identity.
+
+---
+
+## 8. Azure Key Vault Purge Protection & Passwordless Managed Identity
+
+- **Purge Protection Invariant**: The production Key Vault (`diet-dost-kv`) is provisioned with `enablePurgeProtection: true` and 90-day soft-delete retention in `infra/infra.bicep`. Secrets cannot be deleted permanently without administrative governance.
+- **Passwordless ACR Pull (`acrPullRole`)**: Azure Container Apps retrieves container images from Azure Container Registry via system-assigned managed identity assigned the `AcrPull` built-in role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`), eliminating static registry admin credentials.
+- **Least-Privilege Key Vault Role**: The Container App accesses Key Vault via `Key Vault Secrets User` role assignment, restricting access strictly to read-only secret retrieval.
 

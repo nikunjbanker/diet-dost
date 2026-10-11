@@ -234,7 +234,7 @@ Every GitHub issue processed by an AI agent or human contributor follows the str
 Before opening the Draft PR, the agent MUST update living documentation:
 1. **Dedicated Atomic ADR Fragment**:
    - Create a standalone ADR fragment using `write_to_file`:
-     `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md`
+     `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md`
    - Adhere strictly to the unified template codified in [`docs/adr/template.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/template.md).
    - Reference the issue number, context, options considered, chosen outcome, and verification metrics.
 2. **Registry Synchronization**:

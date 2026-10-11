@@ -27,6 +27,16 @@ export class AdminModalController {
     return role === 'SuperAdmin' || role === 2 || role === '2';
   }
 
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   initElements() {
     this.modal = document.getElementById('admin-modal');
     this.btnClose = document.getElementById('btn-close-admin-modal');
@@ -207,7 +217,15 @@ export class AdminModalController {
 
       this.bindUserActionHandlers();
     } catch (err) {
-      this.usersTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 2rem;">Error loading users: ${err.message}</td></tr>`;
+      if (this.usersTableBody) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.style.cssText = 'text-align: center; color: #f87171; padding: 2rem;';
+        cell.textContent = `Error loading users: ${err?.message || 'Unknown error'}`;
+        row.appendChild(cell);
+        this.usersTableBody.replaceChildren(row);
+      }
     }
   }
 
@@ -482,7 +500,8 @@ export class AdminModalController {
 
       this.bindTierActionHandlers();
     } catch (err) {
-      this.tierCardsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #f87171; padding: 2rem;">Failed to load tier configs: ${err.message}</div>`;
+      const safeMsg = this.escapeHtml(err?.message || 'Unknown error');
+      this.tierCardsContainer.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: #f87171; padding: 2rem;">Failed to load tier configs: ${safeMsg}</div>`;
     }
   }
 
@@ -567,7 +586,15 @@ export class AdminModalController {
         `;
       }).join('');
     } catch (err) {
-      this.logsTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #f87171; padding: 2rem;">Failed to load logs: ${err.message}</td></tr>`;
+      if (this.logsTableBody) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.style.cssText = 'text-align: center; color: #f87171; padding: 2rem;';
+        cell.textContent = `Failed to load logs: ${err?.message || 'Unknown error'}`;
+        row.appendChild(cell);
+        this.logsTableBody.replaceChildren(row);
+      }
     }
   }
 }

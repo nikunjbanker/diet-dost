@@ -22,6 +22,7 @@ using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
 
+[Collection("TierConfigTests")]
 public class AdminUserManagementTests : IDisposable
 {
     private readonly SqliteConnection _connection;

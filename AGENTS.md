@@ -10,6 +10,17 @@
 
 This solution-level instruction file defines mandatory engineering and Git workflows for any AI agent or human contributor working on the **Diet-Dost** repository.
 
+> [!TIP]
+> **Modular Antigravity Rules**: Domain-specific rule subsets are maintained modularly inside [`.agents/rules/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/):
+> - [`git-workflow.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/git-workflow.md): Git branching, lineage assertion, stacked PRs, and merge rules.
+> - [`clinical-dietetics-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/clinical-dietetics-rules.md): ICMR-NIN 2024, WHO Asian-Indian thresholds, Zero-Assumption Intake.
+> - [`security-and-ai-defense-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/security-and-ai-defense-rules.md): PromptShield, OWASP LLM, Sole Authority Key Vault, 8-job CI scan.
+> - [`clean-architecture-cqrs-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/clean-architecture-cqrs-rules.md): Native CQRS, Thin Controllers, UTC persistence, SQLite SMB mount.
+> - [`token-economics-and-adr-rules.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/token-economics-and-adr-rules.md): Zero prompt bloat, domain ADR fragments, index.json.
+> - [`ui-ux-design-system.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/ui-ux-design-system.md): Linear.app Obsidian surface ladder, hairline borders, typography.
+> - [`skill-synchronization-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/skill-synchronization-governance.md): Living runbooks, zero skill drift, token economics, archival rules.
+> - [`architecture-diagram-synchronization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/rules/architecture-diagram-synchronization.md): Canonical Mermaid diagrams, ADR-086 syntax, automated documentation sync, and pre-commit verification.
+
 ---
 
 ## 1. Mandatory Git Branching & PR-Only Merge Workflow
@@ -126,7 +137,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
      - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
      - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, etc.).
      - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
-     - Write a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (Fragment Pattern for 100% merge-conflict immunity) and register it in `docs/adr/README.md` and `docs/sdd/07_living_documentation_log.md`.
+     - Write a dedicated atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (where `<domain>` is `architecture`, `security`, `devops`, `presentation`, or `governance`), and execute `pwsh -File scripts/sync-adr-index.ps1` to automatically update `docs/adr/index.json` and `docs/adr/README.md`.
 5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash
@@ -167,9 +178,10 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **License Governance & Header Enforcement**: Governed by [`.agents/skills/diet-dost-license-governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-license-governance/SKILL.md) (dual AGPLv3 / SSPL v1 compliance, block comment formatting, and automated validation scripts).
 12. **Living Documentation & Architectural Decision Records (ADR) Architecture (Token Economics & Merge Conflict Immunity)**:
     - **The Monolith Anti-Pattern (Eliminated)**: Appending to a single monolithic log is strictly prohibited. Monolithic logs exceed agent tool buffer limits (>46 KB), burn excessive tokens on string-matching retries, and cause deterministic Git merge conflicts across concurrent/stacked PRs.
-    - **The Fragment Pattern Standard**: Every new architectural modification, feature, or defect fix must create a dedicated atomic ADR fragment in `docs/adr/ADR-<YYYYMMDD>-<NNN>-<slug>.md` using `write_to_file`.
+    - **The Domain-Partitioned Fragment Pattern**: Every new architectural modification, feature, or defect fix must create a dedicated atomic ADR fragment inside its corresponding domain directory: `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (where `<domain>` is `architecture`, `security`, `devops`, `presentation`, or `governance`).
+    - **Automated Machine-Readable Indexing**: Maintainers and agents do NOT manually edit markdown tables. Run `pwsh -File scripts/sync-adr-index.ps1` (or `python3 scripts/sync-adr-index.py`) to automatically regenerate the machine-readable `docs/adr/index.json` (~4 KB) and partitioned `docs/adr/README.md`.
     - **Quantitative Benefits**:
-      - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting diffs on rebase.
+      - **100% Merge-Conflict Immunity**: Each PR introduces an independent file; Git never encounters conflicting table diffs on rebase.
       - **87% Token Reduction**: Lowers log-related reasoning and context consumption from ~145,000 tokens to ~18,500 tokens across a 10-PR roadmap.
       - **Deterministic Tool Execution**: Single-shot `write_to_file` eliminates fragile line-offset searches and chunk replacement errors.
     - **Archive Governance**: Historical entries (LOG-001 through LOG-042) reside in [`docs/adr/archive/living_log_2026_09_archive.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/archive/living_log_2026_09_archive.md), while [`docs/adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) and [`docs/sdd/07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) act as lean indexes and standard registries.
@@ -194,8 +206,49 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Mandatory Pre-UI Inspection**: Contributors and AI agents MUST inspect `DESIGN.md` and the existing design system tokens in `styles.css` prior to introducing or altering any visual components.
     - **Zero-Ad-Hoc Visual Conventions**: Never introduce arbitrary bright or saturated colors, atmospheric gradients, or custom non-standard border radiuses. Use the canonical four-step surface ladder (`canvas` #010102 → `surface-1` #0f1011 → `surface-2` #141516 → `surface-3` #18191a → `surface-4` #191a1b), hairline borders (`#23252a`), and Linear lavender-blue (`#5e6ad2`) chromatic accent.
     - **Mandatory Verification**: Every UI modification must be verified for `DESIGN.md` token compliance, responsive layout across all viewports (Mobile, Tablet, Desktop), touch target minimums ($\ge 44 \times 44\,\text{px}$), and accessibility contrast.
-
-
-
+17. **Mandatory Secret & Environment Variable Governance Rule (Sole Authority: @nikunjbanker)**:
+    - **Sole Authority Mandate**: Strictly and exclusively `@nikunjbanker` (Repository Owner & Lead Architect) has permission or authority to create, update, delete, view, or rotate any GitHub Environment Secrets, Repository Secrets, GitHub Environment Variables, Repository Variables, Azure Key Vault Secrets, or Azure Container App configuration settings.
+    - **Zero-Unilateral Action Mandate**: AI agents, contributors, collaborators, and automated workflows are **strictly prohibited** from creating, updating, deleting, or exposing secrets or environment variables. No agent or contributor shall execute commands such as `gh secret set`, `gh secret delete`, `gh variable set`, `gh variable delete`, `az keyvault secret set`, or `az keyvault secret delete` unless explicitly instructed, authorized, or executed directly in an authenticated session belonging exclusively to `@nikunjbanker`.
+    - **Zero-Plaintext Secret Mandate**: High-entropy or confidential variables (including `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`, `JWT_KEY`, `GEMINI_API_KEY`, `AZURE_OPENAI_API_KEY`) must NEVER be stored as plaintext environment variables (`gh variable set`) or in unencrypted source files (`appsettings.json`); they must reside exclusively as encrypted GitHub Secrets and Azure Key Vault secrets managed solely by `@nikunjbanker`.
+    - **Workflow Actor Gating**: All CI/CD workflows and deployment pipelines (`azure-app-deploy.yml`, `azure-infra-deploy.yml`) that access, synchronize, or deploy secrets and environment variables MUST enforce explicit job-level (`if: github.actor == 'nikunjbanker'`) actor verification guards.
+    - **Automated CI Regression Barrier**: Unit and integration tests (`SecurityEnvironmentAndHeaderTests.cs`) must continuously assert and fail CI if any deployment pipeline omits this actor restriction.
+18. **Immutable Security-Scan Pipeline & Mandatory Pre-Execution Security Gating Rule**:
+    - **Zero-Deletion Mandate**: The unified security workflow [`.github/workflows/security-scan.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/security-scan.yml) is **PERMANENT AND IMMUTABLE**. Neither AI agents nor human contributors shall delete, bypass, disable, rename, or remove this workflow under any circumstances.
+    - **Mandatory Pre-Execution Dependency**: For ANY GitHub Actions workflow execution (including infrastructure provisioning in `azure-infra-deploy.yml`, application deployment in `azure-app-deploy.yml`, or any future CI/CD pipeline), `security-scan.yml` MUST automatically run FIRST as a mandatory prerequisite job (`uses: ./.github/workflows/security-scan.yml`).
+    - **Strict Pre-Completion Execution Block**: No downstream workflow job, deployment step, container build, or infrastructure provisioning action is permitted to start execution before `security-scan.yml` finishes execution with a 100% clean pass verdict across all 7 scanners (`needs: pre-deployment-security-scan` / `needs: pre-provisioning-security-scan`).
+    - **Failure Rejection Gate**: If `security-scan.yml` encounters ANY failure (in Gitleaks, ESLint, SecurityCodeScan, Trivy, Checkov, actionlint, ai-security-defense, or security-gate-summary), the downstream workflow MUST be immediately blocked, prevented from starting, and failed.
+    - **Automated PR Commenting**: The aggregating `security-gate-summary` job MUST automatically publish the full security verdict table directly as a Pull Request comment on every PR (`gh pr comment`).
+    - **Supply Chain Security & Commit SHA Pinning**: All GitHub Actions used in `security-scan.yml` and all other repository workflows MUST be cryptographically pinned to full 40-character commit hashes (e.g. `uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2`), eliminating third-party mutable tag hijacking and supply chain vulnerabilities.
+    - **Automated CI Enforcement**: Unit tests (`SecurityEnvironmentAndHeaderTests.cs`) must continuously assert the presence of `security-scan.yml`, verify downstream gating dependencies (`needs: ...`), and enforce that all deployment pipelines call `security-scan.yml` before any execution begins.
+19. **Mandatory AI-Based Development Defense, Content Safety & Pre-Commit Gating Rule**:
+    - **Mandatory Memory & Agent Instruction**: All AI agents and human contributors working on Diet-Dost MUST remember and strictly enforce AI development security defenses on every single task, commit, and pull request.
+    - **Strict Pre-Commit Gate (Zero Commit on Missing Defense)**: Commits are strictly prohibited if any AI security defense rule is missed or violated. The local Git pre-commit hook (`.githooks/pre-commit` wired via `git config core.hooksPath .githooks`) and validation script (`scripts/verify-ai-security-defense.ps1`) automatically evaluate staged changes and reject commits with non-zero exit codes upon detecting:
+      1. *Package Hallucination & Slopsquatting*: Unvetted or hallucinated NuGet/npm packages added to project configurations (`*.csproj`, `package.json`). Only approved and vetted package namespaces are permitted.
+      2. *Insecure Defaults & "Lazy AI" Workarounds*: Disabling TLS/SSL certificate validation (`DangerousAcceptAnyServerCertificateValidator`, `rejectUnauthorized: false`), introducing wildcard CORS (`.AllowAnyOrigin()`, `SetIsOriginAllowed(_ => true)`), hardcoded fallback secrets (`?? "default_secret"`), or empty error catch blocks (`catch {}`).
+      3. *AI Security Disablers & Suppression Tags*: Adding unscoped suppressions (`// @ts-ignore`, `// @ts-nocheck`, `/* eslint-disable */`, `// gitleaks:allow`, `// nosec`, or `#pragma warning disable` without explicit justification comments) to silence security scanners or compilers.
+      4. *OWASP Top 10 for LLM Defenses*: Failing to enforce prompt injection delimiters (`[USER_MEAL_INTAKE_DATA]`), input sanitization (`SanitizeNaturalLanguageInput`), dynamic tier quotas (LLM04), or leaking sensitive user credentials / unconsented DPDPA 2023 health data in prompts (LLM06).
+      5. *AI Agent Artifact & State Bleed*: Staging or committing internal AI agent session states (`.agents/state/*.json`), runtime credentials (`.gemini/`), or chat transcript dumps (`*.jsonl`).
+    - **Mandatory Content Safety, Prompt Shield & Self-Learning Poisoning Defense**:
+      - **Zero Harmful / Violent / Sexual / Communal Content Policy**: Every prompt constructed or processed in the system MUST pass content safety. No harmful, violent, sexual, or communal hate speech / religious disharmony content shall be permitted.
+      - **Pre-Flight Prompt Shield**: All user-supplied natural language text (meal descriptions, dish names, feedback remarks, regional contexts) must pass `PromptShieldValidator.ValidateInput` before prompt generation or API dispatch. Any violation triggers immediate safe rejection (`DishName = "Content Safety Policy Rejection"`) with zero API token spend.
+      - **Self-Learning / Continuous Memory Poisoning Defense**: User feedback and retraining submissions (`ProcessFeedbackRetrainingAsync`) must pass `PromptShieldValidator.ValidateFeedback` to prevent adversarial poisoning of continuous learned memory with malicious, non-food, or offensive data.
+      - **Google AI StrictSafetySettings**: Google Gemini API payloads must declare explicit `safetySettings` blocking harassment, hate speech, sexually explicit, and dangerous content at `BLOCK_LOW_AND_ABOVE`.
+    - **CI/CD Security-Scan Gating**: The unified `security-scan.yml` pipeline executes `ai-security-defense` as a mandatory blocking job across the entire solution. Any violation fails the pipeline, blocks PR merges, posts a failing verdict in the PR comment, and halts all downstream cloud deployments.
+    - **Automated CI Enforcement**: Unit and eval tests (`AiPromptShieldAndContentSafetyTests.cs` and `SecurityEnvironmentAndHeaderTests.cs`) continuously execute `verify-ai-security-defense.ps1` and assert 100% compliance across all 5 defense vectors.
+20. **Mandatory Product Skill Synchronization & Living Runbook Lifecycle Governance Rule**:
+    - **Living Runbook Invariant**: All product skills located in `.agents/skills/` are authoritative, executable runbooks that AI agents and human contributors rely upon for architecture, security, test execution, and deployment.
+    - **Mandatory Same-PR Synchronization**: Whenever any modification, feature, defect fix, or pipeline change touches architecture boundaries, security policies, test harnesses, infrastructure scripts, or design tokens, the corresponding skill in `.agents/skills/` MUST be updated or created in the **exact same Pull Request**. Never defer skill updates.
+    - **New Skill Addition Protocol**: Introduce a new skill folder in `.agents/skills/` with a valid `SKILL.md` when a new, distinct engineering domain or major subsystem is established (e.g. `diet-dost-devsecops-pipeline` for static analysis & SAST gates).
+    - **Archival & Deprecation Protocol**: When an architectural pattern, library, or script is superseded, update the skill to document the current pattern and move obsolete playbooks into an `archive/` subfolder.
+    - **Token Economics Compliance**: Maintain YAML frontmatter `description` fields under 150 words with dense trigger keywords. Deep architectural specifications and schemas belong in `docs/sdd/*.md` and `docs/adr/*.md` (0 baseline tokens), while skills provide tactical, procedural code recipes and checklists.
+21. **Mandatory Architecture Diagram Auto-Sync & Living Alignment Rule**:
+    - **Canonical Source of Truth Invariant**: The authoritative representations of Diet-Dost's system topology, security boundaries, Azure cloud infrastructure, and execution flows reside exclusively in [`docs/architecture/diagrams/*.mermaid`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/).
+    - **ADR-086 Syntax Invariant**: Line 1 of every `.mermaid` file **MUST** be the Mermaid root directive (e.g. `graph TB`, `sequenceDiagram`, `flowchart TD`) and line 2 must be the `%%` dual license header. Never prepend blank lines or comments before line 1.
+    - **Automated Synchronization Mandate**: Whenever introducing architectural modifications (layers, ports/adapters, controllers, Bicep resources, NSG rules, persistence stores, or test metrics), contributors and AI agents **MUST** update the canonical `.mermaid` diagrams and execute:
+      ```powershell
+      pwsh -File scripts/sync-architecture-diagrams.ps1 -Sync
+      ```
+      This automatically synchronizes embedded Mermaid blocks across `README.md` and `docs/sdd/02_solution_architecture.md`, eliminating manual copy-paste errors and preventing documentation drift.
+    - **Automated Pre-Commit & CI Gating**: The validation script `scripts/verify-ai-security-defense.ps1` runs `sync-architecture-diagrams.ps1 -Verify` as Vector 6. If any canonical diagram has syntax defects, violates ADR-086, omits required solution elements, or has drifted from embedded documentation, the commit and CI pipeline are **immediately rejected**.
 
 

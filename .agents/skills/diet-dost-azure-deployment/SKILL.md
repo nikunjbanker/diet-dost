@@ -94,21 +94,47 @@ az storage blob upload --account-name <storage> --container-name db-backups --fi
 
 ## 3. Option 1: Azure Container Apps (ACA) + Azure Files (Recommended)
 
+### 3.0 Automated Pre-Deployment Setup via PowerShell (`scripts/setup-azure-pre-deployment.ps1`)
+Before triggering CI/CD pipelines, configure foundational Azure resources, Entra ID app registrations, federated OIDC credentials, and Key Vault using the automated PowerShell script:
+- **Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
+- **Script**: [`scripts/setup-azure-pre-deployment.ps1`](scripts/setup-azure-pre-deployment.ps1)
+- **Zero Hardcoded Secrets Policy**:
+  - The script dynamically resolves `$SubscriptionId`, `$TenantId`, and `$AppRegistrationId` via authenticated `az account show` and `az ad app list` queries.
+  - No subscription IDs, tenant IDs, or client secrets are hardcoded in code or documentation.
+  - Automatically provisions Azure Key Vault with `enablePurgeProtection: true` and 90-day soft-delete.
+  - Establishes OIDC Federated Identity Credential for GitHub Actions (`repo:nikunjbanker/diet-dost:environment:production`).
+
+```powershell
+# Execute pre-deployment setup locally (sole operator: @nikunjbanker)
+pwsh -File scripts/setup-azure-pre-deployment.ps1
+```
+
 ### 3.1 Architecture Overview
 ```mermaid
 graph TD
-    User([End User / Mobile Browser]) -->|HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in]
-    Domain -->|CNAME + TXT Verification| ACA_Ingress[ACA Environment Ingress<br/>Free Managed TLS 1.3 Certificate]
+    User([End User / Mobile Browser]) -->|Direct HTTPS / Port 443| Domain[Custom Domain: dev.diet-dost.in<br/>Direct CNAME + TXT Verification]
+    Domain -->|CNAME + TXT Verification| ACA_Ingress[ACA Managed Ingress (Envoy)<br/>Free Managed TLS 1.3 Certificate]
     
-    subgraph ACA_Perimeter ["Azure Container Apps Environment (cae-dietdost-prod)"]
-        ACA_Ingress --> AppContainer[Diet-Dost WebGateway Container<br/>.NET 11 Runtime / Port 8080<br/>Replicas: min=1, max=1]
-        
-        AppContainer -.->|Managed Identity| KV[Azure Key Vault<br/>Gemini & App Secrets]
-        AppContainer -.->|OTLP Telemetry| AppInsights[Azure Log Analytics / Monitor]
+    subgraph VNet_Perimeter ["VNet Perimeter & Zero-Trust NSG (nsg-dietdost-dev)"]
+        subgraph NSG_Rules ["NSG Stateful Firewall"]
+            InRules["Inbound: 100 HTTPS, 110 AzureLoadBalancer, 120 VNet Internal, 4000 DENY ALL"]
+            OutRules["Outbound: 100 SMB 445, 110 AzureCloud 443, 120 DNS 53, 130 NTP 123, 140 Gemini AI 443, 150 VNet Internal, 4000 DENY ALL"]
+        end
+
+        subgraph ACA_Perimeter ["Azure Container Apps Environment (cae-dietdost-dev)"]
+            ACA_Ingress --> AppContainer[Diet-Dost WebGateway Container<br/>.NET 11 Runtime / Port 8080<br/>Replicas: min=1, max=1]
+            
+            AppContainer -.->|Assigned Managed Identity| MI[User-Assigned Identity<br/>id-dietdost-dev]
+            MI -.->|Role: AcrPull (7f951dda...)| ACR[Azure Container Registry<br/>crdietdost* (Admin Disabled)]
+            ACR -->|Secure OCI Image Pull via Port 443| AppContainer
+            MI -.->|Role: Key Vault Secrets User| KV[Azure Key Vault<br/>kvdietdost*]
+            AppContainer -.->|Secret Resolution| KV
+            AppContainer -.->|OTLP Telemetry| AppInsights[Azure Log Analytics / Monitor]
+        end
     end
     
-    subgraph Azure_Storage ["Azure Storage Account (stgdietdostprod)"]
-        AppContainer -->|Volume Mount: /app/data| FileShare[Azure Files SMB Share<br/>sqlite-data-share<br/>- diet_dost.db<br/>- uploads/]
+    subgraph Azure_Storage ["Azure Storage Account (stgdietdost*)"]
+        AppContainer -->|Volume Mount: /app/data (AES-GCM)| FileShare[Azure Files SMB Share<br/>dietdost-data<br/>- diet_dost.db<br/>- uploads/]
     end
 ```
 
@@ -250,6 +276,22 @@ az containerapp create \
   --volume-mount-path /app/data \
   --volume-name dietdoststorage
 ```
+
+### 3.5 Zero-Trust Network & Security Infrastructure Baseline (Bicep IaC)
+The foundation infrastructure in [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) implements a defense-in-depth, Zero-Trust network boundary designed for dev-test free-tier containment ($0 incremental cost):
+1. **Network Security Group (`nsg-dietdost-${environment}`)**:
+   - Attached to ACA infrastructure subnet `snet-aca-infra` to comply with Checkov `CKV_AZURE_9`.
+   - **Inbound Rules**: Allows HTTPS (443) and `AzureLoadBalancer` (satisfies Checkov `CKV_AZURE_160` by restricting HTTP port 80).
+   - **Outbound Rules**: Allows Port 445 strictly to `Storage` service tag; Port 443 to `AzureCloud` and `Internet` (for Gemini AI APIs); Port 53 (DNS); and Port 123 (NTP).
+2. **Azure Files SMB 3.1.1 Encryption & Soft-Delete**:
+   - Configures SMB 3.1.1 protocol encryption (`AES-128-GCM` / `AES-256-GCM`) across `fileServices`.
+   - Enforces Kerberos ticket authentication and disables legacy NTLMv1.
+   - Enables 7-day share soft-delete retention to prevent accidental loss of `diet_dost.db`.
+3. **Key Vault Audit Diagnostics & Metric Alerts**:
+   - Streams `AuditEvent` and all metrics from Key Vault to Log Analytics (`diag-kv-${environment}`).
+   - Deploys Azure Monitor Metric Alert (`alert-kv-unauthorized-${environment}`) triggering when Key Vault 401/403 responses exceed 5 in a 5-minute window (within free platform metric alerts quota).
+4. **Ingress IP Security Restrictions**:
+   - [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep) supports configurable `ipSecurityRestrictions` for exterior IP allowlisting.
 
 ---
 
@@ -436,67 +478,63 @@ Azure Container Apps handles automatic 90-day renewal with zero maintenance.
 
 ---
 
-## 7. Automated CI/CD Pipeline Blueprint (GitHub Actions)
+## 7. Automated Aspire CI/CD Pipeline Architecture (GitHub Actions)
 
-Create `.github/workflows/azure-deploy.yml`:
+Diet-Dost implements the authoritative **.NET Aspire Cloud Deployment Pipeline** ([aspire.dev/deployment/deploy-with-aspire/](https://aspire.dev/deployment/deploy-with-aspire/)) decomposed into two specialized on-demand workflows:
 
-```yaml
-name: Build and Deploy Diet-Dost to Azure Container Apps
+```mermaid
+graph TD
+    subgraph Aspire_AppHost ["Aspire AppHost Application Model (src/Nutrition.AppHost)"]
+        Builder[builder.AddAzureContainerAppEnvironment]
+        Storage[builder.AddAzureStorage]
+        Web[webGateway.PublishAsAzureContainerApp]
+    end
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+    subgraph Workflow_Infra ["Pipeline 1: Aspire - Provision Azure Infrastructure (.github/workflows/azure-infra-deploy.yml)"]
+        InfraEval[aspire publish --apphost src/Nutrition.AppHost]
+        InfraBicep[ARM Deploy: infra/infra.bicep]
+        InfraOut[Output: CAE Environment, SMB Share, Static IP, Custom Domain ID]
+        InfraEval --> InfraBicep --> InfraOut
+    end
 
-permissions:
-  id-token: write
-  contents: read
+    subgraph Workflow_App ["Pipeline 2: Aspire - Build & Deploy Application (.github/workflows/azure-app-deploy.yml)"]
+        SecurityGate[OWASP NuGet Audit & 100% Test Pass]
+        AppEval[aspire publish --apphost src/Nutrition.AppHost]
+        OCIBuild[Podman Build & Trivy Image Scan]
+        ACRPush[Podman Push to ACR]
+        AutoInfra[Ensure / Provision Foundation: infra/infra.bicep]
+        AppBicep[ARM Deploy: infra/app.bicep]
+        Verify[Health & Revision FQDN Verification]
+        SecurityGate --> AppEval --> OCIBuild --> ACRPush --> AutoInfra --> AppBicep --> Verify
+    end
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET 11 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '11.0.x'
-
-      - name: Run Unit & Integration Tests (100% Pass Standard)
-        run: dotnet test --configuration Release --verbosity normal
-
-      - name: Log in to Azure CLI
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Log in to Azure Container Registry
-        uses: azure/docker-login@v2
-        with:
-          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
-      - name: Build and Push Docker Image
-        run: |
-          IMAGE_TAG="${{ secrets.ACR_LOGIN_SERVER }}/diet-dost-web:${{ github.sha }}"
-          IMAGE_LATEST="${{ secrets.ACR_LOGIN_SERVER }}/diet-dost-web:latest"
-          
-          docker build -t $IMAGE_TAG -t $IMAGE_LATEST -f Containerfile .
-          docker push $IMAGE_TAG
-          docker push $IMAGE_LATEST
-
-      - name: Deploy to Azure Container Apps (Zero Downtime)
-        uses: azure/container-apps-deploy-action@v2
-        with:
-          acrName: ${{ secrets.ACR_NAME }}
-          containerAppName: app-dietdost-web
-          resourceGroup: rg-dietdost-prod
-          imageToDeploy: ${{ secrets.ACR_LOGIN_SERVER }}/diet-dost-web:${{ github.sha }}
+    Aspire_AppHost -.-> Workflow_Infra
+    Aspire_AppHost -.-> Workflow_App
 ```
+
+### 7.1 Pipeline 1: Infrastructure Provisioning (`.github/workflows/azure-infra-deploy.yml`)
+- **Purpose**: Provisions / updates foundational cloud infrastructure without touching the application workload.
+- **Trigger**: Strictly on-demand (`workflow_dispatch`).
+- **Steps**:
+  1. Installs .NET 11 SDK & Aspire CLI.
+  2. Executes `aspire publish --apphost src/Nutrition.AppHost` to validate AppHost and generate manifests.
+  3. Deploys [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) (VNet, Storage Account with SMB share `dietdost-data`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`).
+  4. Emits infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID).
+
+### 7.2 Pipeline 2: Application Build & Deployment (`.github/workflows/azure-app-deploy.yml`)
+- **Purpose**: Builds, tests, scans, and deploys the Diet-Dost application container revision with persistent SQLite SMB volume mount.
+- **Trigger**: Strictly on-demand (`workflow_dispatch`).
+- **Automatic Infrastructure Guarantee**: Includes `provisionInfra: true` (default `true`) which automatically verifies and provisions the foundation infrastructure (`infra/infra.bicep`) before deploying the application workload (`infra/app.bicep`).
+- **Pre-Deployment Security Gates**:
+  1. **OWASP A06 Dependency Audit**: Scans all NuGet packages for known CVEs via `dotnet list package --vulnerable --include-transitive`.
+  2. **100% Pass Test Standard**: Runs all unit, domain, and security test suites via `dotnet test --configuration Release`.
+  3. **Aspire Application Model Validation**: Runs `aspire publish` to evaluate AppHost configuration.
+  4. **Podman Container Image Build**: Compiles OCI image via root `Containerfile`.
+  5. **Trivy Container Security Gate**: Scans container image for CRITICAL vulnerabilities.
+  6. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
+  7. **Ensure / Provision Infrastructure**: Executes `infra/infra.bicep` (if `provisionInfra: true`).
+  8. **Deploy Workload Revision**: Deploys [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, and applying custom domain TLS.
+  9. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
 
 ---
 
@@ -513,3 +551,26 @@ After deployment, perform these mandatory operational checks:
 3. **Application Logs**:
    - Stream live logs: `az containerapp logs show --name app-dietdost-web --resource-group rg-dietdost-prod --follow`.
    - Verify `SQLite database schema verified and initialized successfully with 0 errors.` appears on startup.
+
+---
+
+## 9. Environment Variables & Secrets Sole-Authority Protocol (@nikunjbanker Only)
+
+Per Section 2 Rule 17 of `AGENTS.md` and ADR-078:
+- **Sole Permitted Operator**: Strictly and exclusively `@nikunjbanker`.
+- **Zero-Unilateral Creation / Modification**: AI agents, external contributors, and automated jobs must NEVER create, update, or delete environment variables or secrets (`gh secret`, `gh variable`, `az keyvault secret`) without explicit instruction from or execution by `@nikunjbanker`.
+- **Encrypted Secret Enforcement**: Sensitive values (`JWT_KEY`, `GEMINI_API_KEY`, `SUPER_ADMIN_EMAIL`, `REQUIRE_MOBILE_VERIFICATION`) must reside strictly in GitHub encrypted secrets and Azure Key Vault, never as plaintext environment variables.
+- **Workflow Gating**: Deployment workflows (`azure-app-deploy.yml`, `azure-infra-deploy.yml`) enforce `github.actor == 'nikunjbanker'` at job and step levels.
+
+---
+
+## 10. Living ADR Synchronization & Governance
+
+Whenever making architectural, deployment, or infrastructure changes:
+1. Record a dedicated atomic fragment in `docs/adr/devops/ADR-<YYYYMMDD>-<NNN>-<slug>.md`.
+2. Execute automated manifest synchronization:
+   ```powershell
+   pwsh -File scripts/sync-adr-index.ps1
+   ```
+3. Verify `docs/adr/index.json` and `docs/adr/README.md` are updated with 0 errors.
+

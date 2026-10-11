@@ -8,6 +8,8 @@
 using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Common.Options;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
@@ -24,8 +26,12 @@ namespace Nutrition.WebGateway.Extensions;
 /// Encapsulates SQLite database schema verification, PRAGMA migrations,
 /// and deterministic seeding of tier policies and demo accounts.
 /// </summary>
-public static class DatabaseInitializationExtensions
+public static partial class DatabaseInitializationExtensions
 {
+    private static readonly string[] ScriptSeparators = [";\r\n", ";\n"];
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"^[a-zA-Z0-9_]+$")]
+    private static partial System.Text.RegularExpressions.Regex ValidIdentifierRegex();
 
     public static async Task InitializeAndSeedDatabaseAsync(this IApplicationBuilder app, IConfiguration configuration)
     {
@@ -46,7 +52,7 @@ public static class DatabaseInitializationExtensions
 
             if (appEnv.AllowsDemoUsers)
             {
-                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, logger);
+                await SeedDemoUsersAsync(db, scope.ServiceProvider, configuration, appEnv, logger);
             }
             else
             {
@@ -68,6 +74,28 @@ public static class DatabaseInitializationExtensions
     private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db)
     {
         await db.Database.EnsureCreatedAsync();
+
+        // If core domain tables were skipped (e.g. if another table pre-existed in sqlite_master), generate schema
+        var mealsExist = await TableExistsAsync(db, "Meals");
+        if (!mealsExist)
+        {
+            var createScript = db.Database.GenerateCreateScript();
+            var rawStatements = createScript.Split(ScriptSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            foreach (var rawStatement in rawStatements)
+            {
+                if (string.IsNullOrWhiteSpace(rawStatement)) continue;
+                try
+                {
+#pragma warning disable CA2100, EF1003 // Raw statement originates directly from internally generated EF Core DbContext CreateScript and is sanitized
+                    await db.Database.ExecuteSqlRawAsync(rawStatement + ";");
+#pragma warning restore CA2100, EF1003
+                }
+                catch
+                {
+                    // Table, index, or constraint may already exist
+                }
+            }
+        }
 
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""Corrections"" (
@@ -215,6 +243,24 @@ public static class DatabaseInitializationExtensions
         ");
     }
 
+    private static async Task<bool> TableExistsAsync(DietTrackerDbContext db, string tableName)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        using var checkTableCmd = connection.CreateCommand();
+        checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
+        var p = checkTableCmd.CreateParameter();
+        p.ParameterName = "@tableName";
+        p.Value = tableName;
+        checkTableCmd.Parameters.Add(p);
+        var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
+        return count > 0;
+    }
+
     private static async Task EnsureColumnExistsAsync(DietTrackerDbContext db, string tableName, string columnName, string columnDefinition)
     {
         var connection = db.Database.GetDbConnection();
@@ -226,7 +272,11 @@ public static class DatabaseInitializationExtensions
         var tableExists = false;
         using (var checkTableCmd = connection.CreateCommand())
         {
-            checkTableCmd.CommandText = $"SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='{tableName}';";
+            checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
+            var p = checkTableCmd.CreateParameter();
+            p.ParameterName = "@tableName";
+            p.Value = tableName;
+            checkTableCmd.Parameters.Add(p);
             var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
             tableExists = count > 0;
         }
@@ -236,10 +286,17 @@ public static class DatabaseInitializationExtensions
             return;
         }
 
+        if (!ValidIdentifierRegex().IsMatch(tableName))
+        {
+            throw new ArgumentException("Invalid table name identifier", nameof(tableName));
+        }
+
         var columnExists = false;
         using (var cmd = connection.CreateCommand())
         {
+#pragma warning disable CA2100 // Table name is validated against strict alphanumeric identifier pattern; SQLite PRAGMA does not support parameterized table names
             cmd.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+#pragma warning restore CA2100
             using var reader = await cmd.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -253,7 +310,7 @@ public static class DatabaseInitializationExtensions
 
         if (!columnExists)
         {
-#pragma warning disable EF1002
+#pragma warning disable EF1002 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
             await db.Database.ExecuteSqlRawAsync($"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};");
 #pragma warning restore EF1002
         }
@@ -265,16 +322,35 @@ public static class DatabaseInitializationExtensions
         Nutrition.Application.Common.Interfaces.IAppEnvironment appEnv,
         ILogger logger)
     {
-        var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>
+        var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>();
+
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var aiOptions = configuration.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+
+        if (appEnv.IsDevelopment)
         {
-            ("Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!", "Cryptographic signing key for JWT HMAC-SHA256 tokens"),
-            ("AI:GoogleAI:ApiKey", string.Empty, "Google Gemini Vision API Key"),
-            ("AI:AzureOpenAI:ApiKey", string.Empty, "Azure OpenAI API Key")
-        };
+            var devJwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+                ? jwtOptions.Key
+                : "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
+
+            defaultSecrets.Add(("Jwt:Key", devJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"));
+            defaultSecrets.Add(("AI:GoogleAI:ApiKey", aiOptions.GoogleAI?.ApiKey ?? string.Empty, "Google Gemini Vision API Key"));
+            defaultSecrets.Add(("AI:AzureOpenAI:ApiKey", aiOptions.AzureOpenAI?.ApiKey ?? string.Empty, "Azure OpenAI API Key"));
+        }
+        else
+        {
+            // In deployed / non-development environments, retrieve secrets exclusively from Azure Key Vault or environment
+            var configuredJwtKey = jwtOptions.Key;
+            if (!string.IsNullOrWhiteSpace(configuredJwtKey))
+            {
+                defaultSecrets.Add(("Jwt:Key", configuredJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (from Key Vault)"));
+            }
+        }
 
         if (appEnv.AllowsDemoUsers)
         {
-            defaultSecrets.Add(("Auth:DemoPassword", "DietDost@Demo2026!", "Deterministic password for seeded demo tier accounts (Debug/Dev only)"));
+            defaultSecrets.Add(("Auth:DemoPassword", authOptions.DemoPassword, "Deterministic password for seeded demo tier accounts (Debug/Dev only)"));
         }
 
         foreach (var (key, fallbackValue, description) in defaultSecrets)
@@ -282,13 +358,10 @@ public static class DatabaseInitializationExtensions
             var existing = await db.AppSecrets.FirstOrDefaultAsync(s => s.Key == key);
             if (existing == null)
             {
-                var configuredValue = configuration[key];
-                var finalValue = !string.IsNullOrWhiteSpace(configuredValue) ? configuredValue : fallbackValue;
-
                 await db.AppSecrets.AddAsync(new AppSecret
                 {
                     Key = key,
-                    Value = finalValue,
+                    Value = fallbackValue,
                     Description = description,
                     CreatedAtUtc = DateTime.UtcNow,
                     UpdatedAtUtc = DateTime.UtcNow
@@ -298,6 +371,7 @@ public static class DatabaseInitializationExtensions
         }
 
         await db.SaveChangesAsync();
+        (configuration as IConfigurationRoot)?.Reload();
     }
 
     private static async Task DeactivateDemoUsersInReleaseModeAsync(DietTrackerDbContext db, ILogger logger)
@@ -324,6 +398,27 @@ public static class DatabaseInitializationExtensions
         }
     }
 
+    private static async Task DeactivatePrivilegedDemoUsersAsync(DietTrackerDbContext db, ILogger logger)
+    {
+        var privilegedDemoUsers = await db.Users
+            .Where(u => ApplicationUser.PrivilegedDemoEmails.Contains(u.Email) ||
+                        u.Id.StartsWith("user-admin") ||
+                        u.Id.StartsWith("user-superadmin"))
+            .ToListAsync();
+
+        if (privilegedDemoUsers.Count > 0)
+        {
+            foreach (var user in privilegedDemoUsers)
+            {
+                user.IsActive = false;
+                user.SecurityStamp = Guid.NewGuid().ToString("N");
+            }
+
+            await db.SaveChangesAsync();
+            logger.LogWarning("[SECURITY] Deactivated {Count} privileged demo user account(s) (Admin/SuperAdmin) in released environment.", privilegedDemoUsers.Count);
+        }
+    }
+
     private static async Task SeedTierConfigurationsAsync(DietTrackerDbContext db, ILogger logger)
     {
         if (!await db.TierConfigurations.AnyAsync())
@@ -338,16 +433,18 @@ public static class DatabaseInitializationExtensions
         DietTrackerDbContext db,
         IServiceProvider serviceProvider,
         IConfiguration configuration,
+        IAppEnvironment appEnv,
         ILogger logger)
     {
         var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
         var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
 
-        var configuredSuperAdminEmail = configuration["Auth:SuperAdminEmail"]?.Trim();
-        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(configuredSuperAdminEmail)
-            ? configuredSuperAdminEmail
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(authOptions.SuperAdminEmail)
+            ? authOptions.SuperAdminEmail.Trim()
             : "superadmin@dietdost.app";
 
+        // Seeded end-user demo tier accounts (Free, Basic, Premium) - permitted in showcase environments
         var demoSpecs = new List<DemoUserSpec>
         {
             new(
@@ -388,8 +485,13 @@ public static class DatabaseInitializationExtensions
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            ),
-            new(
+            )
+        };
+
+        // Privileged Admin & SuperAdmin demo accounts - strictly permitted ONLY in local Debug/Development builds
+        if (appEnv.AllowsAdminDemoUsers)
+        {
+            demoSpecs.Add(new(
                 Id: "user-admin",
                 Email: "admin.demo@dietdost.app",
                 Name: "Admin Tier User (Demo)",
@@ -399,8 +501,9 @@ public static class DatabaseInitializationExtensions
                 Cuisine: "Maharashtrian",
                 Conditions: new List<string>(),
                 Medications: new List<MedicationEntry>()
-            ),
-            new(
+            ));
+
+            demoSpecs.Add(new(
                 Id: "user-superadmin",
                 Email: primarySuperAdminEmail,
                 Name: "SuperAdmin Tier User (Demo)",
@@ -413,29 +516,35 @@ public static class DatabaseInitializationExtensions
                 {
                     new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
                 }
-            )
-        };
-
-        if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
-        {
-            demoSpecs.Add(new(
-                Id: "user-superadmin-alias",
-                Email: "admin@dietdost.app",
-                Name: "SuperAdmin Tier User (Alias)",
-                Mobile: "+919999999998",
-                Role: UserRole.SuperAdmin,
-                Tier: UserTier.SuperAdmin,
-                Cuisine: "North Indian",
-                Conditions: new List<string> { "Pre-Diabetes" },
-                Medications: new List<MedicationEntry>
-                {
-                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
-                }
             ));
+
+            if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
+            {
+                demoSpecs.Add(new(
+                    Id: "user-superadmin-alias",
+                    Email: "admin@dietdost.app",
+                    Name: "SuperAdmin Tier User (Alias)",
+                    Mobile: "+919999999998",
+                    Role: UserRole.SuperAdmin,
+                    Tier: UserTier.SuperAdmin,
+                    Cuisine: "North Indian",
+                    Conditions: new List<string> { "Pre-Diabetes" },
+                    Medications: new List<MedicationEntry>
+                    {
+                        new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                    }
+                ));
+            }
+        }
+        else
+        {
+            logger.LogInformation("[SECURITY] Released environment detected: Admin and SuperAdmin demo user seeding is suppressed. Only Free, Basic, and Premium demo users are seeded.");
+            await DeactivatePrivilegedDemoUsersAsync(db, logger);
         }
 
-        var demoPassword = configuration["Auth:DemoPassword"]
-            ?? (await db.AppSecrets.Where(s => s.Key == "Auth:DemoPassword").Select(s => s.Value).FirstOrDefaultAsync())
+        var demoPassword = !string.IsNullOrWhiteSpace(authOptions.DemoPassword)
+            ? authOptions.DemoPassword
+            : (await db.AppSecrets.Where(s => s.Key == "Auth:DemoPassword").Select(s => s.Value).FirstOrDefaultAsync())
             ?? "DietDost@Demo2026!";
 
         var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
@@ -478,9 +587,9 @@ public static class DatabaseInitializationExtensions
                         IsMobileVerified = true,
                         IsActive = true,
                         TermsAcceptedAtUtc = DateTime.UtcNow,
-                        TermsVersionAccepted = configuration["Auth:TermsVersion"] ?? "v1.0-202609",
+                        TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
                         HealthConsentAcceptedAtUtc = DateTime.UtcNow,
-                        HealthConsentVersionAccepted = configuration["Auth:HealthConsentVersion"] ?? "v1.0-202609",
+                        HealthConsentVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.HealthConsentVersion) ? authOptions.HealthConsentVersion : "v1.0-202609",
                         ConsentIpAddress = "127.0.0.1",
                         ConsentUserAgent = "SystemBootstrap",
                         CreatedAtUtc = DateTime.UtcNow

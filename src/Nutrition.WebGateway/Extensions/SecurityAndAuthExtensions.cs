@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -10,6 +10,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Nutrition.Application.Common.Options;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Security;
 
@@ -23,15 +24,24 @@ public static class SecurityAndAuthExtensions
 {
     private const string SmartScheme = "SmartScheme";
 
-    public static IServiceCollection AddAppSecurityAndAuth(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddAppSecurityAndAuth(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment? env = null)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        var jwtIssuer = configuration["Jwt:Issuer"] ?? Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "DietDostGateway";
-        var jwtAudience = configuration["Jwt:Audience"] ?? Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "DietDostClient";
-        var jwtKey = configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("JWT_KEY")
-            ?? throw new InvalidOperationException("JWT signing key not found. Ensure Jwt:Key is configured in the AppSecrets database table or environment.");
+        var isDev = env?.IsDevelopment() ?? string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var jwtIssuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer) ? jwtOptions.Issuer : "DietDostGateway";
+        var jwtAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience) ? jwtOptions.Audience : "DietDostClient";
+        var jwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+            ? jwtOptions.Key
+            : (isDev ? ConfigurationExtensions.DefaultDevJwtKey : null)
+            ?? throw new InvalidOperationException(
+                "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
+                "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");
 
         services.AddAuthentication(options =>
         {
@@ -111,17 +121,41 @@ public static class SecurityAndAuthExtensions
         return services;
     }
 
-    public static IServiceCollection AddAppCors(this IServiceCollection services)
+    public static IServiceCollection AddAppCors(this IServiceCollection services, Microsoft.Extensions.Hosting.IHostEnvironment env)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(env);
 
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll", policy =>
-                policy.SetIsOriginAllowed(_ => true)
-                      .AllowAnyMethod()
-                      .AllowAnyHeader()
-                      .AllowCredentials());
+            if (env.IsDevelopment())
+            {
+                options.AddPolicy("AppCorsPolicy", policy =>
+                    policy.SetIsOriginAllowed(origin =>
+                          {
+                              if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                              {
+                                  return uri.Host is "localhost" or "127.0.0.1";
+                              }
+                              return false;
+                          })
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials());
+            }
+            else
+            {
+                // Strict production CORS policy restricted to dev.diet-dost.in and diet-dost.in
+                options.AddPolicy("AppCorsPolicy", policy =>
+                    policy.WithOrigins(
+                              "https://dev.diet-dost.in",
+                              "https://diet-dost.in",
+                              "http://diet-dost.in"
+                          )
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials());
+            }
         });
 
         return services;
