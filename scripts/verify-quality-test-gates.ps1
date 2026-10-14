@@ -10,10 +10,10 @@
     Diet-Dost Automated Quality & Multi-Tier Test Gate Validator.
 .DESCRIPTION
     Validates all 4 testing tiers against enforced quality thresholds:
-      1. Unit Tests (Line Coverage Threshold: >= 44.0%, 0 failures)
-      2. Integration Tests (Line Coverage Threshold: >= 40.0%, 0 failures)
-      3. System Tests (Suite Pass Rate Threshold: >= 75.0%)
-      4. End-to-End (E2E) Acceptance Tests (Suite Pass Rate Threshold: >= 70.0%)
+      1. Tier 1: Domain & Clinical Nutrition Unit Tests (Line Coverage Threshold: >= 44.0%, 0 failures)
+      2. Tier 2: Subsystem & BFF Integration Tests (Line Coverage Threshold: >= 40.0%, 0 failures)
+      3. Tier 3: Subsystem Contracts & Design System Tests (Suite Pass Rate Threshold: >= 75.0%)
+      4. Tier 4: Multi-Tier User Acceptance & E2E CFT Suite (Suite Pass Rate Threshold: >= 70.0%)
     Emits structured console logs, generates a markdown report, and returns exit code 0 (Pass) or 1 (Fail).
 .PARAMETER Tier
     The test tier to run: "All", "Unit", "Integration", "System", "E2E". Default is "All".
@@ -24,13 +24,13 @@
 .PARAMETER OutputReport
     Optional path to write markdown summary report.
 .PARAMETER UnitThreshold
-    Line coverage percentage threshold for Unit Tests. Default: 44.0%.
+    Line coverage percentage threshold for Tier 1 Unit Tests. Default: 44.0%.
 .PARAMETER IntegrationThreshold
-    Line coverage percentage threshold for Integration Tests. Default: 40.0%.
+    Line coverage percentage threshold for Tier 2 Integration Tests. Default: 40.0%.
 .PARAMETER SystemThreshold
-    Suite pass rate percentage threshold for System Tests. Default: 75.0%.
+    Suite pass rate percentage threshold for Tier 3 System Tests. Default: 75.0%.
 .PARAMETER E2EThreshold
-    Suite pass rate percentage threshold for End-to-End Acceptance Tests. Default: 70.0%.
+    Suite pass rate percentage threshold for Tier 4 E2E Acceptance Tests. Default: 70.0%.
 .EXAMPLE
     pwsh -File scripts/verify-quality-test-gates.ps1 -Tier All
 #>
@@ -86,7 +86,7 @@ if (-not $env:CHROME_PATH -and [System.IO.File]::Exists('/usr/bin/google-chrome'
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host "   Diet-Dost Quality & Multi-Tier Test Gate Validator" -ForegroundColor Cyan
 Write-Host "   Target Tier: $Tier | Root: $RepoRoot" -ForegroundColor Cyan
-Write-Host "   Enforced Gates: Unit (Line Coverage >= $UnitThreshold%), Integration (Line Coverage >= $IntegrationThreshold%), System (Pass Rate >= $SystemThreshold%), E2E (Pass Rate >= $E2EThreshold%)" -ForegroundColor Cyan
+Write-Host "   Enforced Gates: Tier 1 Unit (>= $UnitThreshold%), Tier 2 Integration (>= $IntegrationThreshold%), Tier 3 System (>= $SystemThreshold%), Tier 4 E2E (>= $E2EThreshold%)" -ForegroundColor Cyan
 Write-Host "========================================================================" -ForegroundColor Cyan
 
 $gateResults = [System.Collections.Generic.List[PSCustomObject]]::new()
@@ -184,10 +184,10 @@ function Stop-WebGateway {
 }
 
 # ==============================================================================
-# Tier 1: Unit Tests (Code Line Coverage Threshold: >= $UnitThreshold%, 0 failures)
+# Tier 1: Domain & Clinical Nutrition Unit Tests (Code Line Coverage Threshold: >= $UnitThreshold%, 0 failures)
 # ==============================================================================
 if ($Tier -in @("All", "Unit")) {
-    Write-Host "`n[Tier 1/4] Executing Unit Tests (Enforced Line Coverage: >= $UnitThreshold%, 0 failures)..." -ForegroundColor Yellow
+    Write-Host "`n[Tier 1/4] Executing Domain & Clinical Nutrition Unit Tests (Enforced Line Coverage: >= $UnitThreshold%, 0 failures)..." -ForegroundColor Yellow
     $domainProj = Join-Path $RepoRoot "tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj"
     $unitResultsDir = Join-Path $RepoRoot "TestResults/Unit"
     if (Test-Path $unitResultsDir) { Remove-Item $unitResultsDir -Recurse -Force -ErrorAction SilentlyContinue }
@@ -228,13 +228,13 @@ if ($Tier -in @("All", "Unit")) {
     Write-Host "  • Code Line Coverage  : $lineCoverage% ($linesCovered / $linesValid lines) [Enforced Gate: >= $UnitThreshold%]"
     Write-Host "  • Branch Coverage     : $branchCoverage%"
     if ($unitGatePassed) {
-        Write-Host "  ✅ Tier 1 Unit Test Gate: PASS" -ForegroundColor Green
+        Write-Host "  ✅ Tier 1 Domain & Clinical Nutrition Unit Test Gate: PASS" -ForegroundColor Green
     } else {
-        Write-Host "  ❌ Tier 1 Unit Test Gate: FAIL (Line coverage $lineCoverage% is below $UnitThreshold% threshold or test failures detected)" -ForegroundColor Red
+        Write-Host "  ❌ Tier 1 Domain & Clinical Nutrition Unit Test Gate: FAIL (Line coverage $lineCoverage% is below $UnitThreshold% threshold or test failures detected)" -ForegroundColor Red
     }
 
     $gateResults.Add([PSCustomObject]@{
-        Tier = "Tier 1: Unit Tests"
+        Tier = "Tier 1: Domain & Clinical Nutrition Unit Tests"
         Scope = "Domain Algorithms, Clinical Math, Nutrition Estimators"
         Required = "Line Coverage >= $UnitThreshold% (0 failures)"
         Achieved = "$lineCoverage% coverage ($passed/$total passed, 0 failures)"
@@ -243,10 +243,10 @@ if ($Tier -in @("All", "Unit")) {
 }
 
 # ==============================================================================
-# Tier 2: Integration Tests (Code Line Coverage Threshold: >= $IntegrationThreshold%, 0 failures)
+# Tier 2: Subsystem & BFF Integration Tests (Code Line Coverage Threshold: >= $IntegrationThreshold%, 0 failures)
 # ==============================================================================
 if ($Tier -in @("All", "Integration")) {
-    Write-Host "`n[Tier 2/4] Executing Integration Tests (Enforced Line Coverage: >= $IntegrationThreshold%, 0 failures)..." -ForegroundColor Yellow
+    Write-Host "`n[Tier 2/4] Executing Subsystem & BFF Integration Tests (Enforced Line Coverage: >= $IntegrationThreshold%, 0 failures)..." -ForegroundColor Yellow
     $evalProj = Join-Path $RepoRoot "tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj"
     $integResultsDir = Join-Path $RepoRoot "TestResults/Integration"
     if (Test-Path $integResultsDir) { Remove-Item $integResultsDir -Recurse -Force -ErrorAction SilentlyContinue }
@@ -295,13 +295,13 @@ if ($Tier -in @("All", "Integration")) {
         Write-Host "  • Package Breakdown      : $($packageSummaries -join ', ')" -ForegroundColor DarkGray
     }
     if ($integGatePassed) {
-        Write-Host "  ✅ Tier 2 Integration Test Gate: PASS" -ForegroundColor Green
+        Write-Host "  ✅ Tier 2 Subsystem & BFF Integration Test Gate: PASS" -ForegroundColor Green
     } else {
-        Write-Host "  ❌ Tier 2 Integration Test Gate: FAIL (Line coverage $lineCoverage% is below $IntegrationThreshold% threshold or test failures detected)" -ForegroundColor Red
+        Write-Host "  ❌ Tier 2 Subsystem & BFF Integration Test Gate: FAIL (Line coverage $lineCoverage% is below $IntegrationThreshold% threshold or test failures detected)" -ForegroundColor Red
     }
 
     $gateResults.Add([PSCustomObject]@{
-        Tier = "Tier 2: Integration Tests"
+        Tier = "Tier 2: Subsystem & BFF Integration Tests"
         Scope = "Web BFF Composite, CQRS Handlers, Auth Schemes, SQLite EF Core"
         Required = "Line Coverage >= $IntegrationThreshold% (0 failures)"
         Achieved = "$lineCoverage% coverage ($passed/$total passed, 0 failures)"
@@ -310,10 +310,10 @@ if ($Tier -in @("All", "Integration")) {
 }
 
 # ==============================================================================
-# Tier 3: System Tests (Threshold: >= $SystemThreshold%)
+# Tier 3: Subsystem Contracts & Design System Tests (Threshold: >= $SystemThreshold%)
 # ==============================================================================
 if ($Tier -in @("All", "System")) {
-    Write-Host "`n[Tier 3/4] Executing System Tests (Threshold: >= $SystemThreshold%)..." -ForegroundColor Yellow
+    Write-Host "`n[Tier 3/4] Executing Subsystem Contracts & Design System Tests (Threshold: >= $SystemThreshold%)..." -ForegroundColor Yellow
 
     if (-not $SkipServerStart -and -not $webProcess) {
         $webProcess = Start-WebGatewayIfNeeded -Url $BaseUrl
@@ -354,14 +354,14 @@ if ($Tier -in @("All", "System")) {
     Write-Host "  • Passed Suites           : $sysPassed"
     Write-Host "  • Achieved Pass Rate      : $sysPassRate% (Enforced Gate: >= $SystemThreshold%)"
     if ($sysGatePassed) {
-        Write-Host "  ✅ Tier 3 System Test Gate: PASS" -ForegroundColor Green
+        Write-Host "  ✅ Tier 3 Subsystem Contracts & Design System Test Gate: PASS" -ForegroundColor Green
     } else {
-        Write-Host "  ❌ Tier 3 System Test Gate: FAIL (Below $SystemThreshold% threshold)" -ForegroundColor Red
+        Write-Host "  ❌ Tier 3 Subsystem Contracts & Design System Test Gate: FAIL (Below $SystemThreshold% threshold)" -ForegroundColor Red
     }
 
     $gateResults.Add([PSCustomObject]@{
-        Tier = "Tier 3: System Tests"
-        Scope = "Subsystem Wiring, Mobile BFF ETag Caching, System Invariants"
+        Tier = "Tier 3: Subsystem Contracts & Design System Tests"
+        Scope = "Subsystem Wiring, Mobile BFF ETag Caching, System Invariants, Design Tokens"
         Required = "Pass Rate >= $SystemThreshold%"
         Achieved = "$sysPassRate% ($sysPassed/$sysTotal suites passed)"
         Passed = $sysGatePassed
@@ -369,10 +369,10 @@ if ($Tier -in @("All", "System")) {
 }
 
 # ==============================================================================
-# Tier 4: End-to-End (E2E) Acceptance Tests (Threshold: >= $E2EThreshold%)
+# Tier 4: Multi-Tier User Acceptance & E2E CFT Suite (Threshold: >= $E2EThreshold%)
 # ==============================================================================
 if ($Tier -in @("All", "E2E")) {
-    Write-Host "`n[Tier 4/4] Executing End-to-End Acceptance Tests (Threshold: >= $E2EThreshold%)..." -ForegroundColor Yellow
+    Write-Host "`n[Tier 4/4] Executing Multi-Tier User Acceptance & E2E CFT Suite (Threshold: >= $E2EThreshold%)..." -ForegroundColor Yellow
 
     if (-not $SkipServerStart -and -not $webProcess) {
         $webProcess = Start-WebGatewayIfNeeded -Url $BaseUrl
@@ -420,13 +420,13 @@ if ($Tier -in @("All", "E2E")) {
     Write-Host "  • Passed E2E Suites       : $e2ePassed"
     Write-Host "  • Achieved E2E Pass Rate  : $e2ePassRate% (Enforced Gate: >= $E2EThreshold%)"
     if ($e2eGatePassed) {
-        Write-Host "  ✅ Tier 4 End-to-End Test Gate: PASS" -ForegroundColor Green
+        Write-Host "  ✅ Tier 4 Multi-Tier User Acceptance & E2E CFT Gate: PASS" -ForegroundColor Green
     } else {
-        Write-Host "  ❌ Tier 4 End-to-End Test Gate: FAIL (Below $E2EThreshold% threshold or errors detected)" -ForegroundColor Red
+        Write-Host "  ❌ Tier 4 Multi-Tier User Acceptance & E2E CFT Gate: FAIL (Below $E2EThreshold% threshold or errors detected)" -ForegroundColor Red
     }
 
     $gateResults.Add([PSCustomObject]@{
-        Tier = "Tier 4: End-to-End Tests"
+        Tier = "Tier 4: Multi-Tier User Acceptance & E2E CFT Suite"
         Scope = "5-Tier Customer Acceptance, AI Quotas, Paywalls & SuperAdmin"
         Required = "Pass Rate >= $E2EThreshold%"
         Achieved = "$e2ePassRate% ($e2ePassed/$e2eTotal suites passed)"

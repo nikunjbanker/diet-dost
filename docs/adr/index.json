@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-14T15:37:44.240478+00:00",
-  "totalAdrs": 58,
+  "generatedAt": "2026-10-14T16:51:15.979301+00:00",
+  "totalAdrs": 59,
   "categoryCounts": {
     "architecture": 18,
     "security": 17,
-    "devops": 6,
+    "devops": 7,
     "presentation": 4,
     "governance": 13
   },
@@ -705,6 +705,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261014-093-code-coverage-gating-for-quality-test-tiers.md",
       "relativePath": "docs/adr/devops/ADR-20261014-093-code-coverage-gating-for-quality-test-tiers.md"
+    },
+    {
+      "id": "ADR-094",
+      "number": 94,
+      "title": "Domain-Aligned Tier Naming Conventions for Multi-Tier Quality Test Gates",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-14",
+      "subsystem": "Devops",
+      "filename": "ADR-20261014-094-refined-domain-aligned-tier-naming-conventions.md",
+      "relativePath": "docs/adr/devops/ADR-20261014-094-refined-domain-aligned-tier-naming-conventions.md"
     }
   ]
 }

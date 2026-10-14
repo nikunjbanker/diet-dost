@@ -8,10 +8,10 @@
 # GitHub Actions: Quality & Multi-Tier Test Gate Pipeline
 # Multi-tiered verification matrix enforcing quality gates before deployment:
 # Strict Supply Chain Security: All actions pinned to immutable commit SHAs.
-# 1. Unit Tests (Domain Math, ICMR-NIN 2024, Clinical Calculators)  : Gate >= 44% Line Coverage
-# 2. Integration Tests (CQRS Dispatcher, Web BFF, Mobile BFF, Auth) : Gate >= 40% Line Coverage
-# 3. System Tests (Subsystem Wiring, Mobile Caching, System Probes) : Gate >= 75%
-# 4. End-to-End Acceptance Tests (5-Tier CFT Suite, AI Paywalls)    : Gate >= 70%
+# 1. Tier 1: Domain & Clinical Nutrition Unit Tests (ICMR-NIN 2024, Clinical Math) : Gate >= 44% Line Coverage
+# 2. Tier 2: Subsystem & BFF Integration Tests (CQRS Dispatcher, BFF, Auth)      : Gate >= 40% Line Coverage
+# 3. Tier 3: Subsystem Contracts & Design System Tests (Wiring, Caching, Tokens) : Gate >= 75%
+# 4. Tier 4: Multi-Tier User Acceptance & E2E CFT Suite (5-Tier CFT, Paywalls)    : Gate >= 70%
 # 5. Quality Gate Summary: Aggregated verdict posted as PR comment
 # ==============================================================================
 
@@ -36,10 +36,10 @@ env:
 
 jobs:
   # ----------------------------------------------------------------------------
-  # Job 1: Unit Tests (Threshold: >= 44% Line Coverage, 0 failures)
+  # Job 1: Tier 1: Domain & Clinical Nutrition Unit Tests (Threshold: >= 44% Line Coverage, 0 failures)
   # ----------------------------------------------------------------------------
   unit-tests:
-    name: Unit Tests (44% Coverage Quality Gate)
+    name: "Tier 1: Domain & Clinical Nutrition Unit Tests (44% Coverage Quality Gate)"
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -59,10 +59,10 @@ jobs:
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Unit -Configuration Release
 
   # ----------------------------------------------------------------------------
-  # Job 2: Integration Tests (Threshold: >= 40% Line Coverage, 0 failures)
+  # Job 2: Tier 2: Subsystem & BFF Integration Tests (Threshold: >= 40% Line Coverage, 0 failures)
   # ----------------------------------------------------------------------------
   integration-tests:
-    name: Integration Tests (40% Coverage Quality Gate)
+    name: "Tier 2: Subsystem & BFF Integration Tests (40% Coverage Quality Gate)"
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -82,10 +82,10 @@ jobs:
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Integration -Configuration Release
 
   # ----------------------------------------------------------------------------
-  # Job 3: System Tests (Threshold: >= 75%)
+  # Job 3: Tier 3: Subsystem Contracts & Design System Tests (Threshold: >= 75%)
   # ----------------------------------------------------------------------------
   system-tests:
-    name: System Tests (75% Quality Gate)
+    name: "Tier 3: Subsystem Contracts & Design System Tests (75% Quality Gate)"
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -115,10 +115,10 @@ jobs:
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier System -BaseUrl "http://127.0.0.1:5240"
 
   # ----------------------------------------------------------------------------
-  # Job 4: End-to-End Acceptance Tests (Threshold: >= 70%)
+  # Job 4: Tier 4: Multi-Tier User Acceptance & E2E CFT Suite (Threshold: >= 70%)
   # ----------------------------------------------------------------------------
   e2e-tests:
-    name: End-to-End Acceptance Tests (70% Quality Gate)
+    name: "Tier 4: Multi-Tier User Acceptance & E2E CFT Suite (70% Quality Gate)"
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -167,10 +167,10 @@ jobs:
           echo "=========================================================="
           echo "      QUALITY & MULTI-TIER TEST GATE SUMMARY VERDICT      "
           echo "=========================================================="
-          echo "Tier 1: Unit Tests (Line Coverage >= 44%)        : ${{ needs.unit-tests.result }}"
-          echo "Tier 2: Integration Tests (Line Coverage >= 40%) : ${{ needs.integration-tests.result }}"
-          echo "Tier 3: System Tests (>= 75%)                    : ${{ needs.system-tests.result }}"
-          echo "Tier 4: End-to-End Tests (>= 70%)                : ${{ needs.e2e-tests.result }}"
+          echo "Tier 1: Domain & Clinical Nutrition Unit Tests (Line Coverage >= 44%)        : ${{ needs.unit-tests.result }}"
+          echo "Tier 2: Subsystem & BFF Integration Tests (Line Coverage >= 40%)             : ${{ needs.integration-tests.result }}"
+          echo "Tier 3: Subsystem Contracts & Design System Tests (Pass Rate >= 75%)         : ${{ needs.system-tests.result }}"
+          echo "Tier 4: Multi-Tier User Acceptance & E2E CFT Suite (Pass Rate >= 70%)        : ${{ needs.e2e-tests.result }}"
           echo "=========================================================="
 
           if [ "${{ needs.unit-tests.result }}" != "success" ] || \
@@ -195,10 +195,10 @@ jobs:
 
           | Test Tier | Target Scope & Subsystems | Required Threshold | Achieved Verdict |
           | :--- | :--- | :--- | :--- |
-          | **Tier 1: Unit Tests** | Domain Math, ICMR-NIN 2024, Clinical Calculators | `Line Coverage >= 44% (0 failures)` | ${{ needs.unit-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
-          | **Tier 2: Integration Tests** | CQRS Native Dispatcher, Web BFF Composite, Mobile BFF, Auth | `Line Coverage >= 40% (0 failures)` | ${{ needs.integration-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
-          | **Tier 3: System Tests** | Subsystem Wiring, Mobile BFF ETag Caching, Health Probes | `Pass Rate >= 75%` | ${{ needs.system-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
-          | **Tier 4: End-to-End (E2E)** | 5-Tier User Journeys, AI Quota Gating, Paywalls, SuperAdmin | `Pass Rate >= 70%` | ${{ needs.e2e-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 1: Domain & Clinical Nutrition Unit Tests** | Domain Math, ICMR-NIN 2024, Clinical Calculators | `Line Coverage >= 44% (0 failures)` | ${{ needs.unit-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 2: Subsystem & BFF Integration Tests** | CQRS Native Dispatcher, Web BFF Composite, Mobile BFF, Auth | `Line Coverage >= 40% (0 failures)` | ${{ needs.integration-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 3: Subsystem Contracts & Design System Tests** | Subsystem Wiring, Mobile BFF ETag Caching, Design Tokens | `Pass Rate >= 75%` | ${{ needs.system-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 4: Multi-Tier User Acceptance & E2E CFT Suite** | 5-Tier User Journeys, AI Quota Gating, Paywalls, SuperAdmin | `Pass Rate >= 70%` | ${{ needs.e2e-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
 
           > **Commit SHA**: `${{ github.sha }}`  
           > **Overall Quality Verdict**: ${{ (needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.system-tests.result == 'success' && needs.e2e-tests.result == 'success') && '✅ **ALL QUALITY GATES PASSED: CERTIFIED FOR DEPLOYMENT**' || '❌ **CRITICAL QUALITY GATE FAILURE: DEPLOYMENT BLOCKED**' }}  
