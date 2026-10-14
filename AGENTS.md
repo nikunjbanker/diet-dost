@@ -132,10 +132,11 @@ This solution-level instruction file defines mandatory engineering and Git workf
      3. *Security & Environment Boundary Gating* (Debug/Release environment isolation, auth scheme routing, `#if DEBUG` guards).
      4. *Clinical & Domain Logic Modifications* (ICMR-NIN 2024 algorithms, WHO cutoffs, macro distributions).
      5. *Tier Quotas & Feature Gating* (tier quotas, paywalls, role authorization rules).
+     6. *AI Models, Agentic Workflows, Evaluation Harnesses, or DevSecOps Gates* (LLM provider integrations, prompt engineering, agentic skills/workflows, synthetic data generation, OWASP Top 10 for LLM defense layers, CI/CD pipeline gating, OpenTelemetry AI tracing).
    - **Mandatory Synchronization Actions**:
      - Synchronize `README.md` (technology matrix, architecture diagrams, file tree, test metrics).
      - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
-     - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, etc.).
+     - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, and 11_ai_in_sdlc_and_agentic_workflows_architecture.md for any changes to AI/agentic tooling, prompt templates, evaluation metrics, model providers, CI/CD gates, or operational boundaries).
      - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
      - Write a dedicated atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (where `<domain>` is `architecture`, `security`, `devops`, `presentation`, or `governance`), and execute `pwsh -File scripts/sync-adr-index.ps1` to automatically update `docs/adr/index.json` and `docs/adr/README.md`.
 5. **Step 4: Push Branch & PR-Only Merge**:
@@ -206,6 +207,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Mandatory Pre-UI Inspection**: Contributors and AI agents MUST inspect `DESIGN.md` and the existing design system tokens in `styles.css` prior to introducing or altering any visual components.
     - **Zero-Ad-Hoc Visual Conventions**: Never introduce arbitrary bright or saturated colors, atmospheric gradients, or custom non-standard border radiuses. Use the canonical four-step surface ladder (`canvas` #010102 → `surface-1` #0f1011 → `surface-2` #141516 → `surface-3` #18191a → `surface-4` #191a1b), hairline borders (`#23252a`), and Linear lavender-blue (`#5e6ad2`) chromatic accent.
     - **Mandatory Verification**: Every UI modification must be verified for `DESIGN.md` token compliance, responsive layout across all viewports (Mobile, Tablet, Desktop), touch target minimums ($\ge 44 \times 44\,\text{px}$), and accessibility contrast.
+<<<<<<< HEAD
 17. **Mandatory Secret & Environment Variable Governance Rule (Sole Authority: @nikunjbanker)**:
     - **Sole Authority Mandate**: Strictly and exclusively `@nikunjbanker` (Repository Owner & Lead Architect) has permission or authority to create, update, delete, view, or rotate any GitHub Environment Secrets, Repository Secrets, GitHub Environment Variables, Repository Variables, Azure Key Vault Secrets, or Azure Container App configuration settings.
     - **Zero-Unilateral Action Mandate**: AI agents, contributors, collaborators, and automated workflows are **strictly prohibited** from creating, updating, deleting, or exposing secrets or environment variables. No agent or contributor shall execute commands such as `gh secret set`, `gh secret delete`, `gh variable set`, `gh variable delete`, `az keyvault secret set`, or `az keyvault secret delete` unless explicitly instructed, authorized, or executed directly in an authenticated session belonging exclusively to `@nikunjbanker`.
@@ -250,5 +252,9 @@ This solution-level instruction file defines mandatory engineering and Git workf
       ```
       This automatically synchronizes embedded Mermaid blocks across `README.md` and `docs/sdd/02_solution_architecture.md`, eliminating manual copy-paste errors and preventing documentation drift.
     - **Automated Pre-Commit & CI Gating**: The validation script `scripts/verify-ai-security-defense.ps1` runs `sync-architecture-diagrams.ps1 -Verify` as Vector 6. If any canonical diagram has syntax defects, violates ADR-086, omits required solution elements, or has drifted from embedded documentation, the commit and CI pipeline are **immediately rejected**.
+22. **AI & Agentic SDLC Living Documentation Mandate (SDD 11 Continuous Evolution)**:
+    - **Single Source of Truth for AI & Engineering Lifecycles**: [`docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md) is the authoritative architectural specification for all AI tools, agentic workflows, DevSecOps pipelines, evaluation harnesses, and role evolution across Diet-Dost.
+    - **Day-to-Day Living Synchronization**: As the solution evolves day-to-day (e.g., changes to AI models, LLM prompts/evals, synthetic test data, 8-job CI/CD gates, OpenTelemetry AI tracing, or agentic state machines), contributors and AI agents MUST update `docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md` concurrently with the code changes.
+    - **Aspire & Synthesis Artifact Hygiene**: Auto-generated Aspire manifests and orchestrator synthesis outputs (`aspire-output/`, `cae-*.bicep`, `aspire-manifest.json`, `aspire.config.json`) must remain excluded via `.gitignore`, `.dockerignore`, and `.containerignore` to ensure the C# AppHost (`Nutrition.AppHost`) remains the single source of truth.
 
 

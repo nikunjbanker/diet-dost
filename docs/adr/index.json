@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-10T21:27:02.607598+00:00",
-  "totalAdrs": 54,
+  "generatedAt": "2026-10-14T07:59:50.336097+00:00",
+  "totalAdrs": 55,
   "categoryCounts": {
-    "architecture": 16,
+    "architecture": 17,
     "security": 17,
     "devops": 4,
     "presentation": 4,
@@ -345,6 +345,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md",
       "relativePath": "docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md"
+    },
+    {
+      "id": "ADR-068",
+      "number": 68,
+      "title": "AI in SDLC, Agentic Workflows Architecture & Day-to-Day Living Synchronization Mandate",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-14T13:20:00+05:30",
+      "subsystem": "[WebGateway | AppHost | Application | DevOps CI/CD | Agentic Workflows | SDD Specifications]",
+      "filename": "ADR-20261014-068-ai-sdlc-and-agentic-workflows-architecture.md",
+      "relativePath": "docs/adr/architecture/ADR-20261014-068-ai-sdlc-and-agentic-workflows-architecture.md"
     },
     {
       "id": "ADR-068",
