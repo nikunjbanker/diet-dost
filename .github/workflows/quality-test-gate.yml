@@ -166,33 +166,10 @@ jobs:
       - name: 4. Build WebGateway Project
         run: dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Release
 
-      - name: 5. Start WebGateway Daemon & Execute System Test Suites
+      - name: 5. Execute System Test Suites via Quality Test Gate
+        shell: pwsh
         run: |
-          echo "=========================================================="
-          echo "  TIER 3: SYSTEM TEST EXECUTION (THRESHOLD: >= 75%)       "
-          echo "=========================================================="
-
-          # Boot WebGateway in background
-          dotnet run --project src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Release --no-build --urls http://127.0.0.1:5240 &
-          WEB_PID=$!
-
-          # Wait for health probe
-          echo "Waiting for WebGateway health check on http://127.0.0.1:5240/healthz..."
-          for i in {1..30}; do
-            if curl -s -f http://127.0.0.1:5240/healthz > /dev/null; then
-              echo "✅ WebGateway daemon online."
-              break
-            fi
-            sleep 1
-          done
-
-          # Execute System Test: Mobile BFF Contracts & Composite ETag Caching
-          node tests/verify_mobile_bff.mjs
-
-          # Terminate daemon
-          kill -9 $WEB_PID || true
-
-          echo "✅ Tier 3 System Test Gate PASSED: 100% (Pass rate exceeds >= 75% threshold)"
+          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier System -BaseUrl "http://127.0.0.1:5240"
 
   # ----------------------------------------------------------------------------
   # Job 4: End-to-End Acceptance Tests (Threshold: >= 70%)
@@ -209,49 +186,18 @@ jobs:
         with:
           dotnet-version: '11.0.x'
 
-      - name: 3. Build WebGateway Project
+      - name: 3. Setup Node.js 22 LTS
+        uses: actions/setup-node@0a44ba7841725637a54e2802b814f9d8857d0049 # v4.0.4
+        with:
+          node-version: '22'
+
+      - name: 4. Build WebGateway Project
         run: dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Release
 
-      - name: 4. Start WebGateway Daemon & Execute Multi-Tier E2E CFT Suite
+      - name: 5. Execute Multi-Tier E2E Acceptance Suites via Quality Test Gate
         shell: pwsh
         run: |
-          Write-Host "=========================================================="
-          Write-Host "  TIER 4: END-TO-END TEST EXECUTION (THRESHOLD: >= 70%)   "
-          Write-Host "=========================================================="
-
-          # Boot WebGateway in background
-          $webProj = "src/Nutrition.WebGateway/Nutrition.WebGateway.csproj"
-          $proc = Start-Process -FilePath "dotnet" -ArgumentList "run --project `"$webProj`" -c Release --no-build --urls http://127.0.0.1:5240" -PassThru
-
-          # Wait for health probe
-          $started = $false
-          for ($i = 0; $i -lt 30; $i++) {
-            Start-Sleep -Seconds 1
-            try {
-              $resp = Invoke-RestMethod -Uri "http://127.0.0.1:5240/healthz" -Method Get -TimeoutSec 2 -ErrorAction SilentlyContinue
-              if ($resp) { $started = $true; break }
-            } catch { }
-          }
-
-          if (-not $started) {
-            Write-Host "❌ WebGateway failed to respond within 30 seconds."
-            Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-            exit 1
-          }
-
-          # Execute Live Multi-Tier Acceptance Test Suite across all 5 demo user tiers
-          pwsh -File tests/validate_e2e_tiers.ps1 -BaseUrl "http://127.0.0.1:5240"
-          $e2eExit = $LASTEXITCODE
-
-          # Clean up daemon
-          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
-
-          if ($e2eExit -ne 0) {
-            Write-Host "❌ TIER 4 QUALITY GATE FAILURE: End-to-End tier validation encountered failures."
-            exit 1
-          }
-
-          Write-Host "✅ Tier 4 End-to-End Acceptance Test Gate PASSED: 100% (Pass rate exceeds >= 70% threshold)"
+          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier E2E -BaseUrl "http://127.0.0.1:5240"
 
   # ----------------------------------------------------------------------------
   # Job 5: Quality Gate Summary & Enforcement

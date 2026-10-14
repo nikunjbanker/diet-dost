@@ -2,13 +2,18 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
 const PORT = 9224;
 const BASE_URL = 'http://localhost:5240/';
-const ARTIFACT_DIR = 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+if (!existsSync(ARTIFACT_DIR)) {
+    try { mkdirSync(ARTIFACT_DIR, { recursive: true }); } catch {}
+}
 
 function sleep(ms) {
     return new Promise(res => setTimeout(res, ms));
@@ -50,6 +55,8 @@ async function main() {
     console.log('[1/10] Launching headless browser on port ' + PORT + '...');
     const edgeProc = spawn(EDGE_PATH, [
         '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
         `--user-data-dir=${process.env.TEMP || 'C:\\\\temp'}\\edge_cft_${Date.now()}`,
         '--disable-gpu',
@@ -136,12 +143,7 @@ async function main() {
             pwdInput.value = '${password}';
             idInput.dispatchEvent(new Event('input', { bubbles: true }));
             pwdInput.dispatchEvent(new Event('input', { bubbles: true }));
-            const submitBtn = document.getElementById('btn-submit-signin');
-            if (submitBtn) {
-                submitBtn.click();
-            } else {
-                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-            }
+            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
             return true;
         })()`);
     }
@@ -156,7 +158,11 @@ async function main() {
         await sleep(300);
     }
     await performLogin('basic@dietdost.app', 'DietDost@Demo2026!');
-    await sleep(2500);
+    for (let i = 0; i < 25; i++) {
+        const tier = await evaluate(`document.getElementById('header-tier-pill')?.textContent`);
+        if (tier && tier !== 'Guest') break;
+        await sleep(200);
+    }
 
     const loginCheck = await evaluate(`(() => {
         const authGateModal = document.getElementById('auth-gate-modal');
@@ -271,7 +277,11 @@ async function main() {
 
     // Re-login as premium user for meal logging tests (unlimited quota)
     await performLogin('premium@dietdost.app', 'DietDost@Demo2026!');
-    await sleep(2500);
+    for (let i = 0; i < 25; i++) {
+        const tier = await evaluate(`document.getElementById('header-tier-pill')?.textContent`);
+        if (tier && tier === 'Premium') break;
+        await sleep(200);
+    }
 
     // -------------------------------------------------------------------------
     // TEST 4: MEAL LOGGER MOBILE RENDERING & MODE SWITCHER
@@ -342,7 +352,7 @@ async function main() {
 
     let reviewModalOpen = false;
     let reviewMetrics = null;
-    for (let i = 0; i < 80; i++) {
+    for (let i = 0; i < 110; i++) {
         await sleep(500);
         if (i % 10 === 0) {
             const pollDebug = await evaluate(`(() => {

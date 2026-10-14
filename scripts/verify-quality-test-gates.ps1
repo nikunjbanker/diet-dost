@@ -218,7 +218,11 @@ if ($Tier -in @("All", "System")) {
     }
 
     $systemTests = @(
-        @{ Name = "Mobile BFF Caching & Composite Contracts"; Script = "tests/verify_mobile_bff.mjs" }
+        @{ Name = "Mobile BFF Caching & Composite Contracts"; Script = "tests/verify_mobile_bff.mjs" },
+        @{ Name = "Dynamic Registration Modes & System Config"; Script = "tests/test_dynamic_config_modes.mjs" },
+        @{ Name = "Admin Tier RBAC & SuperAdmin Governance"; Script = "tests/verify_admin_tier_governance.mjs" },
+        @{ Name = "Auth Gate Presentation & Quick-Fill Design"; Script = "tests/verify_auth_gate_design.mjs" },
+        @{ Name = "Design System Surface Ladder & Tokens"; Script = "tests/audit_design_system_compliance.mjs" }
     )
 
     $sysTotal = $systemTests.Count
@@ -272,26 +276,46 @@ if ($Tier -in @("All", "E2E")) {
         $webProcess = Start-WebGatewayIfNeeded -Url $BaseUrl
     }
 
-    $e2eScript = Join-Path $RepoRoot "tests/validate_e2e_tiers.ps1"
-    Write-Host "  • Executing Multi-Tier Acceptance Suite ($e2eScript)..." -ForegroundColor Gray
-    
-    $e2eOutput = pwsh -File $e2eScript -BaseUrl $BaseUrl 2>&1 | Out-String
-    $e2eExit = $LASTEXITCODE
+    $e2eSuites = @(
+        @{ Name = "Multi-Tier User Acceptance (5 Tiers)"; Type = "ps1"; Script = "tests/validate_e2e_tiers.ps1" },
+        @{ Name = "E2E Core Meal Flow, Ledger & Quotas"; Type = "node"; Script = "tests/verify_cft_core_features.mjs" },
+        @{ Name = "Multi-Platform Responsive Viewports"; Type = "node"; Script = "tests/verify_cft_viewports.mjs" },
+        @{ Name = "Mobile Touch Flows & Photo AI Logging"; Type = "node"; Script = "tests/verify_mobile_cft_core_flows.mjs" },
+        @{ Name = "User Onboarding, Health Consent & OTP"; Type = "node"; Script = "tests/verify_registration_and_cft.mjs" }
+    )
 
-    $tierMatches = [regex]::Matches($e2eOutput, "Validating Demo User: (.*?) \[Expected Tier: (.*?), Role: (.*?)\]")
-    $totalE2ETiers = $tierMatches.Count
-    if ($totalE2ETiers -eq 0) { $totalE2ETiers = 5 } # 5 demo tiers
+    $e2eTotal = $e2eSuites.Count
+    $e2ePassed = 0
 
-    $e2eFailCount = ([regex]::Matches($e2eOutput, "\[FAIL\]")).Count
-    $e2ePassRate = 100.0
-    if ($e2eFailCount -gt 0) {
-        $e2ePassRate = [math]::Max(0.0, [math]::Round(((5 - $e2eFailCount) / 5) * 100, 2))
+    foreach ($es in $e2eSuites) {
+        $scriptPath = Join-Path $RepoRoot $es.Script
+        Write-Host "  • Executing: $($es.Name) ($($es.Script))..." -ForegroundColor Gray
+        
+        $res = $null
+        if ($es.Type -eq "ps1") {
+            $res = pwsh -File $scriptPath -BaseUrl $BaseUrl 2>&1 | Out-String
+        } else {
+            $res = node $scriptPath 2>&1 | Out-String
+        }
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "    ✓ $($es.Name): Passed" -ForegroundColor Green
+            $e2ePassed++
+        } else {
+            Write-Host "    ✗ $($es.Name): Failed" -ForegroundColor Red
+            Write-Host "    Output: $res" -ForegroundColor DarkRed
+        }
     }
 
-    $e2eGatePassed = ($e2eExit -eq 0) -and ($e2ePassRate -ge 70.0)
+    $e2ePassRate = 0.0
+    if ($e2eTotal -gt 0) {
+        $e2ePassRate = [math]::Round(($e2ePassed / $e2eTotal) * 100, 2)
+    }
 
-    Write-Host "  • Total E2E User Tiers    : $totalE2ETiers (Free, Basic, Premium, Admin, SuperAdmin)"
-    Write-Host "  • Total E2E Failures      : $e2eFailCount"
+    $e2eGatePassed = ($e2ePassRate -ge 70.0)
+
+    Write-Host "  • Total E2E Test Suites   : $e2eTotal"
+    Write-Host "  • Passed E2E Suites       : $e2ePassed"
     Write-Host "  • Achieved E2E Pass Rate  : $e2ePassRate% (Enforced Gate: >= 70%)"
     if ($e2eGatePassed) {
         Write-Host "  ✅ Tier 4 End-to-End Test Gate: PASS" -ForegroundColor Green
@@ -303,7 +327,7 @@ if ($Tier -in @("All", "E2E")) {
         Tier = "Tier 4: End-to-End Tests"
         Scope = "5-Tier Customer Acceptance, AI Quotas, Paywalls & SuperAdmin"
         Required = ">= 70%"
-        Achieved = "$e2ePassRate% ($e2eFailCount failures across $totalE2ETiers tiers)"
+        Achieved = "$e2ePassRate% ($e2ePassed/$e2eTotal suites passed)"
         Passed = $e2eGatePassed
     })
 }

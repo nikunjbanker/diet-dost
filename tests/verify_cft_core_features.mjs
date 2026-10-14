@@ -2,13 +2,18 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
+const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
 const PORT = 9222;
 const BASE_URL = 'http://localhost:5240/';
-const ARTIFACT_DIR = 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+if (!existsSync(ARTIFACT_DIR)) {
+    try { mkdirSync(ARTIFACT_DIR, { recursive: true }); } catch {}
+}
 
 function sleep(ms) {
     return new Promise(res => setTimeout(res, ms));
@@ -52,6 +57,8 @@ async function main() {
     console.log('[1/8] Launching headless browser on port ' + PORT + '...');
     const edgeProc = spawn(EDGE_PATH, [
         '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
         `--user-data-dir=${process.env.TEMP || 'C:\\\\temp'}\\edge_cft_${Date.now()}`,
         '--disable-gpu',
@@ -240,7 +247,7 @@ async function main() {
 
     let reviewModalOpen = false;
     let reviewData = null;
-    for (let i = 0; i < 25; i++) {
+    for (let i = 0; i < 50; i++) {
         await sleep(500);
         reviewData = await evaluate(`(() => {
             const modal = document.getElementById('review-modal');

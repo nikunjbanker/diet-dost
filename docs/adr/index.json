@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-14T08:27:04.178625+00:00",
-  "totalAdrs": 56,
+  "generatedAt": "2026-10-14T09:20:49.973340+00:00",
+  "totalAdrs": 57,
   "categoryCounts": {
     "architecture": 18,
     "security": 17,
-    "devops": 4,
+    "devops": 5,
     "presentation": 4,
     "governance": 13
   },
@@ -681,6 +681,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261011-091-strict-safe-harbor-and-multi-llm-content-safety-governance.md",
       "relativePath": "docs/adr/security/ADR-20261011-091-strict-safe-harbor-and-multi-llm-content-safety-governance.md"
+    },
+    {
+      "id": "ADR-092",
+      "number": 92,
+      "title": "Multi-Tier Quality Test Gate Architecture, Enforced Thresholds, and Complete Test Inventory Mapping",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-14",
+      "subsystem": "Devops",
+      "filename": "ADR-20261014-092-multi-tier-quality-test-gate-enforcement.md",
+      "relativePath": "docs/adr/devops/ADR-20261014-092-multi-tier-quality-test-gate-enforcement.md"
     }
   ]
 }
