@@ -41,6 +41,7 @@ public class MobileBffCompositeTests : IDisposable
 
     public MobileBffCompositeTests()
     {
+        TierConfigurationService.ClearCache();
         var connectionString = $"Data Source=file:memdb_mobile_bff_{Guid.NewGuid():N}?mode=memory&cache=shared;Default Timeout=30;";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
@@ -80,6 +81,7 @@ public class MobileBffCompositeTests : IDisposable
 
     public void Dispose()
     {
+        TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
     }

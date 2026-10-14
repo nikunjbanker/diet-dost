@@ -39,6 +39,8 @@ aspire.config.json
 
 ## Uploads
 src/Nutrition.WebGateway/wwwroot/uploads/
+wwwroot/uploads/
+**/wwwroot/uploads/
 
 ## Scratch & Temporary Working Files
 scratch/

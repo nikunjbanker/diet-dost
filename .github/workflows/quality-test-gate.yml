@@ -164,13 +164,15 @@ jobs:
           node-version: '22'
 
       - name: 4. Build WebGateway Project
-        run: dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Release
+        run: dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Debug
 
       - name: 5. Execute System Test Suites via Quality Test Gate
         shell: pwsh
         env:
           CHROME_PATH: /usr/bin/google-chrome
           BASE_URL: http://127.0.0.1:5240
+          ASPNETCORE_ENVIRONMENT: Development
+          DOTNET_ENVIRONMENT: Development
         run: |
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier System -BaseUrl "http://127.0.0.1:5240"
 
@@ -195,13 +197,15 @@ jobs:
           node-version: '22'
 
       - name: 4. Build WebGateway Project
-        run: dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Release
+        run: dotnet build src/Nutrition.WebGateway/Nutrition.WebGateway.csproj -c Debug
 
       - name: 5. Execute Multi-Tier E2E Acceptance Suites via Quality Test Gate
         shell: pwsh
         env:
           CHROME_PATH: /usr/bin/google-chrome
           BASE_URL: http://127.0.0.1:5240
+          ASPNETCORE_ENVIRONMENT: Development
+          DOTNET_ENVIRONMENT: Development
         run: |
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier E2E -BaseUrl "http://127.0.0.1:5240"
 

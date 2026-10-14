@@ -34,6 +34,7 @@ public class AdminUserManagementTests : IDisposable
 
     public AdminUserManagementTests()
     {
+        TierConfigurationService.ClearCache();
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
@@ -52,6 +53,7 @@ public class AdminUserManagementTests : IDisposable
 
     public void Dispose()
     {
+        TierConfigurationService.ClearCache();
         _connection.Dispose();
         _db.Dispose();
     }

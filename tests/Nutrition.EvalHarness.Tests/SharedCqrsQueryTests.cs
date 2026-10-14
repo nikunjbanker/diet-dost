@@ -42,6 +42,7 @@ public class SharedCqrsQueryTests : IDisposable
 
     public SharedCqrsQueryTests()
     {
+        TierConfigurationService.ClearCache();
         var connectionString = $"Data Source=file:memdb_cqrs_{Guid.NewGuid():N}?mode=memory&cache=shared";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
@@ -75,6 +76,7 @@ public class SharedCqrsQueryTests : IDisposable
 
     public void Dispose()
     {
+        TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
     }

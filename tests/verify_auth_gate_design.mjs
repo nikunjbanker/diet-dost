@@ -8,7 +8,7 @@ import { resolve } from 'path';
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
-const PORT = 9222;
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9221;
 const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
 if (!existsSync(ARTIFACT_DIR)) {
@@ -136,7 +136,7 @@ async function main() {
     });
     await sleep(500);
 
-    const desktopChecks = await evaluate(ws, `
+    const desktopChecks = (await evaluate(ws, `
         (() => {
             const modal = document.getElementById('auth-gate-modal');
             const tabRegister = document.getElementById('btn-tab-register');
@@ -148,10 +148,10 @@ async function main() {
             const demoButtons = document.querySelectorAll('.demo-pill-btn');
             const disabledBanner = document.querySelector('.auth-disabled-banner');
 
-            const modalDisplay = window.getComputedStyle(modal).display;
-            const regDisplay = window.getComputedStyle(tabRegister).display;
-            const signinDisplay = window.getComputedStyle(tabSignIn).display;
-            const isSigninActive = tabSignIn.classList.contains('active');
+            const modalDisplay = modal ? window.getComputedStyle(modal).display : 'none';
+            const regDisplay = tabRegister ? window.getComputedStyle(tabRegister).display : 'none';
+            const signinDisplay = tabSignIn ? window.getComputedStyle(tabSignIn).display : 'none';
+            const isSigninActive = tabSignIn ? tabSignIn.classList.contains('active') : false;
 
             const cardStyle = noticeCard ? window.getComputedStyle(noticeCard) : {};
             const badgeStyle = badge ? window.getComputedStyle(badge) : {};
@@ -170,7 +170,7 @@ async function main() {
                 badgeRadius: badgeStyle.borderRadius
             };
         })()
-    `);
+    `)) || {};
 
     console.log('   Desktop UI Checks:');
     console.log(`   - Auth Gate Modal Visible: ${desktopChecks.modalVisible ? 'PASS' : 'FAIL'}`);

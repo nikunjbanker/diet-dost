@@ -8,7 +8,7 @@ import { resolve } from 'path';
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
-const PORT = 9222;
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9228;
 const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
 if (!existsSync(ARTIFACT_DIR)) {
@@ -105,7 +105,11 @@ async function main() {
     const newPageRes = await fetch(`http://127.0.0.1:${PORT}/json/new?${encodeURIComponent(BASE_URL)}`, { method: 'PUT' });
     const pageData = await newPageRes.json();
     ws = new WebSocket(pageData.webSocketDebuggerUrl);
-    await new Promise(r => ws.addEventListener('open', r));
+    await new Promise((resolveWs, rejectWs) => {
+        const timer = setTimeout(() => rejectWs(new Error('WebSocket connection timeout')), 10000);
+        ws.addEventListener('open', () => { clearTimeout(timer); resolveWs(); });
+        ws.addEventListener('error', (err) => { clearTimeout(timer); rejectWs(err); });
+    });
 
     await sendCdp(ws, 'Page.enable');
     await sendCdp(ws, 'DOM.enable');
@@ -169,16 +173,16 @@ async function main() {
         await evaluate(ws, `document.getElementById('btn-tab-register').click();`);
         await sleep(600);
 
-        const regTabState = await evaluate(ws, `
+        const regTabState = (await evaluate(ws, `
             (() => {
                 const formRegister = document.getElementById('form-register');
                 const tabRegister = document.getElementById('btn-tab-register');
                 return {
-                    tabActive: tabRegister.classList.contains('active'),
-                    formVisible: window.getComputedStyle(formRegister).display !== 'none'
+                    tabActive: tabRegister ? tabRegister.classList.contains('active') : false,
+                    formVisible: formRegister ? window.getComputedStyle(formRegister).display !== 'none' : false
                 };
             })()
-        `);
+        `)) || {};
         console.log(`   - Switched to Register Form: ${regTabState.formVisible ? 'PASS' : 'FAIL'}`);
         await captureScreenshot(ws, 'cft_reg_02_register_form.png');
 
@@ -351,10 +355,11 @@ async function main() {
         console.log('======================================================================');
         console.log('>>> ALL REGISTRATION & MULTI-PLATFORM CFT TESTS PASSED (100%) <<<');
         console.log('======================================================================');
+        process.exit(0);
 
     } finally {
-        if (ws) ws.close();
-        edgeProc.kill();
+        try { if (ws) ws.close(); } catch {}
+        try { edgeProc.kill(); } catch {}
     }
 }
 

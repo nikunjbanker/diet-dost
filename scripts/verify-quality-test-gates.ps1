@@ -75,21 +75,39 @@ function Start-WebGatewayIfNeeded {
 
     Write-Host "  🚀 Launching WebGateway daemon on $Url for live verification..." -ForegroundColor Yellow
     $webProj = Join-Path $RepoRoot "src/Nutrition.WebGateway/Nutrition.WebGateway.csproj"
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = "dotnet"
-    $psi.Arguments = "run --project `"$webProj`" --urls $Url --no-build"
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.UseShellExecute = $false
-    $psi.CreateNoWindow = $true
+    $debugDll = Join-Path $RepoRoot "src/Nutrition.WebGateway/bin/Debug/net11.0/Nutrition.WebGateway.dll"
+    $releaseDll = Join-Path $RepoRoot "src/Nutrition.WebGateway/bin/Release/net11.0/Nutrition.WebGateway.dll"
 
-    $proc = [System.Diagnostics.Process]::Start($psi)
+    $env:ASPNETCORE_ENVIRONMENT = "Development"
+    $env:DOTNET_ENVIRONMENT = "Development"
+
+    $stdoutFile = Join-Path ([System.IO.Path]::GetTempPath()) "webgateway_stdout_$([System.Guid]::NewGuid().ToString('N')).log"
+    $stderrFile = Join-Path ([System.IO.Path]::GetTempPath()) "webgateway_stderr_$([System.Guid]::NewGuid().ToString('N')).log"
+
+    $workingDir = Join-Path $RepoRoot "src/Nutrition.WebGateway"
+    $argList = @()
+
+    if (Test-Path $debugDll) {
+        $argList = @($debugDll, "--urls", $Url)
+    } elseif (Test-Path $releaseDll) {
+        $argList = @($releaseDll, "--urls", $Url)
+    } else {
+        $argList = @("run", "--project", $webProj, "-c", "Debug", "--urls", $Url)
+    }
+
+    $proc = Start-Process -FilePath "dotnet" -ArgumentList $argList -WorkingDirectory $workingDir -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile -PassThru
 
     # Wait up to 30 seconds for health probe
     $retries = 30
     $started = $false
     while ($retries -gt 0) {
         Start-Sleep -Seconds 1
+        if ($proc.HasExited) {
+            Write-Host "  ❌ Critical: WebGateway process exited prematurely with code $($proc.ExitCode)!" -ForegroundColor Red
+            if (Test-Path $stdoutFile) { Write-Host "  STDOUT:`n$(Get-Content $stdoutFile -Raw)" -ForegroundColor DarkGray }
+            if (Test-Path $stderrFile) { Write-Host "  STDERR:`n$(Get-Content $stderrFile -Raw)" -ForegroundColor DarkRed }
+            break
+        }
         try {
             $resp = Invoke-RestMethod -Uri "$Url/healthz" -Method Get -TimeoutSec 2 -ErrorAction SilentlyContinue
             if ($resp) {
@@ -102,6 +120,14 @@ function Start-WebGatewayIfNeeded {
 
     if (-not $started) {
         Write-Host "  ⚠️ Warning: WebGateway did not respond to /healthz within 30s. Tests will attempt connection." -ForegroundColor DarkYellow
+        if (Test-Path $stdoutFile) {
+            $outContent = Get-Content $stdoutFile -Raw
+            if ($outContent) { Write-Host "  WebGateway Output:`n$outContent" -ForegroundColor DarkGray }
+        }
+        if (Test-Path $stderrFile) {
+            $errContent = Get-Content $stderrFile -Raw
+            if ($errContent) { Write-Host "  WebGateway Errors:`n$errContent" -ForegroundColor DarkRed }
+        }
     } else {
         Write-Host "  ✅ WebGateway daemon online and responsive at $Url" -ForegroundColor Green
     }

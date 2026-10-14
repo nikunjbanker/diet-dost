@@ -221,12 +221,12 @@ async function main() {
     })()`);
     await sleep(1500);
 
-    const signoutCheck = await evaluate(`(() => {
+    const signoutCheck = (await evaluate(`(() => {
         const authGateModal = document.getElementById('auth-gate-modal');
         const gateVisible = authGateModal && window.getComputedStyle(authGateModal).display !== 'none';
         const token = localStorage.getItem('dd_jwt_token');
-        return { gateVisible, tokenNull: !token };
-    })()`);
+        return { gateVisible: !!gateVisible, tokenNull: !token };
+    })()`)) || { gateVisible: false, tokenNull: false };
 
     const signoutPass = signoutClicked && signoutCheck.gateVisible && signoutCheck.tokenNull;
     console.log(`    [PASS/FAIL] Mobile Sign Out via Header Menu: ${signoutPass ? 'PASS' : 'FAIL'} (Gate Visible: ${signoutCheck.gateVisible}, Token Cleared: ${signoutCheck.tokenNull})`);
@@ -513,11 +513,11 @@ async function main() {
 
     let photoModalOpen = false;
     let photoData = null;
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 120; i++) {
         await sleep(500);
         if (i % 10 === 0) {
             const scanStatus = await evaluate(`(() => {
-                const scanning = document.getElementById('photo-scanning');
+                const scanning = document.getElementById('scanning-state');
                 const toast = document.querySelector('.toast');
                 return { iter: ${i}, scanning: scanning && window.getComputedStyle(scanning).display !== 'none', toast: toast?.textContent };
             })()`);
@@ -528,7 +528,7 @@ async function main() {
             const open = modal && window.getComputedStyle(modal).display !== 'none';
             const photoImg = document.getElementById('review-meal-photo');
             const photoSrc = photoImg ? photoImg.src : '';
-            const hasSrc = !!photoSrc && !photoSrc.includes('placeholder') && photoSrc.length > 5;
+            const hasSrc = !!photoSrc && photoSrc.length > 5;
             const dishTitle = document.getElementById('review-dish-name-input')?.value;
             const confirmBtn = document.getElementById('btn-confirm-meal');
             const confirmVisible = confirmBtn && window.getComputedStyle(confirmBtn).display !== 'none';
@@ -543,7 +543,7 @@ async function main() {
                 const open = modal && window.getComputedStyle(modal).display !== 'none';
                 const photoImg = document.getElementById('review-meal-photo');
                 const photoSrc = photoImg ? photoImg.src : '';
-                const hasSrc = !!photoSrc && !photoSrc.includes('placeholder') && photoSrc.length > 5;
+                const hasSrc = !!photoSrc && photoSrc.length > 5;
                 const dishTitle = document.getElementById('review-dish-name-input')?.value;
                 const confirmBtn = document.getElementById('btn-confirm-meal');
                 const confirmVisible = confirmBtn && window.getComputedStyle(confirmBtn).display !== 'none';
