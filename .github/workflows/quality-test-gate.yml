@@ -56,7 +56,7 @@ jobs:
       - name: 4. Execute Unit Tests with Code Coverage via Quality Test Gate
         shell: pwsh
         run: |
-          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Unit
+          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Unit -Configuration Release
 
   # ----------------------------------------------------------------------------
   # Job 2: Integration Tests (Threshold: >= 40% Line Coverage, 0 failures)
@@ -79,7 +79,7 @@ jobs:
       - name: 4. Execute Integration Tests with Code Coverage via Quality Test Gate
         shell: pwsh
         run: |
-          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Integration
+          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Integration -Configuration Release
 
   # ----------------------------------------------------------------------------
   # Job 3: System Tests (Threshold: >= 75%)

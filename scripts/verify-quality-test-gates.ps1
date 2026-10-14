@@ -52,7 +52,9 @@ param(
 
     [double]$SystemThreshold = 75.0,
 
-    [double]$E2EThreshold = 70.0
+    [double]$E2EThreshold = 70.0,
+
+    [string]$Configuration = ""
 )
 
 $ErrorActionPreference = "Continue"
@@ -62,6 +64,13 @@ if ($env:UNIT_TEST_THRESHOLD) { $UnitThreshold = [double]$env:UNIT_TEST_THRESHOL
 if ($env:INTEGRATION_TEST_THRESHOLD) { $IntegrationThreshold = [double]$env:INTEGRATION_TEST_THRESHOLD }
 if ($env:SYSTEM_TEST_THRESHOLD) { $SystemThreshold = [double]$env:SYSTEM_TEST_THRESHOLD }
 if ($env:E2E_TEST_THRESHOLD) { $E2EThreshold = [double]$env:E2E_TEST_THRESHOLD }
+
+# Resolve Build Configuration (Release for CI, Debug for local development by default)
+if (-not $Configuration) {
+    if ($env:DOTNET_CONFIGURATION) { $Configuration = $env:DOTNET_CONFIGURATION }
+    elseif ($env:CI) { $Configuration = "Release" }
+    else { $Configuration = "Debug" }
+}
 
 # Resolve Repository Root
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
@@ -184,7 +193,7 @@ if ($Tier -in @("All", "Unit")) {
     if (Test-Path $unitResultsDir) { Remove-Item $unitResultsDir -Recurse -Force -ErrorAction SilentlyContinue }
     New-Item -ItemType Directory -Path $unitResultsDir -Force | Out-Null
     
-    $testOutput = dotnet test $domainProj --no-build --logger "trx;LogFileName=unit_test_results.trx" --results-directory $unitResultsDir --collect:"XPlat Code Coverage" 2>&1 | Out-String
+    $testOutput = dotnet test $domainProj -c $Configuration --logger "trx;LogFileName=unit_test_results.trx" --results-directory $unitResultsDir --collect:"XPlat Code Coverage" 2>&1 | Out-String
 
     $passedMatches = [regex]::Match($testOutput, "Passed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+),\s+Total:\s+(\d+)")
     $failed = 0
@@ -243,7 +252,7 @@ if ($Tier -in @("All", "Integration")) {
     if (Test-Path $integResultsDir) { Remove-Item $integResultsDir -Recurse -Force -ErrorAction SilentlyContinue }
     New-Item -ItemType Directory -Path $integResultsDir -Force | Out-Null
     
-    $testOutput = dotnet test $evalProj --no-build --logger "trx;LogFileName=integration_test_results.trx" --results-directory $integResultsDir --collect:"XPlat Code Coverage" 2>&1 | Out-String
+    $testOutput = dotnet test $evalProj -c $Configuration --logger "trx;LogFileName=integration_test_results.trx" --results-directory $integResultsDir --collect:"XPlat Code Coverage" 2>&1 | Out-String
 
     $passedMatches = [regex]::Match($testOutput, "Passed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+),\s+Total:\s+(\d+)")
     $failed = 0
