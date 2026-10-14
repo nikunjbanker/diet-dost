@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -16,11 +16,14 @@ namespace Nutrition.WebGateway.Middleware;
 /// and enriches the current OpenTelemetry Activity span and structured logging.
 /// This surfaces the payloads directly in the Aspire Dashboard Traces inspector.
 /// </summary>
-public class HttpPayloadTelemetryMiddleware
+public partial class HttpPayloadTelemetryMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<HttpPayloadTelemetryMiddleware> _logger;
     private const int MaxPayloadCaptureBytes = 65536; // 64 KB safety limit
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"[^\w\-/\.]")]
+    private static partial System.Text.RegularExpressions.Regex SafePathRegex();
 
     public HttpPayloadTelemetryMiddleware(RequestDelegate next, ILogger<HttpPayloadTelemetryMiddleware> logger)
     {
@@ -120,15 +123,32 @@ public class HttpPayloadTelemetryMiddleware
             context.Response.Body = originalBodyStream;
             sw.Stop();
 
-            // Emit structured log with captured payloads
+            // Emit structured log with metrics and byte sizes (raw payloads stored in OpenTelemetry activity tags)
+            var sanitizedMethod = HttpMethods.IsGet(context.Request.Method) ? "GET"
+                : HttpMethods.IsPost(context.Request.Method) ? "POST"
+                : HttpMethods.IsPut(context.Request.Method) ? "PUT"
+                : HttpMethods.IsDelete(context.Request.Method) ? "DELETE"
+                : "OTHER";
+
+            var safePath = SafePathRegex().Replace(path, "_");
             _logger.LogInformation(
-                "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms | RequestBody: {RequestBody} | ResponseBody: {ResponseBody}",
-                context.Request.Method,
-                path,
+                "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms (PayloadBytes: {RequestBytes}/{ResponseBytes})",
+                sanitizedMethod,
+                safePath,
                 context.Response.StatusCode,
                 sw.Elapsed.TotalMilliseconds,
-                string.IsNullOrWhiteSpace(requestPayload) ? "[empty]" : requestPayload,
-                string.IsNullOrWhiteSpace(responsePayload) ? "[empty]" : responsePayload);
+                context.Request.ContentLength ?? 0,
+                responseMemoryStream.Length);
         }
+    }
+
+    private static string SanitizeForLog(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return "[empty]";
+        }
+
+        return input.Replace("\r", string.Empty).Replace("\n", " ");
     }
 }

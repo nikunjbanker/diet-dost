@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -89,6 +89,25 @@ public class DatabaseSecretStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSecretAsync_PrioritizesConfigurationOverDatabaseTable()
+    {
+        const string key = "Jwt:Key";
+        const string dbVal = "Database-Fallback-Secret-Key-123456";
+        const string configVal = "KeyVault-Injected-Secret-Key-987654";
+
+        await _secretStore.SetSecretAsync(key, dbVal);
+
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [key] = configVal })
+            .Build();
+
+        var storeWithConfig = new DatabaseSecretStore(_db, NullLogger<DatabaseSecretStore>.Instance, config);
+
+        var retrieved = await storeWithConfig.GetSecretAsync(key);
+        Assert.Equal(configVal, retrieved);
+    }
+
+    [Fact]
     public async Task GetRequiredSecretAsync_MissingKey_ThrowsKeyNotFoundException()
     {
         await Assert.ThrowsAsync<KeyNotFoundException>(
@@ -128,8 +147,8 @@ public class DatabaseSecretStoreTests : IDisposable
             Assert.True(jwtKey.Length >= 32);
             Assert.Equal("DietDost@Demo2026!", demoPassword);
 
-            // JwtTokenService should successfully initialize using the key loaded from database
-            var jwtService = new JwtTokenService(config);
+            var jwtOptions = Microsoft.Extensions.Options.Options.Create(config.GetSection(Nutrition.Application.Common.Options.JwtOptions.SectionName).Get<Nutrition.Application.Common.Options.JwtOptions>() ?? new Nutrition.Application.Common.Options.JwtOptions { Key = jwtKey });
+            var jwtService = new JwtTokenService(jwtOptions);
             Assert.NotNull(jwtService);
         }
         finally

@@ -13,4 +13,10 @@
     <ProjectReference Include="..\Nutrition.WebGateway\Nutrition.WebGateway.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Azure.AppContainers" Version="13.5.4" />
+    <PackageReference Include="Aspire.Hosting.Azure.KeyVault" Version="13.5.4" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" Version="13.5.4" />
+  </ItemGroup>
+
 </Project>

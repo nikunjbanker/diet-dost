@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -6,6 +6,7 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using Microsoft.Extensions.Configuration;
+using Nutrition.Application.Common.Options;
 
 namespace Nutrition.Infrastructure.AI;
 
@@ -23,22 +24,29 @@ public sealed class AiProviderOptions
     public double Temperature { get; init; } = 0.2;
     public bool ShowModelDetails { get; init; } = true;
 
-    public static AiProviderOptions FromConfiguration(IConfiguration config)
+    public static AiProviderOptions FromAiOptions(AiOptions aiOptions)
     {
+        ArgumentNullException.ThrowIfNull(aiOptions);
         return new AiProviderOptions
         {
-            Provider = config["AI:Provider"] ?? "GoogleAI",
-            ModelId = config["AI:GoogleAI:ModelId"] ?? config["AI:ModelId"] ?? "gemini-3-flash-preview",
-            FallbackModelId = config["AI:GoogleAI:FallbackModelId"] ?? config["AI:FallbackModelId"] ?? "gemini-3.6-flash",
-            ApiKey = config["AI:GoogleAI:ApiKey"] ?? config["AI:ApiKey"] ?? config["Gemini:ApiKey"] ?? config["GoogleAI:ApiKey"] ?? Environment.GetEnvironmentVariable("AI__GoogleAI__ApiKey") ?? Environment.GetEnvironmentVariable("AI__ApiKey") ?? Environment.GetEnvironmentVariable("GEMINI_API_KEY"),
-            Endpoint = config["AI:GoogleAI:Endpoint"] ?? config["AI:Endpoint"],
-            AzureApiKey = config["AI:AzureOpenAI:ApiKey"] ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__ApiKey"),
-            AzureEndpoint = config["AI:AzureOpenAI:Endpoint"] ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__Endpoint"),
-            AzureDeploymentName = config["AI:AzureOpenAI:DeploymentName"] ?? Environment.GetEnvironmentVariable("AI__AzureOpenAI__DeploymentName") ?? "gpt-5.6-luna",
-            MaxTokens = int.TryParse(config["AI:MaxTokens"], out var maxTokens) && maxTokens > 0 ? maxTokens : 8192,
-            Temperature = double.TryParse(config["AI:Temperature"], out var temperature) ? temperature : 0.2,
-            ShowModelDetails = !bool.TryParse(config["AI:ShowModelDetails"], out var showModelDetails) || showModelDetails
+            Provider = !string.IsNullOrWhiteSpace(aiOptions.Provider) ? aiOptions.Provider : "GoogleAI",
+            ModelId = !string.IsNullOrWhiteSpace(aiOptions.GoogleAI?.ModelId) ? aiOptions.GoogleAI.ModelId : "gemini-3-flash-preview",
+            FallbackModelId = !string.IsNullOrWhiteSpace(aiOptions.GoogleAI?.FallbackModelId) ? aiOptions.GoogleAI.FallbackModelId : "gemini-3.6-flash",
+            ApiKey = aiOptions.GoogleAI?.ApiKey,
+            Endpoint = aiOptions.GoogleAI?.Endpoint,
+            AzureApiKey = aiOptions.AzureOpenAI?.ApiKey,
+            AzureEndpoint = aiOptions.AzureOpenAI?.Endpoint,
+            AzureDeploymentName = !string.IsNullOrWhiteSpace(aiOptions.AzureOpenAI?.DeploymentName) ? aiOptions.AzureOpenAI.DeploymentName : "gpt-5.6-luna",
+            MaxTokens = aiOptions.MaxTokens > 0 ? aiOptions.MaxTokens : 8192,
+            Temperature = aiOptions.Temperature,
+            ShowModelDetails = aiOptions.ShowModelDetails
         };
+    }
+
+    public static AiProviderOptions FromConfiguration(IConfiguration config)
+    {
+        var aiOptions = config.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+        return FromAiOptions(aiOptions);
     }
 
     public IReadOnlyList<string> GetModels()

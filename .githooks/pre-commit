@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+# ==============================================================================
+# Copyright (c) 2026 diet-dost and/or its contributors.
+# Licensed under the "GNU Affero General Public License v3.0 only" and
+# the "Server Side Public License, v 1"; you may not use this file except
+# in compliance with, at your election, the "GNU Affero General Public
+# License v3.0 only" or the "Server Side Public License, v 1".
+# ==============================================================================
+# Git Pre-Commit Hook: Mandatory AI-Based Development Defense Validator
+# Rejects commits if AI development security defense rules are violated.
+# ==============================================================================
+
+echo "🛡️ Executing Diet-Dost Pre-Commit AI Security Defense Validation..."
+
+# Run PowerShell Core (pwsh) or Windows PowerShell
+if command -v pwsh >/dev/null 2>&1; then
+    pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ai-security-defense.ps1 -Mode Staged
+elif command -v powershell >/dev/null 2>&1; then
+    powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-ai-security-defense.ps1 -Mode Staged
+else
+    echo "⚠️ Warning: Neither pwsh nor powershell found. Proceeding with standard git check."
+    exit 0
+fi
+
+EXIT_CODE=$?
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "❌ COMMIT REJECTED: Staged changes violate Diet-Dost AI Security Defense & Development Best Practices."
+    echo "   Run 'pwsh -File scripts/verify-ai-security-defense.ps1' to inspect and resolve all violations."
+    exit 1
+fi
+
+echo "✅ Pre-Commit AI Security Defense Verification Passed."
+exit 0

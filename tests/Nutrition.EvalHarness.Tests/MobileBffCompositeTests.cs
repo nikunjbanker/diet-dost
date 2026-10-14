@@ -41,6 +41,7 @@ public class MobileBffCompositeTests : IDisposable
 
     public MobileBffCompositeTests()
     {
+        TierConfigurationService.ClearCache();
         var connectionString = $"Data Source=file:memdb_mobile_bff_{Guid.NewGuid():N}?mode=memory&cache=shared;Default Timeout=30;";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
@@ -55,7 +56,8 @@ public class MobileBffCompositeTests : IDisposable
         services.AddLogging();
 
         services.AddDbContext<DietTrackerDbContext>(options =>
-            options.UseSqlite(connectionString));
+            options.UseSqlite(connectionString)
+                   .AddInterceptors(new SqlitePragmaInterceptor()));
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
@@ -79,6 +81,7 @@ public class MobileBffCompositeTests : IDisposable
 
     public void Dispose()
     {
+        TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
     }

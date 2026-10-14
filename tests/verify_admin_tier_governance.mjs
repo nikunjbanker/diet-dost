@@ -2,13 +2,18 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const PORT = 9226;
-const BASE_URL = 'http://localhost:5240/';
-const ARTIFACT_DIR = 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9226;
+const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+if (!existsSync(ARTIFACT_DIR)) {
+    try { mkdirSync(ARTIFACT_DIR, { recursive: true }); } catch {}
+}
 
 function sleep(ms) {
     return new Promise(res => setTimeout(res, ms));
@@ -49,17 +54,32 @@ async function main() {
     console.log('[1/5] Launching headless browser on port ' + PORT + '...');
     const edgeProc = spawn(EDGE_PATH, [
         '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
+        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',
         'about:blank'
     ]);
 
-    await sleep(2500);
-
-    const versionRes = await fetch(`http://127.0.0.1:${PORT}/json/version`);
-    const versionData = await versionRes.json();
+    let versionData = null;
+    for (let i = 0; i < 20; i++) {
+        try {
+            const versionRes = await fetch(`http://127.0.0.1:${PORT}/json/version`);
+            if (versionRes.ok) {
+                versionData = await versionRes.json();
+                break;
+            }
+        } catch {
+            await sleep(500);
+        }
+    }
+    if (!versionData) {
+        edgeProc.kill();
+        throw new Error('Failed to connect to CDP port ' + PORT);
+    }
     console.log(`   Browser CDP Connected: ${versionData.Browser}`);
 
     const newPageRes = await fetch(`http://127.0.0.1:${PORT}/json/new?${encodeURIComponent(BASE_URL)}`, { method: 'PUT' });

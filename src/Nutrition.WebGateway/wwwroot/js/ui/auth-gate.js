@@ -218,6 +218,10 @@ export class AuthGateController {
       const btn = document.getElementById(btnId);
       if (btn) {
         btn.addEventListener('click', () => {
+          if (btnId === 'btn-demo-admin' && this.allowsAdminDemoUsers === false) {
+            this.showError(this.signInError, 'Admin and SuperAdmin demo accounts are strictly prohibited in released versions.');
+            return;
+          }
           const idInput = document.getElementById('signin-identifier');
           const passInput = document.getElementById('signin-password');
           if (idInput && passInput) {
@@ -380,6 +384,16 @@ export class AuthGateController {
         this.switchTab('signin');
       }
     }
+
+    const adminDemoBtn = document.getElementById('btn-demo-admin');
+    if (adminDemoBtn) {
+      adminDemoBtn.style.display = this.allowsAdminDemoUsers ? '' : 'none';
+    }
+
+    const demoBanner = document.querySelector('.demo-credentials-banner');
+    if (demoBanner) {
+      demoBanner.style.display = this.allowsDemoUsers ? '' : 'none';
+    }
   }
 
   async checkRegistrationConfig() {
@@ -388,9 +402,13 @@ export class AuthGateController {
       if (res.ok) {
         const data = await res.json();
         this.allowRegistration = data.allowRegistration !== false;
+        this.allowsDemoUsers = data.allowsDemoUsers !== false;
+        this.allowsAdminDemoUsers = !!data.allowsAdminDemoUsers;
       }
     } catch {
       this.allowRegistration = true;
+      this.allowsDemoUsers = true;
+      this.allowsAdminDemoUsers = false;
     }
     this.applyRegistrationState();
   }

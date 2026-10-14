@@ -2,13 +2,18 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { writeFileSync, mkdirSync } from 'fs';
+import { existsSync, writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 
-const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const PORT = 9222;
-const BASE_URL = 'http://localhost:5240/';
-const ARTIFACT_DIR = 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9227;
+const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+if (!existsSync(ARTIFACT_DIR)) {
+    try { mkdirSync(ARTIFACT_DIR, { recursive: true }); } catch {}
+}
 
 function sleep(ms) {
     return new Promise(res => setTimeout(res, ms));
@@ -52,7 +57,10 @@ async function main() {
     console.log('[1/5] Launching headless browser on port ' + PORT + '...');
     const edgeProc = spawn(EDGE_PATH, [
         '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
+        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',
@@ -95,8 +103,18 @@ async function main() {
     await sendCdp(ws, 'Runtime.enable');
     await sendCdp(ws, 'DOM.enable');
 
+    // Helper to evaluate in page
+    async function evaluate(expression) {
+        const res = await sendCdp(ws, 'Runtime.evaluate', {
+            expression,
+            returnByValue: true,
+            awaitPromise: true
+        });
+        return res.result?.value;
+    }
+
     // Wait for page to fully load and hydrate
-    await sleep(1500);
+    await sleep(2000);
 
     // Authenticate demo session so main UI elements are visible
     await evaluate(`(async () => {
@@ -109,19 +127,20 @@ async function main() {
             form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         }
     })()`);
-    await sleep(1500);
+
+    // Poll up to 15s for login completion and auth gate dismissal
+    for (let i = 0; i < 30; i++) {
+        await sleep(500);
+        const loggedIn = await evaluate(`(() => {
+            const gate = document.getElementById('auth-gate-modal');
+            const main = document.querySelector('main.container');
+            return (!gate || window.getComputedStyle(gate).display === 'none') && (main && window.getComputedStyle(main).display !== 'none');
+        })()`);
+        if (loggedIn) break;
+    }
+    await sleep(1000);
 
     const results = [];
-
-    // Helper to evaluate in page
-    async function evaluate(expression) {
-        const res = await sendCdp(ws, 'Runtime.evaluate', {
-            expression,
-            returnByValue: true,
-            awaitPromise: true
-        });
-        return res.result?.value;
-    }
 
     // Helper to capture screenshot
     async function captureScreenshot(filename) {

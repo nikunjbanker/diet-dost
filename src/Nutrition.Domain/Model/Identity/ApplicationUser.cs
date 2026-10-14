@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -180,7 +180,27 @@ public partial class ApplicationUser
     }
 
     /// <summary>
-    /// Seeded demo account email addresses strictly intended for development, testing, and evaluation.
+    /// Seeded end-user demo account email addresses (Free, Basic, Premium) permitted in showcase environments.
+    /// </summary>
+    public static readonly IReadOnlySet<string> EndUserDemoEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "free@dietdost.app",
+        "basic@dietdost.app",
+        "premium@dietdost.app"
+    };
+
+    /// <summary>
+    /// Seeded privileged demo account email addresses (Admin, SuperAdmin) strictly prohibited in released versions.
+    /// </summary>
+    public static readonly IReadOnlySet<string> PrivilegedDemoEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "admin.demo@dietdost.app",
+        "superadmin@dietdost.app",
+        "admin@dietdost.app"
+    };
+
+    /// <summary>
+    /// Combined seeded demo account email addresses strictly intended for development, testing, and evaluation.
     /// </summary>
     public static readonly IReadOnlySet<string> DemoEmails = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
@@ -193,6 +213,15 @@ public partial class ApplicationUser
     };
 
     /// <summary>
+    /// Indicates whether this user instance is a privileged demo account (Admin or SuperAdmin).
+    /// Privileged demo accounts are strictly prohibited in released versions.
+    /// </summary>
+    public bool IsPrivilegedDemoAccount =>
+        PrivilegedDemoEmails.Contains(Email) ||
+        Id.StartsWith("user-admin", StringComparison.OrdinalIgnoreCase) ||
+        Id.StartsWith("user-superadmin", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Indicates whether this user instance is a seeded demo account.
     /// </summary>
     public bool IsDemoAccount =>
@@ -202,6 +231,12 @@ public partial class ApplicationUser
         Id.StartsWith("user-premium", StringComparison.OrdinalIgnoreCase) ||
         Id.StartsWith("user-admin", StringComparison.OrdinalIgnoreCase) ||
         Id.StartsWith("user-superadmin", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Evaluates whether an email string belongs to an admin/superadmin privileged demo account.
+    /// </summary>
+    public static bool IsPrivilegedDemoEmail(string? email) =>
+        !string.IsNullOrWhiteSpace(email) && PrivilegedDemoEmails.Contains(email.Trim());
 
     /// <summary>
     /// Evaluates whether an email string belongs to a demo account.

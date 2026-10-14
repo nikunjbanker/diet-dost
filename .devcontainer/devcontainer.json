@@ -1,0 +1,45 @@
+{
+  "name": "Diet-Dost AI Agent Dev Environment",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:9.0-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/powershell:1": {},
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "20"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.dotnet-interactive-vscode",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "bierner.markdown-mermaid",
+        "ms-azuretools.vscode-bicep",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode",
+        "dbaeumer.vscode-eslint"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "DietDost.slnx",
+        "terminal.integrated.defaultProfile.linux": "pwsh"
+      }
+    }
+  },
+  "postCreateCommand": "pwsh -Command \"dotnet tool install -g security-scan --version 5.6.7; gh extension install github/gh-stack 2>$null; exit 0\"",
+  "forwardPorts": [5240, 18888, 18889, 18890],
+  "portsAttributes": {
+    "5240": {
+      "label": "Diet-Dost Web Gateway",
+      "onAutoForward": "openBrowser"
+    },
+    "18888": {
+      "label": "Aspire Dashboard",
+      "onAutoForward": "notify"
+    }
+  },
+  "remoteUser": "vscode"
+}

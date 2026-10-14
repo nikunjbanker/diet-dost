@@ -41,7 +41,7 @@ description: >-
 > 3. **Zero-Warning Standard**: 0 warnings, 0 errors across the solution.
 > 4. **Zero Third-Party CQRS Dependencies**: Do NOT use `MediatR`. MediatR v13+ moved to a commercial / RPL-1.5 reciprocal license requiring paid license keys. Implement CQRS using native .NET 11 BCL abstractions.
 > 5. **Test Verification**: Run `dotnet test` and confirm 100% pass rate before committing or raising PRs.
-> 6. **Living SDD Synchronization**: Synchronize `docs/sdd/*.md` and append an entry to `docs/sdd/07_living_documentation_log.md`.
+> 6. **Living ADR Synchronization**: Record an atomic ADR fragment in `docs/adr/architecture/ADR-<YYYYMMDD>-<NNN>-<slug>.md`, execute `pwsh -File scripts/sync-adr-index.ps1`, and synchronize `docs/sdd/*.md`.
 > 7. **Mandatory End-to-End User Tier Validation**: After any refactoring, new feature implementation, or bug fix, execute comprehensive end-to-end verification of the running application across all 5 user tiers using seeded demo accounts (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app` with password `DietDost@Demo2026!`). Ensure zero runtime exceptions, accurate quota enforcement, correct tier gating (e.g. photo comparison and data export paywalls), and zero browser console errors.
 > 8. **Major Change Auto-Detection & Artifact Synchronization**: Continuously detect major changes (CQRS commands/queries, ports, entities, secret store, environment gates). Auto-synchronize `README.md`, `docs/architecture/diagrams/*.mermaid`, `docs/sdd/*.md`, and relevant skills without manual prompting.
 > 9. **Mandatory Confirmation & Zero-Unilateral-Decision Protocol**: In case of ANY ambiguity, doubt, or multiple architectural paths, ask questions and seek confirmation using interactive tools (`ask_question`); do not make unilateral decisions on your own.
@@ -515,7 +515,7 @@ graph LR
 - **Tasks**:
   1. Execute verification protocol in Section 8 across all 5 demo accounts.
   2. Confirm 0 console errors, 0 runtime exceptions, and accurate tier gating.
-  3. Update `docs/sdd/07_living_documentation_log.md` and related SDDs.
+  3. Record atomic ADR fragment in `docs/adr/architecture/ADR-*.md`, run `pwsh -File scripts/sync-adr-index.ps1`, and update related SDDs.
 
 ---
 

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -26,8 +26,16 @@ public interface IAppEnvironment
     bool IsDevelopment { get; }
 
     /// <summary>
-    /// True only if the application is compiled in Debug mode AND running in Development environment.
-    /// In Release mode or Production environments, this strictly returns false.
+    /// True if end-user demo user seeding and authentication (Free, Basic, Premium) are permitted in this environment.
+    /// In local development, evaluates to IsDebugMode && IsDevelopment.
+    /// In showcase environments (e.g. dev.diet-dost.in), can be explicitly enabled via Security:AllowDemoUsers.
     /// </summary>
     bool AllowsDemoUsers => IsDebugMode && IsDevelopment;
+
+    /// <summary>
+    /// True if privileged demo accounts (Admin and SuperAdmin) are permitted.
+    /// Strictly evaluates to true ONLY in local Development debug builds (IsDebugMode && IsDevelopment).
+    /// In ANY released version or production environment, this is unconditionally false.
+    /// </summary>
+    bool AllowsAdminDemoUsers => IsDebugMode && IsDevelopment;
 }

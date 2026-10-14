@@ -1,4 +1,4 @@
-﻿---
+---
 name: diet-dost-mobile-architecture
 description: Authoritative cross-platform mobile architecture, SMART MVP specification, Mobile BFF design, and enterprise cloud/AI architect guide for Diet-Dost (.NET 11, iOS, Android).
 ---
@@ -842,6 +842,7 @@ The following matrix provides guidance for selecting between Option 1 and Option
 > - Unified Cross-Platform Roadmap: [`docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/08_cross_platform_bff_clean_architecture_migration_plan.md)
 
 Verify the following gates:
+- [ ] **Automated Headless & Mobile Flow Verification**: Execute `node tests/verify_mobile_bff.mjs` and `node tests/verify_mobile_cft_core_flows.mjs` with 100% pass rate.
 - [ ] **BFF Gate**: `MobileBffController` handles `GET /api/mobile/v1/dashboard` in `< 300ms` by executing CQRS queries in parallel.
 - [ ] **Zero Duplication Gate**: Zero clinical calculations (ICMR-NIN calories, macros, deficits) written in client mobile code.
 - [ ] **Compression Gate**: Food photos snapped on high-resolution smartphone cameras are verified to upload at `< 500KB` (target <400 KB via 1080p SkiaSharp / Manipulator).

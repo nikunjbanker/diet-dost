@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -7,6 +7,7 @@
  */
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Azure;
 using Microsoft.Extensions.Configuration;
 using Nutrition.AppHost.Configuration;
 
@@ -23,9 +24,11 @@ public static class WebGatewayResourceExtensions
 
     /// <summary>
     /// Adds and configures the Nutrition.WebGateway project with its HTTP endpoints,
-    /// persistence settings, and AI provider environment variables.
+    /// persistence settings, AI provider environment variables, and optional Azure Key Vault reference.
     /// </summary>
-    public static IResourceBuilder<ProjectResource> AddWebGateway(this IDistributedApplicationBuilder builder)
+    public static IResourceBuilder<ProjectResource> AddWebGateway(
+        this IDistributedApplicationBuilder builder,
+        IResourceBuilder<AzureKeyVaultResource>? keyVault = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -42,6 +45,11 @@ public static class WebGatewayResourceExtensions
             .WithEnvironment("AI__GoogleAI__ModelId", aiOptions.GeminiModelId)
             .WithEnvironment("AI__GoogleAI__FallbackModelId", aiOptions.GeminiFallbackModelId);
 
+        if (keyVault != null)
+        {
+            webGateway.WithReference(keyVault);
+        }
+
         if (!string.IsNullOrWhiteSpace(aiOptions.AzureApiKey))
         {
             webGateway.WithEnvironment("AI__AzureOpenAI__ApiKey", aiOptions.AzureApiKey);
@@ -57,6 +65,14 @@ public static class WebGatewayResourceExtensions
             webGateway.WithEnvironment("AI__AzureOpenAI__DeploymentName", aiOptions.AzureDeploymentName);
         }
 
+        // Configure Azure Container Apps publication settings
+        webGateway.PublishAsAzureContainerApp((infrastructure, containerApp) =>
+        {
+            containerApp.Template.Scale.MinReplicas = 1;
+            containerApp.Template.Scale.MaxReplicas = 1;
+        });
+
         return webGateway;
     }
 }
+

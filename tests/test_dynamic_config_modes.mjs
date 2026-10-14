@@ -2,12 +2,14 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const PORT = 9222;
-const BASE_URL = 'http://localhost:5240/';
+const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9222;
+const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 const APPSETTINGS_PATH = resolve('src/Nutrition.WebGateway/appsettings.json');
 
 function sleep(ms) {
@@ -66,6 +68,8 @@ async function main() {
     console.log('[1/4] Launching headless browser...');
     const edge = spawn(EDGE_PATH, [
         '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
         '--disable-gpu',
         '--no-first-run',
@@ -104,7 +108,7 @@ async function main() {
     try {
         // ── MODE 1: Testing AllowRegistration: true ──────────────────────────
         console.log('\n--> MODE 1: Testing "Auth:AllowRegistration": true');
-        const configRes1 = await fetch('http://localhost:5240/api/auth/config');
+        const configRes1 = await fetch(`${BASE_URL}api/auth/config`);
         const configData1 = await configRes1.json();
         console.log(`    API GET /api/auth/config: allowRegistration = ${configData1.allowRegistration}`);
 
@@ -138,7 +142,7 @@ async function main() {
         console.log(`    - Notice Copy Mentions Registration: ${uiMode1.noticeText.includes('Create Account') ? 'PASS' : 'FAIL'}`);
 
         // Test API Registration in Mode 1
-        const reg1 = await fetch('http://localhost:5240/api/auth/register', {
+        const reg1 = await fetch(`${BASE_URL}api/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

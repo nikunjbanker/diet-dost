@@ -31,12 +31,28 @@ diettracker.db
 ## Secrets / Local configuration
 appsettings.local.json
 appsettings.Development.json
+aspire-manifest.json
+**/aspire-manifest.json
+aspire-output/
+**/aspire-output/
+aspire.config.json
 
 ## Uploads
 src/Nutrition.WebGateway/wwwroot/uploads/
+wwwroot/uploads/
+**/wwwroot/uploads/
 
 ## Scratch & Temporary Working Files
 scratch/
+.kilo/
+**/.kilo/
+
+## .NET Aspire & azd generated artifacts
+aspire-output/
+**/aspire-output/
+aspire-manifest.json
+**/aspire-manifest.json
+aspire.config.json
 
 ## OS generated files
 .DS_Store

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -38,7 +38,8 @@ public static class ImageOptimizationHelper
             using var codec = SKCodec.Create(inputStream);
             if (codec == null)
             {
-                return (inputBytes, originalMimeType, 0, 0);
+                var (hdrW, hdrH) = TryGetDimensionsFromHeader(inputBytes);
+                return (inputBytes, originalMimeType, hdrW, hdrH);
             }
 
             int origW = codec.Info.Width;
@@ -116,8 +117,53 @@ public static class ImageOptimizationHelper
         }
         catch
         {
-            // Graceful fallback on any decoding error
-            return (inputBytes, originalMimeType, 0, 0);
+            // Graceful fallback on any decoding error, preserving dimensions if available
+            var (hdrW, hdrH) = TryGetDimensionsFromHeader(inputBytes);
+            return (inputBytes, originalMimeType, hdrW, hdrH);
         }
+    }
+
+    /// <summary>
+    /// Reads dimensions directly from raw JPEG or PNG file headers without native codec dependency.
+    /// Guarantees dimension preservation even on bare-metal or minimal container environments.
+    /// </summary>
+    public static (int Width, int Height) TryGetDimensionsFromHeader(byte[] bytes)
+    {
+        if (bytes == null || bytes.Length < 16) return (0, 0);
+
+        // 1. JPEG (0xFF, 0xD8)
+        if (bytes[0] == 0xFF && bytes[1] == 0xD8)
+        {
+            int i = 2;
+            while (i < bytes.Length - 8)
+            {
+                if (bytes[i] != 0xFF) { i++; continue; }
+                byte marker = bytes[i + 1];
+                if (marker == 0xD9 || marker == 0xDA) break; // EOI or SOS
+                // SOF0 .. SOF15 (excluding DHT 0xC4, JPG 0xC8, DAC 0xCC)
+                if (marker >= 0xC0 && marker <= 0xCF && marker != 0xC4 && marker != 0xC8 && marker != 0xCC)
+                {
+                    if (i + 8 < bytes.Length)
+                    {
+                        int height = (bytes[i + 5] << 8) | bytes[i + 6];
+                        int width = (bytes[i + 7] << 8) | bytes[i + 8];
+                        return (width, height);
+                    }
+                }
+                int length = (bytes[i + 2] << 8) | bytes[i + 3];
+                if (length < 2) break;
+                i += 2 + length;
+            }
+        }
+
+        // 2. PNG (8-byte signature: 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A)
+        if (bytes.Length >= 24 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47)
+        {
+            int width = (bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19];
+            int height = (bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23];
+            return (width, height);
+        }
+
+        return (0, 0);
     }
 }

@@ -7,8 +7,11 @@
  */
 using Nutrition.Application;
 using Nutrition.Application.Agents;
+using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Common.Options;
 using Nutrition.Application.Services;
 using Nutrition.Infrastructure.AI;
+using Nutrition.Infrastructure.Configuration;
 using Nutrition.Infrastructure.Persistence;
 using Nutrition.Infrastructure.Security;
 
@@ -23,6 +26,12 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
+
+        // Strongly-Typed Options Pattern with FluentValidation (JwtOptions, AuthOptions, AiOptions, DatabaseOptions)
+        services.AddDietDostOptions(configuration);
+
+        // Centralized Strongly-Typed Configuration & Secrets Accessor
+        services.AddSingleton<IDietDostConfiguration, DietDostConfiguration>();
 
         // Storage Infrastructure (Swappable SQLite V1 per SDD section 3.1)
         services.AddStorageInfrastructure(configuration);
@@ -69,6 +78,11 @@ public static class ServiceCollectionExtensions
         // Ambient User Claims Context Provider (OWASP ASVS tenant isolation)
         services.AddHttpContextAccessor();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ICurrentUserService, Services.CurrentUserService>();
+
+        // Native ASP.NET Core Health Checks (/healthz liveness & /ready readiness)
+        services.AddHealthChecks()
+            .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("WebGateway service is live."), tags: ["live"])
+            .AddCheck<Health.DatabaseHealthCheck>("database", tags: ["ready"]);
 
         return services;
     }

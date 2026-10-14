@@ -2,13 +2,18 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { writeFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
-const EDGE_PATH = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
-const PORT = 9222;
-const BASE_URL = 'http://localhost:5240/';
-const ARTIFACT_DIR = 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
+    ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
+    : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9221;
+const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
+const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
+if (!existsSync(ARTIFACT_DIR)) {
+    try { mkdirSync(ARTIFACT_DIR, { recursive: true }); } catch {}
+}
 
 function sleep(ms) {
     return new Promise(res => setTimeout(res, ms));
@@ -68,6 +73,8 @@ async function main() {
     console.log('[1/6] Launching headless browser on port 9222...');
     const edge = spawn(EDGE_PATH, [
         '--headless=new',
+        '--no-sandbox',
+        '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
         '--disable-gpu',
         '--no-first-run',
@@ -129,7 +136,7 @@ async function main() {
     });
     await sleep(500);
 
-    const desktopChecks = await evaluate(ws, `
+    const desktopChecks = (await evaluate(ws, `
         (() => {
             const modal = document.getElementById('auth-gate-modal');
             const tabRegister = document.getElementById('btn-tab-register');
@@ -141,10 +148,10 @@ async function main() {
             const demoButtons = document.querySelectorAll('.demo-pill-btn');
             const disabledBanner = document.querySelector('.auth-disabled-banner');
 
-            const modalDisplay = window.getComputedStyle(modal).display;
-            const regDisplay = window.getComputedStyle(tabRegister).display;
-            const signinDisplay = window.getComputedStyle(tabSignIn).display;
-            const isSigninActive = tabSignIn.classList.contains('active');
+            const modalDisplay = modal ? window.getComputedStyle(modal).display : 'none';
+            const regDisplay = tabRegister ? window.getComputedStyle(tabRegister).display : 'none';
+            const signinDisplay = tabSignIn ? window.getComputedStyle(tabSignIn).display : 'none';
+            const isSigninActive = tabSignIn ? tabSignIn.classList.contains('active') : false;
 
             const cardStyle = noticeCard ? window.getComputedStyle(noticeCard) : {};
             const badgeStyle = badge ? window.getComputedStyle(badge) : {};
@@ -163,7 +170,7 @@ async function main() {
                 badgeRadius: badgeStyle.borderRadius
             };
         })()
-    `);
+    `)) || {};
 
     console.log('   Desktop UI Checks:');
     console.log(`   - Auth Gate Modal Visible: ${desktopChecks.modalVisible ? 'PASS' : 'FAIL'}`);
@@ -259,13 +266,13 @@ async function main() {
             const passInput = document.getElementById('signin-password');
             return {
                 email: idInput.value,
-                hasPassword: passInput.value.length > 0
+                isPopulated: passInput.value.length > 0
             };
         })()
     `);
 
-    console.log(`   - Clicked 'Basic Tier' Demo Pill -> Filled Identifier: "${filledCreds.email}" (Password populated: ${filledCreds.hasPassword})`);
-    const credsPass = filledCreds.email === 'basic@dietdost.app' && filledCreds.hasPassword;
+    console.log(`   - Clicked 'Basic Tier' Demo Pill -> Quick-Fill active (Identifier populated: ${Boolean(filledCreds.email)}, Field populated: ${filledCreds.isPopulated})`);
+    const credsPass = filledCreds.email === 'basic@dietdost.app' && filledCreds.isPopulated;
     console.log(`   [PASS/FAIL] Demo Quick-Fill: ${credsPass ? 'PASS' : 'FAIL'}`);
 
     // Submit sign-in and assert transition into authenticated dashboard

@@ -73,8 +73,15 @@ public class WebBffController : ControllerBase
         var isAdminOrSuper = User.IsAdminOrSuper();
         var userTier = Enum.TryParse<UserTier>(tierStr, true, out var parsedTier) ? parsedTier : UserTier.Free;
 
+        var sanitizedPeriod = period switch
+        {
+            "30D" => "30D",
+            "90D" => "90D",
+            _ => "7D"
+        };
+
         _logger.LogInformation("Web BFF dashboard requested for user {UserId} (Tier: {Tier}, Role: {Role}, Period: {Period})",
-            userId, tierStr, roleStr, period);
+            userId, tierStr, roleStr, sanitizedPeriod);
 
         // Execute independent read queries concurrently in isolated scopes for 100% thread safety and sub-50ms performance
         var ledgerTask = Task.Run(async () =>
@@ -88,14 +95,14 @@ public class WebBffController : ControllerBase
         {
             using var scope = _scopeFactory.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
-            return await dispatcher.QueryAsync(new GetProjectionsQuery(userId, null, userTier, isAdminOrSuper, period), ct);
+            return await dispatcher.QueryAsync(new GetProjectionsQuery(userId, null, userTier, isAdminOrSuper, sanitizedPeriod), ct);
         }, ct);
 
         var mealsTask = Task.Run(async () =>
         {
             using var scope = _scopeFactory.CreateScope();
             var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
-            return await dispatcher.QueryAsync(new GetMealHistoryQuery(userId, null, isAdminOrSuper, period, null, null), ct);
+            return await dispatcher.QueryAsync(new GetMealHistoryQuery(userId, null, isAdminOrSuper, sanitizedPeriod, null, null), ct);
         }, ct);
 
         var quotaTask = Task.Run(async () =>
@@ -149,7 +156,7 @@ public class WebBffController : ControllerBase
             User: userDto,
             TodayLedger: ledgerResult.Data ?? new DailyCalorieLedger { UserId = userId },
             Projections: projectionsResult.Data ?? new AnalyticsProjection(
-                Period: period,
+                Period: sanitizedPeriod,
                 TotalDeficitKcal: 0,
                 ProjectedWeightLossKg: 0,
                 AverageDailyCalories: 0,

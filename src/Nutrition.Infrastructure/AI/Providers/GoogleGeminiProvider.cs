@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -28,6 +28,15 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
     public string ProviderName => "google_gemini";
     public bool SupportsVision => true;
 
+    private static readonly object[] StrictSafetySettings = new[]
+    {
+        new { category = "HARM_CATEGORY_HARASSMENT", threshold = "BLOCK_LOW_AND_ABOVE" },
+        new { category = "HARM_CATEGORY_HATE_SPEECH", threshold = "BLOCK_LOW_AND_ABOVE" },
+        new { category = "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold = "BLOCK_LOW_AND_ABOVE" },
+        new { category = "HARM_CATEGORY_DANGEROUS_CONTENT", threshold = "BLOCK_LOW_AND_ABOVE" },
+        new { category = "HARM_CATEGORY_CIVIC_INTEGRITY", threshold = "BLOCK_LOW_AND_ABOVE" }
+    };
+
     public async Task<IndianMealAnalysisResult?> AnalyzePhotoAsync(
         byte[] imageBytes, string mimeType, string prompt, string modelId, CancellationToken ct)
     {
@@ -44,6 +53,7 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
                     }
                 }
             },
+            safetySettings = StrictSafetySettings,
             generationConfig = new
             {
                 response_mime_type = "application/json",
@@ -60,6 +70,7 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
         var payload = new
         {
             contents = new[] { new { parts = new[] { new { text = prompt } } } },
+            safetySettings = StrictSafetySettings,
             generationConfig = new
             {
                 response_mime_type = "application/json",
@@ -125,7 +136,20 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
         if (!document.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
             return null;
 
-        var parts = candidates[0].GetProperty("content").GetProperty("parts");
+        var candidate = candidates[0];
+        if (candidate.TryGetProperty("finishReason", out var finishReason) &&
+            string.Equals(finishReason.GetString(), "SAFETY", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Google AI blocked prompt due to content safety policy violation for model {Model}", modelId);
+            return PromptShieldValidator.CreateSafetyViolationResult("Google AI Content Safety filter triggered (content flagged as harmful, violent, sexual, or communal).");
+        }
+
+        if (!candidate.TryGetProperty("content", out var content) ||
+            !content.TryGetProperty("parts", out var parts))
+        {
+            return null;
+        }
+
         var text = parts.EnumerateArray()
             .Select(part => part.TryGetProperty("text", out var value) ? value.GetString() : null)
             .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value) && value.Contains('{'));

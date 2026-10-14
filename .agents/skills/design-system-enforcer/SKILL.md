@@ -1,4 +1,4 @@
-﻿---
+---
 name: design-system-enforcer
 description: Enforces a repository's DESIGN.md as the authoritative UI/UX design specification for new development, ongoing development, UI changes, refactoring, responsive work, accessibility work, and visual verification. Use whenever a task creates, modifies, reviews, fixes, or refactors application UI/UX.
 ---
@@ -272,6 +272,12 @@ Before declaring the task complete:
 Do not claim visual verification unless the rendered UI was actually inspected.
 
 See `references/visual-verification.md`.
+
+> [!TIP]
+> **Diet-Dost Automated Verification**: Validate design tokens, hairline borders, and surface ladder compliance by running:
+> ```bash
+> node tests/audit_design_system_compliance.mjs
+> ```
 
 ## Failure classification
 

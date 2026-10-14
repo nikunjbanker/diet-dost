@@ -21,8 +21,21 @@ public static class WebApplicationExtensions
         // Capture request/response payloads in OpenTelemetry activity for observability
         app.UseMiddleware<HttpPayloadTelemetryMiddleware>();
 
-        // Security, Static Assets & Identity
-        app.UseCors("AllowAll");
+        // 1. Enforce HTTPS & HSTS (Transport Security)
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHsts();
+            app.UseHttpsRedirection();
+        }
+
+        // 2. OWASP Top 10 Security Response Headers
+        app.UseMiddleware<SecurityHeadersMiddleware>();
+
+        // 3. Deployed Environment Host Gating (dev.diet-dost.in & diet-dost.in)
+        app.UseMiddleware<HostGatingMiddleware>();
+
+        // 4. Security, Static Assets & Identity
+        app.UseCors("AppCorsPolicy");
         app.UseResponseCompression();
         app.UseDefaultFiles();
         app.UseStaticFiles();
@@ -32,6 +45,16 @@ public static class WebApplicationExtensions
 
         // Enforce Per-IP Partitioned Rate Limiting on authentication endpoints (OWASP A04)
         app.UseAppRateLimiter();
+
+        // Native Health Check Endpoints (Azure Container Apps / Kubernetes Probes)
+        app.MapHealthChecks("/healthz", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        });
+        app.MapHealthChecks("/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("ready")
+        });
 
         // Controller Endpoints & SPA Fallback
         app.MapControllers();

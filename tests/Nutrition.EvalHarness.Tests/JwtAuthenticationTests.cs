@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -8,6 +8,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Nutrition.Application.Common.Options;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Security;
 using Nutrition.WebGateway.Extensions;
@@ -34,7 +36,8 @@ public class JwtAuthenticationTests
             .AddInMemoryCollection(inMemorySettings)
             .Build();
 
-        _jwtService = new JwtTokenService(_config);
+        var jwtOptions = _config.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        _jwtService = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(jwtOptions));
     }
 
     [Fact]
@@ -161,7 +164,8 @@ public class JwtAuthenticationTests
             })
             .Build();
 
-        var expiredService = new JwtTokenService(expiredConfig);
+        var expiredOptions = expiredConfig.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var expiredService = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(expiredOptions));
 
         var user = new ApplicationUser
         {
@@ -253,7 +257,8 @@ public class JwtAuthenticationTests
             .AddInMemoryCollection(settings)
             .Build();
 
-        var ex = Assert.Throws<ArgumentException>(() => new JwtTokenService(config));
+        var jwtOpts = config.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions { Key = shortKey };
+        var ex = Assert.Throws<ArgumentException>(() => new JwtTokenService(Microsoft.Extensions.Options.Options.Create(jwtOpts)));
         Assert.Contains("32 bytes", ex.Message);
     }
 
@@ -319,5 +324,136 @@ public class JwtAuthenticationTests
         Assert.True(adminPrincipal.IsAdminOrSuper());
         Assert.False(userPrincipal.IsAdminOrSuper());
         Assert.False(emptyPrincipal.IsAdminOrSuper());
+    }
+
+    [Fact]
+    public void JwtTokenService_InDeployedEnvironment_WithoutJwtKey_ThrowsInvalidOperationException()
+    {
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockAppEnv = new TestAppEnvironment(isDebug: false, isDevelopment: false);
+
+        var ex = Assert.Throws<InvalidOperationException>(() => new JwtTokenService(Microsoft.Extensions.Options.Options.Create(new JwtOptions()), mockAppEnv));
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR", ex.Message);
+    }
+
+    [Fact]
+    public void JwtTokenService_InDevelopmentEnvironment_WithoutJwtKey_UsesFallbackKey()
+    {
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockAppEnv = new TestAppEnvironment(isDebug: true, isDevelopment: true);
+
+        var service = new JwtTokenService(Microsoft.Extensions.Options.Options.Create(new JwtOptions()), mockAppEnv);
+        Assert.NotNull(service);
+    }
+
+    [Fact]
+    public void SecurityAndAuthExtensions_InDeployedEnvironment_WithoutJwtKey_ThrowsInvalidOperationException()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockHostEnv = new TestHostEnvironment { EnvironmentName = "Production" };
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            services.AddAppSecurityAndAuth(emptyConfig, mockHostEnv));
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR", ex.Message);
+    }
+
+    [Fact]
+    public void SecurityAndAuthExtensions_InDevelopmentEnvironment_WithoutJwtKey_Succeeds()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        var emptyConfig = new ConfigurationBuilder().Build();
+        var mockHostEnv = new TestHostEnvironment { EnvironmentName = "Development" };
+
+        services.AddAppSecurityAndAuth(emptyConfig, mockHostEnv);
+        Assert.True(services.Count > 0);
+    }
+
+    [Fact]
+    public void ConfigurationExtensions_InDevelopmentEnvironment_CentralizesDefaultsAndAliases()
+    {
+        var mockDevHost = new TestHostEnvironment { EnvironmentName = "Development" };
+        var builder = new ConfigurationBuilder();
+        Nutrition.WebGateway.Extensions.ConfigurationExtensions.AddDietDostAppConfiguration(builder, mockDevHost);
+        var config = builder.Build();
+
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, config["Jwt:Key"]);
+        Assert.Equal("DietDostGateway", config["Jwt:Issuer"]);
+        Assert.Equal("DietDostClient", config["Jwt:Audience"]);
+        Assert.Equal("1440", config["Jwt:ExpiryMinutes"]);
+        Assert.Equal("superadmin@dietdost.app", config["Auth:SuperAdminEmail"]);
+        Assert.Equal("superadmin@dietdost.app", config["SuperAdminEmail"]);
+        Assert.Equal("false", config["Auth:RequireMobileVerification"]);
+        Assert.Equal("false", config["RequireMobileVerification"]);
+        Assert.Equal("Sqlite", config["Database:Provider"]);
+        Assert.Equal("GoogleAI", config["AI:Provider"]);
+    }
+
+    [Fact]
+    public void DietDostConfiguration_ExposesStronglyTypedProperties_FromMergedConfiguration()
+    {
+        var mockDevHost = new TestHostEnvironment { EnvironmentName = "Development" };
+        var builder = new ConfigurationBuilder();
+        Nutrition.WebGateway.Extensions.ConfigurationExtensions.AddDietDostAppConfiguration(builder, mockDevHost);
+        var config = builder.Build();
+        var mockAppEnv = new TestAppEnvironment(isDebug: true, isDevelopment: true);
+
+        var dietConfig = new Nutrition.Infrastructure.Configuration.DietDostConfiguration(config, mockAppEnv);
+
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, dietConfig.JwtKey);
+        Assert.Equal("DietDostGateway", dietConfig.JwtIssuer);
+        Assert.Equal("DietDostClient", dietConfig.JwtAudience);
+        Assert.Equal(1440, dietConfig.JwtExpiryMinutes);
+        Assert.Equal("superadmin@dietdost.app", dietConfig.SuperAdminEmail);
+        Assert.False(dietConfig.RequireMobileVerification);
+        Assert.True(dietConfig.AllowRegistration);
+        Assert.Equal("Sqlite", dietConfig.DatabaseProvider);
+        Assert.Equal("GoogleAI", dietConfig.AiProvider);
+        Assert.Equal("gemini-3-flash-preview", dietConfig.GoogleAiModelId);
+    }
+
+    [Fact]
+    public void ValidateRequiredDeployedSecrets_InProduction_WhenJwtKeyMissing_Throws()
+    {
+        var mockProdHost = new TestHostEnvironment { EnvironmentName = "Production" };
+        var emptyConfig = new ConfigurationBuilder().Build();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            Nutrition.WebGateway.Extensions.ConfigurationExtensions.ValidateRequiredDeployedSecrets(emptyConfig, mockProdHost));
+
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured", ex.Message);
+    }
+
+    [Fact]
+    public void ValidateRequiredDeployedSecrets_InProduction_WhenSuperAdminEmailMissing_Throws()
+    {
+        var mockProdHost = new TestHostEnvironment { EnvironmentName = "Production" };
+        var configWithJwtOnly = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Jwt:Key"] = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!"
+            })
+            .Build();
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            Nutrition.WebGateway.Extensions.ConfigurationExtensions.ValidateRequiredDeployedSecrets(configWithJwtOnly, mockProdHost));
+
+        Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR: 'Auth:SuperAdminEmail' is not configured", ex.Message);
+    }
+
+    private sealed class TestAppEnvironment(bool isDebug, bool isDevelopment) : Nutrition.Application.Common.Interfaces.IAppEnvironment
+    {
+        public bool IsDebugMode => isDebug;
+        public bool IsDevelopment => isDevelopment;
+        public bool AllowsDemoUsers => isDebug && isDevelopment;
+        public bool AllowsAdminDemoUsers => isDebug && isDevelopment;
+    }
+
+    private sealed class TestHostEnvironment : Microsoft.Extensions.Hosting.IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = "Development";
+        public string ApplicationName { get; set; } = "Nutrition.WebGateway";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public Microsoft.Extensions.FileProviders.IFileProvider ContentRootFileProvider { get; set; } = null!;
     }
 }
