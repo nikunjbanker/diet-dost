@@ -281,9 +281,9 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("pre-provisioning-quality-gate", infraContent);
 
         // Quality gate thresholds assertion across all 4 tiers:
-        // Unit: 90%, Integration: 80%, System: 75%, E2E: 70%
-        Assert.Contains("UNIT_TEST_THRESHOLD: 90", qualityContent);
-        Assert.Contains("INTEGRATION_TEST_THRESHOLD: 80", qualityContent);
+        // Unit: 44% (Line Coverage), Integration: 40% (Line Coverage), System: 75% (Pass Rate), E2E: 70% (Pass Rate)
+        Assert.Contains("UNIT_TEST_THRESHOLD: 44", qualityContent);
+        Assert.Contains("INTEGRATION_TEST_THRESHOLD: 40", qualityContent);
         Assert.Contains("SYSTEM_TEST_THRESHOLD: 75", qualityContent);
         Assert.Contains("E2E_TEST_THRESHOLD: 70", qualityContent);
 
@@ -308,8 +308,8 @@ public class SecurityEnvironmentAndHeaderTests
         var agentsContent = File.ReadAllText(agentsMdPath);
         Assert.Contains("Mandatory Pre-Deployment Quality & Multi-Tier Test Gating Rule", agentsContent);
         Assert.Contains("PERMANENT AND MANDATORY", agentsContent);
-        Assert.Contains("minimum 90% threshold", agentsContent);
-        Assert.Contains("minimum 80% threshold", agentsContent);
+        Assert.Contains("minimum 44% code line coverage threshold", agentsContent);
+        Assert.Contains("minimum 40% code line coverage threshold", agentsContent);
         Assert.Contains("minimum 75% threshold", agentsContent);
         Assert.Contains("minimum 70% threshold", agentsContent);
     }

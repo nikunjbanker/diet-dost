@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-14T10:37:10.801028+00:00",
-  "totalAdrs": 57,
+  "generatedAt": "2026-10-14T15:37:44.240478+00:00",
+  "totalAdrs": 58,
   "categoryCounts": {
     "architecture": 18,
     "security": 17,
-    "devops": 5,
+    "devops": 6,
     "presentation": 4,
     "governance": 13
   },
@@ -693,6 +693,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261014-092-multi-tier-quality-test-gate-enforcement.md",
       "relativePath": "docs/adr/devops/ADR-20261014-092-multi-tier-quality-test-gate-enforcement.md"
+    },
+    {
+      "id": "ADR-093",
+      "number": 93,
+      "title": "Code Line Coverage Gating and Incremental Ratcheting for Quality Test Tiers",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-14",
+      "subsystem": "Devops",
+      "filename": "ADR-20261014-093-code-coverage-gating-for-quality-test-tiers.md",
+      "relativePath": "docs/adr/devops/ADR-20261014-093-code-coverage-gating-for-quality-test-tiers.md"
     }
   ]
 }

@@ -8,8 +8,8 @@
 # GitHub Actions: Quality & Multi-Tier Test Gate Pipeline
 # Multi-tiered verification matrix enforcing quality gates before deployment:
 # Strict Supply Chain Security: All actions pinned to immutable commit SHAs.
-# 1. Unit Tests (Domain Math, ICMR-NIN 2024, Clinical Calculators)  : Gate >= 90%
-# 2. Integration Tests (CQRS Dispatcher, Web BFF, Mobile BFF, Auth) : Gate >= 80%
+# 1. Unit Tests (Domain Math, ICMR-NIN 2024, Clinical Calculators)  : Gate >= 44% Line Coverage
+# 2. Integration Tests (CQRS Dispatcher, Web BFF, Mobile BFF, Auth) : Gate >= 40% Line Coverage
 # 3. System Tests (Subsystem Wiring, Mobile Caching, System Probes) : Gate >= 75%
 # 4. End-to-End Acceptance Tests (5-Tier CFT Suite, AI Paywalls)    : Gate >= 70%
 # 5. Quality Gate Summary: Aggregated verdict posted as PR comment
@@ -29,17 +29,17 @@ permissions:
   pull-requests: write
 
 env:
-  UNIT_TEST_THRESHOLD: 90
-  INTEGRATION_TEST_THRESHOLD: 80
+  UNIT_TEST_THRESHOLD: 44
+  INTEGRATION_TEST_THRESHOLD: 40
   SYSTEM_TEST_THRESHOLD: 75
   E2E_TEST_THRESHOLD: 70
 
 jobs:
   # ----------------------------------------------------------------------------
-  # Job 1: Unit Tests (Threshold: >= 90%)
+  # Job 1: Unit Tests (Threshold: >= 44% Line Coverage, 0 failures)
   # ----------------------------------------------------------------------------
   unit-tests:
-    name: Unit Tests (90% Quality Gate)
+    name: Unit Tests (44% Coverage Quality Gate)
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -53,47 +53,16 @@ jobs:
       - name: 3. Restore & Build Solution
         run: dotnet build tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj -c Release
 
-      - name: 4. Execute Unit Tests with Coverage Collection
-        id: run_unit_tests
+      - name: 4. Execute Unit Tests with Code Coverage via Quality Test Gate
+        shell: pwsh
         run: |
-          echo "=========================================================="
-          echo "  TIER 1: UNIT TEST EXECUTION (ENFORCED THRESHOLD: >= 90%) "
-          echo "=========================================================="
-          
-          mkdir -p TestResults
-          dotnet test tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj \
-            -c Release \
-            --no-build \
-            --logger "trx;LogFileName=unit_test_results.trx" \
-            --collect:"XPlat Code Coverage" > unit_raw.log 2>&1 || true
-
-          cat unit_raw.log
-
-          PASSED=$(grep -oP 'Passed:\s+\K\d+' unit_raw.log | tail -n 1 || echo "0")
-          FAILED=$(grep -oP 'Failed:\s+\K\d+' unit_raw.log | tail -n 1 || echo "0")
-          TOTAL=$(grep -oP 'Total:\s+\K\d+' unit_raw.log | tail -n 1 || echo "0")
-
-          if [ "$TOTAL" -eq 0 ]; then
-            echo "❌ No unit tests executed!"
-            exit 1
-          fi
-
-          PASS_RATE=$(awk "BEGIN {printf \"%.2f\", ($PASSED/$TOTAL)*100}")
-          echo "Unit Tests Executed: Total=$TOTAL, Passed=$PASSED, Failed=$FAILED, PassRate=$PASS_RATE%"
-
-          # Assert Quality Gate >= 90% and zero failures
-          if [ "$FAILED" -ne 0 ] || (( $(echo "$PASS_RATE < 90.0" | bc -l) )); then
-            echo "❌ TIER 1 QUALITY GATE FAILURE: Pass rate $PASS_RATE% is below required 90.0% threshold."
-            exit 1
-          fi
-
-          echo "✅ Tier 1 Unit Test Gate PASSED: $PASS_RATE% ($PASSED/$TOTAL)"
+          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Unit
 
   # ----------------------------------------------------------------------------
-  # Job 2: Integration Tests (Threshold: >= 80%)
+  # Job 2: Integration Tests (Threshold: >= 40% Line Coverage, 0 failures)
   # ----------------------------------------------------------------------------
   integration-tests:
-    name: Integration Tests (80% Quality Gate)
+    name: Integration Tests (40% Coverage Quality Gate)
     runs-on: ubuntu-latest
     steps:
       - name: 1. Checkout Repository
@@ -107,41 +76,10 @@ jobs:
       - name: 3. Restore & Build Eval Harness
         run: dotnet build tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj -c Release
 
-      - name: 4. Execute Integration Tests with Coverage Collection
-        id: run_integ_tests
+      - name: 4. Execute Integration Tests with Code Coverage via Quality Test Gate
+        shell: pwsh
         run: |
-          echo "=========================================================="
-          echo " TIER 2: INTEGRATION TEST EXECUTION (THRESHOLD: >= 80%)  "
-          echo "=========================================================="
-          
-          mkdir -p TestResults
-          dotnet test tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj \
-            -c Release \
-            --no-build \
-            --logger "trx;LogFileName=integration_test_results.trx" \
-            --collect:"XPlat Code Coverage" > integ_raw.log 2>&1 || true
-
-          cat integ_raw.log
-
-          PASSED=$(grep -oP 'Passed:\s+\K\d+' integ_raw.log | tail -n 1 || echo "0")
-          FAILED=$(grep -oP 'Failed:\s+\K\d+' integ_raw.log | tail -n 1 || echo "0")
-          TOTAL=$(grep -oP 'Total:\s+\K\d+' integ_raw.log | tail -n 1 || echo "0")
-
-          if [ "$TOTAL" -eq 0 ]; then
-            echo "❌ No integration tests executed!"
-            exit 1
-          fi
-
-          PASS_RATE=$(awk "BEGIN {printf \"%.2f\", ($PASSED/$TOTAL)*100}")
-          echo "Integration Tests Executed: Total=$TOTAL, Passed=$PASSED, Failed=$FAILED, PassRate=$PASS_RATE%"
-
-          # Assert Quality Gate >= 80% and zero failures
-          if [ "$FAILED" -ne 0 ] || (( $(echo "$PASS_RATE < 80.0" | bc -l) )); then
-            echo "❌ TIER 2 QUALITY GATE FAILURE: Pass rate $PASS_RATE% is below required 80.0% threshold."
-            exit 1
-          fi
-
-          echo "✅ Tier 2 Integration Test Gate PASSED: $PASS_RATE% ($PASSED/$TOTAL)"
+          pwsh -File scripts/verify-quality-test-gates.ps1 -Tier Integration
 
   # ----------------------------------------------------------------------------
   # Job 3: System Tests (Threshold: >= 75%)
@@ -229,10 +167,10 @@ jobs:
           echo "=========================================================="
           echo "      QUALITY & MULTI-TIER TEST GATE SUMMARY VERDICT      "
           echo "=========================================================="
-          echo "Tier 1: Unit Tests (>= 90%)        : ${{ needs.unit-tests.result }}"
-          echo "Tier 2: Integration Tests (>= 80%) : ${{ needs.integration-tests.result }}"
-          echo "Tier 3: System Tests (>= 75%)      : ${{ needs.system-tests.result }}"
-          echo "Tier 4: End-to-End Tests (>= 70%)  : ${{ needs.e2e-tests.result }}"
+          echo "Tier 1: Unit Tests (Line Coverage >= 44%)        : ${{ needs.unit-tests.result }}"
+          echo "Tier 2: Integration Tests (Line Coverage >= 40%) : ${{ needs.integration-tests.result }}"
+          echo "Tier 3: System Tests (>= 75%)                    : ${{ needs.system-tests.result }}"
+          echo "Tier 4: End-to-End Tests (>= 70%)                : ${{ needs.e2e-tests.result }}"
           echo "=========================================================="
 
           if [ "${{ needs.unit-tests.result }}" != "success" ] || \
@@ -257,10 +195,10 @@ jobs:
 
           | Test Tier | Target Scope & Subsystems | Required Threshold | Achieved Verdict |
           | :--- | :--- | :--- | :--- |
-          | **Tier 1: Unit Tests** | Domain Math, ICMR-NIN 2024, Clinical Calculators | `>= 90%` | ${{ needs.unit-tests.result == 'success' && '🟢 PASS (100%)' || '🔴 FAIL' }} |
-          | **Tier 2: Integration Tests** | CQRS Native Dispatcher, Web BFF Composite, Mobile BFF, Auth | `>= 80%` | ${{ needs.integration-tests.result == 'success' && '🟢 PASS (100%)' || '🔴 FAIL' }} |
-          | **Tier 3: System Tests** | Subsystem Wiring, Mobile BFF ETag Caching, Health Probes | `>= 75%` | ${{ needs.system-tests.result == 'success' && '🟢 PASS (100%)' || '🔴 FAIL' }} |
-          | **Tier 4: End-to-End (E2E)** | 5-Tier User Journeys, AI Quota Gating, Paywalls, SuperAdmin | `>= 70%` | ${{ needs.e2e-tests.result == 'success' && '🟢 PASS (100%)' || '🔴 FAIL' }} |
+          | **Tier 1: Unit Tests** | Domain Math, ICMR-NIN 2024, Clinical Calculators | `Line Coverage >= 44% (0 failures)` | ${{ needs.unit-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 2: Integration Tests** | CQRS Native Dispatcher, Web BFF Composite, Mobile BFF, Auth | `Line Coverage >= 40% (0 failures)` | ${{ needs.integration-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 3: System Tests** | Subsystem Wiring, Mobile BFF ETag Caching, Health Probes | `Pass Rate >= 75%` | ${{ needs.system-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
+          | **Tier 4: End-to-End (E2E)** | 5-Tier User Journeys, AI Quota Gating, Paywalls, SuperAdmin | `Pass Rate >= 70%` | ${{ needs.e2e-tests.result == 'success' && '🟢 PASS' || '🔴 FAIL' }} |
 
           > **Commit SHA**: `${{ github.sha }}`  
           > **Overall Quality Verdict**: ${{ (needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.system-tests.result == 'success' && needs.e2e-tests.result == 'success') && '✅ **ALL QUALITY GATES PASSED: CERTIFIED FOR DEPLOYMENT**' || '❌ **CRITICAL QUALITY GATE FAILURE: DEPLOYMENT BLOCKED**' }}  
