@@ -9,7 +9,7 @@ const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (proces
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
 const PORT = 9222;
-const BASE_URL = 'http://localhost:5240/';
+const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 const APPSETTINGS_PATH = resolve('src/Nutrition.WebGateway/appsettings.json');
 
 function sleep(ms) {

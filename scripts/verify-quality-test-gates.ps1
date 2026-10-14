@@ -45,6 +45,13 @@ $ErrorActionPreference = "Continue"
 $RepoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Push-Location $RepoRoot
 
+# Cross-Platform Environment Defaults for CI & Headless Browsers
+if (-not $env:BASE_URL) { $env:BASE_URL = $BaseUrl }
+if (-not $env:TEMP) { $env:TEMP = [System.IO.Path]::GetTempPath().TrimEnd('\', '/') }
+if (-not $env:CHROME_PATH -and [System.IO.File]::Exists('/usr/bin/google-chrome')) {
+    $env:CHROME_PATH = '/usr/bin/google-chrome'
+}
+
 Write-Host "========================================================================" -ForegroundColor Cyan
 Write-Host "   Diet-Dost Quality & Multi-Tier Test Gate Validator" -ForegroundColor Cyan
 Write-Host "   Target Tier: $Tier | Root: $RepoRoot" -ForegroundColor Cyan

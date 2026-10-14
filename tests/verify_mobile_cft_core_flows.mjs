@@ -9,7 +9,7 @@ const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (proces
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
 const PORT = 9224;
-const BASE_URL = 'http://localhost:5240/';
+const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
 if (!existsSync(ARTIFACT_DIR)) {
     try { mkdirSync(ARTIFACT_DIR, { recursive: true }); } catch {}
@@ -58,7 +58,7 @@ async function main() {
         '--no-sandbox',
         '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
-        `--user-data-dir=${process.env.TEMP || 'C:\\\\temp'}\\edge_cft_${Date.now()}`,
+        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',

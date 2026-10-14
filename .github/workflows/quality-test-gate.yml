@@ -159,7 +159,7 @@ jobs:
           dotnet-version: '11.0.x'
 
       - name: 3. Setup Node.js 22 LTS
-        uses: actions/setup-node@0a44ba7841725637a54e2802b814f9d8857d0049 # v4.0.4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
 
@@ -168,6 +168,9 @@ jobs:
 
       - name: 5. Execute System Test Suites via Quality Test Gate
         shell: pwsh
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          BASE_URL: http://127.0.0.1:5240
         run: |
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier System -BaseUrl "http://127.0.0.1:5240"
 
@@ -187,7 +190,7 @@ jobs:
           dotnet-version: '11.0.x'
 
       - name: 3. Setup Node.js 22 LTS
-        uses: actions/setup-node@0a44ba7841725637a54e2802b814f9d8857d0049 # v4.0.4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
 
@@ -196,6 +199,9 @@ jobs:
 
       - name: 5. Execute Multi-Tier E2E Acceptance Suites via Quality Test Gate
         shell: pwsh
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          BASE_URL: http://127.0.0.1:5240
         run: |
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier E2E -BaseUrl "http://127.0.0.1:5240"
 
@@ -211,6 +217,9 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Compile Quality Gate Summary & Console Log
         run: |
           echo "=========================================================="
@@ -253,7 +262,7 @@ jobs:
           > **Overall Quality Verdict**: ${{ (needs.unit-tests.result == 'success' && needs.integration-tests.result == 'success' && needs.system-tests.result == 'success' && needs.e2e-tests.result == 'success') && '✅ **ALL QUALITY GATES PASSED: CERTIFIED FOR DEPLOYMENT**' || '❌ **CRITICAL QUALITY GATE FAILURE: DEPLOYMENT BLOCKED**' }}  
           EOF
 
-          gh pr comment "$PR_NUMBER" --body-file pr_quality_summary.md
+          gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file pr_quality_summary.md
 
       - name: Enforce Final Quality Gate Exit Code
         run: |

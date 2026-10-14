@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert';
 
-const BASE_URL = 'http://localhost:5240';
+const BASE_URL = process.env.BASE_URL ? process.env.BASE_URL.replace(/\/+$/, '') : 'http://localhost:5240';
 
 async function run() {
   console.log('--- Phase 1 Layer 7: Mobile BFF & Caching Verification Suite ---');
