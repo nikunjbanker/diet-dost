@@ -247,7 +247,7 @@ async function main() {
 
     let reviewModalOpen = false;
     let reviewData = null;
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 120; i++) {
         await sleep(500);
         reviewData = await evaluate(`(() => {
             const modal = document.getElementById('review-modal');
