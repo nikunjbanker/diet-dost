@@ -73,6 +73,10 @@ function Start-WebGatewayIfNeeded {
         }
     } catch { }
 
+    # Reset local test SQLite database to give demo users fresh daily quotas
+    Remove-Item -Path (Join-Path $RepoRoot "src/Nutrition.WebGateway/diettracker.db*") -Force -ErrorAction SilentlyContinue
+    Remove-Item -Path (Join-Path $RepoRoot "diettracker.db*") -Force -ErrorAction SilentlyContinue
+
     Write-Host "  🚀 Launching WebGateway daemon on $Url for live verification..." -ForegroundColor Yellow
     $webProj = Join-Path $RepoRoot "src/Nutrition.WebGateway/Nutrition.WebGateway.csproj"
     $debugDll = Join-Path $RepoRoot "src/Nutrition.WebGateway/bin/Debug/net11.0/Nutrition.WebGateway.dll"
@@ -87,12 +91,13 @@ function Start-WebGatewayIfNeeded {
     $workingDir = Join-Path $RepoRoot "src/Nutrition.WebGateway"
     $argList = @()
 
+    $baseArgs = @("--urls", $Url, "--environment", "Development", "--Auth:SuperAdminEmail", "superadmin@dietdost.app", "--Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!")
     if (Test-Path $debugDll) {
-        $argList = @($debugDll, "--urls", $Url)
+        $argList = @($debugDll) + $baseArgs
     } elseif (Test-Path $releaseDll) {
-        $argList = @($releaseDll, "--urls", $Url)
+        $argList = @($releaseDll) + $baseArgs
     } else {
-        $argList = @("run", "--project", $webProj, "-c", "Debug", "--urls", $Url)
+        $argList = @("run", "--project", $webProj, "-c", "Debug") + $baseArgs
     }
 
     $proc = Start-Process -FilePath "dotnet" -ArgumentList $argList -WorkingDirectory $workingDir -RedirectStandardOutput $stdoutFile -RedirectStandardError $stderrFile -PassThru

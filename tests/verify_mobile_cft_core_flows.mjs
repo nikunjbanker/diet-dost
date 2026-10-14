@@ -8,7 +8,7 @@ import { resolve } from 'path';
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
-const PORT = 9224;
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9224;
 const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 const ARTIFACT_DIR = process.env.ARTIFACT_DIR || 'C:\\Users\\nikunj.banker\\.gemini\\antigravity-ide\\brain\\110db86e-58f0-4888-b1c7-2ce1aa3f23e2';
 if (!existsSync(ARTIFACT_DIR)) {

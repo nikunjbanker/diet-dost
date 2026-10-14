@@ -65,11 +65,21 @@ public static class ConfigurationExtensions
         var currentConfig = builder is IConfiguration cfgCurrent ? cfgCurrent : builder.Build();
         var normalizedMap = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
+        static string? FirstNonEmpty(params string?[] candidates)
+        {
+            foreach (var c in candidates)
+            {
+                if (!string.IsNullOrWhiteSpace(c)) return c;
+            }
+            return null;
+        }
+
         // 1. JWT Configuration Normalization
-        var resolvedJwtKey = currentConfig["Jwt:Key"]
-            ?? currentConfig["Jwt__Key"]
-            ?? currentConfig["JWT_KEY"]
-            ?? (env.IsDevelopment() ? DefaultDevJwtKey : null);
+        var resolvedJwtKey = FirstNonEmpty(
+            currentConfig["Jwt:Key"],
+            currentConfig["Jwt__Key"],
+            currentConfig["JWT_KEY"],
+            env.IsDevelopment() ? DefaultDevJwtKey : null);
 
         if (!string.IsNullOrWhiteSpace(resolvedJwtKey))
         {
@@ -82,10 +92,11 @@ public static class ConfigurationExtensions
         normalizedMap["Jwt:ExpiryMinutes"] = currentConfig["Jwt:ExpiryMinutes"] ?? "1440";
 
         // 2. Auth & Identity Normalization (SuperAdmin & Mobile Verification as Secrets)
-        var resolvedSuperAdminEmail = currentConfig["Auth:SuperAdminEmail"]
-            ?? currentConfig["SuperAdminEmail"]
-            ?? currentConfig["SUPER_ADMIN_EMAIL"]
-            ?? (env.IsDevelopment() ? DefaultSuperAdminEmail : null);
+        var resolvedSuperAdminEmail = FirstNonEmpty(
+            currentConfig["Auth:SuperAdminEmail"],
+            currentConfig["SuperAdminEmail"],
+            currentConfig["SUPER_ADMIN_EMAIL"],
+            env.IsDevelopment() ? DefaultSuperAdminEmail : null);
 
         if (!string.IsNullOrWhiteSpace(resolvedSuperAdminEmail))
         {

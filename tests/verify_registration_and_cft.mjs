@@ -115,18 +115,9 @@ async function main() {
     await sendCdp(ws, 'DOM.enable');
     await sendCdp(ws, 'CSS.enable');
     await sendCdp(ws, 'Runtime.enable');
-    await sleep(2000);
-        await sleep(2500);
+    await sleep(1500);
 
-        await sendCdp(ws, 'Network.clearBrowserCookies');
-        await evaluate(ws, `
-            localStorage.clear();
-            sessionStorage.clear();
-            location.reload();
-        `);
-        await sleep(2500);
-
-        // ── 3. Auditing Auth Gate Presentation with AllowRegistration: true ──
+    // ── 3. Auditing Auth Gate Presentation with AllowRegistration: true ──
         console.log('[3/6] Verifying Auth Gate with AllowRegistration: true...');
         await sendCdp(ws, 'Emulation.setDeviceMetricsOverride', {
             width: 1440,
