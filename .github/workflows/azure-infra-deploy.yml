@@ -55,9 +55,14 @@ jobs:
     uses: ./.github/workflows/security-scan.yml
     secrets: inherit
 
+  pre-provisioning-quality-gate:
+    name: Mandatory Pre-Provisioning Quality & Test Gates
+    uses: ./.github/workflows/quality-test-gate.yml
+    secrets: inherit
+
   provision-infrastructure:
     name: Aspire Cloud Infrastructure Provisioning
-    needs: pre-provisioning-security-scan
+    needs: [pre-provisioning-security-scan, pre-provisioning-quality-gate]
     if: github.actor == 'nikunjbanker'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}

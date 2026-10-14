@@ -7,7 +7,7 @@
 -->
 
 # AI in SDLC & Agentic Workflows Architecture Specification
-> **Specification Version**: `v1.4.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.5.0 (Production & Living SDD)`  
 > **Classification**: Solution Architecture, Engineering Lifecycles & Governance Standard  
 > **Approved Domain Focus**: SDLC vs. AI SDLC vs. Agentic SDLC, Role Evolution, DevSecOps & Closed-Loop Workflows  
 > **Target Framework**: .NET 11, .NET Aspire 13.5.4, OpenTelemetry, GitHub Actions, OWASP Top 10 for LLM  
@@ -275,13 +275,17 @@ Phase 2 ensures that developer velocity does not compromise security. The 6-Vect
 | **Replaced / Automated By** | Manual test execution replaced by automated scripts. | Manual test script authoring replaced by generative test tools. | **Nutrition.EvalHarness.Tests** + **validate_e2e_tiers.ps1** + **browser_subagent** headless UI testing. |
 
 ### 4.3 Core Analysis: What, Why & How
-* **What It Is**: A dual-tier quality engineering system combining multimodal AI vision evaluations with live end-to-end multi-tier acceptance testing.
-* **Why We Do It**: Traditional unit tests evaluate isolated code in memory; they cannot detect runtime asset 404s, CORS drops, database migration failures, or user tier quota leakage. Furthermore, probabilistic AI models can pass unit tests while hallucinating macronutrients or failing on occluded meal photos.
-* **How It Works**:
-  1. *Multimodal Vision Eval Harness*: Executes benchmark fixtures against `MicrosoftAgentFoodVisionService`, asserting that confidence scores meet the $\ge 70\%$ gating threshold.
-  2. *Live Multi-Tier CFT Suite*: Launches `Nutrition.WebGateway` on `http://localhost:5240` and executes [`tests/validate_e2e_tiers.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/tests/validate_e2e_tiers.ps1), testing Free (1 scan/day), Basic (7 scans/day), Premium (30 scans/day), Admin, and SuperAdmin demo accounts.
-  3. *Headless Browser Verification*: An automated browser agent verifies UI rendering, zero console errors, and zero Cumulative Layout Shift (CLS).
-  4. *Evidence Publishing*: Terminal output from `validate_e2e_tiers.ps1` must be published directly in the PR description under `## 5. Live Customer & Functional Acceptance Test (CFT) Execution Evidence`.
+* **What It Is**: A four-tier automated quality engineering system combining granular code coverage thresholds, multimodal AI vision evaluations, subsystem contract validation, and live end-to-end multi-tier acceptance testing, enforced by [`.github/workflows/quality-test-gate.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/quality-test-gate.yml).
+* **Why We Do It**: Traditional unit tests evaluate isolated code in memory; they cannot detect runtime asset 404s, CORS drops, database migration failures, or user tier quota leakage. Furthermore, probabilistic AI models can pass unit tests while hallucinating macronutrients or failing on occluded meal photos. To guarantee zero production defects, every cloud deployment must pass non-negotiable quantitative gates across all four testing tiers.
+* **The Four-Tier Quality Validation Matrix**:
+  1. **Tier 1: Unit Tests (Threshold: $\ge 90\%$)**: Executes [`Nutrition.Domain.Tests`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/tests/Nutrition.Domain.Tests) measuring line coverage with Coverlet. Enforces pure domain logic, value objects, meal intake models, and ICMR-NIN 2024 / WHO clinical mathematics with zero regressions.
+  2. **Tier 2: Integration Tests (Threshold: $\ge 80\%$)**: Executes [`Nutrition.EvalHarness.Tests`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/tests/Nutrition.EvalHarness.Tests) with Coverlet coverage. Asserts security environment boundaries, Options pattern validation, workflow gating invariants, and multimodal vision evaluation benchmarks.
+  3. **Tier 3: System Tests (Threshold: $\ge 75\%$)**: Automatically boots `Nutrition.WebGateway` daemon, checks HTTP/gRPC health readiness probes (`/health`), and executes Mobile BFF endpoint contracts and caching verification ([`tests/verify_mobile_bff.mjs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/tests/verify_mobile_bff.mjs)).
+  4. **Tier 4: End-to-End (E2E) Acceptance Tests (Threshold: $\ge 70\%$)**: Executes the live multi-tier acceptance suite ([`tests/validate_e2e_tiers.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/tests/validate_e2e_tiers.ps1)) across all 5 demo user tiers (Free 1 scan/day, Basic 7 scans/day, Premium 30 scans/day, Admin, and SuperAdmin), validating SQLite persistence and photo paywalls.
+* **Execution & Evidence Protocol**:
+  - The local runner [`scripts/verify-quality-test-gates.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/verify-quality-test-gates.ps1) allows developers to validate all four tiers locally (`pwsh -File scripts/verify-quality-test-gates.ps1 -Tier All`).
+  - In CI/CD, the `quality-gate-summary` job publishes the comprehensive four-tier verdict table directly into the PR description (`gh pr comment`), halting the pipeline (`exit 1`) if any tier fails.
+  - Headless browser verification via `browser_subagent` validates zero console errors and zero Cumulative Layout Shift (CLS).
 
 ### 4.4 Engineering Deep-Dive: Disjoint Split Governance, Multimodal Confidence Calibration & Live Acceptance Suites
 In multimodal AI systems, a major engineering challenge is **data contamination (train/test leakage)**. If synthetic training data contains images or prompt variations of the same plate of food present in the test set, the evaluation suite reports falsely elevated accuracy scores.
@@ -343,7 +347,7 @@ Phase 3 establishes an empirical, multi-layered quality gate. By combining disjo
   1. The workflow triggers on pushes to `main` and all pull requests.
   2. All GitHub Actions are pinned to immutable **40-character commit SHAs** (e.g. `actions/checkout@3d3c42e5...`).
   3. Job 8 uses [`scripts/merge-sarif.py`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/merge-sarif.py) to aggregate findings from all scanners into a unified report.
-  4. Neither infrastructure deployment ([`azure-infra-deploy.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/azure-infra-deploy.yml)) nor application deployment ([`azure-app-deploy.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/azure-app-deploy.yml)) can run unless `security-scan.yml` finishes with a 100% clean pass.
+  4. Neither infrastructure deployment ([`azure-infra-deploy.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/azure-infra-deploy.yml)) nor application deployment ([`azure-app-deploy.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/azure-app-deploy.yml)) can run unless BOTH `security-scan.yml` (`pre-deployment-security-scan` / `pre-provisioning-security-scan`) and `quality-test-gate.yml` (`pre-deployment-quality-gate` / `pre-provisioning-quality-gate`) finish with 100% clean passes across all security checks and all four quality tiers (Unit $\ge 90\%$, Integration $\ge 80\%$, System $\ge 75\%$, E2E $\ge 70\%$). Zero deployment occurs if either gate fails.
 
 ### 5.4 Engineering Deep-Dive: Multi-Project SARIF Aggregation, Immutable Action Pinning & Zero-Deployment-on-Failure
 In enterprise software delivery, a common failure mode is **security scanner fragmentation**: developers must review disparate logs across five different tools, leading to alert fatigue and overlooked vulnerabilities.
@@ -579,6 +583,7 @@ graph TD
 | `v1.2.0` | 2026-10-14 | Visual Architecture | Embedded 9 architectural diagrams, DevSecOps 8-job pipeline, and Aspire artifact hygiene. | Human Architect & AI Agent |
 | `v1.3.0` | 2026-10-14 | Deep-Dive Enrichment | Added section executive summaries, What/Why/How deep-dives, and 27-term architectural glossary. | Human Architect & AI Agent |
 | `v1.4.0` | 2026-10-14 | Living Evolution Mandate | Codified day-to-day trigger matrix (T-1 to T-7), living sync protocol, and AGENTS.md Rule 17. | Human Architect & AI Agent |
+| `v1.5.0` | 2026-10-14 | T-4 & T-5 (Quality & CI/CD Gating) | Established mandatory pre-deployment quality validation gates across all 4 tiers (Unit 90%, Integration 80%, System 75%, E2E 70%), dual deployment gating, and AGENTS.md Rule 23. | Human Architect & AI Agent |
 
 ---
 
@@ -625,3 +630,6 @@ This specification serves as the authoritative architectural blueprint for human
 | **PBKDF2 Password Hashing** | A NIST-compliant key derivation function using HMAC-SHA512 with 100,000 iterations and unique 128-bit salts to secure credentials. |
 | **Aspire AppHost Topology** | The declarative .NET Aspire C# model defining microservices, database containers, and telemetry backends as code. |
 | **Artifact Hygiene** | The DevOps practice of excluding auto-generated synthesis outputs (`aspire-output/`) from version control to prevent dual sources of truth. |
+| **Quality Test Gate Pipeline** | A reusable GitHub Actions workflow (`quality-test-gate.yml`) enforcing quantitative quality pass rates across four tiers before cloud deployments. |
+| **Four-Tier Pre-Deployment Gate** | Strict deployment blocker requiring Unit ($\ge 90\%$), Integration ($\ge 80\%$), System ($\ge 75\%$), and E2E ($\ge 70\%$) test thresholds to pass before rollout. |
+

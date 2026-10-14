@@ -60,9 +60,14 @@ jobs:
     uses: ./.github/workflows/security-scan.yml
     secrets: inherit
 
+  pre-deployment-quality-gate:
+    name: Mandatory Pre-Deployment Quality & Test Gates
+    uses: ./.github/workflows/quality-test-gate.yml
+    secrets: inherit
+
   build-test-and-deploy:
-    name: Aspire Application Build, Security Gate & Deploy
-    needs: pre-deployment-security-scan
+    name: Aspire Application Build, Security & Quality Gate & Deploy
+    needs: [pre-deployment-security-scan, pre-deployment-quality-gate]
     if: github.actor == 'nikunjbanker'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}

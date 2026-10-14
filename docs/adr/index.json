@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-14T07:59:50.336097+00:00",
-  "totalAdrs": 55,
+  "generatedAt": "2026-10-14T08:27:04.178625+00:00",
+  "totalAdrs": 56,
   "categoryCounts": {
-    "architecture": 17,
+    "architecture": 18,
     "security": 17,
     "devops": 4,
     "presentation": 4,
@@ -369,6 +369,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261003-068-azure-container-apps-deployment-and-sqlite-smb-persistence.md",
       "relativePath": "docs/adr/devops/ADR-20261003-068-azure-container-apps-deployment-and-sqlite-smb-persistence.md"
+    },
+    {
+      "id": "ADR-069",
+      "number": 69,
+      "title": "Mandatory Multi-Tier Pre-Deployment Quality & Test Validation Gates (Unit 90%, Integration 80%, System 75%, E2E 70%)",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-14T13:55:00+05:30",
+      "subsystem": "[GitHub Actions Workflows | Quality Test Gate | Azure App Deploy | Azure Infra Deploy | Evaluation Harness | Domain Tests | E2E Suites]",
+      "filename": "ADR-20261014-069-pre-deployment-quality-and-test-validation-gates.md",
+      "relativePath": "docs/adr/architecture/ADR-20261014-069-pre-deployment-quality-and-test-validation-gates.md"
     },
     {
       "id": "ADR-069",

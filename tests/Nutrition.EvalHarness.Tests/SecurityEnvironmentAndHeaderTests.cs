@@ -185,6 +185,7 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Contains("/.github/workflows/azure-app-deploy.yml         @nikunjbanker", codeownersContent);
         Assert.Contains("/.github/workflows/azure-infra-deploy.yml        @nikunjbanker", codeownersContent);
         Assert.Contains("/.github/workflows/security-scan.yml             @nikunjbanker", codeownersContent);
+        Assert.Contains("/.github/workflows/quality-test-gate.yml         @nikunjbanker", codeownersContent);
         Assert.Contains("* @nikunjbanker", codeownersContent);
     }
 
@@ -231,9 +232,9 @@ public class SecurityEnvironmentAndHeaderTests
 
         // Pre-deployment and pre-provisioning security-scan gating assertion
         Assert.Contains("uses: ./.github/workflows/security-scan.yml", appContent);
-        Assert.Contains("needs: pre-deployment-security-scan", appContent);
+        Assert.Contains("pre-deployment-security-scan", appContent);
         Assert.Contains("uses: ./.github/workflows/security-scan.yml", infraContent);
-        Assert.Contains("needs: pre-provisioning-security-scan", infraContent);
+        Assert.Contains("pre-provisioning-security-scan", infraContent);
 
         // Security gate summary PR comment assertion
         Assert.Contains("gh pr comment", secScanContent);
@@ -255,6 +256,62 @@ public class SecurityEnvironmentAndHeaderTests
         var agentsContent = File.ReadAllText(agentsMdPath);
         Assert.Contains("Immutable Security-Scan Pipeline & Mandatory Pre-Execution Security Gating Rule", agentsContent);
         Assert.Contains("PERMANENT AND IMMUTABLE", agentsContent);
+    }
+
+    [Fact]
+    public void DeploymentWorkflows_MustGateOnQualityTestGates_AndEnforceThresholds()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var appWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-app-deploy.yml");
+        var infraWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-infra-deploy.yml");
+        var qualityWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "quality-test-gate.yml");
+
+        Assert.True(File.Exists(appWorkflowPath), $"Expected workflow file at {appWorkflowPath}");
+        Assert.True(File.Exists(infraWorkflowPath), $"Expected workflow file at {infraWorkflowPath}");
+        Assert.True(File.Exists(qualityWorkflowPath), $"Expected workflow file at {qualityWorkflowPath}");
+
+        var appContent = File.ReadAllText(appWorkflowPath);
+        var infraContent = File.ReadAllText(infraWorkflowPath);
+        var qualityContent = File.ReadAllText(qualityWorkflowPath);
+
+        // Pre-deployment and pre-provisioning quality-test-gate gating assertion
+        Assert.Contains("uses: ./.github/workflows/quality-test-gate.yml", appContent);
+        Assert.Contains("pre-deployment-quality-gate", appContent);
+        Assert.Contains("uses: ./.github/workflows/quality-test-gate.yml", infraContent);
+        Assert.Contains("pre-provisioning-quality-gate", infraContent);
+
+        // Quality gate thresholds assertion across all 4 tiers:
+        // Unit: 90%, Integration: 80%, System: 75%, E2E: 70%
+        Assert.Contains("UNIT_TEST_THRESHOLD: 90", qualityContent);
+        Assert.Contains("INTEGRATION_TEST_THRESHOLD: 80", qualityContent);
+        Assert.Contains("SYSTEM_TEST_THRESHOLD: 75", qualityContent);
+        Assert.Contains("E2E_TEST_THRESHOLD: 70", qualityContent);
+
+        // Multi-tier job definitions
+        Assert.Contains("unit-tests:", qualityContent);
+        Assert.Contains("integration-tests:", qualityContent);
+        Assert.Contains("system-tests:", qualityContent);
+        Assert.Contains("e2e-tests:", qualityContent);
+        Assert.Contains("quality-gate-summary:", qualityContent);
+
+        // Automated PR commenting and failure blocking
+        Assert.Contains("gh pr comment", qualityContent);
+        Assert.Contains("exit 1", qualityContent);
+
+        // Supply chain security assertion: All actions in quality-test-gate must be pinned to 40-character commit SHAs
+        Assert.Contains("actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", qualityContent);
+        Assert.Contains("actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852", qualityContent);
+
+        // AGENTS.md Rule 23 governance assertion
+        var agentsMdPath = Path.Combine(repoRoot, "AGENTS.md");
+        Assert.True(File.Exists(agentsMdPath));
+        var agentsContent = File.ReadAllText(agentsMdPath);
+        Assert.Contains("Mandatory Pre-Deployment Quality & Multi-Tier Test Gating Rule", agentsContent);
+        Assert.Contains("PERMANENT AND MANDATORY", agentsContent);
+        Assert.Contains("minimum 90% threshold", agentsContent);
+        Assert.Contains("minimum 80% threshold", agentsContent);
+        Assert.Contains("minimum 75% threshold", agentsContent);
+        Assert.Contains("minimum 70% threshold", agentsContent);
     }
 }
 

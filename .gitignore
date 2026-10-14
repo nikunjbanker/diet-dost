@@ -42,6 +42,8 @@ src/Nutrition.WebGateway/wwwroot/uploads/
 
 ## Scratch & Temporary Working Files
 scratch/
+.kilo/
+**/.kilo/
 
 ## .NET Aspire & azd generated artifacts
 aspire-output/

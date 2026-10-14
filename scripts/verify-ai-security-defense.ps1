@@ -53,7 +53,7 @@ function Get-FilesToScan {
     } else {
         $files = Get-ChildItem -Path $RepoRoot -Recurse -File | Where-Object {
             $rel = $_.FullName.Substring($RepoRoot.Path.Length)
-            -not ($rel -match "\\(bin|obj|node_modules|\.git|\.tempmediaStorage|\.user_uploaded|artifacts)\\") -and
+            -not ($rel -match "\\(bin|obj|node_modules|\.git|\.kilo|\.tempmediaStorage|\.user_uploaded|artifacts)\\") -and
             ($Extensions -contains $_.Extension)
         }
         return $files.FullName

@@ -28,5 +28,6 @@
 /.github/workflows/azure-app-deploy.yml         @nikunjbanker
 /.github/workflows/azure-infra-deploy.yml        @nikunjbanker
 /.github/workflows/security-scan.yml             @nikunjbanker
+/.github/workflows/quality-test-gate.yml         @nikunjbanker
 /.github/actions/                               @nikunjbanker
 

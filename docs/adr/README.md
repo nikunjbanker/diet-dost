@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 55 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 56 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **17** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **18** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **17** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **4** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -56,6 +56,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-062** | Mobile BFF Composite Contracts, ETag Caching & Offline Idempotency | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261002-062-mobile-bff-composite-contracts-and-caching.md) |
 | **ADR-063** | Native Feature Classification Matrix & Responsive Exit Gate Signoff | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261002-063-native-feature-classification-and-responsive-exit-gate.md) |
 | **ADR-068** | AI in SDLC, Agentic Workflows Architecture & Day-to-Day Living Synchronization Mandate | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261014-068-ai-sdlc-and-agentic-workflows-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261014-068-ai-sdlc-and-agentic-workflows-architecture.md) |
+| **ADR-069** | Mandatory Multi-Tier Pre-Deployment Quality & Test Validation Gates (Unit 90%, Integration 80%, System 75%, E2E 70%) | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261014-069-pre-deployment-quality-and-test-validation-gates.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261014-069-pre-deployment-quality-and-test-validation-gates.md) |
 | **ADR-072** | Centralized Application Configuration, Secret Governance & Strongly-Typed Ports | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-072-centralized-configuration-and-key-vault-secret-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261008-072-centralized-configuration-and-key-vault-secret-governance.md) |
 | **ADR-073** | Strongly-Typed Options Pattern & FluentValidation Configuration Governance | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-073-options-pattern-and-fluentvalidation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261008-073-options-pattern-and-fluentvalidation.md) |
 | **ADR-075** | Complete Elimination of Raw Configuration Indexers in Favor of Strongly-Typed Options Classes | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261008-075-complete-elimination-of-raw-configuration-indexers-for-options-classes.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261008-075-complete-elimination-of-raw-configuration-indexers-for-options-classes.md) |
