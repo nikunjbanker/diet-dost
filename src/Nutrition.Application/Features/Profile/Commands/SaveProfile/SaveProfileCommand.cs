@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -9,6 +9,7 @@ using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Profile.DTOs;
 using Nutrition.Application.Services;
+using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Profile;
 
 namespace Nutrition.Application.Features.Profile.Commands.SaveProfile;
@@ -40,8 +41,8 @@ public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Res
         try
         {
             var saved = await _dietitianService.SaveProfileAsync(request.Profile, ct);
-            var budget = _dietitianService.CalculateTargetBudget(saved);
-            var macros = _dietitianService.CalculateMacros(saved);
+            var budget = ClinicalCalculators.CalculateCaloricBudget(saved);
+            var macros = ClinicalCalculators.CalculateMacroDistribution(saved, budget);
 
             return Result<ProfileResponseDto>.Success(new ProfileResponseDto(
                 saved,

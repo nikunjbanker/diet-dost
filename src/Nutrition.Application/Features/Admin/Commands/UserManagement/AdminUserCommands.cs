@@ -57,8 +57,11 @@ public class UpdateUserTierCommandHandler : ICommandHandler<UpdateUserTierComman
         targetUser.Tier = request.NewTier;
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Admin {AdminId} changed tier of User {TargetId} to {NewTier}",
-            request.AdminUserId, request.TargetUserId, request.NewTier);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Admin {AdminId} changed tier of User {TargetId} to {NewTier}",
+                request.AdminUserId, request.TargetUserId, request.NewTier);
+        }
 
         return Result<UpdateUserTierResultDto>.Success(new UpdateUserTierResultDto(
             $"User tier updated to {request.NewTier}.",
@@ -116,8 +119,11 @@ public class UpdateUserRoleCommandHandler : ICommandHandler<UpdateUserRoleComman
         targetUser.Role = request.NewRole;
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Admin {AdminId} changed role of User {TargetId} to {NewRole}",
-            request.AdminUserId, request.TargetUserId, request.NewRole);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Admin {AdminId} changed role of User {TargetId} to {NewRole}",
+                request.AdminUserId, request.TargetUserId, request.NewRole);
+        }
 
         return Result<UpdateUserRoleResultDto>.Success(new UpdateUserRoleResultDto(
             $"User role updated to {request.NewRole}.",
@@ -175,8 +181,11 @@ public class UpdateUserStatusCommandHandler : ICommandHandler<UpdateUserStatusCo
         targetUser.IsActive = request.IsActive;
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Admin {AdminId} changed active status of User {TargetId} to {IsActive}",
-            request.AdminUserId, request.TargetUserId, request.IsActive);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Admin {AdminId} changed active status of User {TargetId} to {IsActive}",
+                request.AdminUserId, request.TargetUserId, request.IsActive);
+        }
 
         return Result<UpdateUserStatusResultDto>.Success(new UpdateUserStatusResultDto(
             $"User status updated to {(request.IsActive ? "Active" : "Locked")}.",
@@ -414,7 +423,10 @@ public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserComm
 
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("Admin {AdminId} updated user {TargetUserId}", request.AdminUserId, request.TargetUserId);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Admin {AdminId} updated user {TargetUserId}", request.AdminUserId, request.TargetUserId);
+        }
 
         return Result<AdminUserSummaryDto>.Success(new AdminUserSummaryDto(
             Id: targetUser.Id,

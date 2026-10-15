@@ -2,15 +2,13 @@
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
 import { spawn } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { resolve } from 'path';
+import { existsSync } from 'fs';
 
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
 const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9222;
 const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
-const APPSETTINGS_PATH = resolve('src/Nutrition.WebGateway/appsettings.json');
 
 function sleep(ms) {
     return new Promise(res => setTimeout(res, ms));
@@ -52,12 +50,6 @@ async function evaluate(ws, expression) {
         awaitPromise: true
     });
     return res.result ? res.result.value : undefined;
-}
-
-function setAppsettingsAllowRegistration(allow) {
-    const content = JSON.parse(readFileSync(APPSETTINGS_PATH, 'utf8'));
-    content.Auth.AllowRegistration = allow;
-    writeFileSync(APPSETTINGS_PATH, JSON.stringify(content, null, 2) + '\n', 'utf8');
 }
 
 async function main() {

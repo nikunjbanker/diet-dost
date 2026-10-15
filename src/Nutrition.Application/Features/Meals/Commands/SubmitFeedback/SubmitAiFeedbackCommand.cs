@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -102,8 +102,8 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
 
             var contradictory = await _correctionsRepo.FindAsync(
                 c => c.UserId == effectiveUserId &&
-                     ((c.OriginalDetectedItem.ToLower() == correctedKey.ToLower() && c.CorrectedItemName.ToLower() == origKey.ToLower()) ||
-                      (c.OriginalDetectedItem.ToLower().Contains(correctedKey.ToLower()) && c.CorrectedItemName.ToLower().Contains(origKey.ToLower()))),
+                     ((c.OriginalDetectedItem.Equals(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Equals(origKey, StringComparison.OrdinalIgnoreCase)) ||
+                      (c.OriginalDetectedItem.Contains(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Contains(origKey, StringComparison.OrdinalIgnoreCase))),
                 ct);
 
             foreach (var contra in contradictory)
@@ -112,7 +112,7 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
             }
 
             var existing = (await _correctionsRepo.FindAsync(
-                c => c.UserId == effectiveUserId && c.OriginalDetectedItem.ToLower() == origKey.ToLower(), ct))
+                c => c.UserId == effectiveUserId && c.OriginalDetectedItem.Equals(origKey, StringComparison.OrdinalIgnoreCase), ct))
                 .FirstOrDefault();
 
             var updatedEstimate = retrainingResult.UpdatedItemEstimate;

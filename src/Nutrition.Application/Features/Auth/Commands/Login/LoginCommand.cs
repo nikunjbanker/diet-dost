@@ -110,7 +110,10 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
         var token = _jwtTokenService.GenerateToken(user, displayName);
         var tierConfig = await _tierRepo.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
-        _logger.LogInformation("[AUTH] User logged in successfully: {UserId}, Tier: {Tier}", user.Id, user.Tier);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[AUTH] User logged in successfully: {UserId}, Tier: {Tier}", user.Id, user.Tier);
+        }
 
         var claims = new List<Claim>
         {

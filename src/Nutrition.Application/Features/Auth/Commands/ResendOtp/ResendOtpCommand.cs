@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -62,7 +62,7 @@ public class ResendOtpCommandHandler : ICommandHandler<ResendOtpCommand, Result<
         // Cooldown check: prevent generating more than 1 code per 60 seconds
         var threshold = DateTime.UtcNow.AddSeconds(-60);
         var recentOtps = await _otpRepo.FindAsync(o => o.UserId == user.Id && o.CreatedAtUtc > threshold, ct);
-        if (recentOtps.Any())
+        if (recentOtps.Count > 0)
         {
             return Result<ResendOtpResultDto>.Failure("Please wait at least 60 seconds before requesting another verification code.", "CooldownActive", 429);
         }
@@ -80,7 +80,10 @@ public class ResendOtpCommandHandler : ICommandHandler<ResendOtpCommand, Result<
         await _otpRepo.AddAsync(otp, ct);
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("[AUTH] Resent OTP dispatched for user: {UserId}, Channel: {Channel}", user.Id, request.Channel);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[AUTH] Resent OTP dispatched for user: {UserId}, Channel: {Channel}", user.Id, request.Channel);
+        }
 
         return Result<ResendOtpResultDto>.Success(new ResendOtpResultDto(
             $"A new verification code has been dispatched to your {request.Channel.ToString().ToLowerInvariant()}.",

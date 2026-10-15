@@ -59,8 +59,7 @@ jobs:
 
       - name: Execute Gitleaks Scan
         run: |
-          gitleaks detect --source . --verbose --report-format sarif --report-path gitleaks.sarif --redact
-        continue-on-error: true
+          gitleaks detect --source . --verbose --report-format sarif --report-path gitleaks.sarif --redact || true
 
       - name: Upload Gitleaks SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
@@ -68,6 +67,28 @@ jobs:
         with:
           sarif_file: gitleaks.sarif
           category: gitleaks
+
+      - name: Enforce Zero Gitleaks Secrets Gate
+        run: |
+          python3 -c "
+          import json, sys, os
+          if not os.path.exists('gitleaks.sarif'):
+              print('✅ Gitleaks gate passed: 0 secrets detected.')
+              sys.exit(0)
+          with open('gitleaks.sarif', 'r') as f:
+              data = json.load(f)
+          results = []
+          for r in data.get('runs', []):
+              results.extend(r.get('results', []))
+          if results:
+              print(f'❌ CRITICAL GITLEAKS GATE FAILURE: {len(results)} secret/credential leak(s) detected.', file=sys.stderr)
+              for res in results[:20]:
+                  rule = res.get('ruleId', 'Unknown')
+                  msg = res.get('message', {}).get('text', '')
+                  print(f'  - [{rule}] {msg}', file=sys.stderr)
+              sys.exit(1)
+          print('✅ Gitleaks gate passed: 0 secrets detected.')
+          "
 
   # ----------------------------------------------------------------------------
   # Job 2: ESLint - Client-Side JavaScript Static Analysis
@@ -90,8 +111,7 @@ jobs:
           npx eslint . \
             --format @microsoft/eslint-formatter-sarif \
             --output-file eslint-results.sarif \
-            --no-error-on-unmatched-pattern
-        continue-on-error: true
+            --no-error-on-unmatched-pattern || true
 
       - name: Upload ESLint SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
@@ -99,6 +119,30 @@ jobs:
         with:
           sarif_file: eslint-results.sarif
           category: eslint
+
+      - name: Enforce Zero ESLint Violations Gate
+        run: |
+          python3 -c "
+          import json, sys
+          with open('eslint-results.sarif', 'r') as f:
+              data = json.load(f)
+          results = []
+          for r in data.get('runs', []):
+              results.extend(r.get('results', []))
+          if results:
+              print(f'❌ CRITICAL ESLINT GATE FAILURE: {len(results)} ESLint violation(s) detected.', file=sys.stderr)
+              for res in results[:20]:
+                  rule = res.get('ruleId', 'Unknown')
+                  msg = res.get('message', {}).get('text', '')
+                  loc = ''
+                  if res.get('locations'):
+                      loc = res['locations'][0].get('physicalLocation', {}).get('artifactLocation', {}).get('uri', '')
+                  print(f'  - [{rule}] {loc}: {msg}', file=sys.stderr)
+              if len(results) > 20:
+                  print(f'  ... and {len(results) - 20} more violation(s)', file=sys.stderr)
+              sys.exit(1)
+          print('✅ ESLint gate passed: 0 violations.')
+          "
 
   # ----------------------------------------------------------------------------
   # Job 3: SecurityCodeScan - .NET / C# SAST Vulnerability Analysis
@@ -134,6 +178,30 @@ jobs:
           sarif_file: security-code-scan.sarif
           category: securitycodescan
 
+      - name: Enforce Zero SecurityCodeScan Violations Gate
+        run: |
+          python3 -c "
+          import json, sys
+          with open('security-code-scan.sarif', 'r') as f:
+              data = json.load(f)
+          results = []
+          for r in data.get('runs', []):
+              results.extend(r.get('results', []))
+          if results:
+              print(f'❌ CRITICAL SECURITY GATE FAILURE: {len(results)} unsuppressed security / Roslyn CA violation(s) detected.', file=sys.stderr)
+              for res in results[:20]:
+                  rule = res.get('ruleId', 'Unknown')
+                  msg = res.get('message', {}).get('text', '')
+                  loc = ''
+                  if res.get('locations'):
+                      loc = res['locations'][0].get('physicalLocation', {}).get('artifactLocation', {}).get('uri', '')
+                  print(f'  - [{rule}] {loc}: {msg}', file=sys.stderr)
+              if len(results) > 20:
+                  print(f'  ... and {len(results) - 20} more violation(s)', file=sys.stderr)
+              sys.exit(1)
+          print('✅ SecurityCodeScan gate passed: 0 unsuppressed security / Roslyn CA violations.')
+          "
+
   # ----------------------------------------------------------------------------
   # Job 4: Trivy - Dependency, Filesystem & Container CVE Scanner
   # ----------------------------------------------------------------------------
@@ -166,6 +234,25 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
           category: trivy
+
+      - name: Enforce Zero Critical & High Vulnerabilities Gate
+        run: |
+          python3 -c "
+          import json, sys
+          with open('trivy-results.sarif', 'r') as f:
+              data = json.load(f)
+          results = []
+          for r in data.get('runs', []):
+              results.extend(r.get('results', []))
+          if results:
+              print(f'❌ CRITICAL TRIVY GATE FAILURE: {len(results)} CRITICAL/HIGH CVE vulnerability finding(s) detected.', file=sys.stderr)
+              for res in results[:20]:
+                  rule = res.get('ruleId', 'Unknown')
+                  msg = res.get('message', {}).get('text', '')
+                  print(f'  - [{rule}] {msg}', file=sys.stderr)
+              sys.exit(1)
+          print('✅ Trivy gate passed: 0 CRITICAL/HIGH vulnerabilities.')
+          "
 
   # ----------------------------------------------------------------------------
   # Job 5: Checkov - Infrastructure-as-Code (Bicep / Cloud Policies)
@@ -301,7 +388,7 @@ jobs:
           > **Status**: ${{ (needs.gitleaks.result == 'success' && needs.eslint.result == 'success' && needs.securitycodescan.result == 'success' && needs.trivy.result == 'success' && needs.checkov.result == 'success' && needs.actionlint.result == 'success' && needs.ai-security-defense.result == 'success') && '✅ **ALL SECURITY GATES PASSED**' || '❌ **SECURITY GATE VIOLATIONS DETECTED**' }}  
           EOF
 
-          gh pr comment "$PR_NUMBER" --body-file pr_security_summary.md
+          gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file pr_security_summary.md || true
 
       - name: Enforce Final Gate Exit Code
         run: |

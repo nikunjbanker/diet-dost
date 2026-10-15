@@ -84,6 +84,7 @@ public class MobileBffCompositeTests : IDisposable
         TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private MobileBffController CreateController(ClaimsPrincipal principal, DefaultHttpContext? httpContext = null)
@@ -210,7 +211,7 @@ public class MobileBffCompositeTests : IDisposable
 
         // Second request sends If-None-Match matching original ETag
         var secondContext = new DefaultHttpContext { User = principal };
-        secondContext.Request.Headers["If-None-Match"] = originalEtag;
+        secondContext.Request.Headers.IfNoneMatch = originalEtag;
         var secondController = CreateController(principal, secondContext);
 
         var secondResult = await secondController.GetDashboardComposite();

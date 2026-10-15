@@ -79,6 +79,7 @@ public class SharedCqrsQueryTests : IDisposable
         TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private async Task SeedUserWithProfileAndMealsAsync(string userId, UserTier tier)

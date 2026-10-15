@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-14T16:51:15.979301+00:00",
-  "totalAdrs": 59,
+  "generatedAt": "2026-10-15T07:58:57.473889+00:00",
+  "totalAdrs": 60,
   "categoryCounts": {
     "architecture": 18,
-    "security": 17,
+    "security": 18,
     "devops": 7,
     "presentation": 4,
     "governance": 13
@@ -717,6 +717,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261014-094-refined-domain-aligned-tier-naming-conventions.md",
       "relativePath": "docs/adr/devops/ADR-20261014-094-refined-domain-aligned-tier-naming-conventions.md"
+    },
+    {
+      "id": "ADR-095",
+      "number": 95,
+      "title": "GitHub Code Scanning Remediation (Roslyn CA & ESLint) and Strict Security Gate Blocking Enforcement",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-15",
+      "subsystem": "Security",
+      "filename": "ADR-20261015-095-code-scanning-remediation-and-strict-gate-enforcement.md",
+      "relativePath": "docs/adr/security/ADR-20261015-095-code-scanning-remediation-and-strict-gate-enforcement.md"
     }
   ]
 }

@@ -15,11 +15,15 @@ export default [
       "**/dist/**",
       "**/publish/**",
       "**/*.min.js",
-      "artifacts/**"
+      "artifacts/**",
+      "docs/.kilo/**",
+      ".agents/**",
+      "scratch/**",
+      "TestResults/**"
     ]
   },
   {
-    files: ["**/*.js", "**/*.mjs"],
+    files: ["src/Nutrition.WebGateway/wwwroot/js/**/*.js"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -27,6 +31,7 @@ export default [
         window: "readonly",
         document: "readonly",
         navigator: "readonly",
+        location: "readonly",
         localStorage: "readonly",
         sessionStorage: "readonly",
         console: "readonly",
@@ -38,14 +43,72 @@ export default [
         Event: "readonly",
         CustomEvent: "readonly",
         HTMLElement: "readonly",
-        process: "readonly",
-        module: "readonly"
+        customElements: "readonly",
+        FormData: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        Blob: "readonly",
+        File: "readonly",
+        FileReader: "readonly",
+        Image: "readonly",
+        performance: "readonly",
+        requestAnimationFrame: "readonly",
+        alert: "readonly",
+        confirm: "readonly",
+        Response: "readonly",
+        Headers: "readonly"
       }
     },
     rules: {
-      "no-unused-vars": "warn",
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrors": "none" }],
       "no-console": "off",
-      "no-undef": "warn"
+      "no-undef": "error"
+    }
+  },
+  {
+    files: ["src/Nutrition.WebGateway/wwwroot/sw.js"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        self: "readonly",
+        caches: "readonly",
+        Response: "readonly",
+        Request: "readonly",
+        fetch: "readonly",
+        console: "readonly"
+      }
+    },
+    rules: {
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrors": "none" }],
+      "no-console": "off",
+      "no-undef": "error"
+    }
+  },
+  {
+    files: ["tests/**/*.mjs", "tests/**/*.js", "scripts/**/*.mjs", "scripts/**/*.js", "eslint.config.mjs"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        process: "readonly",
+        console: "readonly",
+        Buffer: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
+        fetch: "readonly",
+        URL: "readonly",
+        URLSearchParams: "readonly",
+        WebSocket: "readonly",
+        AbortController: "readonly"
+      }
+    },
+    rules: {
+      "no-unused-vars": ["error", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_", "caughtErrors": "none" }],
+      "no-console": "off",
+      "no-undef": "error"
     }
   }
 ];

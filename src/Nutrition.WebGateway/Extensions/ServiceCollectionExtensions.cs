@@ -22,6 +22,8 @@ namespace Nutrition.WebGateway.Extensions;
 /// </summary>
 public static class ServiceCollectionExtensions
 {
+    private static readonly string[] AdditionalJsonMimeTypes = ["application/json", "text/json"];
+
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -60,11 +62,7 @@ public static class ServiceCollectionExtensions
             options.EnableForHttps = true;
             options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProvider>();
             options.Providers.Add<Microsoft.AspNetCore.ResponseCompression.GzipCompressionProvider>();
-            options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(new[]
-            {
-                "application/json",
-                "text/json"
-            });
+            options.MimeTypes = Microsoft.AspNetCore.ResponseCompression.ResponseCompressionDefaults.MimeTypes.Concat(AdditionalJsonMimeTypes);
         });
         services.Configure<Microsoft.AspNetCore.ResponseCompression.BrotliCompressionProviderOptions>(options =>
         {

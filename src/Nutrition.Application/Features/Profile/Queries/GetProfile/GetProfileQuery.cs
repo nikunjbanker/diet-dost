@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -9,6 +9,7 @@ using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Profile.DTOs;
 using Nutrition.Application.Services;
+using Nutrition.Domain.Clinical;
 
 namespace Nutrition.Application.Features.Profile.Queries.GetProfile;
 
@@ -44,8 +45,8 @@ public class GetProfileQueryHandler : IQueryHandler<GetProfileQuery, Result<Prof
             return Result<ProfileResponseDto>.NotFound("User profile not found. Please complete clinical onboarding.");
         }
 
-        var budget = _dietitianService.CalculateTargetBudget(profile);
-        var macros = _dietitianService.CalculateMacros(profile);
+        var budget = ClinicalCalculators.CalculateCaloricBudget(profile);
+        var macros = ClinicalCalculators.CalculateMacroDistribution(profile, budget);
 
         return Result<ProfileResponseDto>.Success(new ProfileResponseDto(profile, budget, macros));
     }

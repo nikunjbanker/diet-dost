@@ -61,16 +61,12 @@ def normalize_run(run: dict) -> dict:
             continue
         res = dict(raw_res)
 
-        # Map legacy suppressionStates to SARIF 2.1.0 suppressions
-        if "suppressionStates" in res:
-            states = res.pop("suppressionStates")
-            if "suppressions" not in res and isinstance(states, list):
-                res["suppressions"] = [
-                    {"kind": "inSource", "status": "accepted"} if s == "suppressedInSource"
-                    else {"kind": "external", "status": "accepted"} if s == "suppressedInSuppressionFile"
-                    else {"kind": "inSource"}
-                    for s in states
-                ]
+        # Skip results that are suppressed in source code (equivalent to SARIF_ESLINT_IGNORE_SUPPRESSED: "true")
+        suppression_states = res.get("suppressionStates", [])
+        if "suppressedInSource" in suppression_states or "suppressedInSuppressionFile" in suppression_states:
+            continue
+        if any(isinstance(s, dict) and (s.get("status") == "accepted" or s.get("kind") == "inSource") for s in res.get("suppressions", [])):
+            continue
 
         # Map level
         lvl = res.get("level")
@@ -171,6 +167,7 @@ def merge_sarif(results_dir: str, output_file: str) -> None:
         json.dump(sarif_doc, f, indent=2)
 
     print(f"Aggregated {len(all_results)} result(s) across all projects into a single SARIF 2.1.0 run at {output_file}")
+    return len(all_results)
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--empty":
@@ -179,6 +176,11 @@ if __name__ == "__main__":
         ver = sys.argv[4] if len(sys.argv) > 4 else "11.0.0"
         create_empty_sarif(out, tool, ver)
     else:
-        results_dir = sys.argv[1] if len(sys.argv) > 1 else "sarif-results"
-        output_file = sys.argv[2] if len(sys.argv) > 2 else "security-code-scan.sarif"
-        merge_sarif(results_dir, output_file)
+        fail_on_findings = "--fail-on-findings" in sys.argv
+        args = [a for a in sys.argv[1:] if a != "--fail-on-findings"]
+        results_dir = args[0] if len(args) > 0 else "sarif-results"
+        output_file = args[1] if len(args) > 1 else "security-code-scan.sarif"
+        count = merge_sarif(results_dir, output_file)
+        if fail_on_findings and count > 0:
+            print(f"❌ SecurityCodeScan gate failure: {count} unsuppressed rule violation(s) detected.", file=sys.stderr)
+            sys.exit(1)

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -101,7 +101,10 @@ public class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, Result<
         var token = _jwtTokenService.GenerateToken(user, displayName);
         var tierConfig = await _tierRepo.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
-        _logger.LogInformation("[AUTH] Account verified and logged in: {UserId}", user.Id);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[AUTH] Account verified and logged in: {UserId}", user.Id);
+        }
 
         var claims = new List<Claim>
         {

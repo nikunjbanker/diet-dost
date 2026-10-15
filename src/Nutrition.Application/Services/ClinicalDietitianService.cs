@@ -104,27 +104,6 @@ public class ClinicalDietitianService
         return await _profileRepo.GetByIdAsync(userId, ct);
     }
 
-    /// <summary>
-    /// Calculates the clinically constrained calorie budget for a complete profile.
-    /// </summary>
-    /// <param name="profile">The validated user profile.</param>
-    /// <returns>BMR, TDEE, target calories, clinical adjustments, and warnings.</returns>
-    public BmrTdeeResult CalculateTargetBudget(UserProfile profile)
-    {
-        return ClinicalCalculators.CalculateCaloricBudget(profile);
-    }
-
-    /// <summary>
-    /// Calculates macro and safety-nutrient targets from the user's clinical budget.
-    /// </summary>
-    /// <param name="profile">The validated user profile.</param>
-    /// <returns>Protein, carbohydrate, fat, fiber, sodium, oil, and sugar targets.</returns>
-    public MacroDistribution CalculateMacros(UserProfile profile)
-    {
-        var budget = ClinicalCalculators.CalculateCaloricBudget(profile);
-        return ClinicalCalculators.CalculateMacroDistribution(profile, budget);
-    }
-
     public async Task<DailyCalorieLedger> GetOrCreateDailyLedgerAsync(string userId, DateOnly date, CancellationToken ct = default)
     {
         var ledgers = await _ledgerRepo.FindAsync(l => l.UserId == userId && l.Date == date, ct);
@@ -205,8 +184,8 @@ public class ClinicalDietitianService
                 meal.WhoComplianceFlags.Add("Hypertension Alert: Limit achaar/papad/salted snacks to maintain sodium under 1,500mg/day.");
             }
 
-            if (meds.Any(m => m.Contains("telmisartan") || m.Contains("ramipril")) &&
-                meal.Items.Any(i => i.Name.ToLowerInvariant().Contains("coconut water") || i.Name.ToLowerInvariant().Contains("diet salt")))
+            if (meds.Any(m => m.Contains("telmisartan", StringComparison.OrdinalIgnoreCase) || m.Contains("ramipril", StringComparison.OrdinalIgnoreCase)) &&
+                meal.Items.Any(i => i.Name.Contains("coconut water", StringComparison.OrdinalIgnoreCase) || i.Name.Contains("diet salt", StringComparison.OrdinalIgnoreCase)))
             {
                 meal.MedicationWarnings.Add("Medication Warning: High potassium item detected with ARB/ACE inhibitor. Avoid excessive potassium to prevent hyperkalemia.");
             }
@@ -360,8 +339,8 @@ public class ClinicalDietitianService
                 existing.WhoComplianceFlags.Add("Hypertension Alert: Limit achaar/papad/salted snacks to maintain sodium under 1,500mg/day.");
             }
 
-            if (meds.Any(m => m.Contains("telmisartan") || m.Contains("ramipril")) &&
-                existing.Items.Any(i => i.Name.ToLowerInvariant().Contains("coconut water") || i.Name.ToLowerInvariant().Contains("diet salt")))
+            if (meds.Any(m => m.Contains("telmisartan", StringComparison.OrdinalIgnoreCase) || m.Contains("ramipril", StringComparison.OrdinalIgnoreCase)) &&
+                existing.Items.Any(i => i.Name.Contains("coconut water", StringComparison.OrdinalIgnoreCase) || i.Name.Contains("diet salt", StringComparison.OrdinalIgnoreCase)))
             {
                 existing.MedicationWarnings.Add("Medication Warning: High potassium item detected with ARB/ACE inhibitor. Avoid excessive potassium to prevent hyperkalemia.");
             }
@@ -494,7 +473,7 @@ public class ClinicalDietitianService
                     BudgetCalories: Math.Round(budget, 0),
                     ProteinGrams: Math.Round(monthLedgers.Sum(l => l.ConsumedProteinGrams), 1),
                     SodiumMg: Math.Round(monthLedgers.Sum(l => l.ConsumedSodiumMg), 0),
-                    HealthScore: monthLedgers.Any() ? (int)monthLedgers.Average(l => l.HealthScore) : 85
+                    HealthScore: monthLedgers.Count > 0 ? (int)monthLedgers.Average(l => l.HealthScore) : 85
                 ));
             }
 
@@ -553,7 +532,7 @@ public class ClinicalDietitianService
                     BudgetCalories: Math.Round(budget, 0),
                     ProteinGrams: Math.Round(weekLedgers.Sum(l => l.ConsumedProteinGrams), 1),
                     SodiumMg: Math.Round(weekLedgers.Sum(l => l.ConsumedSodiumMg), 0),
-                    HealthScore: weekLedgers.Any() ? (int)weekLedgers.Average(l => l.HealthScore) : 85
+                    HealthScore: weekLedgers.Count > 0 ? (int)weekLedgers.Average(l => l.HealthScore) : 85
                 ));
             }
 
