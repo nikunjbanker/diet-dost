@@ -85,7 +85,7 @@ To enforce that the security gate fulfills its purpose—**strictly failing and 
 2. **CA1845 (1 alert)**: Migrated `JwtAuthenticationTests.cs` from `Substring` to `string.Concat` with `AsSpan()`.
 3. **CA1860 (3 alerts)**: Replaced `.Any()` with `.Count > 0` on collections in `ClinicalDietitianService.cs` and `ResendOtpCommand.cs`.
 4. **CA1862 (15 alerts)**: Replaced `.ToLower()` and `.Contains()` with `StringComparison.OrdinalIgnoreCase` in `SubmitAiFeedbackCommand.cs`, `ConfirmMealCommand.cs`, `GetAdminUsersQuery.cs`, and `ClinicalDietitianService.cs`.
-5. **CA1822 (2 alerts)**: Marked `CalculateTargetBudget` and `CalculateMacros` as `public static` in `ClinicalDietitianService.cs`.
+5. **CA1822 (2 alerts)**: Eliminated redundant static wrapper methods (`CalculateTargetBudget` and `CalculateMacros`) from `ClinicalDietitianService.cs`, refactoring CQRS handlers (`SaveProfileCommandHandler` and `GetProfileQueryHandler`) to invoke Domain `ClinicalCalculators.CalculateCaloricBudget` and `ClinicalCalculators.CalculateMacroDistribution` directly per Clean Architecture and DDD.
 6. **CA1873 (19 alerts)**: Guarded all structured logging invocations with `if (_logger.IsEnabled(LogLevel.Information))` across application commands, queries, controllers, and middleware.
 7. **ASP0025 (1 alert)**: Migrated `services.AddAuthorization(...)` to `services.AddAuthorizationBuilder()` in `SecurityAndAuthExtensions.cs`.
 8. **ASP0015 (1 alert)**: Accessed `Request.Headers.IfNoneMatch` strongly-typed property in `MobileBffCompositeTests.cs`.

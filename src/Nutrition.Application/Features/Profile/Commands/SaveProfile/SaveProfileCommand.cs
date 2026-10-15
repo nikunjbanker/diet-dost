@@ -9,6 +9,7 @@ using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Profile.DTOs;
 using Nutrition.Application.Services;
+using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Profile;
 
 namespace Nutrition.Application.Features.Profile.Commands.SaveProfile;
@@ -40,8 +41,8 @@ public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Res
         try
         {
             var saved = await _dietitianService.SaveProfileAsync(request.Profile, ct);
-            var budget = ClinicalDietitianService.CalculateTargetBudget(saved);
-            var macros = ClinicalDietitianService.CalculateMacros(saved);
+            var budget = ClinicalCalculators.CalculateCaloricBudget(saved);
+            var macros = ClinicalCalculators.CalculateMacroDistribution(saved, budget);
 
             return Result<ProfileResponseDto>.Success(new ProfileResponseDto(
                 saved,
