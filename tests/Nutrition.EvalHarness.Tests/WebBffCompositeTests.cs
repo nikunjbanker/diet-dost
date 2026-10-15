@@ -84,6 +84,7 @@ public class WebBffCompositeTests : IDisposable
         TierConfigurationService.ClearCache();
         _serviceProvider.Dispose();
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private WebBffController CreateController(ClaimsPrincipal principal)

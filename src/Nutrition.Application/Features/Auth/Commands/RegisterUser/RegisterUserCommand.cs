@@ -157,7 +157,10 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
 
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. OTP dispatched to: {Target}", user.Id, user.Email);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. OTP dispatched to: {Target}", user.Id, user.Email);
+        }
 
         var responseDto = new RegisterResultDto(
             user.Id,

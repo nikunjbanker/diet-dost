@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -69,6 +69,7 @@ public class TierFunctionalityTests : IDisposable
         TierConfigurationService.ClearCache();
         _db.Dispose();
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Theory]

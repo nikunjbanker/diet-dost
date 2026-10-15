@@ -89,8 +89,8 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                 // Purge contradictory rules
                 var contradictory = await _correctionsRepo.FindAsync(
                     c => c.UserId == meal.UserId &&
-                         ((c.OriginalDetectedItem.ToLower() == correctedKey.ToLower() && c.CorrectedItemName.ToLower() == origKey.ToLower()) ||
-                          (c.OriginalDetectedItem.ToLower().Contains(correctedKey.ToLower()) && c.CorrectedItemName.ToLower().Contains(origKey.ToLower()))),
+                         ((c.OriginalDetectedItem.Equals(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Equals(origKey, StringComparison.OrdinalIgnoreCase)) ||
+                          (c.OriginalDetectedItem.Contains(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Contains(origKey, StringComparison.OrdinalIgnoreCase))),
                     ct);
 
                 foreach (var contra in contradictory)
@@ -99,7 +99,7 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                 }
 
                 var existing = (await _correctionsRepo.FindAsync(
-                    c => c.UserId == meal.UserId && c.OriginalDetectedItem.ToLower() == origKey.ToLower(), ct))
+                    c => c.UserId == meal.UserId && c.OriginalDetectedItem.Equals(origKey, StringComparison.OrdinalIgnoreCase), ct))
                     .FirstOrDefault();
 
                 if (existing != null)

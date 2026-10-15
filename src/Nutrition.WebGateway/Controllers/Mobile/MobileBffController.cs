@@ -89,8 +89,11 @@ public class MobileBffController : ControllerBase
         var maxHistory = (userTier is UserTier.Premium || roleStr is "SuperAdmin" or "Admin") ? 365 : (userTier is UserTier.Basic ? 30 : 7);
         var boundedDays = Math.Clamp(historyDays, 1, maxHistory);
 
-        _logger.LogInformation("Mobile BFF dashboard requested for user {UserId} (Tier: {Tier}, Date: {Date}, HistoryDays: {Days})",
-            userId, tierStr, targetDateStr ?? "today", boundedDays);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Mobile BFF dashboard requested for user {UserId} (Tier: {Tier}, Date: {Date}, HistoryDays: {Days})",
+                userId, tierStr, targetDateStr ?? "today", boundedDays);
+        }
 
         // Execute independent read queries concurrently across isolated DI scopes for 100% thread safety
         var ledgerTask = Task.Run(async () =>

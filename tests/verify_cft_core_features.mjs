@@ -135,7 +135,7 @@ async function main() {
     // STEP 1: AUTHENTICATION FLOW VIA DEMO CREDENTIALS
     // -------------------------------------------------------------------------
     console.log('\n[3/8] Executing End-to-End User Authentication as basic@dietdost.app...');
-    const authSuccess = await evaluate(`(async () => {
+    await evaluate(`(async () => {
         const idInput = document.getElementById('signin-identifier');
         const pwdInput = document.getElementById('signin-password');
         const form = document.getElementById('form-signin');

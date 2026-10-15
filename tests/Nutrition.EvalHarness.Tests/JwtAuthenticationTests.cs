@@ -144,7 +144,7 @@ public class JwtAuthenticationTests
         var parts = validToken.Split('.');
 
         // Tamper with the signature portion
-        var tamperedSignature = parts[2].Substring(0, parts[2].Length - 4) + "XXXX";
+        var tamperedSignature = string.Concat(parts[2].AsSpan(0, parts[2].Length - 4), "XXXX");
         var tamperedToken = $"{parts[0]}.{parts[1]}.{tamperedSignature}";
 
         var principal = _jwtService.ValidateToken(tamperedToken);

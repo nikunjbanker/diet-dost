@@ -80,8 +80,11 @@ public class WebBffController : ControllerBase
             _ => "7D"
         };
 
-        _logger.LogInformation("Web BFF dashboard requested for user {UserId} (Tier: {Tier}, Role: {Role}, Period: {Period})",
-            userId, tierStr, roleStr, sanitizedPeriod);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("Web BFF dashboard requested for user {UserId} (Tier: {Tier}, Role: {Role}, Period: {Period})",
+                userId, tierStr, roleStr, sanitizedPeriod);
+        }
 
         // Execute independent read queries concurrently in isolated scopes for 100% thread safety and sub-50ms performance
         var ledgerTask = Task.Run(async () =>

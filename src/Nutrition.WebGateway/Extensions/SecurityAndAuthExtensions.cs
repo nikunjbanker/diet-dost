@@ -111,12 +111,10 @@ public static class SecurityAndAuthExtensions
             };
         });
 
-        services.AddAuthorization(options =>
-        {
-            options.AddPolicy("RequireAdmin", policy => policy.RequireRole(UserRole.Admin.ToString(), UserRole.SuperAdmin.ToString()));
-            options.AddPolicy("RequireSuperAdmin", policy => policy.RequireRole(UserRole.SuperAdmin.ToString()));
-            options.AddPolicy("RequireActiveUser", policy => policy.RequireAuthenticatedUser());
-        });
+        services.AddAuthorizationBuilder()
+            .AddPolicy("RequireAdmin", policy => policy.RequireRole(UserRole.Admin.ToString(), UserRole.SuperAdmin.ToString()))
+            .AddPolicy("RequireSuperAdmin", policy => policy.RequireRole(UserRole.SuperAdmin.ToString()))
+            .AddPolicy("RequireActiveUser", policy => policy.RequireAuthenticatedUser());
 
         return services;
     }

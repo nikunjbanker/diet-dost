@@ -131,14 +131,17 @@ public partial class HttpPayloadTelemetryMiddleware
                 : "OTHER";
 
             var safePath = SafePathRegex().Replace(path, "_");
-            _logger.LogInformation(
-                "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms (PayloadBytes: {RequestBytes}/{ResponseBytes})",
-                sanitizedMethod,
-                safePath,
-                context.Response.StatusCode,
-                sw.Elapsed.TotalMilliseconds,
-                context.Request.ContentLength ?? 0,
-                responseMemoryStream.Length);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation(
+                    "HTTP {Method} {Path} finished with {StatusCode} in {ElapsedMs:0.0}ms (PayloadBytes: {RequestBytes}/{ResponseBytes})",
+                    sanitizedMethod,
+                    safePath,
+                    context.Response.StatusCode,
+                    sw.Elapsed.TotalMilliseconds,
+                    context.Request.ContentLength ?? 0,
+                    responseMemoryStream.Length);
+            }
         }
     }
 

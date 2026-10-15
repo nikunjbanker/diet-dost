@@ -80,8 +80,11 @@ public class UpdateTierConfigCommandHandler : ICommandHandler<UpdateTierConfigCo
 
         var updated = await _tierConfigService.UpdateConfigurationAsync(config, ct);
 
-        _logger.LogInformation("SuperAdmin {AdminId} updated tier config for {Tier}",
-            request.AdminUserId, request.Tier);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("SuperAdmin {AdminId} updated tier config for {Tier}",
+                request.AdminUserId, request.Tier);
+        }
 
         return Result<UpdateTierConfigResultDto>.Success(new UpdateTierConfigResultDto(
             $"Tier configuration for {request.Tier} updated successfully.",

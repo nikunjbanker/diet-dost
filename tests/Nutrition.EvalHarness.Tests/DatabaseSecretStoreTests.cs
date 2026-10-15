@@ -50,6 +50,7 @@ public class DatabaseSecretStoreTests : IDisposable
         DatabaseSecretStore.ClearCache();
         _db.Dispose();
         _connection.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

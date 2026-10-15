@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -40,8 +40,8 @@ public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Res
         try
         {
             var saved = await _dietitianService.SaveProfileAsync(request.Profile, ct);
-            var budget = _dietitianService.CalculateTargetBudget(saved);
-            var macros = _dietitianService.CalculateMacros(saved);
+            var budget = ClinicalDietitianService.CalculateTargetBudget(saved);
+            var macros = ClinicalDietitianService.CalculateMacros(saved);
 
             return Result<ProfileResponseDto>.Success(new ProfileResponseDto(
                 saved,

@@ -81,14 +81,21 @@ public static partial class DatabaseInitializationExtensions
         {
             var createScript = db.Database.GenerateCreateScript();
             var rawStatements = createScript.Split(ScriptSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            var connection = db.Database.GetDbConnection();
+            if (connection.State != System.Data.ConnectionState.Open)
+            {
+                await connection.OpenAsync();
+            }
+            using var createCmd = connection.CreateCommand();
             foreach (var rawStatement in rawStatements)
             {
                 if (string.IsNullOrWhiteSpace(rawStatement)) continue;
                 try
                 {
-#pragma warning disable CA2100, EF1003 // Raw statement originates directly from internally generated EF Core DbContext CreateScript and is sanitized
-                    await db.Database.ExecuteSqlRawAsync(rawStatement + ";");
-#pragma warning restore CA2100, EF1003
+#pragma warning disable CA2100 // Raw statement originates directly from internally generated EF Core DbContext CreateScript and is sanitized
+                    createCmd.CommandText = rawStatement;
+#pragma warning restore CA2100
+                    await createCmd.ExecuteNonQueryAsync();
                 }
                 catch
                 {
@@ -310,9 +317,11 @@ public static partial class DatabaseInitializationExtensions
 
         if (!columnExists)
         {
-#pragma warning disable EF1002 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
-            await db.Database.ExecuteSqlRawAsync($"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};");
-#pragma warning restore EF1002
+            using var alterCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
+            alterCmd.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};";
+#pragma warning restore CA2100
+            await alterCmd.ExecuteNonQueryAsync();
         }
     }
 
@@ -366,7 +375,10 @@ public static partial class DatabaseInitializationExtensions
                     CreatedAtUtc = DateTime.UtcNow,
                     UpdatedAtUtc = DateTime.UtcNow
                 });
-                logger.LogInformation("Seeded database secret into AppSecrets table: {Key}", key);
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("Seeded database secret into AppSecrets table: {Key}", key);
+                }
             }
         }
 
@@ -568,7 +580,10 @@ public static partial class DatabaseInitializationExtensions
                     user.IsMobileVerified = true;
                     user.IsActive = true;
                     await db.SaveChangesAsync();
-                    logger.LogInformation("Updated demo user email to match configuration: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("Updated demo user email to match configuration: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                    }
                 }
                 else
                 {
@@ -596,7 +611,10 @@ public static partial class DatabaseInitializationExtensions
                     };
                     await db.Users.AddAsync(user);
                     await db.SaveChangesAsync();
-                    logger.LogInformation("Provisioned demo user: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("Provisioned demo user: {Email} ({Tier}, {Role})", spec.Email, spec.Tier, spec.Role);
+                    }
                 }
             }
             else

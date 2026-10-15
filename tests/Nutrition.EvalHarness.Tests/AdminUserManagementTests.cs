@@ -56,6 +56,7 @@ public class AdminUserManagementTests : IDisposable
         TierConfigurationService.ClearCache();
         _connection.Dispose();
         _db.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

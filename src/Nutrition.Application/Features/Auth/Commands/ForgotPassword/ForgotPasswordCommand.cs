@@ -71,7 +71,10 @@ public class ForgotPasswordCommandHandler : ICommandHandler<ForgotPasswordComman
         await _otpRepo.AddAsync(otp, ct);
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogInformation("[AUTH] ForgotPassword OTP dispatched for user: {UserId}", user.Id);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[AUTH] ForgotPassword OTP dispatched for user: {UserId}", user.Id);
+        }
 
         return Result<ForgotPasswordResultDto>.Success(new ForgotPasswordResultDto(
             "If a matching active account exists, a reset code has been sent to its email address.",

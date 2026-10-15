@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -39,9 +39,9 @@ public class GetAdminUsersQueryHandler : IQueryHandler<GetAdminUsersQuery, Resul
 
         if (!string.IsNullOrWhiteSpace(request.Search))
         {
-            var searchLower = request.Search.Trim().ToLowerInvariant();
-            filtered = filtered.Where(u => u.Email.ToLower().Contains(searchLower) ||
-                                           u.MobileNumber.Contains(searchLower));
+            var search = request.Search.Trim();
+            filtered = filtered.Where(u => u.Email.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                                           u.MobileNumber.Contains(search, StringComparison.OrdinalIgnoreCase));
         }
 
         if (request.Tier.HasValue)
