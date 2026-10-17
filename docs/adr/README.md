@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 67 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 68 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -33,7 +33,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **18** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **18** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
-| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **14** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
+| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **15** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
@@ -108,6 +108,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-100** | Azure Bicep Infrastructure Deployment Error Remediation (ACR Naming, Standard Storage SMB, and Metric Alert Dimensions) | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261017-100-azure-bicep-infra-deployment-error-remediation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-100-azure-bicep-infra-deployment-error-remediation.md) |
 | **ADR-101** | Automated Change-Detection Documentation & Skill Synchronization Test Harness (Vector 7 & Contract Testing) | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261017-101-automated-change-detection-documentation-skill-sync-harness.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-101-automated-change-detection-documentation-skill-sync-harness.md) |
 | **ADR-102** | Azure Key Vault Soft-Delete Idempotency Guard & Pipeline Parameterization | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md) |
+| **ADR-103** | Azure Container Apps Delegated Subnet Preservation and InUseSubnetCannotBeDeleted Remediation | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261017-103-azure-infrastructure-subnet-preservation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-103-azure-infrastructure-subnet-preservation.md) |
 
 ### 🎨 Presentation & UI/UX (`docs/adr/presentation/`)
 > *Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration.*

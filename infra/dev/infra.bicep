@@ -26,7 +26,7 @@ param acrName string = ''
 param keyVaultName string = ''
 
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
-param acaSubnetName string = 'snet-aca-infra-${environment}'
+param acaSubnetName string = 'snet-aca-infra'
 
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = take('stgdost${environment}${uniqueSuffix}', 24)

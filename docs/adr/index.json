@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T12:30:13.110804+00:00",
-  "totalAdrs": 67,
+  "generatedAt": "2026-10-17T13:23:13.939808+00:00",
+  "totalAdrs": 68,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 14,
+    "devops": 15,
     "presentation": 4,
     "governance": 13
   },
@@ -813,6 +813,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md",
       "relativePath": "docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md"
+    },
+    {
+      "id": "ADR-103",
+      "number": 103,
+      "title": "Azure Container Apps Delegated Subnet Preservation and InUseSubnetCannotBeDeleted Remediation",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-103-azure-infrastructure-subnet-preservation.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-103-azure-infrastructure-subnet-preservation.md"
     }
   ]
 }

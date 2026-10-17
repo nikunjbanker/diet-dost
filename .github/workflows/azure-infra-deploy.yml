@@ -41,12 +41,17 @@ on:
         description: 'Azure Container Registry name (alphanumeric only, e.g. crdietdostdev, auto-generated if empty)'
         required: false
         type: string
-        default: ''
+        default: 'acrdietdostdev'
       keyVaultName:
         description: 'Azure Key Vault name (alphanumeric only, e.g. kvdostdevskehxuagttzos, auto-generated if empty)'
         required: false
         type: string
-        default: ''
+        default: 'kvdostdevskehxuagttzos'
+      acaSubnetName:
+        description: 'Azure Container Apps infrastructure delegated subnet name'
+        required: false
+        type: string
+        default: 'snet-aca-infra'
       skipPreFlightGates:
         description: '⚡ Skip Pre-Flight Security & Quality Gates (Admin Only: nikunjbanker)'
         required: false
@@ -293,6 +298,7 @@ jobs:
               fileShareQuotaGb=${{ inputs.fileShareQuotaGb }} \
               acrName="${{ inputs.acrName }}" \
               keyVaultName="${{ inputs.keyVaultName }}" \
+              acaSubnetName="${{ inputs.acaSubnetName || 'snet-aca-infra' }}" \
             --result-format ResourceIdOnly > whatif_summary.txt || true
 
           cat whatif_summary.txt
@@ -391,6 +397,7 @@ jobs:
             fileShareQuotaGb=${{ inputs.fileShareQuotaGb }}
             acrName=${{ inputs.acrName }}
             keyVaultName=${{ inputs.keyVaultName }}
+            acaSubnetName=${{ inputs.acaSubnetName || 'snet-aca-infra' }}
           failOnStderr: false
 
       - name: 5. Verify & Output Infrastructure Endpoints
