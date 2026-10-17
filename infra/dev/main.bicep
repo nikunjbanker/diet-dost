@@ -40,7 +40,7 @@ param acrName string = ''
 param keyVaultName string = ''
 
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
-param acaSubnetName string = 'snet-aca-infra-${environment}'
+param acaSubnetName string = 'snet-aca-infra'
 
 @description('Optional Gemini API Key for AI nutrition feedback.')
 @secure()

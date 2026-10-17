@@ -280,7 +280,7 @@ az containerapp create \
 ### 3.5 Zero-Trust Network & Security Infrastructure Baseline (Bicep IaC)
 The foundation infrastructure in [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) implements a defense-in-depth, Zero-Trust network boundary designed for dev-test free-tier containment ($0 incremental cost):
 1. **Network Security Group (`nsg-dietdost-${environment}`)**:
-   - Attached to ACA infrastructure subnet `snet-aca-infra-${environment}` to comply with Checkov `CKV_AZURE_9`.
+   - Attached to ACA infrastructure subnet `snet-aca-infra` to comply with Checkov `CKV_AZURE_9`.
    - **Inbound Rules**: Allows HTTPS (443) and `AzureLoadBalancer` (satisfies Checkov `CKV_AZURE_160` by restricting HTTP port 80).
    - **Outbound Rules**: Allows Port 445 strictly to `Storage` service tag; Port 443 to `AzureCloud` and `Internet` (for Gemini AI APIs); Port 53 (DNS); and Port 123 (NTP).
 2. **Azure Files SMB 3.1.1 Encryption & Soft-Delete**:

@@ -18,7 +18,7 @@ graph TD
             NSG_Out["Stateful Outbound Firewall<br/>• 100: Allow Storage SMB (445)<br/>• 110: Allow AzureCloud HTTPS / ACR (443)<br/>• 120: Allow DNS (53) & 130: Allow NTP (123)<br/>• 140: Allow Internet HTTPS (443) for Gemini AI<br/>• 150: Allow VNet Internal Traffic<br/>• 4000: DENY ALL OTHER OUTBOUND"]
         end
 
-        subgraph ACA_Subnet ["Delegated Subnet: snet-aca-infra-${environment} (10.0.0.0/23)"]
+        subgraph ACA_Subnet ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
             ACA_Env["ACA Managed Environment: cae-dietdost-dev<br/>Service Endpoints: Microsoft.Storage, Microsoft.KeyVault"]
             
             subgraph Workload_Container ["Diet-Dost Web Gateway & Mobile BFF Workload"]

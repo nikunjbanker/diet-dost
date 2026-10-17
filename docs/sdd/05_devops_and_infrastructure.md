@@ -297,7 +297,7 @@ graph TD
     Client["End User Browser / PWA Client"] -->|"HTTPS / Port 443<br/>TLS 1.3 Strict"| ACA_Ingress["ACA Managed Environment Ingress<br/>(dev.dietdost.app / FQDN)<br/>IP Security Restrictions Filter"]
 
     subgraph Azure_VNet ["Azure Virtual Network: vnet-dietdost-dev (10.0.0.0/16)"]
-        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra-${environment} (10.0.0.0/23)"]
+        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
             ACA_App["Diet-Dost Container App<br/>(.NET 11 WebGateway)<br/>Single Replica: min=1, max=1"]
         end
         NSG["Network Security Group: nsg-dietdost-${environment}<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>Inbound: 443 (HTTPS), AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
@@ -325,7 +325,7 @@ graph TD
 ```
 
 ### 8.1 Network Security Group (NSG) with Zero-Trust Subnet Isolation
-- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-${environment}`) attached directly to subnet `snet-aca-infra-${environment}`.
+- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-${environment}`) attached directly to subnet `snet-aca-infra`.
 - **Compliance**: Natively satisfies Checkov benchmark rule `CKV_AZURE_9` (*Ensure that Virtual Network subnets are associated with a Network Security Group*).
 - **Rule Set**:
   - **Inbound**:

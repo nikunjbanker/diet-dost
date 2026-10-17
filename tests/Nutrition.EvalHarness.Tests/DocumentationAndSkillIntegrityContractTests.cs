@@ -181,13 +181,13 @@ public partial class DocumentationAndSkillIntegrityContractTests
 
         var sdd05Content = File.ReadAllText(sdd05);
         Assert.Contains("infra/<env>/infra.bicep", sdd05Content);
-        Assert.Contains("snet-aca-infra-${environment}", sdd05Content);
+        Assert.Contains("snet-aca-infra", sdd05Content);
 
         var azureSkill = Path.Combine(repoRoot, ".agents", "skills", "diet-dost-azure-deployment", "SKILL.md");
         Assert.True(File.Exists(azureSkill), $"Expected Azure deployment skill at {azureSkill}");
 
         var skillContent = File.ReadAllText(azureSkill);
         Assert.Contains("infra/<env>/infra.bicep", skillContent);
-        Assert.Contains("snet-aca-infra-${environment}", skillContent);
+        Assert.Contains("snet-aca-infra", skillContent);
     }
 }
