@@ -9,7 +9,7 @@
 # 📋 Expert Azure DevOps & Security Advisor Critical Review & Remediation Report
 
 **System**: Diet-Dost (.NET 11 Aspire Web Gateway & Mobile BFF on Azure Container Apps)  
-**Scope**: `infra/infra.bicep`, `infra/app.bicep`, `.github/workflows/azure-infra-deploy.yml`, `.github/workflows/azure-app-deploy.yml`, and runtime ingress/middleware.  
+**Scope**: `infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep`, `.github/workflows/azure-infra-deploy.yml`, `.github/workflows/azure-app-deploy.yml`, and runtime ingress/middleware.  
 **Classification**: SDD Companion Living Report (`docs/sdd/dev-ops_improvement_report.md`)  
 **Status**: **ALL REMEDIATIONS APPLIED & 100% VERIFIED**
 
@@ -22,12 +22,13 @@
 | **External Traffic: Custom Domain (`dev.diet-dost.in`) -> ACA Ingress** | ⚠️ **BLOCKED** | Missing `certificateId` in `app.bicep` when `enableCustomDomain: true`; ARM requires certificate for `bindingType: 'SniEnabled'`. | Added `Microsoft.App/managedEnvironments/managedCertificates` resource with `domainControlValidation: 'CNAME'` and bound via `certificateId: managedCert.id`. | 🟢 **RESOLVED** |
 | **External Traffic: Default Azure FQDN (`*.azurecontainerapps.io`)** | ⚠️ **BLOCKED** | `HostGatingMiddleware` blocked `*.azurecontainerapps.io` with `403 Forbidden` in non-development environments, preventing access before custom domain DNS propagates. | Updated `HostGatingMiddleware` to permit `*.azurecontainerapps.io` when `Security:AllowDemoUsers == "true"` or `Security__AllowDemoUsers == "true"`. | 🟢 **RESOLVED** |
 | **Internal: ACA Container -> Azure Files SMB Share** | ⚠️ **BLOCKED** | Standard LRS rejected `protocolSettings.smb.multichannel`; Checkov `CKV_AZURE_59` failed on explicit `publicNetworkAccess: 'Enabled'`. | Removed `protocolSettings.smb`, enforced `supportsHttpsTrafficOnly: true` (SMB 3.1.1 AES-GCM), and restricted access via ACA subnet VNet Service Endpoint (`networkAcls.defaultAction: 'Deny'`). | 🟢 **RESOLVED** |
-| **Internal: ACA Container -> Azure Container Registry (ACR)** | ⚠️ **BLOCKED** | Registry input `acr-dietdost-dev` failed ARM naming validation (`ResourceNameInvalid`: alphanumeric only, no hyphens). | Added defensive sanitization in `infra/infra.bicep` (`replace(replace(toLower(acrName), '-', ''), '_', '')`). AcrPull role assigned to User-Assigned Managed Identity. | 🟢 **RESOLVED** |
+| **Internal: ACA Container -> Azure Container Registry (ACR)** | ⚠️ **BLOCKED** | Registry input `acr-dietdost-dev` failed ARM naming validation (`ResourceNameInvalid`: alphanumeric only, no hyphens). | Added defensive sanitization in `infra/dev/infra.bicep` (`replace(replace(toLower(acrName), '-', ''), '_', '')`). AcrPull role assigned to User-Assigned Managed Identity. | 🟢 **RESOLVED** |
 | **Internal: ACA Container -> Azure Key Vault** | 🔴 **CRITICAL DEFECT** | `managedIdentityClientId` was missing from `infra.bicep` outputs, resulting in empty `AZURE_CLIENT_ID` in the container. `DefaultAzureCredential` failed token acquisition. | Exported `output managedIdentityClientId` from `infra.bicep`, decoupled fallback lookups in CI Step 5, and mapped into container `AZURE_CLIENT_ID` via `app.bicep`. | 🟢 **RESOLVED** |
 | **CI/CD Pipeline: GitHub Runner -> Key Vault Secret Seeding** | 🔴 **CRITICAL DEFECT** | Key Vault firewall (`defaultAction: Deny`) unconditionally blocked the GitHub Actions runner from setting secrets in Step 6 (`⚠️ Note: Could not set Jwt--Key`). | Added dynamic runner IP detection (`api.ipify.org`) and automated temporary Key Vault firewall whitelisting (`az keyvault network-rule add/remove`) with guaranteed cleanup. | 🟢 **RESOLVED** |
 | **Application Boot: Deployed Secret Validation Gate** | 🔴 **CRITICAL DEFECT** | `ValidateRequiredDeployedSecrets` crashed container with `InvalidOperationException` if `Jwt:Key` and `Auth:SuperAdminEmail` were absent, causing CrashLoopBackOffs during showcase runs. | In `ConfigurationExtensions.cs`, `SecurityAndAuthExtensions.cs`, and `JwtTokenService.cs`, added safe fallbacks to `DefaultDevJwtKey` and `DefaultSuperAdminEmail` when `Security:AllowDemoUsers == "true"`, while strictly gating pure production. | 🟢 **RESOLVED** |
 | **Monitoring: Key Vault Threat Alerts** | ⚠️ **BLOCKED** | ARM deployment failed with `BadRequest` because Metric Alert dimension was set to non-existent `StatusCodeRange`. | Corrected dimension name to `StatusCode` with `values: ['401', '403']` and explicit `metricNamespace: 'Microsoft.KeyVault/vaults'`. | 🟢 **RESOLVED** |
 | **Internal: ACA Ingress (Port 443) -> Container (Port 8080)** | 🟢 **HEALTHY** | Forwarded headers enabled, health probes `/healthz` (liveness) and `/ready` (readiness) correctly registered. | Verified & passed. | 🟢 **HEALTHY** |
+| **Multi-Environment Isolation: Dev vs Prod Naming & Paths** | ⚠️ **BLOCKED** | Root `infra/` folder lacked environment isolation; resource names lacked `${environment}`, risking naming collisions and state conflicts between dev and prod. | Relocated templates to `infra/dev/`, parameterized workflows as `./infra/${{ inputs.environment }}/`, and embedded `${environment}` in all resource names (Storage, Key Vault, ACR, Subnet, Container App, Custom Domain). | 🟢 **RESOLVED** |
 
 ---
 
@@ -303,6 +304,41 @@
 3. **Explicit Dependency Guarantee**: Added explicit `dependsOn: [ vnet ]` with `#disable-next-line no-unnecessary-dependson` to `storageAccount`, `acaEnvironment`, and `keyVault` to ensure ARM provision sequencing guarantees VNet readiness while maintaining 0 Bicep linter warnings.
 4. **Outputs Exported**: Exported `acaSubnetId` and `acaSubnetName` as outputs in both `infra.bicep` and `main.bicep` for cross-template and automation consumption.
 5. **Comprehensive Cross-Check**: Verified that all three templates (`infra/infra.bicep`, `infra/app.bicep`, and `infra/main.bicep`) pass both local Bicep compilation and live Azure ARM validation (`az deployment group validate`) and ARM preview (`az deployment group what-if`) with `provisioningState: Succeeded` and 0 errors.
+
+---
+
+### 🚨 Problem 10: Environment Partitioning (`infra/dev/`) & Multi-Environment Resource Naming Isolation
+- **Location**: `infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep`, `.github/workflows/azure-infra-deploy.yml`, `.github/workflows/azure-app-deploy.yml`, `tests/Nutrition.EvalHarness.Tests/BicepIaCConfigurationContractTests.cs`.
+- **Root Cause**:
+  Prior to this enhancement, Bicep templates were located directly in root `infra/` without environment isolation folders. In addition, several resources (Storage account, Key Vault, ACR, Subnet, Container App, and Custom Domain) either had static suffixes or omitted `${environment}` in their names. If deployed to production (`prod`), this would cause:
+  1. **Resource Name Collisions**: Shared storage names (`stgdietdost...`) or key vault names (`kvdietdost...`) colliding with existing `dev` resources.
+  2. **Pipeline Path Fragility**: Workflows were hardcoded to `./infra/infra.bicep` and `./infra/app.bicep`, preventing seamless multi-environment deployments (`dev` vs `prod`).
+  3. **No Separation of Environment**: Inability to manage distinct environment configurations, parameter files, and lifecycle boundaries cleanly.
+
+##### ✅ Resolution Applied & Verified:
+1. **Directory Relocation**:
+   Moved all environment Bicep templates from `infra/` to `infra/dev/`:
+   - `infra/infra.bicep` -> `infra/dev/infra.bicep`
+   - `infra/app.bicep` -> `infra/dev/app.bicep`
+   - `infra/main.bicep` -> `infra/dev/main.bicep`
+   - `infra/main.parameters.json` -> `infra/dev/main.parameters.json`
+2. **Multi-Environment Resource Naming Invariants**:
+   Refactored all resource declarations in Bicep to strictly utilize `${environment}`:
+   - **Storage Account**: `take('stgdost${environment}${uniqueSuffix}', 24)` (23 chars for dev, 24 for prod; strictly alphanumeric, meets Azure 3-24 char limit).
+   - **Key Vault**: `take('kvdost${environment}${uniqueSuffix}', 24)` (22 chars for dev, 23 for prod; meets Azure 3-24 char limit).
+   - **Azure Container Registry**: `take('crdost${environment}${uniqueSuffix}', 50)` (strictly alphanumeric).
+   - **Subnet Name**: `snet-aca-infra-${environment}` (dynamically bound via `Microsoft.Network/virtualNetworks/subnets existing`).
+   - **Azure Files Share**: `dietdost-data-${environment}`.
+   - **Container App**: `app-dietdost-web-${environment}`.
+   - **Custom Domain**: `${environment}.diet-dost.in`.
+3. **Dynamic Workflow Path Parameterization**:
+   Updated `.github/workflows/azure-infra-deploy.yml` and `.github/workflows/azure-app-deploy.yml` to dynamically resolve templates via `./infra/${{ inputs.environment }}/infra.bicep` and `./infra/${{ inputs.environment }}/app.bicep`, and pass `appName="app-dietdost-web-${{ inputs.environment }}"`, `customDomain="${{ inputs.environment }}.diet-dost.in"`, and `environment="${{ inputs.environment }}"`.
+4. **Contract Test & CI Synchronization**:
+   Updated `tests/Nutrition.EvalHarness.Tests/BicepIaCConfigurationContractTests.cs` to test `infra/dev/` templates and added `BicepIaC_Enforces_Environment_Isolation_And_Resource_Naming` test asserting 100% of resources embed `${environment}`.
+5. **Compilation & Validation**:
+   - `az bicep build --file infra/dev/infra.bicep` -> 0 errors.
+   - `az bicep build --file infra/dev/main.bicep` -> 0 errors.
+   - `az deployment group validate --resource-group rg-dietdost-dev --template-file ./infra/dev/infra.bicep ...` -> `provisioningState: Succeeded`, 0 errors.
 
 ---
 

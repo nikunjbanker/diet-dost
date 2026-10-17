@@ -138,7 +138,7 @@ graph TD
 - **Sole Administrative Authority**: Contributor `@nikunjbanker` holds sole authority over solution secrets, Azure Key Vault provisioning, and cloud RBAC roles.
 - **Zero Hardcoded Secrets Policy**: Hardcoded secrets, static connection strings, or private API keys in Git commits or configuration files are strictly forbidden and enforced by Gitleaks pre-commit hooks and CI.
 - **Dynamic Azure Cloud Context**: Administrative scripts ([`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)) dynamically resolve subscriptions, tenants, and application registrations at runtime via authenticated `az account` session queries—preventing credential exposure.
-- **Azure Key Vault Purge Protection**: Key Vault is provisioned with `enablePurgeProtection: true` and 7-day soft-delete retention in `infra/infra.bicep`.
+- **Azure Key Vault Purge Protection**: Key Vault is provisioned with `enablePurgeProtection: true` and 7-day soft-delete retention in `infra/<env>/infra.bicep` (e.g., `infra/dev/infra.bicep`).
 - **Passwordless Managed Identity**: Container workloads interact with Azure Container Registry (ACR) via system-assigned and user-assigned managed identities assigned `AcrPull`, and read secrets using least-privilege `Key Vault Secrets User`.
 
 ---

@@ -31,11 +31,22 @@ public class BicepIaCConfigurationContractTests
         throw new InvalidOperationException("Could not find repository root containing DietDost.slnx");
     }
 
+    private static string GetAppBicepPath(string environment = "dev")
+    {
+        var repoRoot = GetRepoRoot();
+        return Path.Combine(repoRoot, "infra", environment, "app.bicep");
+    }
+
+    private static string GetInfraBicepPath(string environment = "dev")
+    {
+        var repoRoot = GetRepoRoot();
+        return Path.Combine(repoRoot, "infra", environment, "infra.bicep");
+    }
+
     [Fact]
     public void AppBicep_Declares_RequiredConfigurationEnvironmentVariables()
     {
-        var repoRoot = GetRepoRoot();
-        var appBicepPath = Path.Combine(repoRoot, "infra", "app.bicep");
+        var appBicepPath = GetAppBicepPath("dev");
         Assert.True(File.Exists(appBicepPath), $"app.bicep must exist at {appBicepPath}");
 
         var bicepContent = File.ReadAllText(appBicepPath);
@@ -52,8 +63,7 @@ public class BicepIaCConfigurationContractTests
     [Fact]
     public void AppBicep_Declares_HealthCheck_Probes_For_ACA()
     {
-        var repoRoot = GetRepoRoot();
-        var appBicepPath = Path.Combine(repoRoot, "infra", "app.bicep");
+        var appBicepPath = GetAppBicepPath("dev");
         var bicepContent = File.ReadAllText(appBicepPath);
 
         // Probes for liveness and readiness
@@ -67,8 +77,7 @@ public class BicepIaCConfigurationContractTests
     [Fact]
     public void AppBicep_Enforces_SingleReplica_And_PersistentMountPath()
     {
-        var repoRoot = GetRepoRoot();
-        var appBicepPath = Path.Combine(repoRoot, "infra", "app.bicep");
+        var appBicepPath = GetAppBicepPath("dev");
         var bicepContent = File.ReadAllText(appBicepPath);
 
         // SQLite Golden Rule 1: Single writer invariant
@@ -83,8 +92,7 @@ public class BicepIaCConfigurationContractTests
     [Fact]
     public void InfraBicep_Enforces_KeyVault_PurgeProtection()
     {
-        var repoRoot = GetRepoRoot();
-        var infraBicepPath = Path.Combine(repoRoot, "infra", "infra.bicep");
+        var infraBicepPath = GetInfraBicepPath("dev");
         Assert.True(File.Exists(infraBicepPath), $"infra.bicep must exist at {infraBicepPath}");
 
         var bicepContent = File.ReadAllText(infraBicepPath);
@@ -96,8 +104,7 @@ public class BicepIaCConfigurationContractTests
     [Fact]
     public void InfraBicep_Enforces_KeyVault_FirewallRules_And_SubnetServiceEndpoint()
     {
-        var repoRoot = GetRepoRoot();
-        var infraBicepPath = Path.Combine(repoRoot, "infra", "infra.bicep");
+        var infraBicepPath = GetInfraBicepPath("dev");
         var bicepContent = File.ReadAllText(infraBicepPath);
 
         // Checkov CKV_AZURE_109 resolution: Service endpoint in delegated VNet subnet
@@ -128,8 +135,7 @@ public class BicepIaCConfigurationContractTests
     [Fact]
     public void InfraBicep_Enforces_StorageAccount_Security_And_SubnetServiceEndpoint()
     {
-        var repoRoot = GetRepoRoot();
-        var infraBicepPath = Path.Combine(repoRoot, "infra", "infra.bicep");
+        var infraBicepPath = GetInfraBicepPath("dev");
         var bicepContent = File.ReadAllText(infraBicepPath);
 
         // Storage account firewall invariants: zero public access + VNet service endpoint
@@ -146,5 +152,28 @@ public class BicepIaCConfigurationContractTests
         // ACA environment storage mount invariant
         Assert.Contains("Microsoft.App/managedEnvironments/storages", bicepContent);
         Assert.Contains("accessMode: 'ReadWrite'", bicepContent);
+    }
+
+    [Fact]
+    public void BicepIaC_Enforces_Environment_Isolation_And_Resource_Naming()
+    {
+        var infraBicepPath = GetInfraBicepPath("dev");
+        var infraContent = File.ReadAllText(infraBicepPath);
+
+        // Assert all resources utilize environment in name to guarantee zero conflict in prod
+        Assert.Contains("param environment string = 'dev'", infraContent);
+        Assert.Contains("snet-aca-infra-${environment}", infraContent);
+        Assert.Contains("stgdost${environment}", infraContent);
+        Assert.Contains("crdost${environment}", infraContent);
+        Assert.Contains("dietdost-data-${environment}", infraContent);
+        Assert.Contains("kvdost${environment}", infraContent);
+        Assert.Contains("vnet-dietdost-${environment}", infraContent);
+        Assert.Contains("cae-dietdost-${environment}", infraContent);
+
+        var appBicepPath = GetAppBicepPath("dev");
+        var appContent = File.ReadAllText(appBicepPath);
+        Assert.Contains("param environment string = 'dev'", appContent);
+        Assert.Contains("app-dietdost-web-${environment}", appContent);
+        Assert.Contains("${environment}.diet-dost.in", appContent);
     }
 }

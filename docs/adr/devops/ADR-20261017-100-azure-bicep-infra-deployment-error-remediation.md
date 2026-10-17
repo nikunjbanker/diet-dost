@@ -94,12 +94,28 @@ In GitHub Actions workflow run [39020523546](https://github.com/nikunjbanker/die
   4. **Outputs Exported**: Exported `acaSubnetId` and `acaSubnetName` outputs in both `infra.bicep` and `main.bicep` for downstream pipeline automation.
   5. **Validation Assertions**: Validated that both first run (greenfield) and future runs (idempotent) succeed across `az bicep build`, `az deployment group validate` (`infra.bicep`, `app.bicep`, and `main.bicep`), and `az deployment group what-if` with `provisioningState: Succeeded` and 0 errors.
 
+### 7. Environment Partitioning (`infra/dev/`) & Multi-Environment Resource Naming Isolation
+- **Context & Motivation**:
+  Prior to this enhancement, Bicep templates were located in root `infra/` without environment partitioning, and several resources omitted `${environment}` in their names. If deployed to production (`prod`), resource name collisions and state divergence would occur.
+- **Architectural Enhancements**:
+  1. **Folder Relocation**: Relocated environment Bicep templates from `infra/` to `infra/dev/` (`infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep`, `infra/dev/main.parameters.json`).
+  2. **Strict Environment Naming Invariants**: All resource declarations embed `${environment}` to ensure 100% collision-free multi-environment separation:
+     - Storage Account: `take('stgdost${environment}${uniqueSuffix}', 24)`
+     - Key Vault: `take('kvdost${environment}${uniqueSuffix}', 24)`
+     - ACR: `take('crdost${environment}${uniqueSuffix}', 50)`
+     - Subnet: `snet-aca-infra-${environment}`
+     - Azure Files SMB Share: `dietdost-data-${environment}`
+     - Container App: `app-dietdost-web-${environment}`
+     - Custom Domain: `${environment}.diet-dost.in`
+  3. **Dynamic Workflow Path Parameterization**: Updated both `.github/workflows/azure-infra-deploy.yml` and `.github/workflows/azure-app-deploy.yml` to dynamically resolve templates via `./infra/${{ inputs.environment }}/infra.bicep` and `./infra/${{ inputs.environment }}/app.bicep`.
+  4. **Contract Tests**: Added `BicepIaC_Enforces_Environment_Isolation_And_Resource_Naming` in `tests/Nutrition.EvalHarness.Tests/BicepIaCConfigurationContractTests.cs` to guarantee invariants across all environments.
+
 ---
 
 ## 3. Verification & Compliance
-- **Bicep Compilation**: `az bicep build --file infra/infra.bicep` and `az bicep build --file infra/app.bicep` compiled with 0 errors and 0 warnings.
-- **Live Azure ARM Pre-Flight Validation**: `az deployment group validate` on `infra/infra.bicep`, `infra/app.bicep`, and `infra/main.bicep` returned `provisioningState: Succeeded` with 0 template or quota errors.
-- **Live Azure ARM What-If Preview**: `az deployment group what-if` on `infra/infra.bicep` executed cleanly (5 resources to create, 10 to deploy, 0 schema errors).
+- **Bicep Compilation**: `az bicep build --file infra/dev/infra.bicep` and `az bicep build --file infra/dev/main.bicep` compiled with 0 errors and 0 warnings.
+- **Live Azure ARM Pre-Flight Validation**: `az deployment group validate` on `infra/dev/infra.bicep`, `infra/dev/app.bicep`, and `infra/dev/main.bicep` returned `provisioningState: Succeeded` with 0 template or quota errors.
+- **Live Azure ARM What-If Preview**: `az deployment group what-if` on `infra/dev/infra.bicep` executed cleanly (5 resources to create, 10 to deploy, 0 schema errors).
 - **Domain Tests**: 36/36 passed (`Nutrition.Domain.Tests`).
-- **Evaluation Harness Tests**: 212/212 passed (`Nutrition.EvalHarness.Tests`).
+- **Evaluation Harness Tests**: 213/213 passed (`Nutrition.EvalHarness.Tests`).
 - **AI Security Defense Verification**: All 6 vectors passed cleanly (`scripts/verify-ai-security-defense.ps1`).

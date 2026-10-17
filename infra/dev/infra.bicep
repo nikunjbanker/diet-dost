@@ -23,13 +23,13 @@ param fileShareQuotaGb int = 1
 param acrName string = ''
 
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
-param acaSubnetName string = 'snet-aca-infra'
+param acaSubnetName string = 'snet-aca-infra-${environment}'
 
 var uniqueSuffix = uniqueString(resourceGroup().id)
-var storageAccountName = take('stgdietdost${uniqueSuffix}', 24)
+var storageAccountName = take('stgdost${environment}${uniqueSuffix}', 24)
 var sanitizedAcrName = replace(replace(toLower(acrName), '-', ''), '_', '')
-var actualAcrName = !empty(sanitizedAcrName) ? sanitizedAcrName : take('crdietdost${uniqueSuffix}', 50)
-var fileShareName = 'dietdost-data'
+var actualAcrName = !empty(sanitizedAcrName) ? sanitizedAcrName : take('crdost${environment}${uniqueSuffix}', 50)
+var fileShareName = 'dietdost-data-${environment}'
 var logAnalyticsName = 'log-dietdost-${environment}'
 var acaEnvName = 'cae-dietdost-${environment}'
 var vnetName = 'vnet-dietdost-${environment}'
@@ -387,7 +387,7 @@ resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
-var keyVaultName = take('kvdietdost${uniqueSuffix}', 24)
+var keyVaultName = take('kvdost${environment}${uniqueSuffix}', 24)
 
 // checkov:skip=CKV_AZURE_109: Key Vault firewall defaultAction Allow is required for GitHub Actions runners to seed secrets in dev tier.
 // checkov:skip=CKV_AZURE_189: Key Vault public network access is required for CI/CD automation without private self-hosted runners in dev tier.
