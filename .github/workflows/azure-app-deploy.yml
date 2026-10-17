@@ -429,6 +429,13 @@ jobs:
             MI_CLIENT_ID=$(az identity list --resource-group "$RG" --query "[0].clientId" -o tsv)
           fi
 
+          # Resolve Application Insights Connection String
+          APPI_CS="${{ steps.deploy-infra.outputs.appInsightsConnectionString }}"
+          if [ -z "$APPI_CS" ]; then
+            APPI_NAME="appi-dietdost-${{ inputs.environment }}"
+            APPI_CS=$(az monitor app-insights component show --app "$APPI_NAME" --resource-group "$RG" --query "connectionString" -o tsv 2>/dev/null || true)
+          fi
+
           {
             echo "acr_name=$ACR_NAME"
             echo "aca_env_id=$ACA_ENV_ID"
@@ -436,11 +443,13 @@ jobs:
             echo "kv_uri=$KV_URI"
             echo "mi_id=$MI_ID"
             echo "mi_client_id=$MI_CLIENT_ID"
+            echo "app_insights_cs=$APPI_CS"
           } >> "$GITHUB_OUTPUT"
           echo "Resolved ACR: $ACR_NAME"
           echo "Resolved ACA Environment ID: $ACA_ENV_ID"
           echo "Resolved Key Vault: $KV_NAME ($KV_URI)"
           echo "Resolved Managed Identity: $MI_ID"
+          echo "Resolved Application Insights Connection String: $([ -n "$APPI_CS" ] && echo 'Configured' || echo 'None')"
 
       - name: 6. Synchronize Configured Secrets to Azure Key Vault (If Provided)
         id: sync-secrets
@@ -556,6 +565,7 @@ jobs:
             keyVaultUri=${{ steps.resolve-env.outputs.kv_uri }}
             managedIdentityId=${{ steps.resolve-env.outputs.mi_id }}
             managedIdentityClientId=${{ steps.resolve-env.outputs.mi_client_id }}
+            appInsightsConnectionString="${{ steps.resolve-env.outputs.app_insights_cs }}"
           failOnStderr: false
 
       - name: 11. Verify Application Health & Revision Status

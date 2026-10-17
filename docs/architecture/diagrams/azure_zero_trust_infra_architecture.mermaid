@@ -45,6 +45,7 @@ graph TD
 
     subgraph Monitoring_Alerts ["6. Observability & Threat Detection"]
         LogAnalytics["Azure Log Analytics Workspace<br/>log-dietdost-dev (PerGB2018 / 30-Day Retention)"]
+        AppInsights["Azure Application Insights (Workspace-based)<br/>appi-dietdost-dev<br/>• DisableLocalAuth: true (Entra ID Only)<br/>• Role: Monitoring Metrics Publisher<br/>• Telemetry Scope: Application Logs & Exceptions Only"]
         DiagKV["Key Vault Diagnostic Settings<br/>diag-kv-dev<br/>Streams AuditEvent & AllMetrics"]
         AlertKV["Azure Monitor Metric Alert<br/>alert-kv-unauthorized-dev<br/>Severity 1: 401/403 Spikes > 5 in 5m"]
     end
@@ -62,7 +63,9 @@ graph TD
 
     %% Secrets & Telemetry Flows
     MI -.->|Role: Key Vault Secrets User| KV
+    MI -.->|Role: Monitoring Metrics Publisher| AppInsights
     AppContainer -.->|Secret Resolution: Jwt--Key & AI API Keys| KV
-    AppContainer -.->|App Logs & Console Streams| LogAnalytics
+    AppContainer -.->|App Logs & Exceptions Only (Entra ID DefaultAzureCredential)| AppInsights
+    AppInsights -.->|Workspace Data Store| LogAnalytics
     KV -.->|Diagnostic Stream: AuditEvent| DiagKV -.-> LogAnalytics
     KV -.->|ServiceApiResult Metrics| AlertKV

@@ -371,5 +371,19 @@ The full architectural blueprint is codified in the following repository visual 
 - **Automated CI/CD Idempotency Guard**: `.github/workflows/azure-infra-deploy.yml` implements steps `8b` (Stage 1) and `3b` (Stage 3): `Detect and Auto-Recover Soft-Deleted Key Vaults (Idempotency Guard)`. Before ARM validation or Bicep deployment executes, Azure CLI inspects `az keyvault list-deleted` and automatically triggers `az keyvault recover` for any soft-deleted vault in the subscription, ensuring zero human intervention and 100% deployment idempotency.
 - **Dynamic Parameterization**: Bicep foundation templates (`infra/<env>/infra.bicep` and `infra/<env>/main.bicep`) support optional `keyVaultName`. When omitted, Bicep generates environment-isolated vaults (`kvdost${environment}${uniqueSuffix}`); when provided, operators can attach to pre-existing or recovered vaults seamlessly.
 
+### 8.7 Workspace-Based Azure Application Insights with Local Authentication Disabled (Entra ID Only)
+- **Zero Local Authentication Baseline (`DisableLocalAuth: true`)**:
+  - The Application Insights component (`appi-dietdost-${environment}`) in `Microsoft.Insights/components@2020-02-02` is configured with `DisableLocalAuth: true`, strictly adhering to Checkov `CKV_AZURE_224` and CIS Microsoft Azure Foundations benchmarks.
+  - Legacy API keys and unauthenticated `InstrumentationKey`-only ingestion are permanently disabled.
+- **Workspace-Based Architecture**:
+  - Bound directly to `logAnalytics.id` via `WorkspaceResourceId: logAnalytics.id`. All telemetry data is stored within the Azure Log Analytics Workspace (`log-dietdost-${environment}`) leveraging the 5 GB/month free ingestion tier.
+- **Entra ID RBAC Telemetry Authorization**:
+  - The User-Assigned Managed Identity (`id-dietdost-${environment}`) is granted the built-in **`Monitoring Metrics Publisher`** role (`39135dd6-16b0-4780-a6e6-8577137d9569`) scoped to the Application Insights resource.
+  - The application authenticates securely via `DefaultAzureCredential` configured with `ManagedIdentityClientId = AZURE_CLIENT_ID`.
+- **Scoped Logs-Only Ingestion Standard**:
+  - OpenTelemetry configuration in `Nutrition.WebGateway.Extensions.OpenTelemetryExtensions` binds `AddAzureMonitorLogExporter` strictly into `logging.AddOpenTelemetry(...)`.
+  - Application distributed traces and custom metrics remain exclusively routed to the local Aspire OTLP collector (`OTEL_EXPORTER_OTLP_ENDPOINT`), ensuring that only structured application logs and unhandled exceptions are forwarded to Azure Monitor Application Insights.
+
+
 
 
