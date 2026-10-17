@@ -60,6 +60,10 @@ param jwtKey string = ''
 @description('Optional SuperAdmin email address (fallback if Key Vault secret is not yet seeded).')
 param superAdminEmail string = ''
 
+@description('Optional Azure Application Insights Connection String.')
+@secure()
+param appInsightsConnectionString string = ''
+
 resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: last(split(acaEnvironmentId, '/'))
 }
@@ -122,6 +126,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           {
             name: 'jwt-key'
             value: jwtKey
+          }
+        ] : [],
+        !empty(appInsightsConnectionString) ? [
+          {
+            name: 'app-insights-connection-string'
+            value: appInsightsConnectionString
           }
         ] : []
       )
@@ -189,6 +199,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'AZURE_CLIENT_ID'
               value: managedIdentityClientId
+            }
+            {
+              name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+              secretRef: !empty(appInsightsConnectionString) ? 'app-insights-connection-string' : null
+              value: empty(appInsightsConnectionString) ? '' : null
             }
           ]
           volumeMounts: [

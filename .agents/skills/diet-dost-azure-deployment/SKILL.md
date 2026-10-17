@@ -531,7 +531,7 @@ graph TD
      - Publishes formatted preview change matrix (Create, Modify, Delete, NoChange) directly to `$GITHUB_STEP_SUMMARY` for operator visibility before mutation.
   3. **Stage 3: Provision (`provision-infrastructure`)**:
      - Runs Step 3b: Key Vault soft-delete auto-recovery guard pass.
-     - Deploys [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data-${environment}`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity).
+     - Deploys [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data-${environment}`, Log Analytics, workspace-based Application Insights `appi-dietdost-${environment}` with `DisableLocalAuth: true`, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity with `AcrPull`, `Key Vault Secrets User`, and `Monitoring Metrics Publisher` roles).
      - Emits and verifies infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID, ACR Name, Key Vault URI).
      - Publishes Stage 3 Completion Summary table to `$GITHUB_STEP_SUMMARY`.
 
@@ -547,7 +547,7 @@ graph TD
   5. **Trivy Container Security Gate**: Scans container image for CRITICAL vulnerabilities.
   6. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
   7. **Ensure / Provision Infrastructure**: Executes `infra/${{ inputs.environment }}/infra.bicep` (if `provisionInfra: true`).
-  8. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, and applying custom domain TLS.
+  8. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, injecting `APPLICATIONINSIGHTS_CONNECTION_STRING` (scoped strictly to application logs/exceptions via `DefaultAzureCredential`), and applying custom domain TLS.
   9. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
 
 ---

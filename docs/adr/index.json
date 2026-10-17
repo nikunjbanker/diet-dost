@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T13:23:13.939808+00:00",
-  "totalAdrs": 68,
+  "generatedAt": "2026-10-17T13:59:42.015749+00:00",
+  "totalAdrs": 69,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 15,
+    "devops": 16,
     "presentation": 4,
     "governance": 13
   },
@@ -825,6 +825,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-103-azure-infrastructure-subnet-preservation.md",
       "relativePath": "docs/adr/devops/ADR-20261017-103-azure-infrastructure-subnet-preservation.md"
+    },
+    {
+      "id": "ADR-104",
+      "number": 104,
+      "title": "Workspace-Based Azure Application Insights with Local Authentication Disabled and Entra ID Logs-Only Routing",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-104-azure-application-insights-workspace-based-entra-id-logging.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-104-azure-application-insights-workspace-based-entra-id-logging.md"
     }
   ]
 }
