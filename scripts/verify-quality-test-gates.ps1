@@ -262,7 +262,7 @@ if ($Tier -in @("All", "Unit")) {
         Tier = "Tier 1: Domain & Clinical Nutrition Unit Tests"
         Scope = "Domain Algorithms, Clinical Math, Nutrition Estimators"
         Required = "Line Coverage >= $UnitThreshold% (0 failures)"
-        Achieved = "$lineCoverage% coverage ($passed/$total passed, 0 failures)"
+        Achieved = "$lineCoverage% coverage ($passed/$total passed, $failed failures)"
         Passed = $unitGatePassed
     })
 }
@@ -344,6 +344,21 @@ if ($Tier -in @("All", "Integration")) {
     if ($packageSummaries.Count -gt 0) {
         Write-Host "  • Package Breakdown      : $($packageSummaries -join ', ')" -ForegroundColor DarkGray
     }
+    if ($failed -gt 0) {
+        Write-Host "  ❌ Failed Integration Tests ($failed):" -ForegroundColor Red
+        if ($trxFiles -and $trxFiles.Count -gt 0) {
+            try {
+                [xml]$trxXml = Get-Content $trxFiles[0].FullName
+                $failedResults = @($trxXml.TestRun.Results.UnitTestResult) | Where-Object { $_.outcome -eq "Failed" }
+                foreach ($fr in $failedResults) {
+                    Write-Host "     • $($fr.testName)" -ForegroundColor Red
+                    if ($fr.Output.ErrorInfo.Message) {
+                        Write-Host "       $($fr.Output.ErrorInfo.Message.Trim())" -ForegroundColor DarkRed
+                    }
+                }
+            } catch { }
+        }
+    }
     if ($integGatePassed) {
         Write-Host "  ✅ Tier 2 Subsystem & BFF Integration Test Gate: PASS" -ForegroundColor Green
     } else {
@@ -354,7 +369,7 @@ if ($Tier -in @("All", "Integration")) {
         Tier = "Tier 2: Subsystem & BFF Integration Tests"
         Scope = "Web BFF Composite, CQRS Handlers, Auth Schemes, SQLite EF Core"
         Required = "Line Coverage >= $IntegrationThreshold% (0 failures)"
-        Achieved = "$lineCoverage% coverage ($passed/$total passed, 0 failures)"
+        Achieved = "$lineCoverage% coverage ($passed/$total passed, $failed failures)"
         Passed = $integGatePassed
     })
 }

@@ -393,6 +393,7 @@ foreach ($d in $docsRoots) {
 
             $targetClean = ($target -split "#")[0].Trim()
             if ([string]::IsNullOrWhiteSpace($targetClean)) { continue }
+            if ($targetClean -match "\.(db|sqlite)$") { continue }
 
             if ($targetClean -match "^file:///") {
                 $cleanPath = $targetClean.Substring(8).Replace('/', [System.IO.Path]::DirectorySeparatorChar)

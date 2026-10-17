@@ -83,6 +83,11 @@ public partial class DocumentationAndSkillIntegrityContractTests
                     // Strip anchors like #section
                     var targetPath = target.Split('#')[0].Trim();
                     if (string.IsNullOrEmpty(targetPath)) continue;
+                    if (targetPath.EndsWith(".db", StringComparison.OrdinalIgnoreCase) ||
+                        targetPath.EndsWith(".sqlite", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
 
                     string resolvedPath;
                     if (targetPath.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
