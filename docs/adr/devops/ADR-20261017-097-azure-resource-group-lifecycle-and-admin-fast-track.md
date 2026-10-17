@@ -116,11 +116,39 @@ To allow the repository owner (`@nikunjbanker`) to bypass waiting for long secur
    validate-infrastructure:
      name: 'Stage 1: Validate (Aspire & Bicep IaC)'
      needs: [pre-provisioning-security-scan, pre-provisioning-quality-gate]
-     if: github.actor == 'nikunjbanker'
+     if: |
+       always() &&
+       github.actor == 'nikunjbanker' &&
+       !contains(needs.*.result, 'failure') &&
+       !contains(needs.*.result, 'cancelled')
    ```
 
-3. **Security Invariant**:
+3. **Skipped Dependency Resolution**:
+   In GitHub Actions, jobs with `needs: [jobA, jobB]` default to `success()`, which causes dependent jobs to be skipped if any dependency was skipped. By employing `always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')`, Stage 1 begins execution immediately when pre-flight gates are skipped, while continuing to block deployment if an actual test or security failure occurs.
+
+4. **Security Invariant**:
    If an unauthorized actor triggers the workflow with `skipPreFlightGates: true`, the condition `github.actor != 'nikunjbanker'` forces the security and quality gates to execute anyway, maintaining zero-trust pipeline integrity.
+
+---
+
+### 3.3 Three-Stage Application Deployment Architecture (`azure-app-deploy.yml`)
+Decomposed the monolithic `build-test-and-deploy` job in [`.github/workflows/azure-app-deploy.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/azure-app-deploy.yml) into three distinct stages mirroring the infrastructure pipeline:
+
+1. **Stage 1: Validate (`validate-application`)**:
+   - Aspire AppHost model evaluation and manifest generation (`aspire publish --apphost`).
+   - NuGet dependency vulnerability audit (OWASP A06).
+   - Pre-deployment secret scanning (Gitleaks) & client-side ESLint.
+   - Bicep template compilation and live Azure ARM validation for `infra/app.bicep`.
+   - Idempotent resource group verification and creation.
+2. **Stage 2: Preview (`preview-application`)**:
+   - Azure ARM What-If change detection (`az deployment group what-if --template-file ./infra/app.bicep`).
+   - Summarizes planned container app revisions and ingress modifications in `$GITHUB_STEP_SUMMARY`.
+3. **Stage 3: Deploy (`deploy-application`)**:
+   - Build OCI Container image via Podman.
+   - Container vulnerability scan via Trivy (`--severity CRITICAL`).
+   - Push image to Azure Container Registry (ACR).
+   - Deploy Container App workload via `Azure/arm-deploy`.
+   - Live revision health check and FQDN reporting.
 
 ---
 
@@ -128,7 +156,7 @@ To allow the repository owner (`@nikunjbanker`) to bypass waiting for long secur
 
 1. **Local Test Suite**:
    - `Nutrition.Domain.Tests`: 36 / 36 passed (172 ms)
-   - `Nutrition.EvalHarness.Tests`: 207 / 207 passed (7 s)
-   - `SecurityEnvironmentAndHeaderTests`: Asserted governance constraints and `@nikunjbanker` sole authority.
+   - `Nutrition.EvalHarness.Tests`: 207 / 207 passed (4 s)
+   - `SecurityEnvironmentAndHeaderTests`: Asserted governance constraints and `@nikunjbanker` sole authority across both deployment workflows.
 2. **Bash Syntax Verification**:
    - Validated that `RG_EXISTS=$(az group exists ...)` evaluates correctly for both `true` and `false` states.

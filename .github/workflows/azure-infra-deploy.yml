@@ -74,7 +74,11 @@ jobs:
   validate-infrastructure:
     name: 'Stage 1: Validate (Aspire & Bicep IaC)'
     needs: [pre-provisioning-security-scan, pre-provisioning-quality-gate]
-    if: github.actor == 'nikunjbanker'
+    if: |
+      always() &&
+      github.actor == 'nikunjbanker' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     outputs:
