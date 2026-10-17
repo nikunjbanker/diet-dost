@@ -36,6 +36,7 @@ var sanitizedKeyVaultName = replace(replace(toLower(keyVaultName), '-', ''), '_'
 var actualKeyVaultName = !empty(sanitizedKeyVaultName) ? sanitizedKeyVaultName : take('kvdost${environment}${uniqueSuffix}', 24)
 var fileShareName = 'dietdost-data-${environment}'
 var logAnalyticsName = 'log-dietdost-${environment}'
+var appInsightsName = 'appi-dietdost-${environment}'
 var acaEnvName = 'cae-dietdost-${environment}'
 var vnetName = 'vnet-dietdost-${environment}'
 var nsgName = 'nsg-dietdost-${environment}'
@@ -308,6 +309,26 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
 }
 
 // ------------------------------------------------------------------------------
+// 4b. Azure Application Insights (Workspace-based, Entra ID Only / DisableLocalAuth)
+// ------------------------------------------------------------------------------
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+    DisableLocalAuth: true
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+  tags: {
+    'aspire-resource-name': 'dietdost-appinsights'
+    environment: environment
+  }
+}
+
+// ------------------------------------------------------------------------------
 // 5. Azure Container Apps Managed Environment
 // ------------------------------------------------------------------------------
 resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
@@ -438,6 +459,18 @@ resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-0
   }
 }
 
+// Built-in Role Definition: Monitoring Metrics Publisher (39135dd6-16b0-4780-a6e6-8577137d9569)
+// Enables User-Assigned Managed Identity to ingest telemetry with DisableLocalAuth: true
+resource appiMonitoringPublisherRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(appInsights.id, managedIdentity.id, '39135dd6-16b0-4780-a6e6-8577137d9569')
+  scope: appInsights
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '39135dd6-16b0-4780-a6e6-8577137d9569')
+    principalId: managedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 // ------------------------------------------------------------------------------
 // 9. Key Vault Diagnostic Logging (Audit Security Baseline)
 // ------------------------------------------------------------------------------
@@ -527,3 +560,6 @@ output nsgId string = nsg.id
 output nsgName string = nsg.name
 output acaSubnetId string = acaSubnet.id
 output acaSubnetName string = acaSubnetName
+output appInsightsName string = appInsights.name
+output appInsightsId string = appInsights.id
+output appInsightsConnectionString string = appInsights.properties.ConnectionString

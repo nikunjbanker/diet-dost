@@ -418,6 +418,7 @@ jobs:
           echo "Key Vault Name:   ${{ steps.deploy-infra.outputs.keyVaultName }}"
           echo "Key Vault URI:    ${{ steps.deploy-infra.outputs.keyVaultUri }}"
           echo "Managed Identity: ${{ steps.deploy-infra.outputs.managedIdentityId }}"
+          echo "App Insights:     ${{ steps.deploy-infra.outputs.appInsightsName }}"
           echo "=========================================================="
 
       - name: 6. Publish Stage 3 Provisioning Completion Summary
@@ -437,6 +438,7 @@ jobs:
             echo "| **Key Vault Name** | \`${{ steps.deploy-infra.outputs.keyVaultName }}\` |"
             echo "| **Key Vault URI** | \`${{ steps.deploy-infra.outputs.keyVaultUri }}\` |"
             echo "| **Managed Identity** | \`${{ steps.deploy-infra.outputs.managedIdentityId }}\` |"
+            echo "| **Application Insights** | \`${{ steps.deploy-infra.outputs.appInsightsName }}\` (DisableLocalAuth: true) |"
             echo "| **Static Ingress IP** | \`${{ steps.deploy-infra.outputs.staticIp }}\` |"
             echo "| **Custom Domain Verification ID** | \`${{ steps.deploy-infra.outputs.customDomainVerificationId }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"

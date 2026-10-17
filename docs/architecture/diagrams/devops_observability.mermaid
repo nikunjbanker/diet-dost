@@ -22,12 +22,14 @@ graph TD
         SMB_Mount[("Azure Files Persistent SMB Volume<br/>Mount Path: /app/data<br/>SMB 3.1.1 AES-GCM Wire Encryption & 7-Day Soft-Delete")]
         AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>AuditEvent Diagnostics & 401/403 Metric Alert")]
         ACR_Registry[("Azure Container Registry (ACR)<br/>Passwordless Image Pull via User-Assigned MI (acrPullRole)")]
+        AppInsights_Cloud[("Azure Application Insights (Workspace-based)<br/>- DisableLocalAuth: true (Entra ID Only)<br/>- Scope: Application Logs & Exceptions Only<br/>- Underlying: Azure Log Analytics")]
         
         AppDeploy -->|Deploys Image| ACA
         NSG --- ACA
         ACA -->|Mounted Volume (SMB 3.1.1)| SMB_Mount
         ACA -.->|Passwordless Managed Identity| AKV
         ACA -.->|Pulls Image| ACR_Registry
+        ACA -.->|Application Logs Only (Entra ID)| AppInsights_Cloud
     end
 
     subgraph Aspire_AppHost [".NET Aspire Local Orchestration & Observability"]
