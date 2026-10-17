@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T06:49:31.650856+00:00",
-  "totalAdrs": 61,
+  "generatedAt": "2026-10-17T07:35:21.868905+00:00",
+  "totalAdrs": 62,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 8,
+    "devops": 9,
     "presentation": 4,
     "governance": 13
   },
@@ -741,6 +741,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-096-aspire-azure-infra-oidc-and-three-stage-provisioning.md",
       "relativePath": "docs/adr/devops/ADR-20261017-096-aspire-azure-infra-oidc-and-three-stage-provisioning.md"
+    },
+    {
+      "id": "ADR-097",
+      "number": 97,
+      "title": "Azure Resource Group Lifecycle Idempotence and Admin Fast-Track Workflow Gates",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-097-azure-resource-group-lifecycle-and-admin-fast-track.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-097-azure-resource-group-lifecycle-and-admin-fast-track.md"
     }
   ]
 }

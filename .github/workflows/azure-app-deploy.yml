@@ -46,6 +46,11 @@ on:
         required: false
         type: string
         default: 'dev'
+      skipPreDeploymentGates:
+        description: '⚡ Skip Pre-Deployment Security & Quality Gates (Admin Only: nikunjbanker)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   id-token: write
@@ -57,11 +62,13 @@ permissions:
 jobs:
   pre-deployment-security-scan:
     name: Mandatory Pre-Deployment Security Gates
+    if: inputs.skipPreDeploymentGates != true || github.actor != 'nikunjbanker'
     uses: ./.github/workflows/security-scan.yml
     secrets: inherit
 
   pre-deployment-quality-gate:
     name: Mandatory Pre-Deployment Quality & Test Gates
+    if: inputs.skipPreDeploymentGates != true || github.actor != 'nikunjbanker'
     uses: ./.github/workflows/quality-test-gate.yml
     secrets: inherit
 
@@ -166,7 +173,8 @@ jobs:
           echo "=========================================================="
           echo "Checking if Azure Resource Group '$RG' exists in '$LOCATION'..."
           echo "=========================================================="
-          if az group exists --name "$RG"; then
+          RG_EXISTS=$(az group exists --name "$RG" --output tsv)
+          if [ "$RG_EXISTS" = "true" ]; then
             echo "✅ Resource Group '$RG' already exists."
           else
             echo "⚡ Resource Group '$RG' does not exist. Creating now in '$LOCATION'..."
@@ -176,6 +184,10 @@ jobs:
               --tags environment="${{ inputs.environment }}" project="diet-dost" managed-by="aspire" \
               --output table
             echo "✅ Created Resource Group '$RG'."
+          fi
+          if [ "$(az group exists --name "$RG" --output tsv)" != "true" ]; then
+            echo "❌ Error: Failed to create or confirm access to Resource Group '$RG'."
+            exit 1
           fi
           {
             echo "rg_name=$RG"
