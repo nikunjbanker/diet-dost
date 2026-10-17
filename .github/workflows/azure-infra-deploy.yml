@@ -46,7 +46,7 @@ on:
         description: 'Azure Key Vault name (alphanumeric only, e.g. kvdostdevskehxuagttzos, auto-generated if empty)'
         required: false
         type: string
-        default: ''
+        default: 'kvdostdevskehxuagttzos'
       acaSubnetName:
         description: 'Azure Container Apps infrastructure delegated subnet name'
         required: false
