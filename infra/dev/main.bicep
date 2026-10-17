@@ -6,7 +6,7 @@
 // License v3.0 only" or the "Server Side Public License, v 1".
 // ==============================================================================
 // Diet-Dost End-to-End Composite Infrastructure as Code (Bicep)
-// Composes: infra/infra.bicep (Foundation) + infra/app.bicep (Workload)
+// Composes: infra/dev/infra.bicep (Foundation) + infra/dev/app.bicep (Workload)
 // ==============================================================================
 
 @description('Environment prefix for deployed resources (e.g. dev, prod).')
@@ -16,13 +16,13 @@ param environment string = 'dev'
 param location string = resourceGroup().location
 
 @description('Name of the Container App.')
-param appName string = 'app-dietdost-web'
+param appName string = 'app-dietdost-web-${environment}'
 
 @description('Container image reference (e.g. <registry>.azurecr.io/diet-dost-web:latest).')
 param containerImage string = 'mcr.microsoft.com/dotnet/samples:aspnetapp'
 
 @description('Custom domain name to bind (e.g. dev.diet-dost.in).')
-param customDomain string = 'dev.diet-dost.in'
+param customDomain string = '${environment}.diet-dost.in'
 
 @description('Flag indicating whether the custom domain binding should be applied directly in Bicep.')
 param enableCustomDomain bool = false
@@ -37,7 +37,7 @@ param fileShareQuotaGb int = 1
 param acrName string = ''
 
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
-param acaSubnetName string = 'snet-aca-infra'
+param acaSubnetName string = 'snet-aca-infra-${environment}'
 
 @description('Optional Gemini API Key for AI nutrition feedback.')
 @secure()
@@ -59,6 +59,7 @@ module foundation 'infra.bicep' = {
 module workload 'app.bicep' = {
   name: 'workload-deployment'
   params: {
+    environment: environment
     location: location
     appName: appName
     acaEnvironmentId: foundation.outputs.acaEnvironmentId

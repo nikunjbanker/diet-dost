@@ -7,7 +7,7 @@
 # ==============================================================================
 # GitHub Actions CI/CD: Aspire Application Build & Deployment Pipeline
 # Target: Azure Container Apps Workload Revision + Persistent SQLite SMB Mount
-# Driven by: .NET Aspire AppHost & infra/app.bicep
+# Driven by: .NET Aspire AppHost & infra/<env>/app.bicep
 # Strictly On-Demand (workflow_dispatch only) with Mandatory OWASP Pre-Deployment Gates
 # ==============================================================================
 
@@ -140,8 +140,8 @@ jobs:
       - name: 7. Pre-Deployment Security Gate - Bicep IaC Schema & Compilation Validation
         run: |
           echo "Validating Bicep cloud infrastructure templates..."
-          az bicep build --file infra/infra.bicep
-          az bicep build --file infra/app.bicep
+          az bicep build --file infra/${{ inputs.environment }}/infra.bicep
+          az bicep build --file infra/${{ inputs.environment }}/app.bicep
           echo "✅ Pre-Deployment Bicep IaC Gate Passed: Templates compiled successfully."
 
       - name: 8. Aspire Publish - Validate AppHost Model & Generate Manifests
@@ -208,12 +208,13 @@ jobs:
           echo "Running live ARM validation for app.bicep in '$RG'..."
           az deployment group validate \
             --resource-group "$RG" \
-            --template-file ./infra/app.bicep \
+            --template-file ./infra/${{ inputs.environment }}/app.bicep \
             --parameters \
-              appName="app-dietdost-web" \
+              appName="app-dietdost-web-${{ inputs.environment }}" \
+              environment="${{ inputs.environment }}" \
               acaEnvironmentId="/subscriptions/${SUB_ID}/resourceGroups/${RG}/providers/Microsoft.App/managedEnvironments/cae-dietdost-${{ inputs.environment }}" \
               containerImage="mcr.microsoft.com/dotnet/aspnet:11.0" \
-              customDomain="dev.diet-dost.in" \
+              customDomain="${{ inputs.environment }}.diet-dost.in" \
               enableCustomDomain=${{ inputs.enableCustomDomain }} \
               allowDemoUsers=${{ inputs.allowDemoUsers }} \
               storageMountName="dietdoststorage" \
@@ -286,12 +287,13 @@ jobs:
 
           az deployment group what-if \
             --resource-group "$RG" \
-            --template-file ./infra/app.bicep \
+            --template-file ./infra/${{ inputs.environment }}/app.bicep \
             --parameters \
-              appName="app-dietdost-web" \
+              appName="app-dietdost-web-${{ inputs.environment }}" \
+              environment="${{ inputs.environment }}" \
               acaEnvironmentId="/subscriptions/${SUB_ID}/resourceGroups/${RG}/providers/Microsoft.App/managedEnvironments/cae-dietdost-${{ inputs.environment }}" \
               containerImage="placeholder" \
-              customDomain="dev.diet-dost.in" \
+              customDomain="${{ inputs.environment }}.diet-dost.in" \
               enableCustomDomain=${{ inputs.enableCustomDomain }} \
               allowDemoUsers=${{ inputs.allowDemoUsers }} \
               storageMountName="dietdoststorage" \
@@ -366,7 +368,7 @@ jobs:
         with:
           subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ needs.validate-application.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
-          template: ./infra/infra.bicep
+          template: ./infra/${{ inputs.environment }}/infra.bicep
           parameters: >-
             environment=${{ inputs.environment }}
             location=${{ needs.validate-application.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}
@@ -538,12 +540,13 @@ jobs:
         with:
           subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ needs.validate-application.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
-          template: ./infra/app.bicep
+          template: ./infra/${{ inputs.environment }}/app.bicep
           parameters: >-
-            appName=app-dietdost-web
+            appName=app-dietdost-web-${{ inputs.environment }}
+            environment=${{ inputs.environment }}
             acaEnvironmentId=${{ steps.resolve-env.outputs.aca_env_id }}
             containerImage=${{ steps.build-image.outputs.image_tag }}
-            customDomain=dev.diet-dost.in
+            customDomain=${{ inputs.environment }}.diet-dost.in
             enableCustomDomain=${{ inputs.enableCustomDomain }}
             allowDemoUsers=${{ inputs.allowDemoUsers }}
             storageMountName=dietdoststorage
@@ -557,7 +560,7 @@ jobs:
 
       - name: 11. Verify Application Health & Revision Status
         run: |
-          APP_NAME="app-dietdost-web"
+          APP_NAME="app-dietdost-web-${{ inputs.environment }}"
           RG="${{ needs.validate-application.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
           
           echo "Checking Container App revision status..."
@@ -590,7 +593,7 @@ jobs:
             echo "| **Target Resource Group** | \`$RG\` (\`${{ inputs.environment }}\`) |"
             echo "| **Container Image** | \`${{ steps.build-image.outputs.image_tag }}\` |"
             echo "| **Trivy Vulnerability Scan** | ✅ Passed (0 CRITICAL) |"
-            echo "| **Container App Name** | \`app-dietdost-web\` |"
+            echo "| **Container App Name** | \`app-dietdost-web-${{ inputs.environment }}\` |"
             echo "| **ACA Environment** | \`${{ steps.resolve-env.outputs.aca_env_id }}\` |"
             echo "| **Key Vault URI** | \`${{ steps.resolve-env.outputs.kv_uri }}\` |"
             echo "| **Managed Identity** | \`${{ steps.resolve-env.outputs.mi_id }}\` |"

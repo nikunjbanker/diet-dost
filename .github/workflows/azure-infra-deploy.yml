@@ -7,7 +7,7 @@
 # ==============================================================================
 # GitHub Actions CI/CD: Aspire Infrastructure Provisioning Pipeline
 # Target: ACA Environment + Persistent Azure Files SMB Share + VNet Perimeter
-# Driven by: .NET Aspire AppHost & infra/infra.bicep
+# Driven by: .NET Aspire AppHost & infra/<env>/infra.bicep
 # Three-Stage Enterprise Architecture: Validate -> Preview -> Provision
 # Strictly On-Demand (workflow_dispatch only)
 # ==============================================================================
@@ -117,8 +117,8 @@ jobs:
       - name: 5. Pre-Deployment Security Gate - Bicep IaC Schema & Compilation Validation
         run: |
           echo "Validating Bicep cloud infrastructure templates before provisioning..."
-          az bicep build --file infra/infra.bicep
-          az bicep build --file infra/app.bicep
+          az bicep build --file infra/${{ inputs.environment }}/infra.bicep
+          az bicep build --file infra/${{ inputs.environment }}/app.bicep
           echo "✅ Pre-Provisioning Bicep IaC Gate Passed: Templates compiled successfully."
 
       - name: 6. Aspire Publish - Validate AppHost Model & Generate Manifests
@@ -186,7 +186,7 @@ jobs:
           echo "Running live Azure Resource Manager pre-flight validation on '$RG'..."
           az deployment group validate \
             --resource-group "$RG" \
-            --template-file ./infra/infra.bicep \
+            --template-file ./infra/${{ inputs.environment }}/infra.bicep \
             --parameters \
               environment="${{ inputs.environment }}" \
               location="$LOCATION" \
@@ -262,7 +262,7 @@ jobs:
 
           az deployment group what-if \
             --resource-group "$RG" \
-            --template-file ./infra/infra.bicep \
+            --template-file ./infra/${{ inputs.environment }}/infra.bicep \
             --parameters \
               environment="${{ inputs.environment }}" \
               location="$LOCATION" \
@@ -341,7 +341,7 @@ jobs:
         with:
           subscriptionId: ${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ needs.validate-infrastructure.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}
-          template: ./infra/infra.bicep
+          template: ./infra/${{ inputs.environment }}/infra.bicep
           parameters: >-
             environment=${{ inputs.environment }}
             location=${{ needs.validate-infrastructure.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}

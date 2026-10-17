@@ -10,11 +10,14 @@
 // Pipeline: .github/workflows/azure-app-deploy.yml (Aspire Application Pipeline)
 // ==============================================================================
 
+@description('Target environment name (e.g. dev, prod).')
+param environment string = 'dev'
+
 @description('Azure region for the container app.')
 param location string = resourceGroup().location
 
 @description('Name of the Container App.')
-param appName string = 'app-dietdost-web'
+param appName string = 'app-dietdost-web-${environment}'
 
 @description('Resource ID of the ACA Managed Environment.')
 param acaEnvironmentId string
@@ -23,7 +26,7 @@ param acaEnvironmentId string
 param containerImage string
 
 @description('Custom domain name to bind (e.g. dev.diet-dost.in).')
-param customDomain string = 'dev.diet-dost.in'
+param customDomain string = '${environment}.diet-dost.in'
 
 @description('Flag indicating whether custom domain binding should be applied.')
 param enableCustomDomain bool = false
