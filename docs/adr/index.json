@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T08:07:19.516701+00:00",
-  "totalAdrs": 62,
+  "generatedAt": "2026-10-17T08:32:03.445646+00:00",
+  "totalAdrs": 63,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 9,
+    "devops": 10,
     "presentation": 4,
     "governance": 13
   },
@@ -753,6 +753,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-097-azure-resource-group-lifecycle-and-admin-fast-track.md",
       "relativePath": "docs/adr/devops/ADR-20261017-097-azure-resource-group-lifecycle-and-admin-fast-track.md"
+    },
+    {
+      "id": "ADR-098",
+      "number": 98,
+      "title": "GitHub Actions DAG Downstream Status Propagation and Symmetrical Three-Stage Deployment Alignment",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-098-github-actions-dag-status-propagation-and-three-stage-alignment.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-098-github-actions-dag-status-propagation-and-three-stage-alignment.md"
     }
   ]
 }

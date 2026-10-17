@@ -166,8 +166,8 @@ public class SecurityEnvironmentAndHeaderTests
         var appContent = File.ReadAllText(appWorkflowPath);
         var infraContent = File.ReadAllText(infraWorkflowPath);
 
-        Assert.Contains("if: github.actor == 'nikunjbanker'", appContent);
-        Assert.Contains("if: github.actor == 'nikunjbanker'", infraContent);
+        Assert.Contains("github.actor == 'nikunjbanker'", appContent);
+        Assert.Contains("github.actor == 'nikunjbanker'", infraContent);
     }
 
     [Fact]
@@ -206,8 +206,8 @@ public class SecurityEnvironmentAndHeaderTests
         var agentsContent = File.ReadAllText(agentsMdPath);
 
         // Authoritative job-level actor guard asserting @nikunjbanker across all deployment pipelines
-        Assert.Contains("if: github.actor == 'nikunjbanker'", appContent);
-        Assert.Contains("if: github.actor == 'nikunjbanker'", infraContent);
+        Assert.Contains("github.actor == 'nikunjbanker'", appContent);
+        Assert.Contains("github.actor == 'nikunjbanker'", infraContent);
 
         // AGENTS.md rule 17 governance assertion
         Assert.Contains("Mandatory Secret & Environment Variable Governance Rule (Sole Authority: @nikunjbanker)", agentsContent);
