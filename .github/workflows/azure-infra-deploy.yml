@@ -182,14 +182,16 @@ jobs:
       - name: 10. Publish Stage 1 Validation Summary
         if: always()
         run: |
-          echo "## 🔍 Stage 1: Validation Results" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Check | Result |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| :--- | :--- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Aspire AppHost Model** | ✅ Validated |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Bicep IaC Compilation** | ✅ Validated (\`infra.bicep\` & \`app.bicep\`) |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Gitleaks Secret Scan** | ✅ 0 Secrets Detected |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Live ARM API Validation** | ✅ Pre-Flight Schema & Quota Passed |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Target Resource Group** | \`${{ steps.ensure-rg.outputs.rg_name }}\` (\`${{ steps.ensure-rg.outputs.rg_location }}\`) |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 🔍 Stage 1: Validation Results"
+            echo "| Check | Result |"
+            echo "| :--- | :--- |"
+            echo "| **Aspire AppHost Model** | ✅ Validated |"
+            echo "| **Bicep IaC Compilation** | ✅ Validated (\`infra.bicep\` & \`app.bicep\`) |"
+            echo "| **Gitleaks Secret Scan** | ✅ 0 Secrets Detected |"
+            echo "| **Live ARM API Validation** | ✅ Pre-Flight Schema & Quota Passed |"
+            echo "| **Target Resource Group** | \`${{ steps.ensure-rg.outputs.rg_name }}\` (\`${{ steps.ensure-rg.outputs.rg_location }}\`) |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
   # STAGE 2: PREVIEW (ARM What-If Change Detection)
@@ -253,19 +255,21 @@ jobs:
         if: always()
         run: |
           RG="${{ needs.validate-infrastructure.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
-          echo "## 📋 Stage 2: Infrastructure Preview (What-If Analysis)" >> "$GITHUB_STEP_SUMMARY"
-          echo "Target Resource Group: \`$RG\` (\`${{ inputs.environment }}\`)" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "<details open><summary><strong>Planned Cloud Infrastructure Mutations</strong></summary>" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "\`\`\`text" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f whatif_summary.txt ]; then
-            cat whatif_summary.txt >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No what-if output captured." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "</details>" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 📋 Stage 2: Infrastructure Preview (What-If Analysis)"
+            echo "Target Resource Group: \`$RG\` (\`${{ inputs.environment }}\`)"
+            echo ""
+            echo "<details open><summary><strong>Planned Cloud Infrastructure Mutations</strong></summary>"
+            echo ""
+            echo "\`\`\`text"
+            if [ -f whatif_summary.txt ]; then
+              cat whatif_summary.txt
+            else
+              echo "No what-if output captured."
+            fi
+            echo "\`\`\`"
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
   # STAGE 3: PROVISION (Deploy Cloud Infrastructure via Bicep)
@@ -343,18 +347,20 @@ jobs:
       - name: 6. Publish Stage 3 Provisioning Completion Summary
         if: always()
         run: |
-          echo "## 🚀 Stage 3: Infrastructure Provisioning Complete" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Dimension | Provisioned Value |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| :--- | :--- |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Resource Group** | \`${{ needs.validate-infrastructure.outputs.rg_name || inputs.resourceGroupName }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Region / Location** | \`${{ needs.validate-infrastructure.outputs.rg_location || inputs.location }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **ACA Environment** | \`${{ steps.deploy-infra.outputs.acaEnvironmentName }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Storage Account** | \`${{ steps.deploy-infra.outputs.storageAccountName }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **SMB File Share** | \`${{ steps.deploy-infra.outputs.fileShareName }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Storage Mount** | \`${{ steps.deploy-infra.outputs.storageMountName }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Container Registry** | \`${{ steps.deploy-infra.outputs.acrName }}\` (\`${{ steps.deploy-infra.outputs.acrLoginServer }}\`) |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Key Vault Name** | \`${{ steps.deploy-infra.outputs.keyVaultName }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Key Vault URI** | \`${{ steps.deploy-infra.outputs.keyVaultUri }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Managed Identity** | \`${{ steps.deploy-infra.outputs.managedIdentityId }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Static Ingress IP** | \`${{ steps.deploy-infra.outputs.staticIp }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| **Custom Domain Verification ID** | \`${{ steps.deploy-infra.outputs.customDomainVerificationId }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "## 🚀 Stage 3: Infrastructure Provisioning Complete"
+            echo "| Dimension | Provisioned Value |"
+            echo "| :--- | :--- |"
+            echo "| **Resource Group** | \`${{ needs.validate-infrastructure.outputs.rg_name || inputs.resourceGroupName }}\` |"
+            echo "| **Region / Location** | \`${{ needs.validate-infrastructure.outputs.rg_location || inputs.location }}\` |"
+            echo "| **ACA Environment** | \`${{ steps.deploy-infra.outputs.acaEnvironmentName }}\` |"
+            echo "| **Storage Account** | \`${{ steps.deploy-infra.outputs.storageAccountName }}\` |"
+            echo "| **SMB File Share** | \`${{ steps.deploy-infra.outputs.fileShareName }}\` |"
+            echo "| **Storage Mount** | \`${{ steps.deploy-infra.outputs.storageMountName }}\` |"
+            echo "| **Container Registry** | \`${{ steps.deploy-infra.outputs.acrName }}\` (\`${{ steps.deploy-infra.outputs.acrLoginServer }}\`) |"
+            echo "| **Key Vault Name** | \`${{ steps.deploy-infra.outputs.keyVaultName }}\` |"
+            echo "| **Key Vault URI** | \`${{ steps.deploy-infra.outputs.keyVaultUri }}\` |"
+            echo "| **Managed Identity** | \`${{ steps.deploy-infra.outputs.managedIdentityId }}\` |"
+            echo "| **Static Ingress IP** | \`${{ steps.deploy-infra.outputs.staticIp }}\` |"
+            echo "| **Custom Domain Verification ID** | \`${{ steps.deploy-infra.outputs.customDomainVerificationId }}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
