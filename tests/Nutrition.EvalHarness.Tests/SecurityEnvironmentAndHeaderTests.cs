@@ -300,7 +300,7 @@ public class SecurityEnvironmentAndHeaderTests
 
         // Supply chain security assertion: All actions in quality-test-gate must be pinned to 40-character commit SHAs
         Assert.Contains("actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683", qualityContent);
-        Assert.Contains("actions/setup-dotnet@87b7050bc53ea08284295505d98d2aa94301e852", qualityContent);
+        Assert.Contains("actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68", qualityContent);
 
         // AGENTS.md Rule 23 governance assertion
         var agentsMdPath = Path.Combine(repoRoot, "AGENTS.md");
