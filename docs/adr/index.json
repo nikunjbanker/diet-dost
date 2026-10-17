@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T09:28:51.697965+00:00",
-  "totalAdrs": 64,
+  "generatedAt": "2026-10-17T09:40:19.835099+00:00",
+  "totalAdrs": 65,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 11,
+    "devops": 12,
     "presentation": 4,
     "governance": 13
   },
@@ -777,6 +777,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-099-actions-setup-dotnet-v6-modernization-and-cdn-resilience.md",
       "relativePath": "docs/adr/devops/ADR-20261017-099-actions-setup-dotnet-v6-modernization-and-cdn-resilience.md"
+    },
+    {
+      "id": "ADR-100",
+      "number": 100,
+      "title": "Azure Bicep Infrastructure Deployment Error Remediation (ACR Naming, Standard Storage SMB, and Metric Alert Dimensions)",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-100-azure-bicep-infra-deployment-error-remediation.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-100-azure-bicep-infra-deployment-error-remediation.md"
     }
   ]
 }

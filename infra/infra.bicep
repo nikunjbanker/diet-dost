@@ -24,7 +24,8 @@ param acrName string = ''
 
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = take('stgdietdost${uniqueSuffix}', 24)
-var actualAcrName = !empty(acrName) ? acrName : take('crdietdost${uniqueSuffix}', 50)
+var sanitizedAcrName = replace(replace(toLower(acrName), '-', ''), '_', '')
+var actualAcrName = !empty(sanitizedAcrName) ? sanitizedAcrName : take('crdietdost${uniqueSuffix}', 50)
 var fileShareName = 'dietdost-data'
 var logAnalyticsName = 'log-dietdost-${environment}'
 var acaEnvName = 'cae-dietdost-${environment}'
@@ -260,15 +261,6 @@ resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01
   parent: storageAccount
   name: 'default'
   properties: {
-    protocolSettings: {
-      smb: {
-        versions: 'SMB3.1.1'
-        channelEncryption: 'AES-128-GCM;AES-256-GCM'
-        multichannel: {
-          enabled: false
-        }
-      }
-    }
     shareDeleteRetentionPolicy: {
       enabled: true
       days: 7
@@ -470,10 +462,11 @@ resource keyVaultUnauthorizedAlert 'Microsoft.Insights/metricAlerts@2018-03-01' 
       allOf: [
         {
           name: 'HighUnauthorizedRequests'
+          metricNamespace: 'Microsoft.KeyVault/vaults'
           metricName: 'ServiceApiResult'
           dimensions: [
             {
-              name: 'StatusCodeRange'
+              name: 'StatusCode'
               operator: 'Include'
               values: [
                 '401'
