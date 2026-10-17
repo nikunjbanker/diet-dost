@@ -215,7 +215,10 @@ jobs:
   preview-infrastructure:
     name: 'Stage 2: Preview (ARM What-If Analysis)'
     needs: [validate-infrastructure]
-    if: github.actor == 'nikunjbanker'
+    if: |
+      always() &&
+      github.actor == 'nikunjbanker' &&
+      needs.validate-infrastructure.result == 'success'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     env:
@@ -247,6 +250,8 @@ jobs:
           if [ -n "$SUB_ID" ]; then
             echo "Setting Azure subscription context to '$SUB_ID'..."
             az account set --subscription "$SUB_ID"
+          else
+            SUB_ID=$(az account show --query id -o tsv)
           fi
           RG="${{ needs.validate-infrastructure.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
           LOCATION="${{ needs.validate-infrastructure.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}"
@@ -293,7 +298,11 @@ jobs:
   provision-infrastructure:
     name: 'Stage 3: Provision (Deploy Infrastructure via Bicep)'
     needs: [preview-infrastructure, validate-infrastructure]
-    if: github.actor == 'nikunjbanker'
+    if: |
+      always() &&
+      github.actor == 'nikunjbanker' &&
+      needs.validate-infrastructure.result == 'success' &&
+      needs.preview-infrastructure.result == 'success'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     env:

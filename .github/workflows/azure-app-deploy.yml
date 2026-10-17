@@ -240,7 +240,10 @@ jobs:
   preview-application:
     name: 'Stage 2: Preview (ARM What-If Analysis)'
     needs: [validate-application]
-    if: github.actor == 'nikunjbanker'
+    if: |
+      always() &&
+      github.actor == 'nikunjbanker' &&
+      needs.validate-application.result == 'success'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     env:
@@ -272,6 +275,8 @@ jobs:
           if [ -n "$SUB_ID" ]; then
             echo "Setting Azure subscription context to '$SUB_ID'..."
             az account set --subscription "$SUB_ID"
+          else
+            SUB_ID=$(az account show --query id -o tsv)
           fi
           RG="${{ needs.validate-application.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
 
@@ -320,7 +325,11 @@ jobs:
   deploy-application:
     name: 'Stage 3: Deploy (Build, Containerize & Deploy Revision)'
     needs: [preview-application, validate-application]
-    if: github.actor == 'nikunjbanker'
+    if: |
+      always() &&
+      github.actor == 'nikunjbanker' &&
+      needs.validate-application.result == 'success' &&
+      needs.preview-application.result == 'success'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
     env:
