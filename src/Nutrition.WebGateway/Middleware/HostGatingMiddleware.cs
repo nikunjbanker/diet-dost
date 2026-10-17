@@ -6,6 +6,7 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 
 namespace Nutrition.WebGateway.Middleware;
@@ -13,16 +14,20 @@ namespace Nutrition.WebGateway.Middleware;
 /// <summary>
 /// ASP.NET Core middleware that restricts inbound HTTP requests in deployed environments
 /// strictly to authorized showcase and apex domains (dev.diet-dost.in and diet-dost.in).
+/// In showcase/demo mode (Security:AllowDemoUsers == true), Azure Container Apps default
+/// domain (*.azurecontainerapps.io) is also permitted for validation before DNS propagation.
 /// </summary>
 public class HostGatingMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IHostEnvironment _environment;
+    private readonly IConfiguration? _configuration;
 
-    public HostGatingMiddleware(RequestDelegate next, IHostEnvironment environment)
+    public HostGatingMiddleware(RequestDelegate next, IHostEnvironment environment, IConfiguration? configuration = null)
     {
         _next = next;
         _environment = environment;
+        _configuration = configuration;
     }
 
     public async Task InvokeAsync(HttpContext context)
@@ -50,6 +55,16 @@ public class HostGatingMiddleware
         // Strictly permit only authorized showcase & apex domains
         if (string.Equals(host, "dev.diet-dost.in", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(host, "diet-dost.in", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
+        // In demo/showcase mode, permit *.azurecontainerapps.io so ACA default URL works out-of-the-box before DNS propagation
+        var allowDemoUsers = (_configuration?.GetValue<bool>("Security:AllowDemoUsers") ?? false) ||
+                             string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
+
+        if (allowDemoUsers && host.EndsWith(".azurecontainerapps.io", StringComparison.OrdinalIgnoreCase))
         {
             await _next(context);
             return;
