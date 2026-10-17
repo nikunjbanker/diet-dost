@@ -364,6 +364,12 @@ The full architectural blueprint is codified in the following repository visual 
 - **Architectural Decision Records**:
   - [`docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md)
   - [`docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md)
+  - [`docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md)
+
+### 8.6 Azure Key Vault Soft-Delete Idempotency & Cloud Lifecycle Governance
+- **The Purge Protection Dilemma**: Because Key Vault mandates `enablePurgeProtection: true` for zero-loss secret governance, deleting a vault or resource group places the vault in soft-deleted state for 7 days without the ability to purge. Subsequent ARM deployments with the same vault name fail with `ConflictError: A vault with the same name already exists in deleted state`.
+- **Automated CI/CD Idempotency Guard**: `.github/workflows/azure-infra-deploy.yml` implements steps `8b` (Stage 1) and `3b` (Stage 3): `Detect and Auto-Recover Soft-Deleted Key Vaults (Idempotency Guard)`. Before ARM validation or Bicep deployment executes, Azure CLI inspects `az keyvault list-deleted` and automatically triggers `az keyvault recover` for any soft-deleted vault in the subscription, ensuring zero human intervention and 100% deployment idempotency.
+- **Dynamic Parameterization**: Bicep foundation templates (`infra/<env>/infra.bicep` and `infra/<env>/main.bicep`) support optional `keyVaultName`. When omitted, Bicep generates environment-isolated vaults (`kvdost${environment}${uniqueSuffix}`); when provided, operators can attach to pre-existing or recovered vaults seamlessly.
 
 
 

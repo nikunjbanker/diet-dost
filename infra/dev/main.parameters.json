@@ -19,6 +19,9 @@
     },
     "fileShareQuotaGb": {
       "value": 1
+    },
+    "keyVaultName": {
+      "value": ""
     }
   }
 }

@@ -42,6 +42,11 @@ on:
         required: false
         type: string
         default: ''
+      keyVaultName:
+        description: 'Azure Key Vault name (alphanumeric only, e.g. kvdostdevskehxuagttzos, auto-generated if empty)'
+        required: false
+        type: string
+        default: ''
       skipPreFlightGates:
         description: '⚡ Skip Pre-Flight Security & Quality Gates (Admin Only: nikunjbanker)'
         required: false
@@ -175,6 +180,24 @@ jobs:
             echo "rg_location=$LOCATION"
           } >> "$GITHUB_OUTPUT"
 
+      - name: '8b. Detect and Auto-Recover Soft-Deleted Key Vaults (Idempotency Guard)'
+        run: |
+          echo "Scanning for soft-deleted Key Vaults to prevent ARM ConflictError during deployment..."
+          DELETED_KVS=$(az keyvault list-deleted --query "[].{name: name, location: properties.location}" -o tsv 2>/dev/null || true)
+          if [ -n "$DELETED_KVS" ]; then
+            echo "Found soft-deleted Key Vault(s):"
+            echo "$DELETED_KVS"
+            while IFS=$'\t' read -r KV_NAME KV_LOC; do
+              if [ -n "$KV_NAME" ]; then
+                echo "⚡ Auto-recovering soft-deleted Key Vault '$KV_NAME' in '$KV_LOC'..."
+                az keyvault recover --name "$KV_NAME" --location "$KV_LOC" || echo "⚠️ Warning: Failed to recover $KV_NAME, continuing..."
+              fi
+            done <<< "$DELETED_KVS"
+            echo "✅ Soft-deleted Key Vault recovery pass completed."
+          else
+            echo "✅ No soft-deleted Key Vaults detected in subscription."
+          fi
+
       - name: 9. Live Azure ARM Template Validation
         run: |
           SUB_ID="${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}"
@@ -192,6 +215,7 @@ jobs:
               location="$LOCATION" \
               fileShareQuotaGb=${{ inputs.fileShareQuotaGb }} \
               acrName="${{ inputs.acrName }}" \
+              keyVaultName="${{ inputs.keyVaultName }}" \
             --output table
           echo "✅ Live Azure ARM Pre-Flight Validation Succeeded: 0 template or quota violations."
 
@@ -268,6 +292,7 @@ jobs:
               location="$LOCATION" \
               fileShareQuotaGb=${{ inputs.fileShareQuotaGb }} \
               acrName="${{ inputs.acrName }}" \
+              keyVaultName="${{ inputs.keyVaultName }}" \
             --result-format ResourceIdOnly > whatif_summary.txt || true
 
           cat whatif_summary.txt
@@ -335,6 +360,24 @@ jobs:
             az account set --subscription "$SUB_ID"
           fi
 
+      - name: '3b. Detect and Auto-Recover Soft-Deleted Key Vaults (Idempotency Guard)'
+        run: |
+          echo "Scanning for soft-deleted Key Vaults to prevent ARM ConflictError during deployment..."
+          DELETED_KVS=$(az keyvault list-deleted --query "[].{name: name, location: properties.location}" -o tsv 2>/dev/null || true)
+          if [ -n "$DELETED_KVS" ]; then
+            echo "Found soft-deleted Key Vault(s):"
+            echo "$DELETED_KVS"
+            while IFS=$'\t' read -r KV_NAME KV_LOC; do
+              if [ -n "$KV_NAME" ]; then
+                echo "⚡ Auto-recovering soft-deleted Key Vault '$KV_NAME' in '$KV_LOC'..."
+                az keyvault recover --name "$KV_NAME" --location "$KV_LOC" || echo "⚠️ Warning: Failed to recover $KV_NAME, continuing..."
+              fi
+            done <<< "$DELETED_KVS"
+            echo "✅ Soft-deleted Key Vault recovery pass completed."
+          else
+            echo "✅ No soft-deleted Key Vaults detected in subscription."
+          fi
+
       - name: 4. Provision Cloud Infrastructure via Bicep
         id: deploy-infra
         uses: Azure/arm-deploy@a1361c2c2cd398621955b16ca32e01c65ea340f5 # v2.0.0
@@ -347,6 +390,7 @@ jobs:
             location=${{ needs.validate-infrastructure.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}
             fileShareQuotaGb=${{ inputs.fileShareQuotaGb }}
             acrName=${{ inputs.acrName }}
+            keyVaultName=${{ inputs.keyVaultName }}
           failOnStderr: false
 
       - name: 5. Verify & Output Infrastructure Endpoints

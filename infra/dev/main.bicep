@@ -36,6 +36,9 @@ param fileShareQuotaGb int = 1
 @description('Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used.')
 param acrName string = ''
 
+@description('Optional explicit name for Azure Key Vault. If omitted, an auto-generated unique name is used.')
+param keyVaultName string = ''
+
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
 param acaSubnetName string = 'snet-aca-infra-${environment}'
 
@@ -51,6 +54,7 @@ module foundation 'infra.bicep' = {
     location: location
     fileShareQuotaGb: fileShareQuotaGb
     acrName: acrName
+    keyVaultName: keyVaultName
     acaSubnetName: acaSubnetName
   }
 }

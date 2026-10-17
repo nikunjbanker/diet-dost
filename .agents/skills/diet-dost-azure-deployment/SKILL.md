@@ -522,13 +522,15 @@ graph TD
      - Compiles and lints Bicep templates (`az bicep build --file infra/${{ inputs.environment }}/infra.bicep`).
      - Authenticates via passwordless GitHub Actions OIDC (`azure/login@v2`).
      - Pre-flight verifies/creates target Resource Group.
-     - Executes live Azure Resource Manager pre-flight validation (`az deployment group validate`) ensuring schema and quota compliance.
+     - Runs Step 8b: Detects and auto-recovers soft-deleted Key Vaults (`az keyvault list-deleted` + `az keyvault recover`) to prevent ARM `ConflictError` idempotency blocks.
+     - Executes live Azure Resource Manager pre-flight validation (`az deployment group validate`) ensuring schema and quota compliance (supporting optional `keyVaultName`).
      - Emits Stage 1 Validation Summary to `$GITHUB_STEP_SUMMARY`.
   2. **Stage 2: Preview (`preview-infrastructure`)**:
      - Authenticates to Azure CLI via OIDC.
      - Executes Azure ARM What-If analysis (`az deployment group what-if --result-format ResourceIdOnly`).
      - Publishes formatted preview change matrix (Create, Modify, Delete, NoChange) directly to `$GITHUB_STEP_SUMMARY` for operator visibility before mutation.
   3. **Stage 3: Provision (`provision-infrastructure`)**:
+     - Runs Step 3b: Key Vault soft-delete auto-recovery guard pass.
      - Deploys [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data-${environment}`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity).
      - Emits and verifies infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID, ACR Name, Key Vault URI).
      - Publishes Stage 3 Completion Summary table to `$GITHUB_STEP_SUMMARY`.

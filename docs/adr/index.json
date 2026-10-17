@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T12:03:50.927990+00:00",
-  "totalAdrs": 66,
+  "generatedAt": "2026-10-17T12:30:13.110804+00:00",
+  "totalAdrs": 67,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 13,
+    "devops": 14,
     "presentation": 4,
     "governance": 13
   },
@@ -801,6 +801,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-101-automated-change-detection-documentation-skill-sync-harness.md",
       "relativePath": "docs/adr/devops/ADR-20261017-101-automated-change-detection-documentation-skill-sync-harness.md"
+    },
+    {
+      "id": "ADR-102",
+      "number": 102,
+      "title": "Azure Key Vault Soft-Delete Idempotency Guard & Pipeline Parameterization",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md"
     }
   ]
 }
