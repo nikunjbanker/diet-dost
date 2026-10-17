@@ -297,22 +297,22 @@ graph TD
     Client["End User Browser / PWA Client"] -->|"HTTPS / Port 443<br/>TLS 1.3 Strict"| ACA_Ingress["ACA Managed Environment Ingress<br/>(dev.dietdost.app / FQDN)<br/>IP Security Restrictions Filter"]
 
     subgraph Azure_VNet ["Azure Virtual Network: vnet-dietdost-dev (10.0.0.0/16)"]
-        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
+        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra-${environment} (10.0.0.0/23)"]
             ACA_App["Diet-Dost Container App<br/>(.NET 11 WebGateway)<br/>Single Replica: min=1, max=1"]
         end
-        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>Inbound: 443 (HTTPS), AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
+        NSG["Network Security Group: nsg-dietdost-${environment}<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>Inbound: 443 (HTTPS), AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
         NSG --- Subnet_Infra
     end
 
     ACA_Ingress --> ACA_App
 
-    subgraph Storage_Boundary ["Azure Storage Account: stgdietdostdev (Standard_LRS)"]
-        SMB_Share["Azure Files SMB 3.1.1 Share: dietdost-data<br/>AES-128-GCM / AES-256-GCM Channel Encryption<br/>7-Day Soft-Delete Protection<br/>Mounted: /app/data (diet_dost.db)"]
+    subgraph Storage_Boundary ["Azure Storage Account: stgdost${environment}... (Standard_LRS)"]
+        SMB_Share["Azure Files SMB 3.1.1 Share: dietdost-data-${environment}<br/>AES-128-GCM / AES-256-GCM Channel Encryption<br/>7-Day Soft-Delete Protection<br/>Mounted: /app/data (diet_dost.db)"]
     end
 
     subgraph Security_Perimeter ["Security & Audit Perimeter"]
-        KV["Azure Key Vault: kv-dietdost-dev<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdmin"]
-        LAW["Log Analytics Workspace: log-dietdost-dev<br/>5 GB/Month Free Tier Retention"]
+        KV["Azure Key Vault: kvdost${environment}...<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdmin"]
+        LAW["Log Analytics Workspace: log-dietdost-${environment}<br/>5 GB/Month Free Tier Retention"]
         Alert["Azure Monitor Metric Alert<br/>KV Unauthorized Access (401/403 > 5 in 5m)<br/>Included in Free Metric Alerts Quota"]
     end
 
@@ -325,7 +325,7 @@ graph TD
 ```
 
 ### 8.1 Network Security Group (NSG) with Zero-Trust Subnet Isolation
-- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-dev`) attached directly to subnet `snet-aca-infra`.
+- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-${environment}`) attached directly to subnet `snet-aca-infra-${environment}`.
 - **Compliance**: Natively satisfies Checkov benchmark rule `CKV_AZURE_9` (*Ensure that Virtual Network subnets are associated with a Network Security Group*).
 - **Rule Set**:
   - **Inbound**:

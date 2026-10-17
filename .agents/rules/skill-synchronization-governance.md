@@ -48,3 +48,17 @@ Before opening or merging any Pull Request:
 - [ ] Does any skill contain stale file paths, obsolete flags, or deprecated references?
 - [ ] Is the YAML frontmatter of all modified/new skills valid and concise?
 - [ ] Has an atomic ADR fragment been recorded in `docs/adr/<domain>/` and indexed via `scripts/sync-adr-index.ps1`?
+- [ ] Has `pwsh -File scripts/verify-ai-security-defense.ps1 -Mode All` passed Vector 7 (Living Documentation & Skill Link Integrity & Change-Detection Gate)?
+- [ ] Has `dotnet test` passed `DocumentationAndSkillIntegrityContractTests` with 0 failures?
+
+## 5. Automated Programmatic Enforcement & Change-Detection Gate
+- **Zero Reliance on Manual Cognitive Memory**: Documentation and skill synchronization is not an optional suggestion; it is a **hard, programmatic test gate**.
+- **Vector 7 in `scripts/verify-ai-security-defense.ps1`**:
+  - Automatically identifies modified subsystems in git working tree / branch diff (`infra/`, `src/Nutrition.Presentation/`, `src/Nutrition.Application/`, `src/Nutrition.Infrastructure/AI/`, `src/Nutrition.Domain/`).
+  - Verifies that whenever code in any of these subsystems changes, the corresponding living SDD or skill is also modified in the same commit / PR.
+  - Recursively validates all markdown links and file paths to prevent dead references.
+  - Returns exit code 1 and blocks CI / PR merges if any drift or dead link is detected.
+- **Contract Tests in `tests/Nutrition.EvalHarness.Tests`**:
+  - `DocumentationAndSkillIntegrityContractTests.cs` runs as part of standard `dotnet test`.
+  - Asserts link resolution for all SDDs, CFTs, and skills against the filesystem.
+

@@ -127,18 +127,22 @@ This solution-level instruction file defines mandatory engineering and Git workf
    > 4. **Mandatory PR Evidence Publishing**: The exact terminal output and verification logs from the live CFT run MUST be published directly into the PR description under a dedicated `## 5. Live Customer & Functional Acceptance Test (CFT) Execution Evidence` section.
 4. **Step 3: Major Change Auto-Detection & Living Synchronization**:
    - **Auto-Detect Major Changes**: Any modification involving:
-     1. *Layer or Architectural Boundaries* (Clean Architecture, Native CQRS handlers, Ports/Adapters, DI registrations).
-     2. *Persistence & Security Additions* (new DB entities/tables, secret stores, encryption, migrations).
-     3. *Security & Environment Boundary Gating* (Debug/Release environment isolation, auth scheme routing, `#if DEBUG` guards).
-     4. *Clinical & Domain Logic Modifications* (ICMR-NIN 2024 algorithms, WHO cutoffs, macro distributions).
-     5. *Tier Quotas & Feature Gating* (tier quotas, paywalls, role authorization rules).
-     6. *AI Models, Agentic Workflows, Evaluation Harnesses, or DevSecOps Gates* (LLM provider integrations, prompt engineering, agentic skills/workflows, synthetic data generation, OWASP Top 10 for LLM defense layers, CI/CD pipeline gating, OpenTelemetry AI tracing).
+     1. *Layer or Architectural Boundaries* (Clean Architecture, Native CQRS handlers, Ports/Adapters, DI registrations) -> Synchronize `docs/sdd/02_solution_architecture.md` & `.agents/skills/diet-dost-clean-architecture/`.
+     2. *Persistence & Security Additions* (new DB entities/tables, secret stores, encryption, migrations) -> Synchronize `docs/sdd/04_security_and_compliance.md` & `.agents/skills/diet-dost-user-management-security/`.
+     3. *Cloud Infrastructure, Bicep, or Pre-Deployment* (`infra/**`, workflows) -> Synchronize `docs/sdd/05_devops_and_infrastructure.md` & `.agents/skills/diet-dost-azure-deployment/`.
+     4. *Presentation & Web UI* (`src/Nutrition.Presentation/`, `wwwroot/`) -> Synchronize `docs/sdd/03_presentation_layer.md` & `.agents/skills/design-system-enforcer/`.
+     5. *Clinical & Domain Logic Modifications* (ICMR-NIN 2024 algorithms, WHO cutoffs, macro distributions) -> Synchronize `docs/sdd/01_clinical_dietetics_and_nutrition_science.md` & `.agents/skills/indian-diet-calorie-tracker/`.
+     6. *AI Models, Agentic Workflows, Evaluation Harnesses, or DevSecOps Gates* -> Synchronize `docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md` & `SECURITY.md`.
+   - **Programmatic Enforcement & Zero-Drift Harness (Vector 7 & Contract Tests)**:
+     - Synchronization is programmatically enforced by **Vector 7 in `scripts/verify-ai-security-defense.ps1`** and **`DocumentationAndSkillIntegrityContractTests.cs` in `tests/Nutrition.EvalHarness.Tests`**.
+     - Vector 7 inspects git diffs across all 5 major subsystems (`infra/`, `src/Nutrition.Presentation/`, `src/Nutrition.Application/`, `src/Nutrition.Infrastructure/AI/`, `src/Nutrition.Domain/`). If any subsystem code is modified without staging/committing changes to its designated living SDD or skill, the gate **exits 1 with a fatal gate failure**.
+     - Scans all markdown links (`[text](target)` and `file:///`) across `docs/` and `.agents/skills/` to ensure zero dead links or broken file references exist.
    - **Mandatory Synchronization Actions**:
      - Synchronize `README.md` (technology matrix, architecture diagrams, file tree, test metrics).
      - Synchronize `docs/architecture/diagrams/*.mermaid` (solution architecture, security perimeter).
-     - Synchronize `docs/sdd/*.md` (02_solution_architecture, 04_security_and_compliance, and 11_ai_in_sdlc_and_agentic_workflows_architecture.md for any changes to AI/agentic tooling, prompt templates, evaluation metrics, model providers, CI/CD gates, or operational boundaries).
-     - Synchronize `.agents/skills/*.md` (main skill and companion skills to preserve single source of truth).
+     - Synchronize `docs/sdd/*.md` and `.agents/skills/*.md`.
      - Write a dedicated atomic ADR fragment in `docs/adr/<domain>/ADR-<YYYYMMDD>-<NNN>-<slug>.md` (where `<domain>` is `architecture`, `security`, `devops`, `presentation`, or `governance`), and execute `pwsh -File scripts/sync-adr-index.ps1` to automatically update `docs/adr/index.json` and `docs/adr/README.md`.
+     - Validate locally with `pwsh -File scripts/verify-ai-security-defense.ps1 -Mode All` and `dotnet test`.
 5. **Step 4: Push Branch & PR-Only Merge**:
    - Push your branch to the remote repository:
      ```bash

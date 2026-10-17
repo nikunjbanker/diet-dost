@@ -96,8 +96,8 @@ az storage blob upload --account-name <storage> --container-name db-backups --fi
 
 ### 3.0 Automated Pre-Deployment Setup via PowerShell (`scripts/setup-azure-pre-deployment.ps1`)
 Before triggering CI/CD pipelines, configure foundational Azure resources, Entra ID app registrations, federated OIDC credentials, and Key Vault using the automated PowerShell script:
-- **Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
-- **Script**: [`scripts/setup-azure-pre-deployment.ps1`](scripts/setup-azure-pre-deployment.ps1)
+- **Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
+- **Script**: [`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)
 - **Zero Hardcoded Secrets Policy**:
   - The script dynamically resolves `$SubscriptionId`, `$TenantId`, and `$AppRegistrationId` via authenticated `az account show` and `az ad app list` queries.
   - No subscription IDs, tenant IDs, or client secrets are hardcoded in code or documentation.

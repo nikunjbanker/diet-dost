@@ -56,7 +56,7 @@ graph TD
 
 ### 2.1 Job 1: Gitleaks (Secret & Token Leak Detection)
 - **Scope**: Scans full Git commit history and working tree for API keys, bearer tokens, private keys, and hardcoded cloud credentials.
-- **Rules & Exclusions**: Governed by root [`.gitleaks.toml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.gitleaks.toml) and [`.gitleaksignore`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.gitleaksignore).
+- **Rules & Exclusions**: Governed by default Gitleaks rule definitions and root [`.gitleaksignore`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.gitleaksignore).
 - **Zero Hardcoded Secrets Policy**:
   - Never allowlist live credentials.
   - Azure subscription, tenant, and client IDs must resolve dynamically at runtime via `az account show` (see [`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)).

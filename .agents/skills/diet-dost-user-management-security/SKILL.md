@@ -24,7 +24,7 @@ description: >-
 
 # Diet Dost — User Management & Security Architecture Rulebook
 > **Specification Version**: `v1.6.0-APPROVED-SPEC`
-> **Standards**: OWASP Top 10 (2021), OWASP AI LLM Top 10 (2025), India DPDPA 2023, ISO/IEC 27001 Baseline, JWT RFC 7519, OpenID Connect Core 1.0, Repository Security Policy ([`SECURITY.md`](SECURITY.md))
+> **Standards**: OWASP Top 10 (2021), OWASP AI LLM Top 10 (2025), India DPDPA 2023, ISO/IEC 27001 Baseline, JWT RFC 7519, OpenID Connect Core 1.0, Repository Security Policy ([`SECURITY.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/SECURITY.md))
 > **Target Framework**: `.NET 11 RC` (`net11.0`) · Standalone `.NET Aspire 13.5.4`
 > **Super/God User Config**: Dynamic via `Auth:SuperAdminEmail` / env `SUPER_ADMIN_EMAIL`
 

@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T11:42:57.949905+00:00",
-  "totalAdrs": 65,
+  "generatedAt": "2026-10-17T12:03:50.927990+00:00",
+  "totalAdrs": 66,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 12,
+    "devops": 13,
     "presentation": 4,
     "governance": 13
   },
@@ -789,6 +789,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-100-azure-bicep-infra-deployment-error-remediation.md",
       "relativePath": "docs/adr/devops/ADR-20261017-100-azure-bicep-infra-deployment-error-remediation.md"
+    },
+    {
+      "id": "ADR-101",
+      "number": 101,
+      "title": "Automated Change-Detection Documentation & Skill Synchronization Test Harness (Vector 7 & Contract Testing)",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-101-automated-change-detection-documentation-skill-sync-harness.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-101-automated-change-detection-documentation-skill-sync-harness.md"
     }
   ]
 }
