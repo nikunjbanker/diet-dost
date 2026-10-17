@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 61 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 62 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -33,7 +33,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **18** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **18** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
-| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **8** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
+| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **9** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
@@ -102,6 +102,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-093** | Code Line Coverage Gating and Incremental Ratcheting for Quality Test Tiers | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261014-093-code-coverage-gating-for-quality-test-tiers.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261014-093-code-coverage-gating-for-quality-test-tiers.md) |
 | **ADR-094** | Domain-Aligned Tier Naming Conventions for Multi-Tier Quality Test Gates | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261014-094-refined-domain-aligned-tier-naming-conventions.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261014-094-refined-domain-aligned-tier-naming-conventions.md) |
 | **ADR-096** | Aspire Cloud Infrastructure Provisioning Modernization (Three-Stage Pipeline & Immutable GitHub OIDC Federated Credentials) | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261017-096-aspire-azure-infra-oidc-and-three-stage-provisioning.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-096-aspire-azure-infra-oidc-and-three-stage-provisioning.md) |
+| **ADR-097** | Azure Resource Group Lifecycle Idempotence and Admin Fast-Track Workflow Gates | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261017-097-azure-resource-group-lifecycle-and-admin-fast-track.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-097-azure-resource-group-lifecycle-and-admin-fast-track.md) |
 
 ### 🎨 Presentation & UI/UX (`docs/adr/presentation/`)
 > *Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration.*
