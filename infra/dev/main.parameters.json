@@ -22,6 +22,9 @@
     },
     "keyVaultName": {
       "value": ""
+    },
+    "acaSubnetName": {
+      "value": "snet-aca-infra"
     }
   }
 }

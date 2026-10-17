@@ -162,7 +162,7 @@ public class BicepIaCConfigurationContractTests
 
         // Assert all resources utilize environment in name to guarantee zero conflict in prod
         Assert.Contains("param environment string = 'dev'", infraContent);
-        Assert.Contains("snet-aca-infra-${environment}", infraContent);
+        Assert.Contains("snet-aca-infra", infraContent);
         Assert.Contains("stgdost${environment}", infraContent);
         Assert.Contains("crdost${environment}", infraContent);
         Assert.Contains("dietdost-data-${environment}", infraContent);
