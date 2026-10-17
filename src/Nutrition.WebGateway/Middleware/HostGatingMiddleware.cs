@@ -62,7 +62,9 @@ public class HostGatingMiddleware
 
         // In demo/showcase mode, permit *.azurecontainerapps.io so ACA default URL works out-of-the-box before DNS propagation
         var allowDemoUsers = (_configuration?.GetValue<bool>("Security:AllowDemoUsers") ?? false) ||
-                             string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
+                             string.Equals(_configuration?["Security__AllowDemoUsers"], "true", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(Environment.GetEnvironmentVariable("Security:AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
 
         if (allowDemoUsers && host.EndsWith(".azurecontainerapps.io", StringComparison.OrdinalIgnoreCase))
         {

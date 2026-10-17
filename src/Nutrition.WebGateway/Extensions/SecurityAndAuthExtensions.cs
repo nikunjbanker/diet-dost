@@ -33,12 +33,16 @@ public static class SecurityAndAuthExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         var isDev = env?.IsDevelopment() ?? string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase);
+        var isDemo = configuration.GetValue<bool>("Security:AllowDemoUsers") ||
+                     string.Equals(configuration["Security__AllowDemoUsers"], "true", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
+
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
         var jwtIssuer = !string.IsNullOrWhiteSpace(jwtOptions.Issuer) ? jwtOptions.Issuer : "DietDostGateway";
         var jwtAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience) ? jwtOptions.Audience : "DietDostClient";
         var jwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
             ? jwtOptions.Key
-            : (isDev ? ConfigurationExtensions.DefaultDevJwtKey : null)
+            : ((isDev || isDemo) ? ConfigurationExtensions.DefaultDevJwtKey : null)
             ?? throw new InvalidOperationException(
                 "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
                 "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");

@@ -441,6 +441,38 @@ public class JwtAuthenticationTests
         Assert.Contains("CRITICAL SECURITY CONFIGURATION ERROR: 'Auth:SuperAdminEmail' is not configured", ex.Message);
     }
 
+    [Fact]
+    public void ValidateRequiredDeployedSecrets_InProduction_WhenDemoUsersEnabled_DoesNotThrow()
+    {
+        var mockProdHost = new TestHostEnvironment { EnvironmentName = "Production" };
+        var demoConfig = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Security:AllowDemoUsers"] = "true"
+            })
+            .Build();
+
+        // Should not throw because it safely falls back to DefaultDevJwtKey and DefaultSuperAdminEmail
+        Nutrition.WebGateway.Extensions.ConfigurationExtensions.ValidateRequiredDeployedSecrets(demoConfig, mockProdHost);
+    }
+
+    [Fact]
+    public void ConfigurationExtensions_InProduction_WhenDemoUsersEnabled_FallsBackToDefaultDevKeys()
+    {
+        var mockProdHost = new TestHostEnvironment { EnvironmentName = "Production" };
+        var builder = new ConfigurationBuilder();
+        builder.AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["Security:AllowDemoUsers"] = "true"
+        });
+
+        Nutrition.WebGateway.Extensions.ConfigurationExtensions.AddDietDostAppConfiguration(builder, mockProdHost);
+        var config = builder.Build();
+
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, config["Jwt:Key"]);
+        Assert.Equal("superadmin@dietdost.app", config["Auth:SuperAdminEmail"]);
+    }
+
     private sealed class TestAppEnvironment(bool isDebug, bool isDevelopment) : Nutrition.Application.Common.Interfaces.IAppEnvironment
     {
         public bool IsDebugMode => isDebug;

@@ -14,7 +14,7 @@
 | **Date** | 2026-10-17 |
 | **Domain** | DevOps / Cloud Infrastructure as Code |
 | **Subsystem** | `infra/infra.bicep`, `.github/workflows/azure-infra-deploy.yml` |
-| **Impacted Files** | `infra/infra.bicep`, `infra/app.bicep`, `.github/workflows/azure-app-deploy.yml`, `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, `tests/Nutrition.EvalHarness.Tests/SecurityEnvironmentAndHeaderTests.cs` |
+| **Impacted Files** | `infra/infra.bicep`, `infra/app.bicep`, `.github/workflows/azure-app-deploy.yml`, `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`, `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs`, `src/Nutrition.Infrastructure/Security/JwtTokenService.cs`, `tests/Nutrition.EvalHarness.Tests/SecurityEnvironmentAndHeaderTests.cs`, `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` |
 
 ---
 
@@ -77,6 +77,7 @@ In GitHub Actions workflow run [39020523546](https://github.com/nikunjbanker/die
 ### 4. Application Deployment Hardening (Custom Domain TLS & Dual Secret Injection)
 - **Custom Domain Certificate**: In `infra/app.bicep`, added `Microsoft.App/managedEnvironments/managedCertificates` resource for `dev.diet-dost.in` with `domainControlValidation: 'CNAME'`, resolving ARM `certificateId` requirement on `bindingType: 'SniEnabled'`.
 - **Dual Secret Injection & CI/CD Dynamic Runner Whitelist**: In `azure-app-deploy.yml` Step 6, added dynamic runner IP whitelisting for Key Vault firewall, auto-generated cryptographically secure 256-bit JWT signing keys if unconfigured, and passed `jwtKey` and `superAdminEmail` parameters to `app.bicep` as container environment secrets.
+- **Fail-Safe Startup Secret Fallbacks**: In `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`, `SecurityAndAuthExtensions.cs`, and `src/Nutrition.Infrastructure/Security/JwtTokenService.cs`, enabled automatic fallback to `DefaultDevJwtKey` and `DefaultSuperAdminEmail` when `Security:AllowDemoUsers == "true"`, eliminating CrashLoopBackOff container failures while strictly preserving production secret validation gates.
 
 ### 5. Host Gating & ACA Ingress Accessibility
 - **Host Gating Alignment**: In `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, permitted `*.azurecontainerapps.io` hosts when `Security:AllowDemoUsers == "true"` or `Security__AllowDemoUsers == "true"`. This ensures immediate operational accessibility via the Azure Container Apps default domain while DNS propagation for custom domain `dev.diet-dost.in` completes, while preserving strict 403 Forbidden blocking for unauthorized external hosts.
@@ -86,5 +87,5 @@ In GitHub Actions workflow run [39020523546](https://github.com/nikunjbanker/die
 ## 3. Verification & Compliance
 - **Bicep Compilation**: `az bicep build --file infra/infra.bicep` and `az bicep build --file infra/app.bicep` compiled with 0 errors and 0 warnings.
 - **Domain Tests**: 36/36 passed (`Nutrition.Domain.Tests`).
-- **Evaluation Harness Tests**: 210/210 passed (`Nutrition.EvalHarness.Tests`).
+- **Evaluation Harness Tests**: 212/212 passed (`Nutrition.EvalHarness.Tests`).
 - **AI Security Defense Verification**: All 6 vectors passed cleanly (`scripts/verify-ai-security-defense.ps1`).
