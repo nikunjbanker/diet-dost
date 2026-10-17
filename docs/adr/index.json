@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T13:59:42.015749+00:00",
-  "totalAdrs": 69,
+  "generatedAt": "2026-10-17T14:46:02.084754+00:00",
+  "totalAdrs": 70,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 16,
+    "devops": 17,
     "presentation": 4,
     "governance": 13
   },
@@ -837,6 +837,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-104-azure-application-insights-workspace-based-entra-id-logging.md",
       "relativePath": "docs/adr/devops/ADR-20261017-104-azure-application-insights-workspace-based-entra-id-logging.md"
+    },
+    {
+      "id": "ADR-105",
+      "number": 105,
+      "title": "Azure Container Apps Storage Mount Immutability & Automated Drift Remediation",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-105-azure-container-apps-storage-mount-immutability-and-drift-remediation.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-105-azure-container-apps-storage-mount-immutability-and-drift-remediation.md"
     }
   ]
 }

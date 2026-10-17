@@ -203,6 +203,34 @@ jobs:
             echo "✅ No soft-deleted Key Vaults detected in subscription."
           fi
 
+      - name: '8c. Detect and Auto-Remediate ACA Environment Storage Drift (Idempotency Guard)'
+        run: |
+          echo "Scanning ACA Environment for drifted or immutable storage definitions..."
+          ACA_ENV="cae-dietdost-${{ inputs.environment }}"
+          RG="${{ steps.ensure-rg.outputs.rg_name }}"
+          ENV_EXISTS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RG" --query "id" -o tsv 2>/dev/null || true)
+          if [ -n "$ENV_EXISTS" ]; then
+            EXISTING_STORAGE=$(az containerapp env storage show --name "$ACA_ENV" --resource-group "$RG" --storage-name "dietdoststorage" -o json 2>/dev/null || true)
+            if [ -n "$EXISTING_STORAGE" ]; then
+              CURRENT_SHARE=$(echo "$EXISTING_STORAGE" | jq -r '.properties.azureFile.shareName // empty')
+              CURRENT_ACC=$(echo "$EXISTING_STORAGE" | jq -r '.properties.azureFile.accountName // empty')
+              TARGET_SHARE="dietdost-data-${{ inputs.environment }}"
+              echo "Found existing 'dietdoststorage' mount (Account: '$CURRENT_ACC', Share: '$CURRENT_SHARE')."
+              if [ "$CURRENT_SHARE" != "$TARGET_SHARE" ] || [[ "$CURRENT_ACC" != stgdost* ]]; then
+                echo "⚡ Storage mount drift detected. In-place update is prohibited by Azure Container Apps."
+                echo "⚡ Removing obsolete storage link '$ACA_ENV/dietdoststorage' to allow clean Bicep provisioning..."
+                az containerapp env storage remove --name "$ACA_ENV" --resource-group "$RG" --storage-name "dietdoststorage" --yes
+                echo "✅ Obsolete storage link removed successfully."
+              else
+                echo "✅ ACA storage mount configuration matches target share '$TARGET_SHARE'."
+              fi
+            else
+              echo "✅ No existing 'dietdoststorage' mount found on '$ACA_ENV'."
+            fi
+          else
+            echo "✅ ACA environment '$ACA_ENV' does not exist yet."
+          fi
+
       - name: 9. Live Azure ARM Template Validation
         run: |
           SUB_ID="${{ vars.AZURE_SUBSCRIPTION_ID || secrets.AZURE_SUBSCRIPTION_ID }}"
@@ -382,6 +410,34 @@ jobs:
             echo "✅ Soft-deleted Key Vault recovery pass completed."
           else
             echo "✅ No soft-deleted Key Vaults detected in subscription."
+          fi
+
+      - name: '3c. Detect and Auto-Remediate ACA Environment Storage Drift (Idempotency Guard)'
+        run: |
+          echo "Scanning ACA Environment for drifted or immutable storage definitions..."
+          ACA_ENV="cae-dietdost-${{ inputs.environment }}"
+          RG="${{ needs.validate-infrastructure.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          ENV_EXISTS=$(az containerapp env show --name "$ACA_ENV" --resource-group "$RG" --query "id" -o tsv 2>/dev/null || true)
+          if [ -n "$ENV_EXISTS" ]; then
+            EXISTING_STORAGE=$(az containerapp env storage show --name "$ACA_ENV" --resource-group "$RG" --storage-name "dietdoststorage" -o json 2>/dev/null || true)
+            if [ -n "$EXISTING_STORAGE" ]; then
+              CURRENT_SHARE=$(echo "$EXISTING_STORAGE" | jq -r '.properties.azureFile.shareName // empty')
+              CURRENT_ACC=$(echo "$EXISTING_STORAGE" | jq -r '.properties.azureFile.accountName // empty')
+              TARGET_SHARE="dietdost-data-${{ inputs.environment }}"
+              echo "Found existing 'dietdoststorage' mount (Account: '$CURRENT_ACC', Share: '$CURRENT_SHARE')."
+              if [ "$CURRENT_SHARE" != "$TARGET_SHARE" ] || [[ "$CURRENT_ACC" != stgdost* ]]; then
+                echo "⚡ Storage mount drift detected. In-place update is prohibited by Azure Container Apps."
+                echo "⚡ Removing obsolete storage link '$ACA_ENV/dietdoststorage' to allow clean Bicep provisioning..."
+                az containerapp env storage remove --name "$ACA_ENV" --resource-group "$RG" --storage-name "dietdoststorage" --yes
+                echo "✅ Obsolete storage link removed successfully."
+              else
+                echo "✅ ACA storage mount configuration matches target share '$TARGET_SHARE'."
+              fi
+            else
+              echo "✅ No existing 'dietdoststorage' mount found on '$ACA_ENV'."
+            fi
+          else
+            echo "✅ ACA environment '$ACA_ENV' does not exist yet."
           fi
 
       - name: 4. Provision Cloud Infrastructure via Bicep
