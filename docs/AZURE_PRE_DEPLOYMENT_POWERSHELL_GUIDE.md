@@ -22,7 +22,7 @@
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ LEVEL 1: Azure Entra ID & Subscription (Passwordless OIDC Trust & RBAC Roles)          │
 │ - App Registration: Service Principal ('sp-dev-dietdost-github-deployer') & Client ID  │
-│ - Federated Credential: repo:nikunjbanker/diet-dost:environment:dev                    │
+│ - Federated Credential: repo:nikunjbanker@3224683/diet-dost@1371432061:environment:dev│
 │ - Roles: Contributor, Role Based Access Control Administrator, Key Vault Secrets Officer│
 └──────────────────────────────────────────┬─────────────────────────────────────────────┘
                                            │
@@ -66,7 +66,7 @@
 
 | Level | Key / Setting Name | Value Type / Example | Mandatory? | What It Is & Why It Is Mandatory | How to Configure |
 | :--- | :--- | :--- | :---: | :--- | :--- |
-| **Level 1**<br/>(Entra ID) | **Federated Credential (OIDC)** | `repo:nikunjbanker/diet-dost:environment:dev` | **CRITICAL** | **What**: Trust relationship between GitHub Actions and Entra ID.<br/>**Why**: Enables passwordless authentication. Without this, `azure/login@v2` aborts with `AADSTS700212`. | Executed in Phase 1 via `az ad app federated-credential create`. |
+| **Level 1**<br/>(Entra ID) | **Federated Credential (OIDC)** | `repo:nikunjbanker@3224683/diet-dost@1371432061:environment:dev` (and classic `repo:nikunjbanker/diet-dost:environment:dev`) | **CRITICAL** | **What**: Trust relationship between GitHub Actions and Entra ID with immutable repository/owner IDs.<br/>**Why**: Enables passwordless authentication. Protects against repo transfer/recycling attacks and resolves `AADSTS700213`. | Executed in Phase 1 via `setup-azure-pre-deployment.ps1`. |
 | **Level 1**<br/>(Subscription) | **Contributor** | Azure RBAC Role | **CRITICAL** | **What**: Subscription-level resource provisioning role.<br/>**Why**: Allows the pipeline to provision Resource Groups, Container Apps, Key Vault, and Storage Accounts. | Executed in Phase 1 via `az role assignment create --role Contributor`. |
 | **Level 1**<br/>(Subscription) | **Role Based Access Control Administrator** | Azure RBAC Role | **CRITICAL** | **What**: Permission to grant Azure RBAC roles.<br/>**Why**: Bicep assigns `Key Vault Secrets User` to the Container App's User-Assigned Managed Identity. Without this, deployment halts with `AuthorizationFailed`. | Executed in Phase 1 via `az role assignment create --role "Role Based Access Control Administrator"`. |
 | **Level 1**<br/>(Subscription) | **Key Vault Secrets Officer** | Azure RBAC Role | **CRITICAL** | **What**: Permission to read and write secrets in Azure Key Vault.<br/>**Why**: Allows Step 10b of deployment workflow to push `Jwt--Key` and `AI--GoogleAI--ApiKey` into Key Vault. | Executed in Phase 1 via `az role assignment create --role "Key Vault Secrets Officer"`. |
@@ -454,7 +454,7 @@ Write-Host "====================================================================
 | Symptom | Root Cause | PowerShell Resolution |
 | :--- | :--- | :--- |
 | `fatal: not a git repository` when running `gh` | Terminal is open in a directory outside the Git workspace. | Use `--repo nikunjbanker/diet-dost` in all `gh` commands, or run `Set-Location c:\Users\nikunj.banker\source\repos\diet-dost`. |
-| `AADSTS700212: Invalid subject` during GitHub Actions Azure login | Federated Credential subject mismatch. | Run Step 1.3 to ensure subject is exactly `repo:nikunjbanker/diet-dost:environment:dev`. |
+| `AADSTS700212: Invalid subject` / `AADSTS700213: No matching federated identity record` during GitHub Actions Azure login | Federated Credential subject mismatch (GitHub.com issues immutable subject claims containing `@<owner_id>` and `@<repo_id>`). | Run `setup-azure-pre-deployment.ps1` to configure immutable subject `repo:nikunjbanker@3224683/diet-dost@1371432061:environment:dev`. |
 | `AuthorizationFailed: ... do not have authorization to perform action 'Microsoft.Authorization/roleAssignments/write'` | Service Principal lacks permission to grant Managed Identity Key Vault access. | Run Step 1.5 to assign `Role Based Access Control Administrator` on the subscription scope. |
 | Container App fails immediately with exit code 1 or crash loop | Missing or short `JWT_KEY`. | Run Step 2.4 to generate and save a 256-bit `JWT_KEY` secret. In non-development mode, .NET startup fails fast if this is $< 32$ bytes. |
 | `Conflict: The custom domain is already bound` | Previous binding attempt left a partial record. | Run `az containerapp hostname delete --name app-dietdost-web --resource-group rg-dietdost-dev --hostname dev.diet-dost.in` then re-bind. |

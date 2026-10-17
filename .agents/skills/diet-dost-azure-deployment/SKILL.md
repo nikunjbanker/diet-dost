@@ -102,7 +102,7 @@ Before triggering CI/CD pipelines, configure foundational Azure resources, Entra
   - The script dynamically resolves `$SubscriptionId`, `$TenantId`, and `$AppRegistrationId` via authenticated `az account show` and `az ad app list` queries.
   - No subscription IDs, tenant IDs, or client secrets are hardcoded in code or documentation.
   - Automatically provisions Azure Key Vault with `enablePurgeProtection: true` and 90-day soft-delete.
-  - Establishes OIDC Federated Identity Credential for GitHub Actions (`repo:nikunjbanker/diet-dost:environment:production`).
+  - Establishes OIDC Federated Identity Credentials for GitHub Actions with immutable owner/repo IDs (`repo:nikunjbanker@3224683/diet-dost@1371432061:environment:<env>`) and classic fallback.
 
 ```powershell
 # Execute pre-deployment setup locally (sole operator: @nikunjbanker)
@@ -513,13 +513,25 @@ graph TD
 ```
 
 ### 7.1 Pipeline 1: Infrastructure Provisioning (`.github/workflows/azure-infra-deploy.yml`)
-- **Purpose**: Provisions / updates foundational cloud infrastructure without touching the application workload.
+- **Purpose**: Provisions / updates foundational cloud infrastructure without touching the application workload via a three-stage enterprise deployment process.
 - **Trigger**: Strictly on-demand (`workflow_dispatch`).
-- **Steps**:
-  1. Installs .NET 11 SDK & Aspire CLI.
-  2. Executes `aspire publish --apphost src/Nutrition.AppHost` to validate AppHost and generate manifests.
-  3. Deploys [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) (VNet, Storage Account with SMB share `dietdost-data`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`).
-  4. Emits infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID).
+- **Sequential Stages**:
+  1. **Stage 1: Validate (`validate-infrastructure`)**:
+     - Evaluates Aspire AppHost model (`aspire publish --apphost src/Nutrition.AppHost`) and generates infrastructure manifests.
+     - Runs Pre-Deployment Gitleaks secret scan.
+     - Compiles and lints Bicep templates (`az bicep build --file infra/infra.bicep`).
+     - Authenticates via passwordless GitHub Actions OIDC (`azure/login@v2`).
+     - Pre-flight verifies/creates target Resource Group.
+     - Executes live Azure Resource Manager pre-flight validation (`az deployment group validate`) ensuring schema and quota compliance.
+     - Emits Stage 1 Validation Summary to `$GITHUB_STEP_SUMMARY`.
+  2. **Stage 2: Preview (`preview-infrastructure`)**:
+     - Authenticates to Azure CLI via OIDC.
+     - Executes Azure ARM What-If analysis (`az deployment group what-if --result-format ResourceIdOnly`).
+     - Publishes formatted preview change matrix (Create, Modify, Delete, NoChange) directly to `$GITHUB_STEP_SUMMARY` for operator visibility before mutation.
+  3. **Stage 3: Provision (`provision-infrastructure`)**:
+     - Deploys [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity).
+     - Emits and verifies infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID, ACR Name, Key Vault URI).
+     - Publishes Stage 3 Completion Summary table to `$GITHUB_STEP_SUMMARY`.
 
 ### 7.2 Pipeline 2: Application Build & Deployment (`.github/workflows/azure-app-deploy.yml`)
 - **Purpose**: Builds, tests, scans, and deploys the Diet-Dost application container revision with persistent SQLite SMB volume mount.

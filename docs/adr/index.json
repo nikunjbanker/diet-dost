@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-15T07:58:57.473889+00:00",
-  "totalAdrs": 60,
+  "generatedAt": "2026-10-17T06:49:31.650856+00:00",
+  "totalAdrs": 61,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 7,
+    "devops": 8,
     "presentation": 4,
     "governance": 13
   },
@@ -729,6 +729,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261015-095-code-scanning-remediation-and-strict-gate-enforcement.md",
       "relativePath": "docs/adr/security/ADR-20261015-095-code-scanning-remediation-and-strict-gate-enforcement.md"
+    },
+    {
+      "id": "ADR-096",
+      "number": 96,
+      "title": "Aspire Cloud Infrastructure Provisioning Modernization (Three-Stage Pipeline & Immutable GitHub OIDC Federated Credentials)",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-096-aspire-azure-infra-oidc-and-three-stage-provisioning.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-096-aspire-azure-infra-oidc-and-three-stage-provisioning.md"
     }
   ]
 }
