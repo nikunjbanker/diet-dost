@@ -195,15 +195,40 @@ if ($Tier -in @("All", "Unit")) {
     
     $testOutput = dotnet test $domainProj -c $Configuration --logger "trx;LogFileName=unit_test_results.trx" --results-directory $unitResultsDir --collect:"XPlat Code Coverage" 2>&1 | Out-String
 
-    $passedMatches = [regex]::Match($testOutput, "Passed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+),\s+Total:\s+(\d+)")
     $failed = 0
     $passed = 0
     $total = 0
 
-    if ($passedMatches.Success) {
-        $failed = [int]$passedMatches.Groups[1].Value
-        $passed = [int]$passedMatches.Groups[2].Value
-        $total = [int]$passedMatches.Groups[4].Value
+    $trxFiles = Get-ChildItem -Path $unitResultsDir -Filter "*.trx" -Recurse | Sort-Object LastWriteTime -Descending
+    if ($trxFiles -and $trxFiles.Count -gt 0) {
+        try {
+            [xml]$trxXml = Get-Content $trxFiles[0].FullName
+            $counters = $trxXml.TestRun.ResultSummary.Counters
+            if ($counters) {
+                $total = [int]$counters.total
+                $passed = [int]$counters.passed
+                $failed = [int]$counters.failed
+            }
+        } catch { }
+    }
+
+    if ($total -eq 0) {
+        $passedMatches = [regex]::Match($testOutput, "Passed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+),\s+Total:\s+(\d+)")
+        if ($passedMatches.Success) {
+            $failed = [int]$passedMatches.Groups[1].Value
+            $passed = [int]$passedMatches.Groups[2].Value
+            $total = [int]$passedMatches.Groups[4].Value
+        } else {
+            $altMatches = [regex]::Match($testOutput, "Total tests:\s+(\d+)[\s\S]*?Passed:\s+(\d+)")
+            if ($altMatches.Success) {
+                $total = [int]$altMatches.Groups[1].Value
+                $passed = [int]$altMatches.Groups[2].Value
+                $failMatch = [regex]::Match($testOutput, "Failed:\s+(\d+)")
+                if ($failMatch.Success) {
+                    $failed = [int]$failMatch.Groups[1].Value
+                }
+            }
+        }
     }
 
     # Extract Code Coverage from Cobertura XML
@@ -254,15 +279,40 @@ if ($Tier -in @("All", "Integration")) {
     
     $testOutput = dotnet test $evalProj -c $Configuration --logger "trx;LogFileName=integration_test_results.trx" --results-directory $integResultsDir --collect:"XPlat Code Coverage" 2>&1 | Out-String
 
-    $passedMatches = [regex]::Match($testOutput, "Passed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+),\s+Total:\s+(\d+)")
     $failed = 0
     $passed = 0
     $total = 0
 
-    if ($passedMatches.Success) {
-        $failed = [int]$passedMatches.Groups[1].Value
-        $passed = [int]$passedMatches.Groups[2].Value
-        $total = [int]$passedMatches.Groups[4].Value
+    $trxFiles = Get-ChildItem -Path $integResultsDir -Filter "*.trx" -Recurse | Sort-Object LastWriteTime -Descending
+    if ($trxFiles -and $trxFiles.Count -gt 0) {
+        try {
+            [xml]$trxXml = Get-Content $trxFiles[0].FullName
+            $counters = $trxXml.TestRun.ResultSummary.Counters
+            if ($counters) {
+                $total = [int]$counters.total
+                $passed = [int]$counters.passed
+                $failed = [int]$counters.failed
+            }
+        } catch { }
+    }
+
+    if ($total -eq 0) {
+        $passedMatches = [regex]::Match($testOutput, "Passed!\s+-\s+Failed:\s+(\d+),\s+Passed:\s+(\d+),\s+Skipped:\s+(\d+),\s+Total:\s+(\d+)")
+        if ($passedMatches.Success) {
+            $failed = [int]$passedMatches.Groups[1].Value
+            $passed = [int]$passedMatches.Groups[2].Value
+            $total = [int]$passedMatches.Groups[4].Value
+        } else {
+            $altMatches = [regex]::Match($testOutput, "Total tests:\s+(\d+)[\s\S]*?Passed:\s+(\d+)")
+            if ($altMatches.Success) {
+                $total = [int]$altMatches.Groups[1].Value
+                $passed = [int]$altMatches.Groups[2].Value
+                $failMatch = [regex]::Match($testOutput, "Failed:\s+(\d+)")
+                if ($failMatch.Success) {
+                    $failed = [int]$failMatch.Groups[1].Value
+                }
+            }
+        }
     }
 
     # Extract Code Coverage from Cobertura XML

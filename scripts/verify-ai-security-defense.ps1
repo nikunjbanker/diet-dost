@@ -395,10 +395,17 @@ foreach ($d in $docsRoots) {
             if ([string]::IsNullOrWhiteSpace($targetClean)) { continue }
 
             if ($targetClean -match "^file:///") {
-                $cleanPath = $targetClean.Substring(8).Replace('/', '\')
-                $resolved = [System.Uri]::UnescapeDataString($cleanPath)
+                $cleanPath = $targetClean.Substring(8).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+                $unescaped = [System.Uri]::UnescapeDataString($cleanPath)
+                $idx = $unescaped.IndexOf("diet-dost" + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+                if ($idx -ge 0) {
+                    $relFromRepo = $unescaped.Substring($idx + 10)
+                    $resolved = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot.Path $relFromRepo))
+                } else {
+                    $resolved = [System.IO.Path]::GetFullPath($unescaped)
+                }
             } else {
-                $resolved = [System.IO.Path]::GetFullPath((Join-Path $docDir $targetClean.Replace('/', '\')))
+                $resolved = [System.IO.Path]::GetFullPath((Join-Path $docDir $targetClean.Replace('/', [System.IO.Path]::DirectorySeparatorChar)))
             }
 
             if (-not (Test-Path $resolved)) {

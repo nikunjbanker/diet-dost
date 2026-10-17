@@ -15,8 +15,14 @@ namespace Nutrition.EvalHarness.Tests;
 /// Programmatically validates that all local file links in SDDs, CFTs, and Agent Skills resolve
 /// to actual existing files on disk, preventing dead documentation links and silent path drift.
 /// </summary>
-public class DocumentationAndSkillIntegrityContractTests
+public partial class DocumentationAndSkillIntegrityContractTests
 {
+    [GeneratedRegex(@"\[([^\]]+)\]\(([^)]+)\)")]
+    private static partial Regex MarkdownLinkRegex();
+
+    [GeneratedRegex(@"(?<!dev/|prod/|staging/|\{env\}/|<env>/)infra/(?:infra|app)\.bicep")]
+    private static partial Regex LegacyBicepRegex();
+
     private static string GetRepoRoot()
     {
         var current = AppContext.BaseDirectory;
@@ -45,7 +51,7 @@ public class DocumentationAndSkillIntegrityContractTests
             Path.Combine(repoRoot, ".agents", "rules")
         };
 
-        var markdownLinkRegex = new Regex(@"\[([^\]]+)\]\(([^)]+)\)", RegexOptions.Compiled);
+        var markdownLinkRegex = MarkdownLinkRegex();
         var deadLinks = new List<string>();
 
         foreach (var dir in searchDirs)
@@ -69,7 +75,7 @@ public class DocumentationAndSkillIntegrityContractTests
                     if (target.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                         target.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ||
                         target.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase) ||
-                        target.StartsWith("#"))
+                        target.StartsWith('#'))
                     {
                         continue;
                     }
@@ -81,13 +87,22 @@ public class DocumentationAndSkillIntegrityContractTests
                     string resolvedPath;
                     if (targetPath.StartsWith("file:///", StringComparison.OrdinalIgnoreCase))
                     {
-                        var uriPath = Uri.UnescapeDataString(targetPath.Substring(8).Replace('/', '\\'));
-                        resolvedPath = Path.GetFullPath(uriPath);
+                        var uriPath = Uri.UnescapeDataString(targetPath.Substring(8).Replace('/', Path.DirectorySeparatorChar));
+                        var idx = uriPath.IndexOf("diet-dost" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+                        if (idx >= 0)
+                        {
+                            var relFromRepo = uriPath.Substring(idx + 10);
+                            resolvedPath = Path.GetFullPath(Path.Combine(repoRoot, relFromRepo));
+                        }
+                        else
+                        {
+                            resolvedPath = Path.GetFullPath(uriPath);
+                        }
                     }
                     else
                     {
                         var docDir = Path.GetDirectoryName(mdFile)!;
-                        resolvedPath = Path.GetFullPath(Path.Combine(docDir, targetPath.Replace('/', '\\')));
+                        resolvedPath = Path.GetFullPath(Path.Combine(docDir, targetPath.Replace('/', Path.DirectorySeparatorChar)));
                     }
 
                     if (!File.Exists(resolvedPath) && !Directory.Exists(resolvedPath))
@@ -115,7 +130,7 @@ public class DocumentationAndSkillIntegrityContractTests
         };
 
         // Regex detecting bare 'infra/infra.bicep' or 'infra/app.bicep' (without environment segment)
-        var legacyBicepRegex = new Regex(@"(?<!dev/|prod/|staging/|\{env\}/|<env>/)infra/(?:infra|app)\.bicep", RegexOptions.Compiled);
+        var legacyBicepRegex = LegacyBicepRegex();
         var violations = new List<string>();
 
         foreach (var dir in searchDirs)
