@@ -9,6 +9,8 @@ using OpenTelemetry;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Azure.Identity;
+using Azure.Monitor.OpenTelemetry.Exporter;
 using Nutrition.Application.Common;
 using Nutrition.Domain.Clinical;
 
@@ -61,6 +63,27 @@ public static class OpenTelemetryExtensions
         if (!string.IsNullOrWhiteSpace(configuration.GetValue<string>("OTEL_EXPORTER_OTLP_ENDPOINT")))
         {
             services.AddOpenTelemetry().UseOtlpExporter();
+        }
+
+        // Integrate Azure Monitor / Application Insights (Logs Only with Entra ID / Managed Identity auth)
+        var appInsightsConnectionString = configuration.GetValue<string>("APPLICATIONINSIGHTS_CONNECTION_STRING")
+            ?? configuration.GetValue<string>("ApplicationInsights:ConnectionString");
+
+        if (!string.IsNullOrWhiteSpace(appInsightsConnectionString))
+        {
+            var clientId = configuration.GetValue<string>("AZURE_CLIENT_ID");
+            var credential = !string.IsNullOrWhiteSpace(clientId)
+                ? new DefaultAzureCredential(new DefaultAzureCredentialOptions { ManagedIdentityClientId = clientId })
+                : new DefaultAzureCredential();
+
+            logging.AddOpenTelemetry(otLogging =>
+            {
+                otLogging.AddAzureMonitorLogExporter(options =>
+                {
+                    options.ConnectionString = appInsightsConnectionString;
+                    options.Credential = credential;
+                });
+            });
         }
 
         return services;

@@ -76,6 +76,7 @@ module workload 'app.bicep' = {
     keyVaultUri: foundation.outputs.keyVaultUri
     managedIdentityId: foundation.outputs.managedIdentityId
     managedIdentityClientId: foundation.outputs.managedIdentityClientId
+    appInsightsConnectionString: foundation.outputs.appInsightsConnectionString
   }
 }
 
@@ -94,3 +95,6 @@ output keyVaultUri string = foundation.outputs.keyVaultUri
 output managedIdentityId string = foundation.outputs.managedIdentityId
 output acaSubnetId string = foundation.outputs.acaSubnetId
 output acaSubnetName string = foundation.outputs.acaSubnetName
+output appInsightsName string = foundation.outputs.appInsightsName
+output appInsightsId string = foundation.outputs.appInsightsId
+output appInsightsConnectionString string = foundation.outputs.appInsightsConnectionString

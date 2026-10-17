@@ -176,4 +176,37 @@ public class BicepIaCConfigurationContractTests
         Assert.Contains("app-dietdost-web-${environment}", appContent);
         Assert.Contains("${environment}.diet-dost.in", appContent);
     }
+
+    [Fact]
+    public void InfraBicep_Enforces_ApplicationInsights_DisableLocalAuth_And_MonitoringPublisherRole()
+    {
+        var infraBicepPath = GetInfraBicepPath("dev");
+        var infraContent = File.ReadAllText(infraBicepPath);
+
+        // Workspace-based Application Insights
+        Assert.Contains("Microsoft.Insights/components@2020-02-02", infraContent);
+        Assert.Contains("WorkspaceResourceId: logAnalytics.id", infraContent);
+
+        // Security baseline: Local auth disabled (Checkov CKV_AZURE_224)
+        Assert.Contains("DisableLocalAuth: true", infraContent);
+
+        // Entra ID RBAC: Monitoring Metrics Publisher role (39135dd6-16b0-4780-a6e6-8577137d9569)
+        Assert.Contains("39135dd6-16b0-4780-a6e6-8577137d9569", infraContent);
+        Assert.Contains("appiMonitoringPublisherRole", infraContent);
+
+        // Outputs
+        Assert.Contains("output appInsightsName string = appInsights.name", infraContent);
+        Assert.Contains("output appInsightsConnectionString string = appInsights.properties.ConnectionString", infraContent);
+    }
+
+    [Fact]
+    public void AppBicep_Declares_ApplicationInsights_Configuration()
+    {
+        var appBicepPath = GetAppBicepPath("dev");
+        var appContent = File.ReadAllText(appBicepPath);
+
+        Assert.Contains("param appInsightsConnectionString string", appContent);
+        Assert.Contains("app-insights-connection-string", appContent);
+        Assert.Contains("APPLICATIONINSIGHTS_CONNECTION_STRING", appContent);
+    }
 }
