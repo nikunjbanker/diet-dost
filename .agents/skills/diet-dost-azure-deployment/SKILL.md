@@ -546,7 +546,7 @@ graph TD
   4. **Podman Container Image Build**: Compiles OCI image via root `Containerfile`.
   5. **Trivy Container Security Gate**: Scans container image for CRITICAL vulnerabilities.
   6. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
-  7. **Ensure / Provision Infrastructure**: Executes `infra/${{ inputs.environment }}/infra.bicep` (if `provisionInfra: true`).
+  7. **Ensure / Provision Infrastructure**: Executes `infra/${{ inputs.environment }}/infra.bicep` (if `provisionInfra: true`), with automated pre-deployment idempotency guards for Key Vault soft-delete recovery (ADR-102) and ACA environment storage drift auto-remediation (ADR-105).
   8. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, injecting `APPLICATIONINSIGHTS_CONNECTION_STRING` (scoped strictly to application logs/exceptions via `DefaultAzureCredential`), and applying custom domain TLS.
   9. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
 
