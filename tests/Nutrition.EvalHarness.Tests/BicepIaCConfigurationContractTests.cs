@@ -124,4 +124,27 @@ public class BicepIaCConfigurationContractTests
         Assert.Contains("CKV_AZURE_166", checkovContent);
         Assert.Contains("CKV_AZURE_189", checkovContent);
     }
+
+    [Fact]
+    public void InfraBicep_Enforces_StorageAccount_Security_And_SubnetServiceEndpoint()
+    {
+        var repoRoot = GetRepoRoot();
+        var infraBicepPath = Path.Combine(repoRoot, "infra", "infra.bicep");
+        var bicepContent = File.ReadAllText(infraBicepPath);
+
+        // Storage account firewall invariants: zero public access + VNet service endpoint
+        Assert.Contains("supportsHttpsTrafficOnly: true", bicepContent);
+        Assert.Contains("allowBlobPublicAccess: false", bicepContent);
+        Assert.Contains("publicNetworkAccess: 'Enabled'", bicepContent);
+        Assert.Contains("service: 'Microsoft.Storage'", bicepContent);
+
+        // NSG rule permitting SMB outbound only to Storage service tag
+        Assert.Contains("Allow-Storage-SMB-Outbound", bicepContent);
+        Assert.Contains("destinationPortRange: '445'", bicepContent);
+        Assert.Contains("destinationAddressPrefix: 'Storage'", bicepContent);
+
+        // ACA environment storage mount invariant
+        Assert.Contains("Microsoft.App/managedEnvironments/storages", bicepContent);
+        Assert.Contains("accessMode: 'ReadWrite'", bicepContent);
+    }
 }

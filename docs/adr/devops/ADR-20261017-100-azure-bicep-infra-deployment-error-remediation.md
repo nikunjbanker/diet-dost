@@ -57,9 +57,18 @@ In GitHub Actions workflow run [39020523546](https://github.com/nikunjbanker/die
   This guarantees that any input containing hyphens (e.g. `acr-dietdost-dev`) is automatically sanitized to valid alphanumeric format (e.g. `acrdietdostdev`).
   Updated `.github/workflows/azure-infra-deploy.yml` input description to guide users towards alphanumeric names.
 
-### 2. Standard Storage Account SMB Properties (`FeatureNotSupportedOnStorageAccount`)
+### 2. Standard Storage Account SMB Properties & Zero Public Access Architecture (`FeatureNotSupportedOnStorageAccount`)
 - **Root Cause**: In `infra/infra.bicep`, `Microsoft.Storage/storageAccounts/fileServices` configured `protocolSettings.smb.multichannel: { enabled: false }`. On `Standard_LRS` `StorageV2` accounts, Microsoft Azure Storage rejects the `multichannel` property as unsupported (SMB Multichannel is exclusively supported on Premium FileStorage).
-- **Remediation**: Removed `protocolSettings.smb` block while retaining the 7-day `shareDeleteRetentionPolicy` soft-delete protection. Azure Files SMB 3.1.1 encryption is natively utilized by Azure Container Apps volume mounts.
+- **Remediation**:
+  1. Removed `protocolSettings.smb` block while retaining the 7-day `shareDeleteRetentionPolicy` soft-delete protection.
+  2. Enforced `supportsHttpsTrafficOnly: true` (Secure Transfer Required) on the Storage Account. Azure Files natively rejects unencrypted SMB connections and requires SMB 3.x with `AES-128-GCM` or `AES-256-GCM` channel encryption in transit.
+  3. **Zero Public Access Enforcement**:
+     - `allowBlobPublicAccess: false`: Completely blocks anonymous/public container reads.
+     - `networkAcls.defaultAction: 'Deny'`: Unconditionally drops 100% of public internet traffic (403 Forbidden).
+     - `networkAcls.virtualNetworkRules`: Exclusively whitelists delegated subnet `snet-aca-infra` (`vnet.properties.subnets[0].id`).
+     - `publicNetworkAccess: 'Enabled'`: Explicitly declared because Azure Resource Manager requires it for Virtual Network Service Endpoints (`Microsoft.Storage`) to evaluate firewall rules. Public internet traffic is unconditionally dropped by `defaultAction: 'Deny'`.
+     - NSG Rule `Allow-Storage-SMB-Outbound`: Limits outbound SMB (TCP port 445) strictly to the `Storage` service tag.
+     - Subnet Delegation: `snet-aca-infra` is delegated exclusively to `Microsoft.App/environments`, ensuring no external compute or unauthorized workloads can reside within the network perimeter. Only the Container App Managed Environment can connect to the file share.
 
 ### 3. Metric Alert Dimension Name (`BadRequest` on Key Vault Alert)
 - **Root Cause**: `Microsoft.Insights/metricAlerts` for Key Vault unauthorized requests targeted dimension `name: 'StatusCodeRange'`. In Azure Monitor's Key Vault metrics (`Microsoft.KeyVault/vaults` -> `ServiceApiResult`), the dimension name is `StatusCode` (or `StatusCodeClass`), not `StatusCodeRange`.
