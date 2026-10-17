@@ -180,17 +180,55 @@ function Set-FederatedCredential {
     Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
 }
 
-# 3a. Environment credential
+# Resolve numeric Owner ID and Repository ID from GitHub API (for immutable OIDC subject claims)
+$ghOwner = $GitHubRepo.Split('/')[0]
+$ghRepoName = $GitHubRepo.Split('/')[1]
+$ghIds = $null
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    try {
+        $repoMeta = gh api "repos/$GitHubRepo" --jq '{owner_id: .owner.id, repo_id: .id}' 2>$null
+        if ($repoMeta) {
+            $ghIds = $repoMeta | ConvertFrom-Json
+            Write-Host "  GitHub Immutable OIDC IDs: Owner ID=$($ghIds.owner_id), Repo ID=$($ghIds.repo_id)" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "  ⚠️ Could not query GitHub repository numeric IDs via gh CLI." -ForegroundColor DarkYellow
+    }
+}
+
+# 3a. Classic Environment credential
 Set-FederatedCredential `
     -Name "gh-dietdost-dev-env" `
     -Subject "repo:${GitHubRepo}:environment:${EnvironmentName}" `
-    -Description "GitHub Actions OIDC trust for $EnvironmentName environment"
+    -Description "GitHub Actions OIDC trust for $EnvironmentName environment (classic)"
 
-# 3b. Branch credential (fallback)
+# 3b. Classic Branch credential (fallback)
 Set-FederatedCredential `
     -Name "gh-dietdost-branch-cred" `
     -Subject "repo:${GitHubRepo}:ref:refs/heads/${GitBranch}" `
-    -Description "GitHub Actions OIDC trust for branch $GitBranch"
+    -Description "GitHub Actions OIDC trust for branch $GitBranch (classic)"
+
+# 3c. Immutable Environment credential (required by GitHub.com immutable subject claim)
+if ($ghIds -and $ghIds.owner_id -and $ghIds.repo_id) {
+    Set-FederatedCredential `
+        -Name "gh-dietdost-${EnvironmentName}-env-immutable" `
+        -Subject "repo:${ghOwner}@$($ghIds.owner_id)/${ghRepoName}@$($ghIds.repo_id):environment:${EnvironmentName}" `
+        -Description "GitHub Actions OIDC trust with immutable owner/repo IDs for $EnvironmentName environment"
+
+    $safeBranchName = ($GitBranch -replace '[^a-zA-Z0-9-_.]', '-')
+    if ($safeBranchName.Length -gt 60) { $safeBranchName = $safeBranchName.Substring(0, 60) }
+    Set-FederatedCredential `
+        -Name "gh-dietdost-${safeBranchName}-branch-immutable" `
+        -Subject "repo:${ghOwner}@$($ghIds.owner_id)/${ghRepoName}@$($ghIds.repo_id):ref:refs/heads/${GitBranch}" `
+        -Description "GitHub Actions OIDC trust with immutable owner/repo IDs for branch $GitBranch"
+
+    if ($EnvironmentName -ne "production") {
+        Set-FederatedCredential `
+            -Name "gh-dietdost-prod-env-immutable" `
+            -Subject "repo:${ghOwner}@$($ghIds.owner_id)/${ghRepoName}@$($ghIds.repo_id):environment:production" `
+            -Description "GitHub Actions OIDC trust with immutable owner/repo IDs for production environment"
+    }
+}
 
 # 3c. Subscription RBAC Role Assignments
 $Scope = "/subscriptions/$SubscriptionId"

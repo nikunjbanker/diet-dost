@@ -254,9 +254,11 @@ graph TD
 
 ### 7.1 Two-Stage Automated CI/CD Workflows
 Production deployment executes via two decoupled GitHub Actions workflows conditioned on a green pass of the 8-job security gate:
-1. **Stage 1: Infrastructure Deployment (`azure-infra-deploy.yml`)**:
-   - Provisions Azure Resource Group (`rg-dietdost-dev`), Storage Account, Azure Files Share (`dietdost-share`), Managed Environment (`diet-dost-env`), Key Vault (`diet-dost-kv`), and ACR (`dietdostacr`).
-   - Executes `az deployment group create --template-file infra/infra.bicep`.
+1. **Stage 1: Infrastructure Provisioning (`azure-infra-deploy.yml`)**:
+   - Decomposed into three sequential, observable stages:
+     - **Validate**: Aspire AppHost manifest evaluation, Pre-Deployment Gitleaks secret scan, Bicep compilation (`infra/infra.bicep` & `infra/app.bicep`), OIDC authentication with immutable repository IDs, and live ARM API validation (`az deployment group validate`).
+     - **Preview**: Azure ARM What-If analysis (`az deployment group what-if`), publishing formatted planned resource mutation matrices to `$GITHUB_STEP_SUMMARY`.
+     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-dev`), Storage Account, Azure Files Share (`dietdost-data`), Managed Environment (`cae-dietdost-dev`), Key Vault, Managed Identity, and ACR.
 2. **Stage 2: Application Deployment (`azure-app-deploy.yml`)**:
    - Compiles container image targeting Linux x64 and pushes to Azure Container Registry.
    - Deploys container to Azure Container Apps via `infra/app.bicep`.
