@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T08:32:03.445646+00:00",
-  "totalAdrs": 63,
+  "generatedAt": "2026-10-17T09:28:51.697965+00:00",
+  "totalAdrs": 64,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 10,
+    "devops": 11,
     "presentation": 4,
     "governance": 13
   },
@@ -765,6 +765,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-098-github-actions-dag-status-propagation-and-three-stage-alignment.md",
       "relativePath": "docs/adr/devops/ADR-20261017-098-github-actions-dag-status-propagation-and-three-stage-alignment.md"
+    },
+    {
+      "id": "ADR-099",
+      "number": 99,
+      "title": "actions/setup-dotnet v6 Modernization and CDN Download Failure Elimination",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-17",
+      "subsystem": "Devops",
+      "filename": "ADR-20261017-099-actions-setup-dotnet-v6-modernization-and-cdn-resilience.md",
+      "relativePath": "docs/adr/devops/ADR-20261017-099-actions-setup-dotnet-v6-modernization-and-cdn-resilience.md"
     }
   ]
 }
