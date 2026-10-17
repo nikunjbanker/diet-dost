@@ -107,7 +107,7 @@ A strict audit of the active [`DietTrackerDbContext.cs`](file:///c:/Users/nikunj
 
 ### 1.3 Actual Seeded Data & Storage Footprint (`diettracker.db`)
 
-An inspection of the active SQLite database ([`src/Nutrition.WebGateway/diettracker.db`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/diettracker.db)) reveals:
+An inspection of the active SQLite database ([`src/Nutrition.WebGateway/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/) `diettracker.db`) reveals:
 1. **Seeded Demo Accounts**:
    - 5 seeded accounts representing all user tiers: `free@dietdost.app` (Free), `basic@dietdost.app` (Basic), `premium@dietdost.app` (Premium), `admin.demo@dietdost.app` (Admin), and `superadmin@dietdost.app` (SuperAdmin) with password `DietDost@Demo2026!`.
 2. **Seeded Clinical Profiles & Conditions**:

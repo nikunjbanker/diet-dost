@@ -17,6 +17,7 @@
     4. OWASP Top 10 for LLM Defenses (Prompt Injection delimiters, PII isolation, Quota gating)
     5. AI Agent State & Session Bleed (.agents/state, session transcripts, token dumps)
     6. Living Architecture Diagram Synchronization & Solution Alignment (Zero Documentation Drift)
+    7. Living Documentation, Skill Link Integrity & Automated Change-Detection Gate
 .PARAMETER Mode
     "All" scans the full repository; "Staged" scans only git staged files for pre-commit.
 #>
@@ -63,7 +64,7 @@ function Get-FilesToScan {
 # -----------------------------------------------------------------------------
 # Vector 1: Supply Chain & Package Hallucination (Slopsquatting)
 # -----------------------------------------------------------------------------
-Write-Host "`n[Vector 1/5] Checking for Package Hallucination & Slopsquatting..." -ForegroundColor Yellow
+Write-Host "`n[Vector 1/7] Checking for Package Hallucination & Slopsquatting..." -ForegroundColor Yellow
 
 $allowedPackagePrefixes = @(
     "Microsoft.",
@@ -114,7 +115,7 @@ if ($violations.Count -eq 0) {
 # -----------------------------------------------------------------------------
 # Vector 2: Insecure Defaults & "Lazy AI" Workarounds
 # -----------------------------------------------------------------------------
-Write-Host "`n[Vector 2/5] Checking for Insecure Defaults & Lazy AI Workarounds..." -ForegroundColor Yellow
+Write-Host "`n[Vector 2/7] Checking for Insecure Defaults & Lazy AI Workarounds..." -ForegroundColor Yellow
 
 $sourceFiles = Get-FilesToScan -Extensions @(".cs", ".js", ".ts", ".bicep", ".json")
 
@@ -166,7 +167,7 @@ foreach ($file in $sourceFiles) {
 # -----------------------------------------------------------------------------
 # Vector 3: AI Security Disablers & Suppression Comments
 # -----------------------------------------------------------------------------
-Write-Host "`n[Vector 3/5] Checking for AI Security Disablers & Suppression Comments..." -ForegroundColor Yellow
+Write-Host "`n[Vector 3/7] Checking for AI Security Disablers & Suppression Comments..." -ForegroundColor Yellow
 
 $suppressionPatterns = @(
     @{
@@ -221,7 +222,7 @@ foreach ($file in $sourceFiles) {
 # -----------------------------------------------------------------------------
 # Vector 4: OWASP Top 10 for LLM Defenses (Prompt Shield, Content Safety & Self-Learning)
 # -----------------------------------------------------------------------------
-Write-Host "`n[Vector 4/5] Checking for OWASP Top 10 for LLM Defenses & Content Safety..." -ForegroundColor Yellow
+Write-Host "`n[Vector 4/7] Checking for OWASP Top 10 for LLM Defenses & Content Safety..." -ForegroundColor Yellow
 
 $promptShieldFile = Join-Path $RepoRoot "src\Nutrition.Infrastructure\AI\PromptShieldValidator.cs"
 if (-not (Test-Path $promptShieldFile)) {
@@ -318,7 +319,7 @@ if (Test-Path $providersDir) {
 # -----------------------------------------------------------------------------
 # Vector 5: Leaked AI Agent State & Session Bleed
 # -----------------------------------------------------------------------------
-Write-Host "`n[Vector 5/5] Checking for Leaked AI Agent State & Session Bleed..." -ForegroundColor Yellow
+Write-Host "`n[Vector 5/7] Checking for Leaked AI Agent State & Session Bleed..." -ForegroundColor Yellow
 
 if ($Mode -eq "Staged") {
     $stagedFiles = git diff --cached --name-only --diff-filter=ACMR
@@ -346,7 +347,7 @@ if ($Mode -eq "Staged") {
 # -----------------------------------------------------------------------------
 # Vector 6: Living Architecture Diagram Synchronization & Solution Alignment
 # -----------------------------------------------------------------------------
-Write-Host "`n[Vector 6/6] Checking Architecture Diagram Alignment & Documentation Sync..." -ForegroundColor Yellow
+Write-Host "`n[Vector 6/7] Checking Architecture Diagram Alignment & Documentation Sync..." -ForegroundColor Yellow
 $diagramSyncScript = Join-Path $PSScriptRoot "sync-architecture-diagrams.ps1"
 if (Test-Path $diagramSyncScript) {
     & pwsh -File $diagramSyncScript -Verify
@@ -356,6 +357,184 @@ if (Test-Path $diagramSyncScript) {
         Write-Host "  ❌ $msg" -ForegroundColor Red
     } else {
         Write-Host "  ✅ All architecture diagrams verified syntactically valid and 100% aligned with solution." -ForegroundColor Green
+    }
+}
+
+# -----------------------------------------------------------------------------
+# Vector 7: Living Documentation, Skill Link Integrity & Change-Detection Gate
+# -----------------------------------------------------------------------------
+Write-Host "`n[Vector 7/7] Checking Living Documentation, Skill Link Integrity & Change-Detection Gate..." -ForegroundColor Yellow
+
+# Part A: Markdown Link & Local File Reference Integrity
+$docsRoots = @(
+    (Join-Path $RepoRoot "docs\sdd"),
+    (Join-Path $RepoRoot "docs\cft"),
+    (Join-Path $RepoRoot ".agents\skills"),
+    (Join-Path $RepoRoot ".agents\rules")
+)
+
+$markdownLinkRegex = '\[([^\]]+)\]\(([^)]+)\)'
+$deadLinksCount = 0
+
+foreach ($d in $docsRoots) {
+    if (-not (Test-Path $d)) { continue }
+    $mdFiles = Get-ChildItem -Path $d -Filter "*.md" -Recurse -File | Where-Object {
+        $_.FullName -notmatch "\\(bin|obj|\.kilo)\\"
+    }
+
+    foreach ($file in $mdFiles) {
+        $raw = Get-Content $file.FullName -Raw
+        $matches = [regex]::Matches($raw, $markdownLinkRegex)
+        $docDir = $file.DirectoryName
+
+        foreach ($m in $matches) {
+            $target = $m.Groups[2].Value.Trim()
+            if ($target -match "^(https?://|mailto:|#)") { continue }
+
+            $targetClean = ($target -split "#")[0].Trim()
+            if ([string]::IsNullOrWhiteSpace($targetClean)) { continue }
+            if ($targetClean -match "\.(db|sqlite)$") { continue }
+
+            if ($targetClean -match "^file:///") {
+                $cleanPath = $targetClean.Substring(8).Replace('/', [System.IO.Path]::DirectorySeparatorChar)
+                $unescaped = [System.Uri]::UnescapeDataString($cleanPath)
+                $idx = $unescaped.IndexOf("diet-dost" + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+                if ($idx -ge 0) {
+                    $relFromRepo = $unescaped.Substring($idx + 10)
+                    $resolved = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot.Path $relFromRepo))
+                } else {
+                    $resolved = [System.IO.Path]::GetFullPath($unescaped)
+                }
+            } else {
+                $resolved = [System.IO.Path]::GetFullPath((Join-Path $docDir $targetClean.Replace('/', [System.IO.Path]::DirectorySeparatorChar)))
+            }
+
+            if (-not (Test-Path $resolved)) {
+                $relDoc = $file.FullName.Substring($RepoRoot.Path.Length).TrimStart('\', '/')
+                $msg = "VEC-7 Dead Link: Broken link '$target' in '$relDoc' (resolved: '$resolved') does not exist."
+                $violations.Add($msg)
+                Write-Host "  ❌ $msg" -ForegroundColor Red
+                $deadLinksCount++
+            }
+        }
+    }
+}
+
+if ($deadLinksCount -eq 0) {
+    Write-Host "  ✅ All local file references and markdown links in SDDs, CFTs, and skills resolve cleanly." -ForegroundColor Green
+}
+
+# Part B: Stale Un-Scoped Bicep References
+$legacyBicepRegex = '(?<!dev/|prod/|staging/|\{env\}/|<env>/)infra/(infra|app)\.bicep'
+$staleBicepFound = 0
+foreach ($d in $docsRoots) {
+    if (-not (Test-Path $d)) { continue }
+    $mdFiles = Get-ChildItem -Path $d -Filter "*.md" -Recurse -File | Where-Object {
+        $_.Name -notmatch "(dev-ops_improvement_report|archive)"
+    }
+    foreach ($file in $mdFiles) {
+        $raw = Get-Content $file.FullName -Raw
+        if ($raw -match $legacyBicepRegex) {
+            $relDoc = $file.FullName.Substring($RepoRoot.Path.Length).TrimStart('\', '/')
+            $msg = "VEC-7 Stale Bicep Path: Un-scoped 'infra/infra.bicep' or 'infra/app.bicep' found in '$relDoc'. Must specify environment path ('infra/<env>/')."
+            $violations.Add($msg)
+            Write-Host "  ❌ $msg" -ForegroundColor Red
+            $staleBicepFound++
+        }
+    }
+}
+if ($staleBicepFound -eq 0) {
+    Write-Host "  ✅ Zero un-scoped legacy Bicep paths detected across living documentation." -ForegroundColor Green
+}
+
+# Part C: Automated Subsystem Change-Detection & Living Synchronization Gate
+$changedFiles = @()
+if ($Mode -eq "Staged") {
+    $changedFiles = @(git diff --cached --name-only --diff-filter=ACMR 2>$null)
+} else {
+    $branchDiff = @(git diff origin/main...HEAD --name-only 2>$null)
+    $workingDiff = @(git diff --name-only 2>$null)
+    $stagedDiff = @(git diff --cached --name-only 2>$null)
+    $untracked = @(git ls-files --others --exclude-standard 2>$null)
+    $changedFiles = @($branchDiff; $workingDiff; $stagedDiff; $untracked) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique
+}
+
+if ($changedFiles.Count -gt 0) {
+    $subsystemRules = @(
+        @{
+            Name = "Infrastructure & Cloud Deployment"
+            TriggerRegex = "^infra/"
+            RequiredAny = @(
+                "docs/sdd/05_devops_and_infrastructure.md",
+                ".agents/skills/diet-dost-azure-deployment/",
+                "docs/cft/cft_azure_cloud_deployment_aca.md",
+                "docs/adr/devops/"
+            )
+        },
+        @{
+            Name = "Presentation & Web UI"
+            TriggerRegex = "^(src/Nutrition\.Presentation/|src/Nutrition\.WebGateway/wwwroot/)"
+            RequiredAny = @(
+                "docs/sdd/03_presentation_layer.md",
+                ".agents/skills/design-system-enforcer/",
+                ".agents/skills/diet-dost-clean-architecture/",
+                "docs/cft/cft_web_bff_and_clean_architecture.md",
+                "docs/cft/cft_responsive_web_and_tablet.md",
+                "docs/adr/presentation/"
+            )
+        },
+        @{
+            Name = "Application & CQRS Architecture"
+            TriggerRegex = "^src/Nutrition\.Application/"
+            RequiredAny = @(
+                "docs/sdd/02_solution_architecture.md",
+                ".agents/skills/diet-dost-clean-architecture/",
+                "docs/cft/cft_web_bff_and_clean_architecture.md",
+                "docs/adr/architecture/"
+            )
+        },
+        @{
+            Name = "Security & AI Governance"
+            TriggerRegex = "^src/Nutrition\.Infrastructure/AI/"
+            RequiredAny = @(
+                "docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md",
+                "docs/sdd/04_security_and_compliance.md",
+                "SECURITY.md",
+                ".agents/skills/diet-dost-user-management-security/",
+                "docs/adr/security/"
+            )
+        },
+        @{
+            Name = "Domain & Clinical Nutrition"
+            TriggerRegex = "^src/Nutrition\.Domain/"
+            RequiredAny = @(
+                "docs/sdd/01_clinical_dietetics_and_nutrition_science.md",
+                "docs/sdd/02_solution_architecture.md",
+                ".agents/skills/indian-diet-calorie-tracker/",
+                "docs/adr/architecture/"
+            )
+        }
+    )
+
+    foreach ($rule in $subsystemRules) {
+        $triggers = $changedFiles | Where-Object { $_ -match $rule.TriggerRegex }
+        if ($triggers.Count -gt 0) {
+            $hasDocSync = $false
+            foreach ($req in $rule.RequiredAny) {
+                if ($changedFiles | Where-Object { $_.Replace('\', '/') -like "*$req*" }) {
+                    $hasDocSync = $true
+                    break
+                }
+            }
+
+            if (-not $hasDocSync) {
+                $msg = "VEC-7 Living Sync Gate Failure: Code in '$($rule.Name)' was modified ($($triggers.Count) file(s): $($triggers[0])...) without updating corresponding living documentation or skill ($($rule.RequiredAny -join ', ')). Living synchronization mandate violated."
+                $violations.Add($msg)
+                Write-Host "  ❌ $msg" -ForegroundColor Red
+            } else {
+                Write-Host "  ✅ Subsystem '$($rule.Name)' modifications matched with living documentation & skill synchronization." -ForegroundColor Green
+            }
+        }
     }
 }
 

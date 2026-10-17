@@ -159,7 +159,7 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 
 ## 8. Azure Key Vault Purge Protection & Passwordless Managed Identity
 
-- **Purge Protection Invariant**: The production Key Vault (`diet-dost-kv`) is provisioned with `enablePurgeProtection: true` and 90-day soft-delete retention in `infra/infra.bicep`. Secrets cannot be deleted permanently without administrative governance.
+- **Purge Protection Invariant**: The production Key Vault (`kvdost${environment}...`) is provisioned with `enablePurgeProtection: true` and 90-day soft-delete retention in `infra/<env>/infra.bicep` (e.g. `infra/dev/infra.bicep`). Secrets cannot be deleted permanently without administrative governance.
 - **Passwordless ACR Pull (`acrPullRole`)**: Azure Container Apps retrieves container images from Azure Container Registry via system-assigned managed identity assigned the `AcrPull` built-in role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`), eliminating static registry admin credentials.
 - **Least-Privilege Key Vault Role**: The Container App accesses Key Vault via `Key Vault Secrets User` role assignment, restricting access strictly to read-only secret retrieval.
 

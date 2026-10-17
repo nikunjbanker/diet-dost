@@ -96,8 +96,8 @@ az storage blob upload --account-name <storage> --container-name db-backups --fi
 
 ### 3.0 Automated Pre-Deployment Setup via PowerShell (`scripts/setup-azure-pre-deployment.ps1`)
 Before triggering CI/CD pipelines, configure foundational Azure resources, Entra ID app registrations, federated OIDC credentials, and Key Vault using the automated PowerShell script:
-- **Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
-- **Script**: [`scripts/setup-azure-pre-deployment.ps1`](scripts/setup-azure-pre-deployment.ps1)
+- **Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
+- **Script**: [`scripts/setup-azure-pre-deployment.ps1`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/setup-azure-pre-deployment.ps1)
 - **Zero Hardcoded Secrets Policy**:
   - The script dynamically resolves `$SubscriptionId`, `$TenantId`, and `$AppRegistrationId` via authenticated `az account show` and `az ad app list` queries.
   - No subscription IDs, tenant IDs, or client secrets are hardcoded in code or documentation.
@@ -278,9 +278,9 @@ az containerapp create \
 ```
 
 ### 3.5 Zero-Trust Network & Security Infrastructure Baseline (Bicep IaC)
-The foundation infrastructure in [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) implements a defense-in-depth, Zero-Trust network boundary designed for dev-test free-tier containment ($0 incremental cost):
+The foundation infrastructure in [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) implements a defense-in-depth, Zero-Trust network boundary designed for dev-test free-tier containment ($0 incremental cost):
 1. **Network Security Group (`nsg-dietdost-${environment}`)**:
-   - Attached to ACA infrastructure subnet `snet-aca-infra` to comply with Checkov `CKV_AZURE_9`.
+   - Attached to ACA infrastructure subnet `snet-aca-infra-${environment}` to comply with Checkov `CKV_AZURE_9`.
    - **Inbound Rules**: Allows HTTPS (443) and `AzureLoadBalancer` (satisfies Checkov `CKV_AZURE_160` by restricting HTTP port 80).
    - **Outbound Rules**: Allows Port 445 strictly to `Storage` service tag; Port 443 to `AzureCloud` and `Internet` (for Gemini AI APIs); Port 53 (DNS); and Port 123 (NTP).
 2. **Azure Files SMB 3.1.1 Encryption & Soft-Delete**:
@@ -291,7 +291,7 @@ The foundation infrastructure in [`infra/infra.bicep`](file:///c:/Users/nikunj.b
    - Streams `AuditEvent` and all metrics from Key Vault to Log Analytics (`diag-kv-${environment}`).
    - Deploys Azure Monitor Metric Alert (`alert-kv-unauthorized-${environment}`) triggering when Key Vault 401/403 responses exceed 5 in a 5-minute window (within free platform metric alerts quota).
 4. **Ingress IP Security Restrictions**:
-   - [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep) supports configurable `ipSecurityRestrictions` for exterior IP allowlisting.
+   - [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) supports configurable `ipSecurityRestrictions` for exterior IP allowlisting.
 
 ---
 
@@ -492,7 +492,7 @@ graph TD
 
     subgraph Workflow_Infra ["Pipeline 1: Aspire - Provision Azure Infrastructure (.github/workflows/azure-infra-deploy.yml)"]
         InfraEval[aspire publish --apphost src/Nutrition.AppHost]
-        InfraBicep[ARM Deploy: infra/infra.bicep]
+        InfraBicep[ARM Deploy: infra/<env>/infra.bicep]
         InfraOut[Output: CAE Environment, SMB Share, Static IP, Custom Domain ID]
         InfraEval --> InfraBicep --> InfraOut
     end
@@ -502,8 +502,8 @@ graph TD
         AppEval[aspire publish --apphost src/Nutrition.AppHost]
         OCIBuild[Podman Build & Trivy Image Scan]
         ACRPush[Podman Push to ACR]
-        AutoInfra[Ensure / Provision Foundation: infra/infra.bicep]
-        AppBicep[ARM Deploy: infra/app.bicep]
+        AutoInfra[Ensure / Provision Foundation: infra/<env>/infra.bicep]
+        AppBicep[ARM Deploy: infra/<env>/app.bicep]
         Verify[Health & Revision FQDN Verification]
         SecurityGate --> AppEval --> OCIBuild --> ACRPush --> AutoInfra --> AppBicep --> Verify
     end
@@ -519,24 +519,26 @@ graph TD
   1. **Stage 1: Validate (`validate-infrastructure`)**:
      - Evaluates Aspire AppHost model (`aspire publish --apphost src/Nutrition.AppHost`) and generates infrastructure manifests.
      - Runs Pre-Deployment Gitleaks secret scan.
-     - Compiles and lints Bicep templates (`az bicep build --file infra/infra.bicep`).
+     - Compiles and lints Bicep templates (`az bicep build --file infra/${{ inputs.environment }}/infra.bicep`).
      - Authenticates via passwordless GitHub Actions OIDC (`azure/login@v2`).
      - Pre-flight verifies/creates target Resource Group.
-     - Executes live Azure Resource Manager pre-flight validation (`az deployment group validate`) ensuring schema and quota compliance.
+     - Runs Step 8b: Detects and auto-recovers soft-deleted Key Vaults (`az keyvault list-deleted` + `az keyvault recover`) to prevent ARM `ConflictError` idempotency blocks.
+     - Executes live Azure Resource Manager pre-flight validation (`az deployment group validate`) ensuring schema and quota compliance (supporting optional `keyVaultName`).
      - Emits Stage 1 Validation Summary to `$GITHUB_STEP_SUMMARY`.
   2. **Stage 2: Preview (`preview-infrastructure`)**:
      - Authenticates to Azure CLI via OIDC.
      - Executes Azure ARM What-If analysis (`az deployment group what-if --result-format ResourceIdOnly`).
      - Publishes formatted preview change matrix (Create, Modify, Delete, NoChange) directly to `$GITHUB_STEP_SUMMARY` for operator visibility before mutation.
   3. **Stage 3: Provision (`provision-infrastructure`)**:
-     - Deploys [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity).
+     - Runs Step 3b: Key Vault soft-delete auto-recovery guard pass.
+     - Deploys [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data-${environment}`, Log Analytics, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity).
      - Emits and verifies infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID, ACR Name, Key Vault URI).
      - Publishes Stage 3 Completion Summary table to `$GITHUB_STEP_SUMMARY`.
 
 ### 7.2 Pipeline 2: Application Build & Deployment (`.github/workflows/azure-app-deploy.yml`)
 - **Purpose**: Builds, tests, scans, and deploys the Diet-Dost application container revision with persistent SQLite SMB volume mount.
 - **Trigger**: Strictly on-demand (`workflow_dispatch`).
-- **Automatic Infrastructure Guarantee**: Includes `provisionInfra: true` (default `true`) which automatically verifies and provisions the foundation infrastructure (`infra/infra.bicep`) before deploying the application workload (`infra/app.bicep`).
+- **Automatic Infrastructure Guarantee**: Includes `provisionInfra: true` (default `true`) which automatically verifies and provisions the foundation infrastructure (`infra/${{ inputs.environment }}/infra.bicep`) before deploying the application workload (`infra/${{ inputs.environment }}/app.bicep`).
 - **Pre-Deployment Security Gates**:
   1. **OWASP A06 Dependency Audit**: Scans all NuGet packages for known CVEs via `dotnet list package --vulnerable --include-transitive`.
   2. **100% Pass Test Standard**: Runs all unit, domain, and security test suites via `dotnet test --configuration Release`.
@@ -544,8 +546,8 @@ graph TD
   4. **Podman Container Image Build**: Compiles OCI image via root `Containerfile`.
   5. **Trivy Container Security Gate**: Scans container image for CRITICAL vulnerabilities.
   6. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
-  7. **Ensure / Provision Infrastructure**: Executes `infra/infra.bicep` (if `provisionInfra: true`).
-  8. **Deploy Workload Revision**: Deploys [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, and applying custom domain TLS.
+  7. **Ensure / Provision Infrastructure**: Executes `infra/${{ inputs.environment }}/infra.bicep` (if `provisionInfra: true`).
+  8. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, and applying custom domain TLS.
   9. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
 
 ---

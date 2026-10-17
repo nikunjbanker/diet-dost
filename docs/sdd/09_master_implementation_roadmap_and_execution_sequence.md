@@ -12,7 +12,7 @@
 > **Target Subsystems**: Web PWA (Responsive Desktop/Tablet/Mobile), Mobile (Android/iOS), Presentation Gateway, Core Persistence, and Azure Infrastructure  
 > **Governing Skills**: `diet-dost-clean-architecture`, `diet-dost-responsive-web-mobile-readiness`, `diet-dost-mobile-architecture`, `diet-dost-database-architecture`, `diet-dost-azure-deployment`, `diet-dost-user-management-security`  
 > **Acceptance Suites**: `docs/cft/` (Web BFF, Responsive Web/Tablet, Mobile MVP, Cross-Platform Parity Matrix)  
-> **Architectural Decisions**: [`docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260929-051-mvp-market-roadmap-reprioritization.md), [`docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md), [`docs/adr/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md), [`docs/adr/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md)  
+> **Architectural Decisions**: [`docs/adr/governance/ADR-20260929-051-mvp-market-roadmap-reprioritization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20260929-051-mvp-market-roadmap-reprioritization.md), [`docs/adr/governance/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20260930-052-reusability-and-forward-roadmap-compatibility-mandate.md), [`docs/adr/architecture/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261002-059-phase-2-responsive-and-mobile-readiness-architecture.md), [`docs/adr/governance/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20261002-060-resequence-responsive-web-before-azure-deployment.md)  
 
 ---
 
@@ -144,7 +144,7 @@ graph TD
 - **Playbooks**:
   - [`references/web_bff_clean_architecture_playbook.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-clean-architecture/references/web_bff_clean_architecture_playbook.md)
   - [`.agents/skills/diet-dost-responsive-web-mobile-readiness/references/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-responsive-web-mobile-readiness/references/)
-  - [`references/azure_deployment_playbook.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-azure-deployment/references/azure_deployment_playbook.md)
+  - [`.agents/skills/diet-dost-azure-deployment/SKILL.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.agents/skills/diet-dost-azure-deployment/SKILL.md)
 - **CFT Suites**:
   - [`docs/cft/cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md) (Web BFF & CQRS verification)
   - [`docs/cft/cft_responsive_web_and_tablet.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_responsive_web_and_tablet.md) (Responsive multi-viewport ergonomics & CLS verification)
@@ -246,7 +246,7 @@ graph TD
 
 ## 4. Git Branching & Stacked PR Execution Protocol
 
-Contributors and AI agents must strictly follow the **Pre-Flight Remote Fetch & Dedicated Branch Creation** and **Native GitHub Stacked PR Protocol** defined in `AGENTS.md` and [`ADR-20260928-049`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/ADR-20260928-049-native-github-stacked-pr-protocol.md):
+Contributors and AI agents must strictly follow the **Pre-Flight Remote Fetch & Dedicated Branch Creation** and **Native GitHub Stacked PR Protocol** defined in `AGENTS.md` and [`ADR-20260928-049`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/ADR-20260928-049-native-github-stacked-pr-protocol.md):
 
 ```bash
 # 1. Fetch remote tracking branches

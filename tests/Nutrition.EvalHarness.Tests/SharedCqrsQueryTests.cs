@@ -43,7 +43,7 @@ public class SharedCqrsQueryTests : IDisposable
     public SharedCqrsQueryTests()
     {
         TierConfigurationService.ClearCache();
-        var connectionString = $"Data Source=file:memdb_cqrs_{Guid.NewGuid():N}?mode=memory&cache=shared";
+        var connectionString = $"Data Source=file:memdb_cqrs_{Guid.NewGuid():N}?mode=memory&cache=shared;Pooling=False;Default Timeout=30;";
         _connection = new SqliteConnection(connectionString);
         _connection.Open();
 

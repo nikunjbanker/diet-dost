@@ -13,8 +13,8 @@
 | **Status** | **ACCEPTED** |
 | **Date** | 2026-10-17 |
 | **Domain** | DevOps / Cloud Infrastructure as Code |
-| **Subsystem** | `infra/infra.bicep`, `.github/workflows/azure-infra-deploy.yml` |
-| **Impacted Files** | `infra/infra.bicep`, `infra/app.bicep`, `.github/workflows/azure-app-deploy.yml`, `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`, `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs`, `src/Nutrition.Infrastructure/Security/JwtTokenService.cs`, `tests/Nutrition.EvalHarness.Tests/SecurityEnvironmentAndHeaderTests.cs`, `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` |
+| **Subsystem** | `infra/dev/infra.bicep`, `.github/workflows/azure-infra-deploy.yml` |
+| **Impacted Files** | `infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep`, `infra/dev/main.parameters.json`, `.github/workflows/azure-app-deploy.yml`, `.github/workflows/azure-infra-deploy.yml`, `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`, `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs`, `src/Nutrition.Infrastructure/Security/JwtTokenService.cs`, `tests/Nutrition.EvalHarness.Tests/BicepIaCConfigurationContractTests.cs`, `tests/Nutrition.EvalHarness.Tests/SecurityEnvironmentAndHeaderTests.cs`, `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` |
 
 ---
 
@@ -65,7 +65,7 @@ In GitHub Actions workflow run [39020523546](https://github.com/nikunjbanker/die
   3. **Zero Public Access Enforcement**:
      - `allowBlobPublicAccess: false`: Completely blocks anonymous/public container reads.
      - `networkAcls.defaultAction: 'Deny'`: Unconditionally drops 100% of public internet traffic (403 Forbidden).
-     - `networkAcls.virtualNetworkRules`: Exclusively whitelists delegated subnet `snet-aca-infra` (`vnet.properties.subnets[0].id`).
+     - `networkAcls.virtualNetworkRules`: Exclusively whitelists delegated subnet `snet-aca-infra` (`'${vnet.id}/subnets/snet-aca-infra'`).
      - Checkov `CKV_AZURE_59` Compliance: Explicit `publicNetworkAccess: 'Enabled'` removed to satisfy static analysis while preserving default VNet Service Endpoint firewall evaluation (`defaultAction: 'Deny'`).
      - NSG Rule `Allow-Storage-SMB-Outbound`: Limits outbound SMB (TCP port 445) strictly to the `Storage` service tag.
      - Subnet Delegation: `snet-aca-infra` is delegated exclusively to `Microsoft.App/environments`, ensuring no external compute or unauthorized workloads can reside within the network perimeter. Only the Container App Managed Environment can connect to the file share.
@@ -82,10 +82,40 @@ In GitHub Actions workflow run [39020523546](https://github.com/nikunjbanker/die
 ### 5. Host Gating & ACA Ingress Accessibility
 - **Host Gating Alignment**: In `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, permitted `*.azurecontainerapps.io` hosts when `Security:AllowDemoUsers == "true"` or `Security__AllowDemoUsers == "true"`. This ensures immediate operational accessibility via the Azure Container Apps default domain while DNS propagation for custom domain `dev.diet-dost.in` completes, while preserving strict 403 Forbidden blocking for unauthorized external hosts.
 
+### 6. ARM Pre-Flight Deterministic Subnet Resolution & Dependency Guarantees
+- **Root Cause**: In `infra/infra.bicep`, referring to `vnet.properties.subnets[0].id` compiled to `[reference(...).subnets[0].id]`. During live ARM pre-flight validation (`az deployment group validate`), ARM cannot resolve runtime `reference()` expressions on subnets when validating network ACLs for storage accounts or key vaults in an undeployed or validating template, rejecting it with:
+  ```json
+  {"code": "InvalidValuesForRequestParameters", "target": "stgdietdostskehxuagttzos", "message": "Values for request parameters are invalid: networkAcls.virtualNetworkRules[*].id. For more information, see - https://aka.ms/storagenetworkruleset"}
+  ```
+- **Remediation**:
+  1. **Zero Hardcoded Data & Parameterized Subnet**: Declared configurable parameter `param acaSubnetName string = 'snet-aca-infra'` in both `infra/infra.bicep` and `infra/main.bicep`, and established a strongly-typed existing child resource reference `resource acaSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = { parent: vnet, name: acaSubnetName }`.
+  2. **Strongly-Typed Resource ID Binding**: Replaced all dynamic array references and string interpolations across `storageAccount`, `acaEnvironment`, and `keyVault` with `acaSubnet.id`. This compiles into static, deterministic ARM resource IDs without runtime `reference()` calls, entirely eliminating hardcoded string data.
+  3. **Explicit Dependency Guarantee**: Declared explicit `dependsOn: [ vnet ]` with `#disable-next-line no-unnecessary-dependson` across `storageAccount`, `acaEnvironment`, and `keyVault` to ensure ARM provision sequencing guarantees VNet readiness while maintaining 0 Bicep linter warnings.
+  4. **Outputs Exported**: Exported `acaSubnetId` and `acaSubnetName` outputs in both `infra.bicep` and `main.bicep` for downstream pipeline automation.
+  5. **Validation Assertions**: Validated that both first run (greenfield) and future runs (idempotent) succeed across `az bicep build`, `az deployment group validate` (`infra.bicep`, `app.bicep`, and `main.bicep`), and `az deployment group what-if` with `provisioningState: Succeeded` and 0 errors.
+
+### 7. Environment Partitioning (`infra/dev/`) & Multi-Environment Resource Naming Isolation
+- **Context & Motivation**:
+  Prior to this enhancement, Bicep templates were located in root `infra/` without environment partitioning, and several resources omitted `${environment}` in their names. If deployed to production (`prod`), resource name collisions and state divergence would occur.
+- **Architectural Enhancements**:
+  1. **Folder Relocation**: Relocated environment Bicep templates from `infra/` to `infra/dev/` (`infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep`, `infra/dev/main.parameters.json`).
+  2. **Strict Environment Naming Invariants**: All resource declarations embed `${environment}` to ensure 100% collision-free multi-environment separation:
+     - Storage Account: `take('stgdost${environment}${uniqueSuffix}', 24)`
+     - Key Vault: `take('kvdost${environment}${uniqueSuffix}', 24)`
+     - ACR: `take('crdost${environment}${uniqueSuffix}', 50)`
+     - Subnet: `snet-aca-infra-${environment}`
+     - Azure Files SMB Share: `dietdost-data-${environment}`
+     - Container App: `app-dietdost-web-${environment}`
+     - Custom Domain: `${environment}.diet-dost.in`
+  3. **Dynamic Workflow Path Parameterization**: Updated both `.github/workflows/azure-infra-deploy.yml` and `.github/workflows/azure-app-deploy.yml` to dynamically resolve templates via `./infra/${{ inputs.environment }}/infra.bicep` and `./infra/${{ inputs.environment }}/app.bicep`.
+  4. **Contract Tests**: Added `BicepIaC_Enforces_Environment_Isolation_And_Resource_Naming` in `tests/Nutrition.EvalHarness.Tests/BicepIaCConfigurationContractTests.cs` to guarantee invariants across all environments.
+
 ---
 
 ## 3. Verification & Compliance
-- **Bicep Compilation**: `az bicep build --file infra/infra.bicep` and `az bicep build --file infra/app.bicep` compiled with 0 errors and 0 warnings.
+- **Bicep Compilation**: `az bicep build --file infra/dev/infra.bicep` and `az bicep build --file infra/dev/main.bicep` compiled with 0 errors and 0 warnings.
+- **Live Azure ARM Pre-Flight Validation**: `az deployment group validate` on `infra/dev/infra.bicep`, `infra/dev/app.bicep`, and `infra/dev/main.bicep` returned `provisioningState: Succeeded` with 0 template or quota errors.
+- **Live Azure ARM What-If Preview**: `az deployment group what-if` on `infra/dev/infra.bicep` executed cleanly (5 resources to create, 10 to deploy, 0 schema errors).
 - **Domain Tests**: 36/36 passed (`Nutrition.Domain.Tests`).
-- **Evaluation Harness Tests**: 212/212 passed (`Nutrition.EvalHarness.Tests`).
+- **Evaluation Harness Tests**: 213/213 passed (`Nutrition.EvalHarness.Tests`).
 - **AI Security Defense Verification**: All 6 vectors passed cleanly (`scripts/verify-ai-security-defense.ps1`).

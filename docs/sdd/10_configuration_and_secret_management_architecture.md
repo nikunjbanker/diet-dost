@@ -157,7 +157,7 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     participant ACA as Azure Container Apps
-    participant Bicep as infra/app.bicep
+    participant Bicep as infra/{env}/app.bicep
     participant WG as WebGateway Program.cs
     participant ConfigExt as AddDietDostAppConfiguration
     participant KV as Azure Key Vault (dietdost-kv)
@@ -257,7 +257,7 @@ This document is a **living specification**. Whenever architectural changes touc
    - Update Section 7 of this document (`10_configuration_and_secret_management_architecture.md`).
 2. **When Altering Cloud Secret Sources or Key Vault Mappings**:
    - Update `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`.
-   - Update `infra/app.bicep` and `.github/workflows/azure-app-deploy.yml`.
+   - Update `infra/{env}/app.bicep` and `.github/workflows/azure-app-deploy.yml`.
    - Update Section 4 and Section 5 of this document.
 3. **When Altering Aspire Orchestration or Resource Bindings**:
    - Update `src/Nutrition.AppHost/Configuration/AppHostAiOptions.cs` and `Extensions/WebGatewayResourceExtensions.cs`.

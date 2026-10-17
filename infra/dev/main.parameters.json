@@ -6,7 +6,7 @@
       "value": "dev"
     },
     "appName": {
-      "value": "app-dietdost-web"
+      "value": "app-dietdost-web-dev"
     },
     "customDomain": {
       "value": "dev.diet-dost.in"
@@ -19,6 +19,9 @@
     },
     "fileShareQuotaGb": {
       "value": 1
+    },
+    "keyVaultName": {
+      "value": ""
     }
   }
 }

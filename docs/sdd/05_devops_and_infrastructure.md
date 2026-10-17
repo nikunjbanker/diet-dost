@@ -256,17 +256,18 @@ graph TD
 Production deployment executes via two decoupled GitHub Actions workflows conditioned on a green pass of the 8-job security gate:
 1. **Stage 1: Infrastructure Provisioning (`azure-infra-deploy.yml`)**:
    - Decomposed into three sequential, observable stages:
-     - **Validate**: Aspire AppHost manifest evaluation, Pre-Deployment Gitleaks secret scan, Bicep compilation (`infra/infra.bicep` & `infra/app.bicep`), OIDC authentication with immutable repository IDs, and live ARM API validation (`az deployment group validate`).
+     - **Validate**: Aspire AppHost manifest evaluation, Pre-Deployment Gitleaks secret scan, Bicep compilation (`infra/${{ inputs.environment }}/infra.bicep` & `infra/${{ inputs.environment }}/app.bicep`), OIDC authentication with immutable repository IDs, and live ARM API validation (`az deployment group validate`).
      - **Preview**: Azure ARM What-If analysis (`az deployment group what-if`), publishing formatted planned resource mutation matrices to `$GITHUB_STEP_SUMMARY`.
-     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-dev`), Storage Account, Azure Files Share (`dietdost-data`), Managed Environment (`cae-dietdost-dev`), Key Vault, Managed Identity, and ACR.
+     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-${environment}`), Storage Account (`stgdost${environment}...`), Azure Files Share (`dietdost-data-${environment}`), Managed Environment (`cae-dietdost-${environment}`), Key Vault (`kvdost${environment}...`), Managed Identity, and ACR (`crdost${environment}...`).
 2. **Stage 2: Application Deployment (`azure-app-deploy.yml`)**:
    - Compiles container image targeting Linux x64 and pushes to Azure Container Registry.
-   - Deploys container to Azure Container Apps via `infra/app.bicep`.
-   - Binds custom domain `dev.dietdost.app` with free Azure managed TLS certificate.
+   - Deploys container to Azure Container Apps via `infra/${{ inputs.environment }}/app.bicep` (`app-dietdost-web-${environment}`).
+   - Binds custom domain `${environment}.diet-dost.in` with free Azure managed TLS certificate.
 
 ### 7.2 Declarative Bicep Infrastructure as Code (IaC)
-- [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, and storage mount definitions on the ACA Managed Environment.
-- [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and custom domain hostname bindings.
+- [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, and storage mount definitions on the ACA Managed Environment.
+- [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and custom domain hostname bindings.
+- [`infra/<env>/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep): Composite template orchestrating foundation and workload modules for full end-to-end deployments.
 
 ### 7.3 Azure Files SMB Volume Mount & Zero-Data-Loss Configuration
 The Container App mounts the Azure Files SMB share as a persistent volume:
@@ -296,22 +297,22 @@ graph TD
     Client["End User Browser / PWA Client"] -->|"HTTPS / Port 443<br/>TLS 1.3 Strict"| ACA_Ingress["ACA Managed Environment Ingress<br/>(dev.dietdost.app / FQDN)<br/>IP Security Restrictions Filter"]
 
     subgraph Azure_VNet ["Azure Virtual Network: vnet-dietdost-dev (10.0.0.0/16)"]
-        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
+        subgraph Subnet_Infra ["Delegated Subnet: snet-aca-infra-${environment} (10.0.0.0/23)"]
             ACA_App["Diet-Dost Container App<br/>(.NET 11 WebGateway)<br/>Single Replica: min=1, max=1"]
         end
-        NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>Inbound: 443 (HTTPS), AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
+        NSG["Network Security Group: nsg-dietdost-${environment}<br/>Stateful Packet Filtering (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>Inbound: 443 (HTTPS), AzureLB<br/>Outbound: 445 (Storage), 443 (AzureCloud/AI), 53 (DNS)"]
         NSG --- Subnet_Infra
     end
 
     ACA_Ingress --> ACA_App
 
-    subgraph Storage_Boundary ["Azure Storage Account: stgdietdostdev (Standard_LRS)"]
-        SMB_Share["Azure Files SMB 3.1.1 Share: dietdost-data<br/>AES-128-GCM / AES-256-GCM Channel Encryption<br/>7-Day Soft-Delete Protection<br/>Mounted: /app/data (diet_dost.db)"]
+    subgraph Storage_Boundary ["Azure Storage Account: stgdost${environment}... (Standard_LRS)"]
+        SMB_Share["Azure Files SMB 3.1.1 Share: dietdost-data-${environment}<br/>AES-128-GCM / AES-256-GCM Channel Encryption<br/>7-Day Soft-Delete Protection<br/>Mounted: /app/data (diet_dost.db)"]
     end
 
     subgraph Security_Perimeter ["Security & Audit Perimeter"]
-        KV["Azure Key Vault: kv-dietdost-dev<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdmin"]
-        LAW["Log Analytics Workspace: log-dietdost-dev<br/>5 GB/Month Free Tier Retention"]
+        KV["Azure Key Vault: kvdost${environment}...<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdmin"]
+        LAW["Log Analytics Workspace: log-dietdost-${environment}<br/>5 GB/Month Free Tier Retention"]
         Alert["Azure Monitor Metric Alert<br/>KV Unauthorized Access (401/403 > 5 in 5m)<br/>Included in Free Metric Alerts Quota"]
     end
 
@@ -324,7 +325,7 @@ graph TD
 ```
 
 ### 8.1 Network Security Group (NSG) with Zero-Trust Subnet Isolation
-- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-dev`) attached directly to subnet `snet-aca-infra`.
+- **Resource**: `Microsoft.Network/networkSecurityGroups` (`nsg-dietdost-${environment}`) attached directly to subnet `snet-aca-infra-${environment}`.
 - **Compliance**: Natively satisfies Checkov benchmark rule `CKV_AZURE_9` (*Ensure that Virtual Network subnets are associated with a Network Security Group*).
 - **Rule Set**:
   - **Inbound**:
@@ -343,7 +344,7 @@ graph TD
     - `Deny-All-Other-Outbound` (Priority 4000, Explicit Catch-All Deny to override Azure default AllowInternetOutBound).
 
 ### 8.2 Azure Files SMB 3.1.1 Cryptographic Channel Hardening
-- **Protocol Encryption**: Enforces SMB 3.1.1 wire encryption with negotiated ciphers `AES-128-GCM` and `AES-256-GCM` across `fileServices` in `infra/infra.bicep`.
+- **Protocol Encryption**: Enforces SMB 3.1.1 wire encryption with negotiated ciphers `AES-128-GCM` and `AES-256-GCM` across `fileServices` in `infra/<env>/infra.bicep` (e.g. `infra/dev/infra.bicep`).
 - **Kerberos & NTLM Policy**: Enforces Kerberos ticket authentication and disables legacy NTLMv1 fallbacks.
 - **Accidental Deletion Defense**: Configured 7-day share soft-delete retention policy, protecting the live SQLite database (`diet_dost.db`) and user meal photos against catastrophic accidental share deletion.
 
@@ -352,9 +353,9 @@ graph TD
 - **Automated Intrusion Alerting**: Deployed `Microsoft.Insights/metricAlerts` (`alert-kv-unauthorized-dev`) monitoring the Key Vault Service Api Hit metric with dimensions `StatusCode = 401, 403`. Fires automatically if unauthorized attempts exceed 5 in a 5-minute window, consuming 0 additional cost (within Azure's first 10 free platform metric alerts).
 
 ### 8.4 Direct ACA Ingress & ACR Image Pull Delivery Architecture
-- **Direct ACA Managed Envoy Ingress**: External traffic from `dev.diet-dost.in` routes directly to the ACA Managed Environment's built-in Envoy proxy. Zero intermediate hops—**neither Azure Front Door nor Azure Application Gateway is provisioned or utilized**, eliminating unnecessary cost and latency. Free Azure Managed TLS 1.3 certificates terminate directly at the ACA Envoy layer.
-- **Passwordless ACR Image Pull Mechanics**: Azure Container Registry (`crdietdost*`) runs with `adminUserEnabled: false` (zero static passwords). The Container App (`app-dietdost-web`) pulls images securely via its assigned User-Assigned Managed Identity (`id-dietdost-dev`) which possesses the built-in `AcrPull` role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`) scoped directly to the registry. CI/CD pushes images using ephemeral tokens generated via `az acr login --expose-token`.
-- **IP Security Restrictions**: Added configurable `ipSecurityRestrictions` array to `infra/app.bicep`. Allows operators to enforce IP allowlisting/denylisting on the external ingress controller at 0 cost.
+- **Direct ACA Managed Envoy Ingress**: External traffic from `${environment}.diet-dost.in` routes directly to the ACA Managed Environment's built-in Envoy proxy. Zero intermediate hops—**neither Azure Front Door nor Azure Application Gateway is provisioned or utilized**, eliminating unnecessary cost and latency. Free Azure Managed TLS 1.3 certificates terminate directly at the ACA Envoy layer.
+- **Passwordless ACR Image Pull Mechanics**: Azure Container Registry (`crdost${environment}...`) runs with `adminUserEnabled: false` (zero static passwords). The Container App (`app-dietdost-web-${environment}`) pulls images securely via its assigned User-Assigned Managed Identity (`id-dietdost-${environment}`) which possesses the built-in `AcrPull` role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`) scoped directly to the registry. CI/CD pushes images using ephemeral tokens generated via `az acr login --expose-token`.
+- **IP Security Restrictions**: Added configurable `ipSecurityRestrictions` array to `infra/<env>/app.bicep`. Allows operators to enforce IP allowlisting/denylisting on the external ingress controller at 0 cost.
 
 ### 8.5 Architectural Visual Artifacts
 The full architectural blueprint is codified in the following repository visual artifacts:
@@ -363,6 +364,12 @@ The full architectural blueprint is codified in the following repository visual 
 - **Architectural Decision Records**:
   - [`docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261010-088-azure-zero-trust-network-security-group-smb311-and-diagnostic-hardening.md)
   - [`docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261011-090-zero-trust-nsg-outbound-rules-acr-pull-and-ingress-architecture.md)
+  - [`docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261017-102-azure-key-vault-soft-delete-idempotency-and-parameterization.md)
+
+### 8.6 Azure Key Vault Soft-Delete Idempotency & Cloud Lifecycle Governance
+- **The Purge Protection Dilemma**: Because Key Vault mandates `enablePurgeProtection: true` for zero-loss secret governance, deleting a vault or resource group places the vault in soft-deleted state for 7 days without the ability to purge. Subsequent ARM deployments with the same vault name fail with `ConflictError: A vault with the same name already exists in deleted state`.
+- **Automated CI/CD Idempotency Guard**: `.github/workflows/azure-infra-deploy.yml` implements steps `8b` (Stage 1) and `3b` (Stage 3): `Detect and Auto-Recover Soft-Deleted Key Vaults (Idempotency Guard)`. Before ARM validation or Bicep deployment executes, Azure CLI inspects `az keyvault list-deleted` and automatically triggers `az keyvault recover` for any soft-deleted vault in the subscription, ensuring zero human intervention and 100% deployment idempotency.
+- **Dynamic Parameterization**: Bicep foundation templates (`infra/<env>/infra.bicep` and `infra/<env>/main.bicep`) support optional `keyVaultName`. When omitted, Bicep generates environment-isolated vaults (`kvdost${environment}${uniqueSuffix}`); when provided, operators can attach to pre-existing or recovered vaults seamlessly.
 
 
 
