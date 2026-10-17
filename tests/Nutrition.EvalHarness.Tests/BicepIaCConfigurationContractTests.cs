@@ -190,8 +190,8 @@ public class BicepIaCConfigurationContractTests
         // Security baseline: Local auth disabled (Checkov CKV_AZURE_224)
         Assert.Contains("DisableLocalAuth: true", infraContent);
 
-        // Entra ID RBAC: Monitoring Metrics Publisher role (39135dd6-16b0-4780-a6e6-8577137d9569)
-        Assert.Contains("39135dd6-16b0-4780-a6e6-8577137d9569", infraContent);
+        // Entra ID RBAC: Monitoring Metrics Publisher role (3913510d-42f4-4e42-8a64-420c390055eb)
+        Assert.Contains("3913510d-42f4-4e42-8a64-420c390055eb", infraContent);
         Assert.Contains("appiMonitoringPublisherRole", infraContent);
 
         // Outputs

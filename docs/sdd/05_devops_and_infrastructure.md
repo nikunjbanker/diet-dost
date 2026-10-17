@@ -378,7 +378,7 @@ The full architectural blueprint is codified in the following repository visual 
 - **Workspace-Based Architecture**:
   - Bound directly to `logAnalytics.id` via `WorkspaceResourceId: logAnalytics.id`. All telemetry data is stored within the Azure Log Analytics Workspace (`log-dietdost-${environment}`) leveraging the 5 GB/month free ingestion tier.
 - **Entra ID RBAC Telemetry Authorization**:
-  - The User-Assigned Managed Identity (`id-dietdost-${environment}`) is granted the built-in **`Monitoring Metrics Publisher`** role (`39135dd6-16b0-4780-a6e6-8577137d9569`) scoped to the Application Insights resource.
+  - The User-Assigned Managed Identity (`id-dietdost-${environment}`) is granted the built-in **`Monitoring Metrics Publisher`** role (`3913510d-42f4-4e42-8a64-420c390055eb`) scoped to the Application Insights resource.
   - The application authenticates securely via `DefaultAzureCredential` configured with `ManagedIdentityClientId = AZURE_CLIENT_ID`.
 - **Scoped Logs-Only Ingestion Standard**:
   - OpenTelemetry configuration in `Nutrition.WebGateway.Extensions.OpenTelemetryExtensions` binds `AddAzureMonitorLogExporter` strictly into `logging.AddOpenTelemetry(...)`.

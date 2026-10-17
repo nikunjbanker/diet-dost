@@ -459,13 +459,13 @@ resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-0
   }
 }
 
-// Built-in Role Definition: Monitoring Metrics Publisher (39135dd6-16b0-4780-a6e6-8577137d9569)
+// Built-in Role Definition: Monitoring Metrics Publisher (3913510d-42f4-4e42-8a64-420c390055eb)
 // Enables User-Assigned Managed Identity to ingest telemetry with DisableLocalAuth: true
 resource appiMonitoringPublisherRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-  name: guid(appInsights.id, managedIdentity.id, '39135dd6-16b0-4780-a6e6-8577137d9569')
+  name: guid(appInsights.id, managedIdentity.id, '3913510d-42f4-4e42-8a64-420c390055eb')
   scope: appInsights
   properties: {
-    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '39135dd6-16b0-4780-a6e6-8577137d9569')
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
     principalId: managedIdentity.properties.principalId
     principalType: 'ServicePrincipal'
   }
