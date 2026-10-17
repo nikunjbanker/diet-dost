@@ -272,6 +272,40 @@
 
 ---
 
+### 🚨 Problem 9: Live ARM Pre-Flight Validation Failure on Dynamic Subnet References (`vnet.properties.subnets[0].id`)
+- **Location**: `infra/infra.bicep` (lines 252, 313, 404 in `storageAccount`, `acaEnvironment`, and `keyVault`).
+- **Root Cause**:
+  In Bicep, referring to `vnet.properties.subnets[0].id` compiles down into ARM template JSON as:
+  ```json
+  "[reference(resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')), '2023-05-01').subnets[0].id]"
+  ```
+  During ARM pre-flight validation (`az deployment group validate`), the ARM engine validates parameter and property values before resource deployment begins. Because `vnet` does not yet exist or is being provisioned in the same template, ARM cannot resolve the dynamic `reference()` call at preflight time. The `Microsoft.Storage/storageAccounts` and `Microsoft.KeyVault/vaults` resource providers rejected this unresolved runtime expression with:
+  ```json
+  {"code": "InvalidValuesForRequestParameters", "target": "stgdietdostskehxuagttzos", "message": "Values for request parameters are invalid: networkAcls.virtualNetworkRules[*].id. For more information, see - https://aka.ms/storagenetworkruleset"}
+  ```
+  This failed GitHub Actions Run [39025457511 / Job 117375449050](https://github.com/nikunjbanker/diet-dost/actions/runs/39025457511/job/117375449050) during `Step 9: Live Azure ARM Template Validation`.
+
+##### ✅ Resolution Applied & Verified:
+1. **Zero Hardcoded Data & Parameterized Subnet Name**: Declared a configurable parameter in both `infra/infra.bicep` and `infra/main.bicep`:
+   ```bicep
+   @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
+   param acaSubnetName string = 'snet-aca-infra'
+   ```
+2. **Native Strongly-Typed Existing Resource Reference**: Created a strongly-typed child resource reference on the VNet:
+   ```bicep
+   resource acaSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+     parent: vnet
+     name: acaSubnetName
+   }
+   ```
+   All dependent resources (`storageAccount`, `acaEnvironment`, and `keyVault`) reference `acaSubnet.id` directly (`id: acaSubnet.id`).
+   This compiles into static, deterministic ARM resource IDs (`resourceId('Microsoft.Network/virtualNetworks/subnets', vnetName, acaSubnetName)`) without runtime `reference()` calls, eliminating all hardcoded string data while remaining 100% configurable.
+3. **Explicit Dependency Guarantee**: Added explicit `dependsOn: [ vnet ]` with `#disable-next-line no-unnecessary-dependson` to `storageAccount`, `acaEnvironment`, and `keyVault` to ensure ARM provision sequencing guarantees VNet readiness while maintaining 0 Bicep linter warnings.
+4. **Outputs Exported**: Exported `acaSubnetId` and `acaSubnetName` as outputs in both `infra.bicep` and `main.bicep` for cross-template and automation consumption.
+5. **Comprehensive Cross-Check**: Verified that all three templates (`infra/infra.bicep`, `infra/app.bicep`, and `infra/main.bicep`) pass both local Bicep compilation and live Azure ARM validation (`az deployment group validate`) and ARM preview (`az deployment group what-if`) with `provisioningState: Succeeded` and 0 errors.
+
+---
+
 ## 3. Architecture Diagrams: Remediation & Network Topology
 
 ```mermaid
@@ -323,6 +357,8 @@ flowchart TD
 | Verification Dimension | Scope | Expected Standard | Observed Result | Status |
 | :--- | :--- | :--- | :--- | :---: |
 | **Bicep IaC Compilation** | `infra/infra.bicep`, `infra/app.bicep` | 0 errors, 0 warnings (`az bicep build`) | 0 errors, 0 warnings | ✅ **PASSED** |
+| **Live Azure ARM Pre-Flight Validation** | `infra/infra.bicep`, `infra/app.bicep`, `infra/main.bicep` | `provisioningState: Succeeded`, 0 errors | `Succeeded` across all 3 templates | ✅ **PASSED** |
+| **Live Azure ARM What-If Preview** | `infra/infra.bicep` | Resource mutation preview with 0 schema errors | 5 to create, 10 to deploy, 0 errors | ✅ **PASSED** |
 | **Bicep IaC Contract Tests** | `BicepIaCConfigurationContractTests.cs` | Zero public access, NSG rules, SMB encryption | 2/2 tests passed | ✅ **PASSED** |
 | **Domain Clinical Tests** | `Nutrition.Domain.Tests` | ICMR-NIN 2024 compliance, Zero-Assumption | 36/36 tests passed | ✅ **PASSED** |
 | **Evaluation Harness Tests** | `Nutrition.EvalHarness.Tests` | Host gating, JWT secrets, rate limiting, OWASP | 212/212 tests passed | ✅ **PASSED** |

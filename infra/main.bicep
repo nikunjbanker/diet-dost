@@ -36,6 +36,9 @@ param fileShareQuotaGb int = 1
 @description('Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used.')
 param acrName string = ''
 
+@description('Name of the delegated subnet for Azure Container Apps infrastructure.')
+param acaSubnetName string = 'snet-aca-infra'
+
 @description('Optional Gemini API Key for AI nutrition feedback.')
 @secure()
 param geminiApiKey string = ''
@@ -48,6 +51,7 @@ module foundation 'infra.bicep' = {
     location: location
     fileShareQuotaGb: fileShareQuotaGb
     acrName: acrName
+    acaSubnetName: acaSubnetName
   }
 }
 
@@ -83,3 +87,5 @@ output acrLoginServer string = foundation.outputs.acrLoginServer
 output keyVaultName string = foundation.outputs.keyVaultName
 output keyVaultUri string = foundation.outputs.keyVaultUri
 output managedIdentityId string = foundation.outputs.managedIdentityId
+output acaSubnetId string = foundation.outputs.acaSubnetId
+output acaSubnetName string = foundation.outputs.acaSubnetName

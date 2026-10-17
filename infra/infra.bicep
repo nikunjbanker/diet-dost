@@ -22,6 +22,9 @@ param fileShareQuotaGb int = 1
 @description('Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used.')
 param acrName string = ''
 
+@description('Name of the delegated subnet for Azure Container Apps infrastructure.')
+param acaSubnetName string = 'snet-aca-infra'
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = take('stgdietdost${uniqueSuffix}', 24)
 var sanitizedAcrName = replace(replace(toLower(acrName), '-', ''), '_', '')
@@ -201,7 +204,7 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
     }
     subnets: [
       {
-        name: 'snet-aca-infra'
+        name: acaSubnetName
         properties: {
           addressPrefix: '10.0.0.0/23'
           networkSecurityGroup: {
@@ -229,6 +232,11 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
   }
 }
 
+resource acaSubnet 'Microsoft.Network/virtualNetworks/subnets@2023-05-01' existing = {
+  parent: vnet
+  name: acaSubnetName
+}
+
 // ------------------------------------------------------------------------------
 // 3. Azure Storage Account with Azure Files SMB 3.1.1 Encrypted Share
 // ------------------------------------------------------------------------------
@@ -249,12 +257,16 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
       bypass: 'AzureServices'
       virtualNetworkRules: [
         {
-          id: vnet.properties.subnets[0].id
+          id: acaSubnet.id
           action: 'Allow'
         }
       ]
     }
   }
+  dependsOn: [
+    #disable-next-line no-unnecessary-dependson
+    vnet
+  ]
 }
 
 resource fileServices 'Microsoft.Storage/storageAccounts/fileServices@2023-01-01' = {
@@ -306,9 +318,13 @@ resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
     }
     vnetConfiguration: {
       internal: false
-      infrastructureSubnetId: vnet.properties.subnets[0].id
+      infrastructureSubnetId: acaSubnet.id
     }
   }
+  dependsOn: [
+    #disable-next-line no-unnecessary-dependson
+    vnet
+  ]
 }
 
 // ------------------------------------------------------------------------------
@@ -393,11 +409,15 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
       bypass: 'AzureServices'
       virtualNetworkRules: [
         {
-          id: vnet.properties.subnets[0].id
+          id: acaSubnet.id
         }
       ]
     }
   }
+  dependsOn: [
+    #disable-next-line no-unnecessary-dependson
+    vnet
+  ]
   tags: {
     'aspire-resource-name': 'dietdost-kv'
     environment: environment
@@ -502,3 +522,5 @@ output managedIdentityId string = managedIdentity.id
 output managedIdentityClientId string = managedIdentity.properties.clientId
 output nsgId string = nsg.id
 output nsgName string = nsg.name
+output acaSubnetId string = acaSubnet.id
+output acaSubnetName string = acaSubnetName
