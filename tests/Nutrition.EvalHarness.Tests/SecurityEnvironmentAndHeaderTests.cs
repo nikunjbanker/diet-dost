@@ -5,9 +5,11 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Nutrition.WebGateway.Middleware;
@@ -93,6 +95,61 @@ public class SecurityEnvironmentAndHeaderTests
         var body = await reader.ReadToEndAsync();
         Assert.Contains("ForbiddenHost", body);
         Assert.Contains("dev.diet-dost.in", body);
+    }
+
+    [Fact]
+    public async Task HostGating_Production_AllowsAzureContainerAppsHost_WhenDemoUsersEnabled()
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Security:AllowDemoUsers"] = "true"
+            })
+            .Build();
+
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env, config);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString("app-dietdost-web.internal.azurecontainerapps.io");
+        context.Request.Path = "/api/test";
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task HostGating_Production_BlocksOtherUnauthorizedHosts_EvenWhenDemoUsersEnabled()
+    {
+        var env = new TestHostEnvironment { EnvironmentName = Environments.Production };
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Security:AllowDemoUsers"] = "true"
+            })
+            .Build();
+
+        var middleware = new HostGatingMiddleware(ctx =>
+        {
+            ctx.Response.StatusCode = StatusCodes.Status200OK;
+            return Task.CompletedTask;
+        }, env, config);
+
+        var context = new DefaultHttpContext();
+        context.Request.Host = new HostString("evil.attacker.com");
+        context.Request.Path = "/api/test";
+        var memStream = new MemoryStream();
+        context.Response.Body = memStream;
+
+        await middleware.InvokeAsync(context);
+
+        Assert.Equal(StatusCodes.Status403Forbidden, context.Response.StatusCode);
+        Assert.Equal("application/json", context.Response.ContentType);
     }
 
     [Fact]

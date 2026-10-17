@@ -38,7 +38,7 @@ on:
         type: number
         default: 1
       acrName:
-        description: 'Azure Container Registry name (optional, auto-generated if empty)'
+        description: 'Azure Container Registry name (alphanumeric only, e.g. crdietdostdev, auto-generated if empty)'
         required: false
         type: string
         default: ''

@@ -422,6 +422,8 @@ jobs:
           MI_CLIENT_ID="${{ steps.deploy-infra.outputs.managedIdentityClientId }}"
           if [ -z "$MI_ID" ]; then
             MI_ID=$(az identity list --resource-group "$RG" --query "[0].id" -o tsv)
+          fi
+          if [ -z "$MI_CLIENT_ID" ]; then
             MI_CLIENT_ID=$(az identity list --resource-group "$RG" --query "[0].clientId" -o tsv)
           fi
 
@@ -439,6 +441,7 @@ jobs:
           echo "Resolved Managed Identity: $MI_ID"
 
       - name: 6. Synchronize Configured Secrets to Azure Key Vault (If Provided)
+        id: sync-secrets
         env:
           KV_NAME: ${{ steps.resolve-env.outputs.kv_name }}
           JWT_KEY: ${{ secrets.JWT_KEY }}
@@ -447,25 +450,47 @@ jobs:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           REQUIRE_MOBILE_VERIFICATION: ${{ secrets.REQUIRE_MOBILE_VERIFICATION }}
         run: |
+          ACTUAL_JWT_KEY="$JWT_KEY"
+          if [ -z "$ACTUAL_JWT_KEY" ]; then
+            echo "Generating secure 256-bit JWT signing key for deployment..."
+            ACTUAL_JWT_KEY=$(openssl rand -base64 48)
+          fi
+          ACTUAL_SUPER_ADMIN_EMAIL="$SUPER_ADMIN_EMAIL"
+          if [ -z "$ACTUAL_SUPER_ADMIN_EMAIL" ]; then
+            ACTUAL_SUPER_ADMIN_EMAIL="superadmin@dietdost.app"
+          fi
+
           if [ -n "$KV_NAME" ]; then
             echo "Checking and synchronizing configured secrets into Azure Key Vault '$KV_NAME'..."
-            if [ -n "$JWT_KEY" ]; then
-              az keyvault secret set --vault-name "$KV_NAME" --name "Jwt--Key" --value "$JWT_KEY" -o none || echo "⚠️ Note: Could not set Jwt--Key"
+            RUNNER_IP=$(curl -s https://api.ipify.org || true)
+            if [ -n "$RUNNER_IP" ]; then
+              echo "Temporarily adding GitHub Actions runner IP ($RUNNER_IP) to Key Vault firewall..."
+              az keyvault network-rule add --vault-name "$KV_NAME" --ip-address "$RUNNER_IP" -o none || true
+              sleep 5
             fi
+
+            az keyvault secret set --vault-name "$KV_NAME" --name "Jwt--Key" --value "$ACTUAL_JWT_KEY" -o none || echo "⚠️ Note: Could not set Jwt--Key in Key Vault"
+            az keyvault secret set --vault-name "$KV_NAME" --name "Auth--SuperAdminEmail" --value "$ACTUAL_SUPER_ADMIN_EMAIL" -o none || echo "⚠️ Note: Could not set Auth--SuperAdminEmail in Key Vault"
+
             if [ -n "$GEMINI_API_KEY" ]; then
               az keyvault secret set --vault-name "$KV_NAME" --name "AI--GoogleAI--ApiKey" --value "$GEMINI_API_KEY" -o none || echo "⚠️ Note: Could not set AI--GoogleAI--ApiKey"
             fi
             if [ -n "$AZURE_OPENAI_API_KEY" ]; then
               az keyvault secret set --vault-name "$KV_NAME" --name "AI--AzureOpenAI--ApiKey" --value "$AZURE_OPENAI_API_KEY" -o none || echo "⚠️ Note: Could not set AI--AzureOpenAI--ApiKey"
             fi
-            if [ -n "$SUPER_ADMIN_EMAIL" ]; then
-              az keyvault secret set --vault-name "$KV_NAME" --name "Auth--SuperAdminEmail" --value "$SUPER_ADMIN_EMAIL" -o none || echo "⚠️ Note: Could not set Auth--SuperAdminEmail"
-            fi
             if [ -n "$REQUIRE_MOBILE_VERIFICATION" ]; then
               az keyvault secret set --vault-name "$KV_NAME" --name "Auth--RequireMobileVerification" --value "$REQUIRE_MOBILE_VERIFICATION" -o none || echo "⚠️ Note: Could not set Auth--RequireMobileVerification"
             fi
+
+            if [ -n "$RUNNER_IP" ]; then
+              echo "Pruning temporary runner IP from Key Vault firewall..."
+              az keyvault network-rule remove --vault-name "$KV_NAME" --ip-address "$RUNNER_IP" -o none || true
+            fi
             echo "✅ Azure Key Vault secret synchronization step finished."
           fi
+
+          echo "jwt_key=$ACTUAL_JWT_KEY" >> "$GITHUB_OUTPUT"
+          echo "super_admin_email=$ACTUAL_SUPER_ADMIN_EMAIL" >> "$GITHUB_OUTPUT"
 
       - name: 7. Build OCI Container Image (Podman)
         id: build-image
@@ -523,6 +548,8 @@ jobs:
             allowDemoUsers=${{ inputs.allowDemoUsers }}
             storageMountName=dietdoststorage
             geminiApiKey="${{ secrets.GEMINI_API_KEY }}"
+            jwtKey="${{ steps.sync-secrets.outputs.jwt_key }}"
+            superAdminEmail="${{ steps.sync-secrets.outputs.super_admin_email }}"
             keyVaultUri=${{ steps.resolve-env.outputs.kv_uri }}
             managedIdentityId=${{ steps.resolve-env.outputs.mi_id }}
             managedIdentityClientId=${{ steps.resolve-env.outputs.mi_client_id }}

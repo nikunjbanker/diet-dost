@@ -44,9 +44,14 @@ public class JwtTokenService : IJwtTokenService
         _issuer = !string.IsNullOrWhiteSpace(options.Issuer) ? options.Issuer : "DietDostGateway";
         _audience = !string.IsNullOrWhiteSpace(options.Audience) ? options.Audience : "DietDostClient";
 
+        var isDevOrDemo = appEnv?.IsDevelopment == true ||
+                          appEnv?.AllowsDemoUsers == true ||
+                          string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase) ||
+                          string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
+
         var configuredKey = !string.IsNullOrWhiteSpace(options.Key)
             ? options.Key
-            : (appEnv?.IsDevelopment == true || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Development", StringComparison.OrdinalIgnoreCase)
+            : (isDevOrDemo
                 ? "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!"
                 : throw new InvalidOperationException(
                     "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +

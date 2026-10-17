@@ -74,12 +74,16 @@ public static class ConfigurationExtensions
             return null;
         }
 
+        var isDemoEnabled = string.Equals(currentConfig["Security:AllowDemoUsers"], "true", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(currentConfig["Security__AllowDemoUsers"], "true", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
+
         // 1. JWT Configuration Normalization
         var resolvedJwtKey = FirstNonEmpty(
             currentConfig["Jwt:Key"],
             currentConfig["Jwt__Key"],
             currentConfig["JWT_KEY"],
-            env.IsDevelopment() ? DefaultDevJwtKey : null);
+            (env.IsDevelopment() || isDemoEnabled) ? DefaultDevJwtKey : null);
 
         if (!string.IsNullOrWhiteSpace(resolvedJwtKey))
         {
@@ -96,7 +100,7 @@ public static class ConfigurationExtensions
             currentConfig["Auth:SuperAdminEmail"],
             currentConfig["SuperAdminEmail"],
             currentConfig["SUPER_ADMIN_EMAIL"],
-            env.IsDevelopment() ? DefaultSuperAdminEmail : null);
+            (env.IsDevelopment() || isDemoEnabled) ? DefaultSuperAdminEmail : null);
 
         if (!string.IsNullOrWhiteSpace(resolvedSuperAdminEmail))
         {
@@ -170,8 +174,15 @@ public static class ConfigurationExtensions
 
         if (!env.IsDevelopment())
         {
+            var isDemoEnabled = string.Equals(configuration["Security:AllowDemoUsers"], "true", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(configuration["Security__AllowDemoUsers"], "true", StringComparison.OrdinalIgnoreCase) ||
+                                string.Equals(Environment.GetEnvironmentVariable("Security__AllowDemoUsers"), "true", StringComparison.OrdinalIgnoreCase);
+
             var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
-            var jwtKey = jwtOptions.Key;
+            var jwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+                ? jwtOptions.Key
+                : (isDemoEnabled ? DefaultDevJwtKey : null);
+
             if (string.IsNullOrWhiteSpace(jwtKey))
             {
                 throw new InvalidOperationException(
@@ -186,7 +197,10 @@ public static class ConfigurationExtensions
             }
 
             var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
-            var superAdminEmail = authOptions.SuperAdminEmail;
+            var superAdminEmail = !string.IsNullOrWhiteSpace(authOptions.SuperAdminEmail)
+                ? authOptions.SuperAdminEmail
+                : (isDemoEnabled ? DefaultSuperAdminEmail : null);
+
             if (string.IsNullOrWhiteSpace(superAdminEmail))
             {
                 throw new InvalidOperationException(
