@@ -18,7 +18,7 @@ graph TD
             NSG_Out["Stateful Outbound Firewall<br/>• 100: Allow Storage SMB (445)<br/>• 110: Allow AzureCloud HTTPS / ACR (443)<br/>• 120: Allow DNS (53) & 130: Allow NTP (123)<br/>• 140: Allow Internet HTTPS (443) for Gemini AI<br/>• 150: Allow VNet Internal Traffic<br/>• 4000: DENY ALL OTHER OUTBOUND"]
         end
 
-        subgraph ACA_Subnet ["Delegated Subnet: snet-aca-infra (10.0.0.0/23)"]
+        subgraph ACA_Subnet ["Delegated Subnet: snet-aca-infra-${environment} (10.0.0.0/23)"]
             ACA_Env["ACA Managed Environment: cae-dietdost-dev<br/>Service Endpoints: Microsoft.Storage, Microsoft.KeyVault"]
             
             subgraph Workload_Container ["Diet-Dost Web Gateway & Mobile BFF Workload"]
@@ -28,19 +28,19 @@ graph TD
     end
 
     subgraph Container_Image_Delivery ["3. Secure OCI Image Registry & Ingestion"]
-        ACR["Azure Container Registry (Basic SKU)<br/>crdietdost*<br/>Admin User: Disabled (Zero Static Creds)"]
+        ACR["Azure Container Registry (Basic SKU)<br/>crdost${environment}*<br/>Admin User: Disabled (Zero Static Creds)"]
         CICD["GitHub Actions CI/CD (Podman 5.7.0)<br/>Builds Containerfile & Pushes via az acr token"]
     end
 
     subgraph Data_Storage ["4. Encrypted Cloud Persistence Layer"]
-        StorageAcc["Azure Storage Account: Standard_LRS<br/>VNet Firewall: Deny Default + VNet Subnet Rule"]
+        StorageAcc["Azure Storage Account: stgdost${environment}* (Standard_LRS)<br/>VNet Firewall: Deny Default + VNet Subnet Rule"]
         FileServices["Azure Files SMB 3.1.1 Service<br/>• AES-128-GCM / AES-256-GCM Channel Encryption<br/>• 7-Day File Share Soft-Delete Policy"]
-        FileShare["SMB Share: dietdost-data<br/>• diet_dost.db (SQLite ACID Single-Writer)<br/>• wwwroot/uploads/ (Meal & Progress Photos)"]
+        FileShare["SMB Share: dietdost-data-${environment}<br/>• diet_dost.db (SQLite ACID Single-Writer)<br/>• wwwroot/uploads/ (Meal & Progress Photos)"]
     end
 
     subgraph Security_Identity ["5. Identity & Secrets Management"]
         MI["User-Assigned Managed Identity<br/>id-dietdost-dev<br/>Zero Hardcoded Credentials"]
-        KV["Azure Key Vault: kvdietdost* (Standard)<br/>• RBAC Authorization<br/>• Purge Protection & 7-Day Soft Delete<br/>• Network ACLs: VNet Subnet Rule"]
+        KV["Azure Key Vault: kvdost${environment}* (Standard)<br/>• RBAC Authorization<br/>• Purge Protection & 7-Day Soft Delete<br/>• Network ACLs: VNet Subnet Rule"]
     end
 
     subgraph Monitoring_Alerts ["6. Observability & Threat Detection"]

@@ -392,12 +392,12 @@ flowchart TD
 
 | Verification Dimension | Scope | Expected Standard | Observed Result | Status |
 | :--- | :--- | :--- | :--- | :---: |
-| **Bicep IaC Compilation** | `infra/infra.bicep`, `infra/app.bicep` | 0 errors, 0 warnings (`az bicep build`) | 0 errors, 0 warnings | ✅ **PASSED** |
-| **Live Azure ARM Pre-Flight Validation** | `infra/infra.bicep`, `infra/app.bicep`, `infra/main.bicep` | `provisioningState: Succeeded`, 0 errors | `Succeeded` across all 3 templates | ✅ **PASSED** |
-| **Live Azure ARM What-If Preview** | `infra/infra.bicep` | Resource mutation preview with 0 schema errors | 5 to create, 10 to deploy, 0 errors | ✅ **PASSED** |
-| **Bicep IaC Contract Tests** | `BicepIaCConfigurationContractTests.cs` | Zero public access, NSG rules, SMB encryption | 2/2 tests passed | ✅ **PASSED** |
+| **Bicep IaC Compilation** | `infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep` | 0 errors, 0 warnings (`az bicep build`) | 0 errors, 0 warnings | ✅ **PASSED** |
+| **Live Azure ARM Pre-Flight Validation** | `infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep` | `provisioningState: Succeeded`, 0 errors | `Succeeded` across all 3 templates | ✅ **PASSED** |
+| **Live Azure ARM What-If Preview** | `infra/dev/infra.bicep` | Resource mutation preview with 0 schema errors | 5 to create, 10 to deploy, 0 errors | ✅ **PASSED** |
+| **Bicep IaC Contract Tests** | `BicepIaCConfigurationContractTests.cs` | Multi-environment naming, zero public access, NSG rules | 3/3 tests passed | ✅ **PASSED** |
 | **Domain Clinical Tests** | `Nutrition.Domain.Tests` | ICMR-NIN 2024 compliance, Zero-Assumption | 36/36 tests passed | ✅ **PASSED** |
-| **Evaluation Harness Tests** | `Nutrition.EvalHarness.Tests` | Host gating, JWT secrets, rate limiting, OWASP | 212/212 tests passed | ✅ **PASSED** |
+| **Evaluation Harness Tests** | `Nutrition.EvalHarness.Tests` | Host gating, JWT secrets, rate limiting, OWASP | 213/213 tests passed | ✅ **PASSED** |
 | **AI Security Defense Validation** | `scripts/verify-ai-security-defense.ps1` | PromptShield, content safety, diagram sync | All 6 vectors passed cleanly | ✅ **PASSED** |
 | **Checkov IaC SAST Gate** | GitHub Actions (`security-scan.yml`) | 0 high/critical violations (`CKV_AZURE_59` resolved) | PASSED (Run 39024403769) | ✅ **PASSED** |
 | **Gitleaks Secret Scanner** | GitHub Actions (`security-scan.yml`) | 0 leaked credentials | PASSED (Run 39024403769) | ✅ **PASSED** |

@@ -256,17 +256,18 @@ graph TD
 Production deployment executes via two decoupled GitHub Actions workflows conditioned on a green pass of the 8-job security gate:
 1. **Stage 1: Infrastructure Provisioning (`azure-infra-deploy.yml`)**:
    - Decomposed into three sequential, observable stages:
-     - **Validate**: Aspire AppHost manifest evaluation, Pre-Deployment Gitleaks secret scan, Bicep compilation (`infra/infra.bicep` & `infra/app.bicep`), OIDC authentication with immutable repository IDs, and live ARM API validation (`az deployment group validate`).
+     - **Validate**: Aspire AppHost manifest evaluation, Pre-Deployment Gitleaks secret scan, Bicep compilation (`infra/${{ inputs.environment }}/infra.bicep` & `infra/${{ inputs.environment }}/app.bicep`), OIDC authentication with immutable repository IDs, and live ARM API validation (`az deployment group validate`).
      - **Preview**: Azure ARM What-If analysis (`az deployment group what-if`), publishing formatted planned resource mutation matrices to `$GITHUB_STEP_SUMMARY`.
-     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-dev`), Storage Account, Azure Files Share (`dietdost-data`), Managed Environment (`cae-dietdost-dev`), Key Vault, Managed Identity, and ACR.
+     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-${environment}`), Storage Account (`stgdost${environment}...`), Azure Files Share (`dietdost-data-${environment}`), Managed Environment (`cae-dietdost-${environment}`), Key Vault (`kvdost${environment}...`), Managed Identity, and ACR (`crdost${environment}...`).
 2. **Stage 2: Application Deployment (`azure-app-deploy.yml`)**:
    - Compiles container image targeting Linux x64 and pushes to Azure Container Registry.
-   - Deploys container to Azure Container Apps via `infra/app.bicep`.
-   - Binds custom domain `dev.dietdost.app` with free Azure managed TLS certificate.
+   - Deploys container to Azure Container Apps via `infra/${{ inputs.environment }}/app.bicep` (`app-dietdost-web-${environment}`).
+   - Binds custom domain `${environment}.diet-dost.in` with free Azure managed TLS certificate.
 
 ### 7.2 Declarative Bicep Infrastructure as Code (IaC)
-- [`infra/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, and storage mount definitions on the ACA Managed Environment.
-- [`infra/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and custom domain hostname bindings.
+- [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, and storage mount definitions on the ACA Managed Environment.
+- [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and custom domain hostname bindings.
+- [`infra/<env>/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep): Composite template orchestrating foundation and workload modules for full end-to-end deployments.
 
 ### 7.3 Azure Files SMB Volume Mount & Zero-Data-Loss Configuration
 The Container App mounts the Azure Files SMB share as a persistent volume:
@@ -343,7 +344,7 @@ graph TD
     - `Deny-All-Other-Outbound` (Priority 4000, Explicit Catch-All Deny to override Azure default AllowInternetOutBound).
 
 ### 8.2 Azure Files SMB 3.1.1 Cryptographic Channel Hardening
-- **Protocol Encryption**: Enforces SMB 3.1.1 wire encryption with negotiated ciphers `AES-128-GCM` and `AES-256-GCM` across `fileServices` in `infra/infra.bicep`.
+- **Protocol Encryption**: Enforces SMB 3.1.1 wire encryption with negotiated ciphers `AES-128-GCM` and `AES-256-GCM` across `fileServices` in `infra/<env>/infra.bicep` (e.g. `infra/dev/infra.bicep`).
 - **Kerberos & NTLM Policy**: Enforces Kerberos ticket authentication and disables legacy NTLMv1 fallbacks.
 - **Accidental Deletion Defense**: Configured 7-day share soft-delete retention policy, protecting the live SQLite database (`diet_dost.db`) and user meal photos against catastrophic accidental share deletion.
 
@@ -352,9 +353,9 @@ graph TD
 - **Automated Intrusion Alerting**: Deployed `Microsoft.Insights/metricAlerts` (`alert-kv-unauthorized-dev`) monitoring the Key Vault Service Api Hit metric with dimensions `StatusCode = 401, 403`. Fires automatically if unauthorized attempts exceed 5 in a 5-minute window, consuming 0 additional cost (within Azure's first 10 free platform metric alerts).
 
 ### 8.4 Direct ACA Ingress & ACR Image Pull Delivery Architecture
-- **Direct ACA Managed Envoy Ingress**: External traffic from `dev.diet-dost.in` routes directly to the ACA Managed Environment's built-in Envoy proxy. Zero intermediate hops—**neither Azure Front Door nor Azure Application Gateway is provisioned or utilized**, eliminating unnecessary cost and latency. Free Azure Managed TLS 1.3 certificates terminate directly at the ACA Envoy layer.
-- **Passwordless ACR Image Pull Mechanics**: Azure Container Registry (`crdietdost*`) runs with `adminUserEnabled: false` (zero static passwords). The Container App (`app-dietdost-web`) pulls images securely via its assigned User-Assigned Managed Identity (`id-dietdost-dev`) which possesses the built-in `AcrPull` role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`) scoped directly to the registry. CI/CD pushes images using ephemeral tokens generated via `az acr login --expose-token`.
-- **IP Security Restrictions**: Added configurable `ipSecurityRestrictions` array to `infra/app.bicep`. Allows operators to enforce IP allowlisting/denylisting on the external ingress controller at 0 cost.
+- **Direct ACA Managed Envoy Ingress**: External traffic from `${environment}.diet-dost.in` routes directly to the ACA Managed Environment's built-in Envoy proxy. Zero intermediate hops—**neither Azure Front Door nor Azure Application Gateway is provisioned or utilized**, eliminating unnecessary cost and latency. Free Azure Managed TLS 1.3 certificates terminate directly at the ACA Envoy layer.
+- **Passwordless ACR Image Pull Mechanics**: Azure Container Registry (`crdost${environment}...`) runs with `adminUserEnabled: false` (zero static passwords). The Container App (`app-dietdost-web-${environment}`) pulls images securely via its assigned User-Assigned Managed Identity (`id-dietdost-${environment}`) which possesses the built-in `AcrPull` role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`) scoped directly to the registry. CI/CD pushes images using ephemeral tokens generated via `az acr login --expose-token`.
+- **IP Security Restrictions**: Added configurable `ipSecurityRestrictions` array to `infra/<env>/app.bicep`. Allows operators to enforce IP allowlisting/denylisting on the external ingress controller at 0 cost.
 
 ### 8.5 Architectural Visual Artifacts
 The full architectural blueprint is codified in the following repository visual artifacts:

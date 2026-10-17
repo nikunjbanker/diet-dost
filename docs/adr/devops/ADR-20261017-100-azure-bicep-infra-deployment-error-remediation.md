@@ -13,8 +13,8 @@
 | **Status** | **ACCEPTED** |
 | **Date** | 2026-10-17 |
 | **Domain** | DevOps / Cloud Infrastructure as Code |
-| **Subsystem** | `infra/infra.bicep`, `.github/workflows/azure-infra-deploy.yml` |
-| **Impacted Files** | `infra/infra.bicep`, `infra/app.bicep`, `.github/workflows/azure-app-deploy.yml`, `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`, `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs`, `src/Nutrition.Infrastructure/Security/JwtTokenService.cs`, `tests/Nutrition.EvalHarness.Tests/SecurityEnvironmentAndHeaderTests.cs`, `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` |
+| **Subsystem** | `infra/dev/infra.bicep`, `.github/workflows/azure-infra-deploy.yml` |
+| **Impacted Files** | `infra/dev/infra.bicep`, `infra/dev/app.bicep`, `infra/dev/main.bicep`, `infra/dev/main.parameters.json`, `.github/workflows/azure-app-deploy.yml`, `.github/workflows/azure-infra-deploy.yml`, `src/Nutrition.WebGateway/Middleware/HostGatingMiddleware.cs`, `src/Nutrition.WebGateway/Extensions/ConfigurationExtensions.cs`, `src/Nutrition.WebGateway/Extensions/SecurityAndAuthExtensions.cs`, `src/Nutrition.Infrastructure/Security/JwtTokenService.cs`, `tests/Nutrition.EvalHarness.Tests/BicepIaCConfigurationContractTests.cs`, `tests/Nutrition.EvalHarness.Tests/SecurityEnvironmentAndHeaderTests.cs`, `tests/Nutrition.EvalHarness.Tests/JwtAuthenticationTests.cs` |
 
 ---
 

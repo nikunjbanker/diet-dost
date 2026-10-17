@@ -95,7 +95,7 @@ graph TD
   ```
 
 ### 2.5 Job 5: Checkov (Infrastructure-as-Code Security Scanning)
-- **Scope**: Scans Azure Bicep templates (`infra/infra.bicep`, `infra/app.bicep`) and `Containerfile` against cloud security benchmarks (CIS, Azure Security Benchmark).
+- **Scope**: Scans Azure Bicep templates (`infra/<env>/infra.bicep`, `infra/<env>/app.bicep` under `infra/dev/`) and `Containerfile` against cloud security benchmarks (CIS, Azure Security Benchmark).
 - **Configuration**: Governed by root [`.checkov.yaml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.checkov.yaml).
 - **Suppression Policy**: Any justified suppression (e.g. SQLite single-replica container without load balancer) must be explicitly listed in `.checkov.yaml` under `skip-check` with documentation.
 - **Local Execution Command**:
