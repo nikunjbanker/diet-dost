@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T14:46:02.084754+00:00",
-  "totalAdrs": 70,
+  "generatedAt": "2026-10-17T20:27:49.194990+00:00",
+  "totalAdrs": 71,
   "categoryCounts": {
     "architecture": 18,
     "security": 18,
-    "devops": 17,
+    "devops": 18,
     "presentation": 4,
     "governance": 13
   },
@@ -849,6 +849,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261017-105-azure-container-apps-storage-mount-immutability-and-drift-remediation.md",
       "relativePath": "docs/adr/devops/ADR-20261017-105-azure-container-apps-storage-mount-immutability-and-drift-remediation.md"
+    },
+    {
+      "id": "ADR-106",
+      "number": 106,
+      "title": "Azure Application Insights Monitoring Metrics Publisher Role Definition GUID Remediation",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-18",
+      "subsystem": "Devops",
+      "filename": "ADR-20261018-106-azure-application-insights-role-definition-guid-remediation.md",
+      "relativePath": "docs/adr/devops/ADR-20261018-106-azure-application-insights-role-definition-guid-remediation.md"
     }
   ]
 }

@@ -27,13 +27,13 @@
    - In [`infra/dev/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep), provisioned a workspace-based Application Insights resource (`appi-dietdost-${environment}`) of type `Microsoft.Insights/components@2020-02-02` linked to `logAnalytics.id` via `WorkspaceResourceId: logAnalytics.id`.
    - Explicitly configured `DisableLocalAuth: true`, enforcing Entra ID authentication and permanently disabling legacy API keys and InstrumentationKey-only authentication.
 2. **Entra ID RBAC Role Delegation**:
-   - Assigned the built-in **`Monitoring Metrics Publisher`** role (`39135dd6-16b0-4780-a6e6-8577137d9569`) to the User-Assigned Managed Identity (`id-dietdost-${environment}`) scoped directly to the Application Insights resource:
+   - Assigned the built-in **`Monitoring Metrics Publisher`** role (`3913510d-42f4-4e42-8a64-420c390055eb`) to the User-Assigned Managed Identity (`id-dietdost-${environment}`) scoped directly to the Application Insights resource:
      ```bicep
      resource appiMonitoringPublisherRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
-       name: guid(appInsights.id, managedIdentity.id, '39135dd6-16b0-4780-a6e6-8577137d9569')
+       name: guid(appInsights.id, managedIdentity.id, '3913510d-42f4-4e42-8a64-420c390055eb')
        scope: appInsights
        properties: {
-         roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '39135dd6-16b0-4780-a6e6-8577137d9569')
+         roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')
          principalId: managedIdentity.properties.principalId
          principalType: 'ServicePrincipal'
        }
