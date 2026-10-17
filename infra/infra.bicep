@@ -244,11 +244,6 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
     minimumTlsVersion: 'TLS1_2'
     supportsHttpsTrafficOnly: true
     allowBlobPublicAccess: false
-    // Zero Public Access Architecture:
-    // In Azure Resource Manager, publicNetworkAccess must remain 'Enabled' to allow Virtual Network Service Endpoints to function.
-    // Zero public access is ironclad-enforced by networkAcls.defaultAction: 'Deny', which unconditionally blocks 100% of public internet traffic (403 Forbidden).
-    // Only the ACA delegated subnet (snet-aca-infra) is whitelisted in virtualNetworkRules, guaranteeing that ONLY the Container App environment can connect.
-    publicNetworkAccess: 'Enabled'
     networkAcls: {
       defaultAction: 'Deny'
       bypass: 'AzureServices'

@@ -50,6 +50,27 @@ param managedIdentityId string = ''
 @description('Client ID of User-Assigned Managed Identity for Key Vault authentication.')
 param managedIdentityClientId string = ''
 
+@description('Optional cryptographic JWT signing key (fallback if Key Vault secret is not yet seeded).')
+@secure()
+param jwtKey string = ''
+
+@description('Optional SuperAdmin email address (fallback if Key Vault secret is not yet seeded).')
+param superAdminEmail string = ''
+
+resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
+  name: last(split(acaEnvironmentId, '/'))
+}
+
+resource managedCert 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (enableCustomDomain) {
+  parent: acaEnvironment
+  name: 'cert-${replace(customDomain, '.', '-')}'
+  location: location
+  properties: {
+    subjectName: customDomain
+    domainControlValidation: 'CNAME'
+  }
+}
+
 // ------------------------------------------------------------------------------
 // Container App (Web Gateway & Mobile BFF Workload)
 // ------------------------------------------------------------------------------
@@ -77,6 +98,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           {
             name: customDomain
             bindingType: 'SniEnabled'
+            certificateId: managedCert.id
           }
         ] : []
       }
@@ -86,12 +108,20 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: managedIdentityId
         }
       ] : []
-      secrets: !empty(geminiApiKey) ? [
-        {
-          name: 'gemini-api-key'
-          value: geminiApiKey
-        }
-      ] : []
+      secrets: union(
+        !empty(geminiApiKey) ? [
+          {
+            name: 'gemini-api-key'
+            value: geminiApiKey
+          }
+        ] : [],
+        !empty(jwtKey) ? [
+          {
+            name: 'jwt-key'
+            value: jwtKey
+          }
+        ] : []
+      )
     }
     template: {
       containers: [
@@ -139,6 +169,15 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'AI__Google__ApiKey'
               secretRef: !empty(geminiApiKey) ? 'gemini-api-key' : null
               value: empty(geminiApiKey) ? '' : null
+            }
+            {
+              name: 'Jwt__Key'
+              secretRef: !empty(jwtKey) ? 'jwt-key' : null
+              value: empty(jwtKey) ? '' : null
+            }
+            {
+              name: 'Auth__SuperAdminEmail'
+              value: superAdminEmail
             }
             {
               name: 'KeyVault__VaultUri'

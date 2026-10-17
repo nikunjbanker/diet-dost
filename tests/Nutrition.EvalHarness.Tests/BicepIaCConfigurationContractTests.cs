@@ -135,7 +135,7 @@ public class BicepIaCConfigurationContractTests
         // Storage account firewall invariants: zero public access + VNet service endpoint
         Assert.Contains("supportsHttpsTrafficOnly: true", bicepContent);
         Assert.Contains("allowBlobPublicAccess: false", bicepContent);
-        Assert.Contains("publicNetworkAccess: 'Enabled'", bicepContent);
+        Assert.Contains("defaultAction: 'Deny'", bicepContent);
         Assert.Contains("service: 'Microsoft.Storage'", bicepContent);
 
         // NSG rule permitting SMB outbound only to Storage service tag
