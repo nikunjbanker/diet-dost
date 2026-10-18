@@ -172,6 +172,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               value: 'Sqlite'
             }
             {
+              name: 'Database__JournalMode'
+              value: 'DELETE'
+            }
+            {
               name: 'ConnectionStrings__DefaultConnection'
               value: 'Data Source=/app/data/diet_dost.db;Cache=Shared'
             }
@@ -224,14 +228,24 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           ]
           probes: [
             {
+              type: 'Startup'
+              httpGet: {
+                path: '/healthz'
+                port: 8080
+              }
+              initialDelaySeconds: 10
+              periodSeconds: 5
+              failureThreshold: 24
+            }
+            {
               type: 'Liveness'
               httpGet: {
                 path: '/healthz'
                 port: 8080
               }
-              initialDelaySeconds: 5
-              periodSeconds: 10
-              failureThreshold: 3
+              initialDelaySeconds: 30
+              periodSeconds: 15
+              failureThreshold: 5
             }
             {
               type: 'Readiness'
@@ -239,8 +253,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
                 path: '/ready'
                 port: 8080
               }
-              initialDelaySeconds: 10
-              periodSeconds: 15
+              initialDelaySeconds: 20
+              periodSeconds: 10
               failureThreshold: 3
             }
           ]

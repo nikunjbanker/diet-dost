@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-18T19:27:13.098706+00:00",
-  "totalAdrs": 80,
+  "generatedAt": "2026-10-18T20:49:31.988306+00:00",
+  "totalAdrs": 81,
   "categoryCounts": {
     "architecture": 20,
     "security": 20,
-    "devops": 21,
+    "devops": 22,
     "presentation": 6,
     "governance": 13
   },
@@ -969,6 +969,18 @@
       "subsystem": "WebGateway | Presentation (",
       "filename": "ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md",
       "relativePath": "docs/adr/presentation/ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md"
+    },
+    {
+      "id": "ADR-116",
+      "number": 116,
+      "title": "SQLite Azure Files SMB Mount Journal Mode & Container App Startup Probes",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-19",
+      "subsystem": "Devops",
+      "filename": "ADR-20261019-116-sqlite-smb-mount-journal-mode-and-container-startup-probes.md",
+      "relativePath": "docs/adr/devops/ADR-20261019-116-sqlite-smb-mount-journal-mode-and-container-startup-probes.md"
     }
   ]
 }

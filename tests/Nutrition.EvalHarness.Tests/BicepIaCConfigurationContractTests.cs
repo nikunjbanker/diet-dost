@@ -53,6 +53,7 @@ public class BicepIaCConfigurationContractTests
 
         // Required configuration keys matched to Options pattern
         Assert.Contains("Database__Provider", bicepContent);
+        Assert.Contains("Database__JournalMode", bicepContent);
         Assert.Contains("ConnectionStrings__DefaultConnection", bicepContent);
         Assert.Contains("Security__AllowDemoUsers", bicepContent);
         Assert.Contains("AI__Google__ApiKey", bicepContent);
@@ -66,7 +67,8 @@ public class BicepIaCConfigurationContractTests
         var appBicepPath = GetAppBicepPath("dev");
         var bicepContent = File.ReadAllText(appBicepPath);
 
-        // Probes for liveness and readiness
+        // Probes for startup, liveness, and readiness
+        Assert.Contains("type: 'Startup'", bicepContent);
         Assert.Contains("type: 'Liveness'", bicepContent);
         Assert.Contains("path: '/healthz'", bicepContent);
         Assert.Contains("type: 'Readiness'", bicepContent);

@@ -293,4 +293,26 @@ public class OptionsPatternFluentValidationTests
         var fallbackConfig = new DietDostConfiguration(configuration);
         Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", fallbackConfig.DefaultConnection);
     }
+
+    [Fact]
+    public void SqlitePragmaInterceptor_ConfiguresJournalMode_And_ToleratesOverrides()
+    {
+        Environment.SetEnvironmentVariable("Database__JournalMode", "DELETE");
+        try
+        {
+            using var conn = new Microsoft.Data.Sqlite.SqliteConnection("Data Source=:memory:");
+            conn.Open();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "PRAGMA journal_mode=DELETE; PRAGMA busy_timeout=30000;";
+            cmd.ExecuteNonQuery();
+            cmd.CommandText = "PRAGMA busy_timeout;";
+            var timeout = Convert.ToInt32(cmd.ExecuteScalar());
+            Assert.Equal(30000, timeout);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("Database__JournalMode", null);
+        }
+    }
 }
+
