@@ -96,13 +96,13 @@ Diet-Dost delivers clinical-grade South Asian nutrition tracking adhering to ICM
 
 | Asset Path | Format | Resolution | Target Usage |
 |---|---|---|---|
-| `assets/diet-dost-icon.svg` | SVG | Scalable Vector | Master icon, HTML badges, Splash screen, SVG Favicon |
-| `favicon.svg` | SVG | Scalable Vector | Root modern browser tab icon (infinite DPI) |
+| `assets/diet-dost-icon.svg` | SVG | 512x512 Encapsulated Vector | Master icon, HTML badges, Splash screen, SVG Favicon (100% visual parity with icon-512) |
+| `favicon.svg` | SVG | 512x512 Encapsulated Vector | Root modern browser tab icon (infinite DPI, 100% parity with icon-512) |
 | `favicon.ico` | ICO | 16x16, 32x32, 48x48 | Legacy browser tab icon fallback |
 | `assets/favicon-16x16.png` | PNG | 16x16 px | Low-DPI browser tab icon |
 | `assets/favicon-32x32.png` | PNG | 32x32 px | High-DPI browser tab & pinned bookmark |
 | `assets/icon-192.png` | PNG | 192x192 px | Android home screen & PWA mobile install |
-| `assets/icon-512.png` | PNG | 512x512 px | PWA splash launcher & desktop app install |
+| `assets/icon-512.png` | PNG | 512x512 px | Master 512x512 artwork, PWA splash launcher & desktop app install |
 
 ### 6.2 Splash Screen Lifecycle & Zero CLS
 
