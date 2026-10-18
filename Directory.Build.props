@@ -5,5 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Suppress preview notifications and pruning hints for explicit preview packages -->
     <NoWarn>$(NoWarn);NETSDK1057;NU1510;ASPIRE010</NoWarn>
+    <!-- OWASP A06: Enforce zero vulnerable direct & transitive NuGet dependencies at build time -->
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>moderate</NuGetAuditLevel>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsAsErrors>
   </PropertyGroup>
 </Project>

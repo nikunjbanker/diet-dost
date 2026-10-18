@@ -125,7 +125,7 @@ graph TD
 
 1. **Gitleaks (v8.30.1)**: Scans full repository Git history and working tree for leaked API keys, tokens, or credentials with SARIF reporting.
 2. **ESLint (v9+ / v10)**: Strict static analysis of native ES Modules using modern zero-dependency flat config (`eslint.config.mjs`) with SARIF output.
-3. **Microsoft Roslyn Security, DevSkim & CodeQL SAST**: Comprehensive multi-layer .NET 11 C# SAST executed across **all 7 solution projects** combining first-party Microsoft Roslyn CA Security rules (`/p:AnalysisLevel=latest /p:AnalysisModeSecurity=All`), Microsoft DevSkim CLI, and GitHub CodeQL semantic taint analysis.
+3. **Microsoft Roslyn Security, DevSkim, CodeQL SAST & OWASP A06 Dependency Audit**: Comprehensive multi-layer .NET 11 C# SAST and dependency security gate executed across **all 7 solution projects** combining first-party Microsoft Roslyn CA Security rules (`/p:AnalysisLevel=latest /p:AnalysisModeSecurity=All`), Microsoft DevSkim CLI, GitHub CodeQL semantic taint analysis, and strict OWASP A06 direct and transitive NuGet vulnerability auditing (`dotnet list package --vulnerable --include-transitive` and `Directory.Build.props` `<NuGetAuditLevel>moderate</NuGetAuditLevel>`).
 4. **Trivy (v0.75.0)**: Scans filesystem dependencies, packages, and container images for known CVEs.
 5. **Checkov**: Validates Infrastructure-as-Code (`infra/*.bicep`) against CIS benchmarks and cloud security best practices with `soft_fail: false`.
 6. **actionlint (v1.7.12)**: Inspects GitHub Actions workflows for syntax errors, untrusted input interpolation, and script injection risks.

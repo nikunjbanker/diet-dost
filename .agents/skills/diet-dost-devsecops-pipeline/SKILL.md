@@ -75,14 +75,16 @@ graph TD
   npx eslint . --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
   ```
 
-### 2.3 Job 3: Microsoft Roslyn Security, DevSkim & CodeQL SAST (.NET 11 C#)
-- **Scope**: Multi-layered C# SAST across all solution projects combining:
-  1. *Microsoft Roslyn CA Security Rules*: Native .NET 11 compiler security analysis (`CA2100` SQL Injection, `CA3001`-`CA3012` OWASP taint, `CA5350`-`CA5405` crypto/TLS rules) via `/p:AnalysisLevel=latest /p:AnalysisModeSecurity=All /p:ErrorLog=...`.
-  2. *Microsoft DevSkim CLI*: First-party Microsoft CST security scanner across source code (`devskim analyze -I src -O sarif-results/devskim.sarif -f sarif`).
-  3. *GitHub CodeQL (C#)*: Semantic taint analysis powered by `github/codeql-action/init` and `analyze`.
-- **Output**: Generates consolidated SARIF 2.1.0 log (`security-code-scan.sarif`).
+### 2.3 Job 3: Microsoft Roslyn Security, DevSkim, CodeQL SAST & OWASP A06 NuGet Audit (.NET 11 C#)
+- **Scope**: Multi-layered C# SAST and supply-chain dependency audit across all solution projects combining:
+  1. *OWASP A06 NuGet Dependency Audit*: Scans all direct and transitive dependencies (`dotnet list package --vulnerable --include-transitive`) and enforces zero moderate/high/critical CVEs via `Directory.Build.props` `<NuGetAuditLevel>moderate</NuGetAuditLevel>` and `WarningsAsErrors` (`NU1901-NU1904`).
+  2. *Microsoft Roslyn CA Security Rules*: Native .NET 11 compiler security analysis (`CA2100` SQL Injection, `CA3001`-`CA3012` OWASP taint, `CA5350`-`CA5405` crypto/TLS rules) via `/p:AnalysisLevel=latest /p:AnalysisModeSecurity=All /p:ErrorLog=...`.
+  3. *Microsoft DevSkim CLI*: First-party Microsoft CST security scanner across source code (`devskim analyze -I src -O sarif-results/devskim.sarif -f sarif`).
+  4. *GitHub CodeQL (C#)*: Semantic taint analysis powered by `github/codeql-action/init` and `analyze`.
+- **Output**: Generates consolidated SARIF 2.1.0 log (`security-code-scan.sarif`) and halts CI immediately if any vulnerable package is detected.
 - **Local Execution Command**:
   ```bash
+  dotnet list package --vulnerable --include-transitive
   devskim analyze -I src -O sarif-results/devskim.sarif -f sarif -s Critical,Important -g "**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/aspire-output/**"
   ```
 

@@ -159,6 +159,17 @@ jobs:
         with:
           dotnet-version: '11.0.x'
 
+      - name: OWASP Security Gate - Audit NuGet Dependencies (OWASP A06)
+        run: |
+          echo "Scanning all package dependencies for known CVE vulnerabilities (Direct & Transitive)..."
+          AUDIT_LOG=$(dotnet list package --vulnerable --include-transitive)
+          echo "$AUDIT_LOG"
+          if echo "$AUDIT_LOG" | grep -iq "has the following vulnerable packages"; then
+            echo "❌ CRITICAL OWASP SECURITY GATE FAILED: Vulnerable dependencies detected in solution!"
+            exit 1
+          fi
+          echo "✅ OWASP Dependency Security Gate Passed: 0 known vulnerabilities found."
+
       - name: Execute SecurityCodeScan Analysis (All Projects)
         run: |
           mkdir -p sarif-results
