@@ -405,7 +405,7 @@ jobs:
             echo "$DELETED_KVS"
             while IFS=$'\t' read -r KV_NAME KV_LOC; do
               if [ -n "$KV_NAME" ]; then
-                if [[ "$KV_NAME" == "$TARGET_PREFIX"* ]] || [ -n "$SPECIFIED_KV" -a "$KV_NAME" = "$SPECIFIED_KV" ]; then
+                if [[ "$KV_NAME" == "$TARGET_PREFIX"* ]] || [[ -n "$SPECIFIED_KV" && "$KV_NAME" == "$SPECIFIED_KV" ]]; then
                   echo "⚡ Auto-recovering target soft-deleted Key Vault '$KV_NAME' in '$KV_LOC'..."
                   az keyvault recover --name "$KV_NAME" --location "$KV_LOC" || echo "⚠️ Warning: Failed to recover $KV_NAME, continuing..."
                 else
