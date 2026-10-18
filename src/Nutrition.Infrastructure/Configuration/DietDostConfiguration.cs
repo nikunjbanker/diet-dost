@@ -27,7 +27,7 @@ public sealed class DietDostConfiguration : IDietDostConfiguration
     private readonly DatabaseOptions _databaseOptions;
 
     public const string DefaultDevJwtKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
-    public const string DefaultSuperAdminEmail = "superadmin@dietdost.app";
+    public const string DefaultSuperAdminEmail = "nikunj_banker@hotmail.com";
 
     public DietDostConfiguration(
         IOptions<JwtOptions> jwtOptions,

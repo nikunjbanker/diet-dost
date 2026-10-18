@@ -27,7 +27,8 @@ $users = @(
     @{ Email = "basic@dietdost.app"; Tier = "Basic"; Role = "User"; ExpectCompare = $false; ExpectExport = $false; ExpectAdmin = $false; ExpectSuperAdmin = $false },
     @{ Email = "premium@dietdost.app"; Tier = "Premium"; Role = "User"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $false; ExpectSuperAdmin = $false },
     @{ Email = "admin.demo@dietdost.app"; Tier = "Premium"; Role = "Admin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true; ExpectSuperAdmin = $false },
-    @{ Email = "superadmin@dietdost.app"; Tier = "SuperAdmin"; Role = "SuperAdmin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true; ExpectSuperAdmin = $true }
+    @{ Email = "superadmin@dietdost.app"; Tier = "SuperAdmin"; Role = "SuperAdmin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true; ExpectSuperAdmin = $true },
+    @{ Email = "nikunj_banker@hotmail.com"; Tier = "SuperAdmin"; Role = "SuperAdmin"; ExpectCompare = $true; ExpectExport = $true; ExpectAdmin = $true; ExpectSuperAdmin = $true }
 )
 
 Write-Host "==========================================================" -ForegroundColor Cyan

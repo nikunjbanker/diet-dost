@@ -17,6 +17,7 @@ public sealed class AuthOptions
 
     public bool AllowRegistration { get; set; } = true;
     public string SuperAdminEmail { get; set; } = string.Empty;
+    public string SuperAdminPassword { get; set; } = string.Empty;
     public bool RequireMobileVerification { get; set; } = false;
     public string TermsVersion { get; set; } = "v1.0-202609";
     public string HealthConsentVersion { get; set; } = "v1.0-202609";

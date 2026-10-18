@@ -49,6 +49,7 @@ public static partial class DatabaseInitializationExtensions
             await EnsureDatabaseCreatedAndMigratedAsync(db);
             await SeedAppSecretsAsync(db, configuration, appEnv, logger);
             await SeedTierConfigurationsAsync(db, logger);
+            await EnsureSuperAdminAccountAsync(db, scope.ServiceProvider, configuration, logger);
 
             if (appEnv.AllowsDemoUsers)
             {
@@ -414,8 +415,7 @@ public static partial class DatabaseInitializationExtensions
     {
         var privilegedDemoUsers = await db.Users
             .Where(u => ApplicationUser.PrivilegedDemoEmails.Contains(u.Email) ||
-                        u.Id.StartsWith("user-admin") ||
-                        u.Id.StartsWith("user-superadmin"))
+                        u.Id.StartsWith("user-admin"))
             .ToListAsync();
 
         if (privilegedDemoUsers.Count > 0)
@@ -515,28 +515,13 @@ public static partial class DatabaseInitializationExtensions
                 Medications: new List<MedicationEntry>()
             ));
 
-            demoSpecs.Add(new(
-                Id: "user-superadmin",
-                Email: primarySuperAdminEmail,
-                Name: "SuperAdmin Tier User (Demo)",
-                Mobile: "+919999999999",
-                Role: UserRole.SuperAdmin,
-                Tier: UserTier.SuperAdmin,
-                Cuisine: "North Indian",
-                Conditions: new List<string> { "Pre-Diabetes" },
-                Medications: new List<MedicationEntry>
-                {
-                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
-                }
-            ));
-
-            if (!string.Equals(primarySuperAdminEmail, "admin@dietdost.app", StringComparison.OrdinalIgnoreCase))
+            if (!string.Equals(primarySuperAdminEmail, "superadmin@dietdost.app", StringComparison.OrdinalIgnoreCase))
             {
                 demoSpecs.Add(new(
-                    Id: "user-superadmin-alias",
-                    Email: "admin@dietdost.app",
-                    Name: "SuperAdmin Tier User (Alias)",
-                    Mobile: "+919999999998",
+                    Id: "user-superadmin-demo",
+                    Email: "superadmin@dietdost.app",
+                    Name: "SuperAdmin Tier User (Demo)",
+                    Mobile: "+919999999999",
                     Role: UserRole.SuperAdmin,
                     Tier: UserTier.SuperAdmin,
                     Cuisine: "North Indian",
@@ -550,7 +535,7 @@ public static partial class DatabaseInitializationExtensions
         }
         else
         {
-            logger.LogInformation("[SECURITY] Released environment detected: Admin and SuperAdmin demo user seeding is suppressed. Only Free, Basic, and Premium demo users are seeded.");
+            logger.LogInformation("[SECURITY] Released environment detected: Admin demo user seeding is suppressed. Only Free, Basic, and Premium demo users are seeded.");
             await DeactivatePrivilegedDemoUsersAsync(db, logger);
         }
 
@@ -810,6 +795,115 @@ public static partial class DatabaseInitializationExtensions
                 UPDATE ""AiFeedbacks"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
             ", activeSuperAdmin.Id);
         }
+    }
+
+    private static async Task EnsureSuperAdminAccountAsync(
+        DietTrackerDbContext db,
+        IServiceProvider serviceProvider,
+        IConfiguration configuration,
+        ILogger logger)
+    {
+        var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
+        var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
+
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(authOptions.SuperAdminEmail)
+            ? authOptions.SuperAdminEmail.Trim()
+            : (!string.IsNullOrWhiteSpace(configuration["SUPER_ADMIN_EMAIL"])
+                ? configuration["SUPER_ADMIN_EMAIL"]!.Trim()
+                : "nikunj_banker@hotmail.com");
+
+        var superAdminPassword = !string.IsNullOrWhiteSpace(authOptions.SuperAdminPassword)
+            ? authOptions.SuperAdminPassword
+            : (!string.IsNullOrWhiteSpace(configuration["SUPER_ADMIN_PASSWORD"])
+                ? configuration["SUPER_ADMIN_PASSWORD"]!
+                : (!string.IsNullOrWhiteSpace(authOptions.DemoPassword)
+                    ? authOptions.DemoPassword
+                    : "DietDost@Demo2026!"));
+
+        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(primarySuperAdminEmail);
+        var superAdmin = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+
+        if (superAdmin == null)
+        {
+            superAdmin = await db.Users.FirstOrDefaultAsync(u => u.Id == "superadmin-root");
+        }
+
+        if (superAdmin == null)
+        {
+            superAdmin = new ApplicationUser
+            {
+                Id = "superadmin-root",
+                Email = primarySuperAdminEmail,
+                NormalizedEmail = normalizedEmail,
+                MobileNumber = "+919999999990",
+                NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999990"),
+                PasswordHash = passwordHasher.HashPassword(superAdminPassword),
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                Role = UserRole.SuperAdmin,
+                Tier = UserTier.SuperAdmin,
+                IsEmailVerified = true,
+                IsMobileVerified = true,
+                IsActive = true,
+                TermsAcceptedAtUtc = DateTime.UtcNow,
+                TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
+                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                HealthConsentVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.HealthConsentVersion) ? authOptions.HealthConsentVersion : "v1.0-202609",
+                ConsentIpAddress = "127.0.0.1",
+                ConsentUserAgent = "SystemBootstrap",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            await db.Users.AddAsync(superAdmin);
+            await db.SaveChangesAsync();
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("[SECURITY] Autonomous bootstrap completed: Created root SuperAdmin account for {Email} ({Tier}, {Role}).", superAdmin.Email, superAdmin.Tier, superAdmin.Role);
+            }
+        }
+        else
+        {
+            superAdmin.Email = primarySuperAdminEmail;
+            superAdmin.NormalizedEmail = normalizedEmail;
+            superAdmin.Role = UserRole.SuperAdmin;
+            superAdmin.Tier = UserTier.SuperAdmin;
+            superAdmin.IsEmailVerified = true;
+            superAdmin.IsMobileVerified = true;
+            superAdmin.MobileNumber = "+919999999990";
+            superAdmin.NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999990");
+            superAdmin.IsActive = true;
+            superAdmin.PasswordHash = passwordHasher.HashPassword(superAdminPassword);
+            await db.SaveChangesAsync();
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("[SECURITY] Autonomous synchronization completed: Reconciled root SuperAdmin account for {Email} ({Tier}, {Role}).", superAdmin.Email, superAdmin.Tier, superAdmin.Role);
+            }
+        }
+
+        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == superAdmin.Id);
+        if (profile == null)
+        {
+            profile = new UserProfile
+            {
+                Id = superAdmin.Id,
+                Name = "Nikunj Banker (SuperAdmin)",
+                Sex = BiologicalSex.Male,
+                Age = 35,
+                HeightCm = 175,
+                CurrentWeightKg = 75,
+                TargetWeightKg = 70,
+                DesiredPaceKgPerWeek = 0.5,
+                ActivityLevel = ActivityLevel.Moderate,
+                DietaryPreference = DietaryPreference.LactoVeg,
+                RegionalCuisine = "North Indian",
+                Timezone = "Asia/Kolkata"
+            };
+            await db.Profiles.AddAsync(profile);
+            await db.SaveChangesAsync();
+        }
+
+        var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
+        await dietitian.GetOrCreateDailyLedgerAsync(superAdmin.Id, today);
     }
 
     private sealed record DemoUserSpec(

@@ -313,7 +313,7 @@ graph TD
     end
 
     subgraph Security_Perimeter ["Security & Audit Perimeter"]
-        KV["Azure Key Vault: kvdost${environment}...<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdmin"]
+        KV["Azure Key Vault: kvdost${environment}...<br/>Purge Protection + 90-Day Soft-Delete<br/>Secrets: JWT, Gemini, SuperAdminEmail, SuperAdminPassword"]
         LAW["Log Analytics Workspace: log-dietdost-${environment}<br/>5 GB/Month Free Tier Retention"]
         Alert["Azure Monitor Metric Alert<br/>KV Unauthorized Access (401/403 > 5 in 5m)<br/>Included in Free Metric Alerts Quota"]
     end

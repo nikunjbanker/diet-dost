@@ -381,8 +381,8 @@ public class JwtAuthenticationTests
         Assert.Equal("DietDostGateway", config["Jwt:Issuer"]);
         Assert.Equal("DietDostClient", config["Jwt:Audience"]);
         Assert.Equal("1440", config["Jwt:ExpiryMinutes"]);
-        Assert.Equal("superadmin@dietdost.app", config["Auth:SuperAdminEmail"]);
-        Assert.Equal("superadmin@dietdost.app", config["SuperAdminEmail"]);
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultSuperAdminEmail, config["Auth:SuperAdminEmail"]);
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultSuperAdminEmail, config["SuperAdminEmail"]);
         Assert.Equal("false", config["Auth:RequireMobileVerification"]);
         Assert.Equal("false", config["RequireMobileVerification"]);
         Assert.Equal("Sqlite", config["Database:Provider"]);
@@ -404,7 +404,7 @@ public class JwtAuthenticationTests
         Assert.Equal("DietDostGateway", dietConfig.JwtIssuer);
         Assert.Equal("DietDostClient", dietConfig.JwtAudience);
         Assert.Equal(1440, dietConfig.JwtExpiryMinutes);
-        Assert.Equal("superadmin@dietdost.app", dietConfig.SuperAdminEmail);
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultSuperAdminEmail, dietConfig.SuperAdminEmail);
         Assert.False(dietConfig.RequireMobileVerification);
         Assert.True(dietConfig.AllowRegistration);
         Assert.Equal("Sqlite", dietConfig.DatabaseProvider);
@@ -470,7 +470,7 @@ public class JwtAuthenticationTests
         var config = builder.Build();
 
         Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultDevJwtKey, config["Jwt:Key"]);
-        Assert.Equal("superadmin@dietdost.app", config["Auth:SuperAdminEmail"]);
+        Assert.Equal(Nutrition.WebGateway.Extensions.ConfigurationExtensions.DefaultSuperAdminEmail, config["Auth:SuperAdminEmail"]);
     }
 
     private sealed class TestAppEnvironment(bool isDebug, bool isDevelopment) : Nutrition.Application.Common.Interfaces.IAppEnvironment

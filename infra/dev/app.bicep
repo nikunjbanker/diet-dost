@@ -60,6 +60,10 @@ param jwtKey string = ''
 @description('Optional SuperAdmin email address (fallback if Key Vault secret is not yet seeded).')
 param superAdminEmail string = ''
 
+@description('Optional SuperAdmin password (fallback if Key Vault secret is not yet seeded).')
+@secure()
+param superAdminPassword string = ''
+
 @description('Optional Azure Application Insights Connection String.')
 @secure()
 param appInsightsConnectionString string = ''
@@ -121,6 +125,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           {
             name: 'jwt-key'
             value: jwtKey
+          }
+        ] : [],
+        !empty(superAdminPassword) ? [
+          {
+            name: 'superadmin-password'
+            value: superAdminPassword
           }
         ] : [],
         !empty(appInsightsConnectionString) ? [
@@ -186,6 +196,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'Auth__SuperAdminEmail'
               value: superAdminEmail
+            }
+            {
+              name: 'Auth__SuperAdminPassword'
+              secretRef: !empty(superAdminPassword) ? 'superadmin-password' : null
+              value: empty(superAdminPassword) ? '' : null
             }
             {
               name: 'KeyVault__VaultUri'

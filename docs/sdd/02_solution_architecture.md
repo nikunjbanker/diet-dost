@@ -411,4 +411,15 @@ graph TD
 2. **Agentic Token Efficiency**: Agents read the ~4 KB `index.json` instead of loading a monolithic markdown log, slashing context overhead from ~145,000 tokens to ~18,500 tokens over a 10-PR roadmap.
 3. **Automated Dual Indexing**: Executing `pwsh -File scripts/sync-adr-index.ps1` regenerates both `index.json` and human-facing `README.md` automatically.
 
+---
+
+### 2.9 Autonomous Root SuperAdmin Bootstrapping & Entitlement Reconciliation
+
+To guarantee that production administrators can securely access the platform while adhering strictly to ADR-069's prohibition of demo accounts in released environments, the SuperAdmin lifecycle is decoupled from demo fixtures:
+
+1. **Autonomous Startup Bootstrapping**: `EnsureSuperAdminAccountAsync` executes on every application startup inside `InitializeAndSeedDatabaseAsync`, operating independently of `AllowsDemoUsers` or `AllowsAdminDemoUsers`.
+2. **Entity Isolation (`superadmin-root`)**: Uses immutable ID `superadmin-root`, guaranteeing immunity from demo account deactivation sweeps (`DeactivatePrivilegedDemoUsersAsync`).
+3. **Strongly-Typed Options & Secrets Ingestion**: Consumes `AuthOptions.SuperAdminEmail` and `AuthOptions.SuperAdminPassword` directly from Azure Key Vault (`Auth--SuperAdminPassword`) or environment variables with safe defaults.
+
+
 
