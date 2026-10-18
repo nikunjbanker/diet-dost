@@ -28,7 +28,7 @@ namespace Nutrition.WebGateway.Extensions;
 public static class ConfigurationExtensions
 {
     public const string DefaultDevJwtKey = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
-    public const string DefaultSuperAdminEmail = "superadmin@dietdost.app";
+    public const string DefaultSuperAdminEmail = "nikunj_banker@hotmail.com";
 
     public static IConfigurationBuilder AddDietDostAppConfiguration(
         this IConfigurationBuilder builder,
@@ -106,6 +106,20 @@ public static class ConfigurationExtensions
         {
             normalizedMap["Auth:SuperAdminEmail"] = resolvedSuperAdminEmail;
             normalizedMap["SuperAdminEmail"] = resolvedSuperAdminEmail;
+        }
+
+        var resolvedSuperAdminPassword = FirstNonEmpty(
+            currentConfig["Auth:SuperAdminPassword"],
+            currentConfig["Auth__SuperAdminPassword"],
+            currentConfig["SuperAdminPassword"],
+            currentConfig["SUPER_ADMIN_PASSWORD"],
+            currentConfig["Auth:DemoPassword"],
+            "DietDost@Demo2026!");
+
+        if (!string.IsNullOrWhiteSpace(resolvedSuperAdminPassword))
+        {
+            normalizedMap["Auth:SuperAdminPassword"] = resolvedSuperAdminPassword;
+            normalizedMap["SuperAdminPassword"] = resolvedSuperAdminPassword;
         }
 
         var resolvedRequireMobileVerification = currentConfig["Auth:RequireMobileVerification"]
