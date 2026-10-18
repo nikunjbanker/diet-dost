@@ -11,7 +11,7 @@
 # ==============================================================================
 
 # --- Stage 1: Build & Publish ---
-FROM mcr.microsoft.com/dotnet/sdk:11.0-preview AS build
+FROM mcr.microsoft.com/dotnet/sdk:11.0 AS build
 WORKDIR /src
 
 # Copy Directory.Build.props
@@ -36,7 +36,7 @@ RUN dotnet publish src/Nutrition.WebGateway/Nutrition.WebGateway.csproj \
     --no-restore
 
 # --- Stage 2: Production Runtime ---
-FROM mcr.microsoft.com/dotnet/aspnet:11.0-preview AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 WORKDIR /app
 
 # Create durable mount points for SQLite and static uploads

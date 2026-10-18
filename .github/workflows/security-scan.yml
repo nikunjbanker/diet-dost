@@ -239,6 +239,17 @@ jobs:
             python3 scripts/merge-sarif.py --empty trivy-results.sarif Trivy "0.75.0"
           fi
 
+      - name: Run Trivy Container Base Image Scanner (Shift-Left Gate)
+        run: |
+          RUNTIME_IMAGE=$(grep -E '^FROM\s+.*AS\s+runtime' Containerfile | awk '{print $2}')
+          echo "Scanning Containerfile runtime base image for CRITICAL CVEs: $RUNTIME_IMAGE"
+          trivy image \
+            --severity CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed \
+            "$RUNTIME_IMAGE"
+          echo "✅ Container base image passed security gate: 0 critical vulnerabilities."
+
       - name: Upload Trivy SARIF to GitHub Code Scanning
         uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
         if: always()

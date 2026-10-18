@@ -165,6 +165,39 @@ foreach ($file in $sourceFiles) {
     }
 }
 
+# Containerfile Base Image Hygiene Check
+$containerFile = Join-Path $RepoRoot "Containerfile"
+if (Test-Path $containerFile) {
+    $cLines = Get-Content $containerFile
+    for ($ci = 0; $ci -lt $cLines.Count; $ci++) {
+        if ($cLines[$ci] -match "^FROM\s+mcr\.microsoft\.com\/dotnet\/(sdk|aspnet):.*preview") {
+            $msg = "VEC-2 Insecure Default: Outdated preview base image tag detected in Containerfile (Line $($ci + 1)): $($cLines[$ci].Trim()). Target official release / RC images."
+            $violations.Add($msg)
+            Write-Host "  ❌ $msg" -ForegroundColor Red
+        }
+    }
+}
+
+# Workflow Key Vault CLI & Naming Hygiene Check
+$workflowFiles = Get-FilesToScan -Extensions @(".yml", ".yaml")
+foreach ($wf in $workflowFiles) {
+    $wfLines = Get-Content $wf
+    $wfRel = $wf.Substring($RepoRoot.Path.Length)
+    for ($wi = 0; $wi -lt $wfLines.Count; $wi++) {
+        $wLine = $wfLines[$wi]
+        if ($wLine -match "az\s+keyvault\s+network-rule\s+(add|remove).*--vault-name") {
+            $msg = "VEC-2 CLI Syntax Defect: Invalid argument '--vault-name' passed to 'az keyvault network-rule' in $wfRel (Line $($wi + 1)). Must use '--name'."
+            $violations.Add($msg)
+            Write-Host "  ❌ $msg" -ForegroundColor Red
+        }
+        if ($wLine -match "kvdietdost") {
+            $msg = "VEC-2 Legacy Naming: Deprecated legacy Key Vault name 'kvdietdost' found in $wfRel (Line $($wi + 1)). Must use environment-isolated 'kvdost'."
+            $violations.Add($msg)
+            Write-Host "  ❌ $msg" -ForegroundColor Red
+        }
+    }
+}
+
 # -----------------------------------------------------------------------------
 # Vector 3: AI Security Disablers & Suppression Comments
 # -----------------------------------------------------------------------------

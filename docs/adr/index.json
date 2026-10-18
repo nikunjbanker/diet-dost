@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-17T21:02:57.571210+00:00",
-  "totalAdrs": 72,
+  "generatedAt": "2026-10-18T09:24:02.895164+00:00",
+  "totalAdrs": 73,
   "categoryCounts": {
     "architecture": 18,
     "security": 19,
-    "devops": 18,
+    "devops": 19,
     "presentation": 4,
     "governance": 13
   },
@@ -873,6 +873,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261018-107-owasp-a06-nuget-vulnerability-audit-and-messagepack-remediation.md",
       "relativePath": "docs/adr/security/ADR-20261018-107-owasp-a06-nuget-vulnerability-audit-and-messagepack-remediation.md"
+    },
+    {
+      "id": "ADR-108",
+      "number": 108,
+      "title": "Fail-Fast DevSecOps Gates, Key Vault Single-Instance Consolidation & Container CVE Remediation",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-18",
+      "subsystem": "Devops",
+      "filename": "ADR-20261018-108-fail-fast-container-cve-and-key-vault-firewall-hardening.md",
+      "relativePath": "docs/adr/devops/ADR-20261018-108-fail-fast-container-cve-and-key-vault-firewall-hardening.md"
     }
   ]
 }

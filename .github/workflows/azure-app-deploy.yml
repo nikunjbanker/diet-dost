@@ -119,6 +119,24 @@ jobs:
           fi
           echo "✅ OWASP Dependency Security Gate Passed: 0 known vulnerabilities found."
 
+      - name: 4b. OWASP Security Gate - Container Base Image Vulnerability Scan (Trivy - Fail Fast)
+        run: |
+          echo "Installing Trivy security scanner for fail-fast base image validation..."
+          TRIVY_VERSION="0.75.0"
+          curl -sSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" -o trivy.tar.gz
+          tar -xzf trivy.tar.gz trivy
+          sudo mv trivy /usr/local/bin/
+          rm -f trivy.tar.gz
+
+          RUNTIME_IMAGE=$(grep -E '^FROM\s+.*AS\s+runtime' Containerfile | awk '{print $2}')
+          echo "Scanning Containerfile runtime base image for CRITICAL CVEs: $RUNTIME_IMAGE"
+          trivy image \
+            --severity CRITICAL \
+            --exit-code 1 \
+            --ignore-unfixed \
+            "$RUNTIME_IMAGE"
+          echo "✅ Container base image security gate passed: 0 critical vulnerabilities."
+
       - name: 5. Pre-Deployment Security Gate - Secret Leak Scan (Gitleaks)
         run: |
           echo "Scanning workspace for accidental secret or credential leaks..."
@@ -229,6 +247,7 @@ jobs:
             echo "| :--- | :--- |"
             echo "| **Aspire AppHost Model** | ✅ Validated |"
             echo "| **NuGet Vulnerability Audit** | ✅ 0 Vulnerabilities |"
+            echo "| **Container Base Image (Trivy)** | ✅ 0 Critical Vulnerabilities |"
             echo "| **Gitleaks Secret Scan** | ✅ 0 Secrets Detected |"
             echo "| **Client ESLint Gate** | ✅ Passed |"
             echo "| **Bicep IaC Compilation** | ✅ Validated (\`app.bicep\`) |"
@@ -440,7 +459,10 @@ jobs:
           KV_NAME="${{ steps.deploy-infra.outputs.keyVaultName }}"
           KV_URI="${{ steps.deploy-infra.outputs.keyVaultUri }}"
           if [ -z "$KV_NAME" ]; then
-            KV_NAME=$(az keyvault list --resource-group "$RG" --query "[0].name" -o tsv)
+            KV_NAME=$(az keyvault list --resource-group "$RG" --query "[?tags.environment=='${{ inputs.environment }}' || starts_with(name, 'kvdost${{ inputs.environment }}')].name | [0]" -o tsv)
+            if [ -z "$KV_NAME" ]; then
+              KV_NAME=$(az keyvault list --resource-group "$RG" --query "[0].name" -o tsv)
+            fi
           fi
           if [ -z "$KV_URI" ] && [ -n "$KV_NAME" ]; then
             KV_URI="https://${KV_NAME}.vault.azure.net/"
@@ -503,8 +525,8 @@ jobs:
             RUNNER_IP=$(curl -s https://api.ipify.org || true)
             if [ -n "$RUNNER_IP" ]; then
               echo "Temporarily adding GitHub Actions runner IP ($RUNNER_IP) to Key Vault firewall..."
-              az keyvault network-rule add --vault-name "$KV_NAME" --ip-address "$RUNNER_IP" -o none || true
-              sleep 5
+              az keyvault network-rule add --name "$KV_NAME" --ip-address "$RUNNER_IP" -o none || true
+              sleep 10
             fi
 
             az keyvault secret set --vault-name "$KV_NAME" --name "Jwt--Key" --value "$ACTUAL_JWT_KEY" -o none || echo "⚠️ Note: Could not set Jwt--Key in Key Vault"
@@ -522,7 +544,7 @@ jobs:
 
             if [ -n "$RUNNER_IP" ]; then
               echo "Pruning temporary runner IP from Key Vault firewall..."
-              az keyvault network-rule remove --vault-name "$KV_NAME" --ip-address "$RUNNER_IP" -o none || true
+              az keyvault network-rule remove --name "$KV_NAME" --ip-address "$RUNNER_IP" -o none || true
             fi
             echo "✅ Azure Key Vault secret synchronization step finished."
           fi

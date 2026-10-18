@@ -88,12 +88,13 @@ graph TD
   devskim analyze -I src -O sarif-results/devskim.sarif -f sarif -s Critical,Important -g "**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/aspire-output/**"
   ```
 
-### 2.4 Job 4: Trivy (Filesystem, Dependency & CVE Scanning)
-- **Scope**: Scans solution dependencies (NuGet, npm) and container base images for known vulnerabilities (CVEs) and license compliance.
-- **Severity Gate**: Blocks on `CRITICAL` and `HIGH` vulnerabilities.
+### 2.4 Job 4: Trivy (Filesystem, Dependency & Container Base Image Scanning)
+- **Scope**: Scans solution dependencies (NuGet, npm) and the runtime base image (`mcr.microsoft.com/dotnet/aspnet:11.0` parsed from `Containerfile`) for known vulnerabilities (CVEs) and license compliance.
+- **Severity Gate**: Blocks on `CRITICAL` and `HIGH` vulnerabilities for filesystem; strictly blocks on `CRITICAL` for container images.
 - **Local Execution Command**:
   ```bash
   trivy fs --severity CRITICAL,HIGH --ignore-unfixed .
+  trivy image --severity CRITICAL --ignore-unfixed mcr.microsoft.com/dotnet/aspnet:11.0
   ```
 
 ### 2.5 Job 5: Checkov (Infrastructure-as-Code Security Scanning)
