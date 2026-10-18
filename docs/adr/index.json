@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-18T09:24:02.895164+00:00",
-  "totalAdrs": 73,
+  "generatedAt": "2026-10-18T10:18:18.061485+00:00",
+  "totalAdrs": 74,
   "categoryCounts": {
     "architecture": 18,
     "security": 19,
-    "devops": 19,
+    "devops": 20,
     "presentation": 4,
     "governance": 13
   },
@@ -885,6 +885,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261018-108-fail-fast-container-cve-and-key-vault-firewall-hardening.md",
       "relativePath": "docs/adr/devops/ADR-20261018-108-fail-fast-container-cve-and-key-vault-firewall-hardening.md"
+    },
+    {
+      "id": "ADR-109",
+      "number": 109,
+      "title": "Decoupled ACA Custom Domain & Managed TLS Lifecycle Architecture",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-18",
+      "subsystem": "Devops",
+      "filename": "ADR-20261018-109-decoupled-aca-custom-domain-and-managed-tls-lifecycle.md",
+      "relativePath": "docs/adr/devops/ADR-20261018-109-decoupled-aca-custom-domain-and-managed-tls-lifecycle.md"
     }
   ]
 }

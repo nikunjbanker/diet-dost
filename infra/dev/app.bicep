@@ -64,19 +64,8 @@ param superAdminEmail string = ''
 @secure()
 param appInsightsConnectionString string = ''
 
-resource acaEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
-  name: last(split(acaEnvironmentId, '/'))
-}
-
-resource managedCert 'Microsoft.App/managedEnvironments/managedCertificates@2024-03-01' = if (enableCustomDomain) {
-  parent: acaEnvironment
-  name: 'cert-${replace(customDomain, '.', '-')}'
-  location: location
-  properties: {
-    subjectName: customDomain
-    domainControlValidation: 'CNAME'
-  }
-}
+@description('Optional pre-provisioned certificate Resource ID (for custom domain binding).')
+param certificateId string = ''
 
 // ------------------------------------------------------------------------------
 // Container App (Web Gateway & Mobile BFF Workload)
@@ -101,11 +90,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         transport: 'auto'
         allowInsecure: false
         ipSecurityRestrictions: !empty(ipSecurityRestrictions) ? ipSecurityRestrictions : null
-        customDomains: enableCustomDomain ? [
+        customDomains: (enableCustomDomain && !empty(certificateId)) ? [
           {
             name: customDomain
             bindingType: 'SniEnabled'
-            certificateId: managedCert.id
+            certificateId: certificateId
           }
         ] : []
       }

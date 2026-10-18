@@ -487,6 +487,7 @@ jobs:
 
           {
             echo "acr_name=$ACR_NAME"
+            echo "aca_env_name=$ENV_NAME"
             echo "aca_env_id=$ACA_ENV_ID"
             echo "kv_name=$KV_NAME"
             echo "kv_uri=$KV_URI"
@@ -640,6 +641,77 @@ jobs:
           echo "=========================================================="
           echo "FQDN: https://$APP_FQDN"
           echo "=========================================================="
+
+      - name: 11b. Configure Custom Domain and Managed TLS (If Requested)
+        if: ${{ inputs.enableCustomDomain }}
+        run: |
+          APP_NAME="app-dietdost-web-${{ inputs.environment }}"
+          RG="${{ needs.validate-application.outputs.rg_name || inputs.resourceGroupName || vars.AZURE_RESOURCE_GROUP || 'rg-dietdost-dev' }}"
+          CUSTOM_DOMAIN="${{ inputs.environment }}.diet-dost.in"
+          ACA_ENV_NAME="${{ steps.resolve-env.outputs.aca_env_name || format('cae-dietdost-{0}', inputs.environment) }}"
+          
+          echo "=========================================================="
+          echo "  CUSTOM DOMAIN & MANAGED TLS BINDING: $CUSTOM_DOMAIN"
+          echo "=========================================================="
+          
+          APP_FQDN=$(az containerapp show \
+            --name "$APP_NAME" \
+            --resource-group "$RG" \
+            --query "properties.configuration.ingress.fqdn" -o tsv)
+            
+          ENV_VERIFICATION_ID=$(az containerapp env show \
+            --name "$ACA_ENV_NAME" \
+            --resource-group "$RG" \
+            --query "properties.customDomainConfiguration.customDomainVerificationId" -o tsv 2>/dev/null || true)
+            
+          echo "Target Container App Ingress FQDN: $APP_FQDN"
+          
+          # Check DNS resolution for the custom domain
+          RESOLVED_CNAME=$(dig +short CNAME "$CUSTOM_DOMAIN" 2>/dev/null || true)
+          RESOLVED_HOST=$(getent hosts "$CUSTOM_DOMAIN" 2>/dev/null || true)
+          
+          if [[ -n "$RESOLVED_CNAME" ]] || [[ -n "$RESOLVED_HOST" ]]; then
+            echo "⚡ Public DNS resolves for $CUSTOM_DOMAIN. Proceeding with hostname registration and managed TLS binding..."
+            
+            EXISTING_HOSTNAME=$(az containerapp show --name "$APP_NAME" --resource-group "$RG" --query "properties.configuration.ingress.customDomains[?name=='$CUSTOM_DOMAIN'].name" -o tsv 2>/dev/null || true)
+            if [ -z "$EXISTING_HOSTNAME" ]; then
+              echo "Adding hostname '$CUSTOM_DOMAIN' to Container App '$APP_NAME'..."
+              az containerapp hostname add \
+                --name "$APP_NAME" \
+                --resource-group "$RG" \
+                --hostname "$CUSTOM_DOMAIN" || echo "⚠️ Warning: hostname add reported an issue, continuing to bind..."
+            fi
+            
+            echo "Issuing free Azure Managed Certificate and binding SNI for '$CUSTOM_DOMAIN'..."
+            if az containerapp hostname bind \
+              --name "$APP_NAME" \
+              --resource-group "$RG" \
+              --hostname "$CUSTOM_DOMAIN" \
+              --environment "$ACA_ENV_NAME" \
+              --validation-method CNAME; then
+              echo "✅ Successfully bound $CUSTOM_DOMAIN with Azure Managed TLS Certificate!"
+              echo "Custom Domain URL: https://$CUSTOM_DOMAIN"
+            else
+              echo "⚠️ Managed Certificate validation timed out or failed. Hostname remains registered."
+            fi
+          else
+            echo "ℹ️ DNS record for '$CUSTOM_DOMAIN' is not yet active in public DNS."
+            echo "⚠️ To complete custom domain binding, add the CNAME record at your DNS registrar pointing to '$APP_FQDN'."
+            {
+              echo ""
+              echo "### 🌐 Custom Domain Setup Instructions: \`$CUSTOM_DOMAIN\`"
+              echo "Custom domain binding was requested, but DNS records have not yet propagated to point to the Container App."
+              echo ""
+              echo "| Record Type | Name / Host | Target / Value | TTL |"
+              echo "| :--- | :--- | :--- | :--- |"
+              echo "| **CNAME** | \`${{ inputs.environment }}\` | \`$APP_FQDN\` | 300 |"
+              if [ -n "$ENV_VERIFICATION_ID" ]; then
+                echo "| **TXT** | \`asuid.${{ inputs.environment }}\` | \`$ENV_VERIFICATION_ID\` | 300 |"
+              fi
+              echo ""
+              echo "> Once DNS is configured at your registrar, re-run this deployment with \`enableCustomDomain: true\` to bind the domain and issue the free Managed Certificate."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: 12. Publish Stage 3 Deployment Summary
         if: always()

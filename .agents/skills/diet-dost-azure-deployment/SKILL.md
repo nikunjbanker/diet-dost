@@ -549,8 +549,9 @@ graph TD
   7. **Podman Container Image Build**: Compiles OCI image via root `Containerfile` (patched .NET 11 runtime).
   8. **Trivy Container Security Gate**: Scans built image for CRITICAL vulnerabilities before push.
   9. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
-  10. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, injecting `APPLICATIONINSIGHTS_CONNECTION_STRING` (scoped strictly to application logs/exceptions via `DefaultAzureCredential`), and applying custom domain TLS.
-  11. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
+  10. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, and injecting `APPLICATIONINSIGHTS_CONNECTION_STRING` (scoped strictly to application logs/exceptions via `DefaultAzureCredential`). Workload deploys decoupled from managed certificate to avoid ARM circular dependencies (ADR-109).
+  11. **Post-Deployment Verification**: Asserts container revision health and queries active default Azure Ingress FQDN.
+  12. **Resilient Custom Domain & Managed TLS (Step 11b)**: When `enableCustomDomain: true`, checks public DNS for CNAME resolution. If verified, calls `az containerapp hostname add` and `hostname bind` to provision free Managed Certificate with SNI; if DNS has not yet propagated, emits registrar CNAME/TXT instructions to `$GITHUB_STEP_SUMMARY` without failing the deployment.
 
 ---
 
