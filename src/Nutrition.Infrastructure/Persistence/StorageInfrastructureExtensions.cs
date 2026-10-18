@@ -29,9 +29,10 @@ public static class StorageInfrastructureExtensions
     {
         var dbOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
         var provider = !string.IsNullOrWhiteSpace(dbOptions.Provider) ? dbOptions.Provider : "Sqlite";
-        var connectionString = !string.IsNullOrWhiteSpace(dbOptions.ConnectionString)
-            ? dbOptions.ConnectionString
-            : configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
+        var defaultConnStr = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = !string.IsNullOrWhiteSpace(defaultConnStr)
+            ? defaultConnStr
+            : (!string.IsNullOrWhiteSpace(dbOptions.ConnectionString) ? dbOptions.ConnectionString : "Data Source=diettracker.db");
 
         switch (provider.ToLowerInvariant())
         {

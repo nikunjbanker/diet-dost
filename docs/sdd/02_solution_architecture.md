@@ -421,5 +421,24 @@ To guarantee that production administrators can securely access the platform whi
 2. **Entity Isolation (`superadmin-root`)**: Uses immutable ID `superadmin-root`, guaranteeing immunity from demo account deactivation sweeps (`DeactivatePrivilegedDemoUsersAsync`).
 3. **Strongly-Typed Options & Secrets Ingestion**: Consumes `AuthOptions.SuperAdminEmail` and `AuthOptions.SuperAdminPassword` directly from Azure Key Vault (`Auth--SuperAdminPassword`) or environment variables with safe defaults.
 
+---
+
+### 2.10 SQLite Azure Files SMB Mount Persistence & Connection String Precedence (ADR-112)
+
+To prevent SQLite database loss during Container App restarts, image updates, or scale-to-zero wakeups, the solution enforces a strict connection string precedence contract:
+
+1. **Persistent SMB Volume Path**: In deployed environments, the durable volume `dietdoststorage` (backed by Azure Files SMB share `dietdost-data-${environment}`) is mounted to `/app/data`, with the live database located at `/app/data/diet_dost.db`.
+2. **Authoritative Precedence**: `StorageInfrastructureExtensions.AddStorageInfrastructure` and `DietDostConfiguration.DefaultConnection` strictly prioritize `ConnectionStrings:DefaultConnection` over `DatabaseOptions.ConnectionString` defaults. This eliminates fallback masking and guarantees that container environment variables (`ConnectionStrings__DefaultConnection`) route all EF Core transactions directly to the persistent SMB volume mount.
+3. **Dual Normalization**: `ConfigurationExtensions.AddDietDostAppConfiguration` synchronizes both `ConnectionStrings:DefaultConnection` and `Database:ConnectionString` in the normalized configuration map, ensuring unified path resolution across direct DI, options validation, and health checks.
 
 
+---
+
+### 2.11 OpenTelemetry GenAI Observability & Semantic Conventions
+
+Per ADR-112 and CNCF OpenTelemetry GenAI standards, `NutritionTelemetry.cs` exports standardized GenAI tracing attributes for all multimodal meal analysis operations:
+- `gen_ai.system`: Provider engine (`google_gemini`, `azure_openai`, `local_clinical_engine`).
+- `gen_ai.request.model` & `gen_ai.response.model`: Primary and active fallback inference models.
+- `gen_ai.usage.input_tokens` & `gen_ai.usage.output_tokens`: Real-time prompt and completion token accounting.
+- `gen_ai.usage.total_tokens`: Total token consumption for cost attribution and quota enforcement.
+- `gen_ai.response.finish_reasons`: Execution completion state (`STOP`, `MAX_TOKENS`, `SAFETY`).

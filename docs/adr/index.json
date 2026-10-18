@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-18T16:16:23.742162+00:00",
-  "totalAdrs": 76,
+  "generatedAt": "2026-10-18T17:15:37.088415+00:00",
+  "totalAdrs": 77,
   "categoryCounts": {
-    "architecture": 18,
+    "architecture": 19,
     "security": 20,
     "devops": 21,
     "presentation": 4,
@@ -921,6 +921,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261018-111-autonomous-superadmin-bootstrapping-and-cloud-access-governance.md",
       "relativePath": "docs/adr/security/ADR-20261018-111-autonomous-superadmin-bootstrapping-and-cloud-access-governance.md"
+    },
+    {
+      "id": "ADR-112",
+      "number": 112,
+      "title": "SQLite Azure Files SMB Mount Connection String Precedence & Persistent Volume Durability",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-18",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261018-112-sqlite-azure-files-smb-mount-connection-precedence.md",
+      "relativePath": "docs/adr/architecture/ADR-20261018-112-sqlite-azure-files-smb-mount-connection-precedence.md"
     }
   ]
 }

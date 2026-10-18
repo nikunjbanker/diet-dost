@@ -83,9 +83,9 @@ public sealed class DietDostConfiguration : IDietDostConfiguration
     public bool AllowRegistration => _authOptions.AllowRegistration;
 
     public string DefaultConnection =>
-        !string.IsNullOrWhiteSpace(_databaseOptions.ConnectionString)
-            ? _databaseOptions.ConnectionString
-            : _configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
+        !string.IsNullOrWhiteSpace(_configuration.GetConnectionString("DefaultConnection"))
+            ? _configuration.GetConnectionString("DefaultConnection")!
+            : (!string.IsNullOrWhiteSpace(_databaseOptions.ConnectionString) ? _databaseOptions.ConnectionString : "Data Source=diettracker.db");
 
     public string DatabaseProvider =>
         !string.IsNullOrWhiteSpace(_databaseOptions.Provider) ? _databaseOptions.Provider : "Sqlite";
