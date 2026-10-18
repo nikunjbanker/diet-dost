@@ -135,6 +135,11 @@ async function main() {
     // STEP 1: AUTHENTICATION FLOW VIA DEMO CREDENTIALS
     // -------------------------------------------------------------------------
     console.log('\n[3/8] Executing End-to-End User Authentication as basic@dietdost.app...');
+    for (let i = 0; i < 30; i++) {
+        const ready = await evaluate(`!!document.getElementById('form-signin') && !!document.getElementById('signin-identifier')`);
+        if (ready) break;
+        await sleep(200);
+    }
     await evaluate(`(async () => {
         const idInput = document.getElementById('signin-identifier');
         const pwdInput = document.getElementById('signin-password');
@@ -143,6 +148,8 @@ async function main() {
 
         idInput.value = 'basic@dietdost.app';
         pwdInput.value = 'DietDost@Demo2026!';
+        idInput.dispatchEvent(new Event('input', { bubbles: true }));
+        pwdInput.dispatchEvent(new Event('input', { bubbles: true }));
         
         // Dispatch submit event to trigger handleSignIn
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));

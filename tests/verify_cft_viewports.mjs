@@ -113,32 +113,51 @@ async function main() {
         return res.result?.value;
     }
 
-    // Wait for page to fully load and hydrate
-    await sleep(2000);
-
-    // Authenticate demo session so main UI elements are visible
-    await evaluate(`(async () => {
-        const idInput = document.getElementById('signin-identifier');
-        const pwdInput = document.getElementById('signin-password');
-        const form = document.getElementById('form-signin');
-        if (idInput && pwdInput && form) {
-            idInput.value = 'basic@dietdost.app';
-            pwdInput.value = 'DietDost@Demo2026!';
-            form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-        }
+    // Wait for page to fully load and hydrate, then authenticate demo session
+    const alreadyAuthed = await evaluate(`(() => {
+        const tier = document.getElementById('header-tier-pill')?.textContent;
+        const gate = document.getElementById('auth-gate-modal');
+        const modalOpen = document.body.classList.contains('modal-open');
+        return Boolean(tier && tier !== 'Guest' && gate && gate.style.display === 'none' && !modalOpen);
     })()`);
 
-    // Poll up to 15s for login completion and auth gate dismissal
-    for (let i = 0; i < 30; i++) {
-        await sleep(500);
-        const loggedIn = await evaluate(`(() => {
-            const gate = document.getElementById('auth-gate-modal');
-            const main = document.querySelector('main.container');
-            return (!gate || window.getComputedStyle(gate).display === 'none') && (main && window.getComputedStyle(main).display !== 'none');
+    if (!alreadyAuthed) {
+        // Wait for auth gate and form-signin to be fully mounted in the DOM
+        for (let i = 0; i < 40; i++) {
+            const ready = await evaluate(`Boolean(document.getElementById('form-signin') && document.getElementById('signin-identifier'))`);
+            if (ready) break;
+            await sleep(250);
+        }
+
+        // Fill credentials and submit
+        await evaluate(`(async () => {
+            const idInput = document.getElementById('signin-identifier');
+            const pwdInput = document.getElementById('signin-password');
+            const form = document.getElementById('form-signin');
+            if (idInput && pwdInput && form) {
+                idInput.value = 'basic@dietdost.app';
+                pwdInput.value = 'DietDost@Demo2026!';
+                idInput.dispatchEvent(new Event('input', { bubbles: true }));
+                pwdInput.dispatchEvent(new Event('input', { bubbles: true }));
+                form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+            }
         })()`);
-        if (loggedIn) break;
+
+        // Poll up to 15s for login completion, tier update, and auth gate dismissal
+        for (let i = 0; i < 30; i++) {
+            await sleep(500);
+            const loggedIn = await evaluate(`(() => {
+                const gate = document.getElementById('auth-gate-modal');
+                const tier = document.getElementById('header-tier-pill')?.textContent;
+                const modalOpen = document.body.classList.contains('modal-open');
+                return Boolean(gate && (gate.style.display === 'none' || window.getComputedStyle(gate).display === 'none') &&
+                       !modalOpen &&
+                       tier && tier !== 'Guest');
+            })()`);
+            if (loggedIn) break;
+        }
     }
-    await sleep(1000);
+    await sleep(500);
 
     const results = [];
 
