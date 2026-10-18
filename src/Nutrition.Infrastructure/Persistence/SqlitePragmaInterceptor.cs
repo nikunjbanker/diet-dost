@@ -12,17 +12,36 @@ namespace Nutrition.Infrastructure.Persistence;
 
 /// <summary>
 /// EF Core connection interceptor that ensures every opened SQLite connection
-/// has WAL journal mode enabled and a 5000ms busy timeout configured to prevent
-/// concurrency lock errors (SQLITE_BUSY / SQLite Error 5).
+/// has the appropriate journal mode (WAL for local/SSD, DELETE for Azure Files SMB network mounts)
+/// and a 30000ms busy timeout configured to prevent concurrency lock errors (SQLITE_BUSY / SQLite Error 5).
 /// </summary>
 public class SqlitePragmaInterceptor : DbConnectionInterceptor
 {
+    private static string ResolvePragmaScript(string? connectionString)
+    {
+        var configuredMode = Environment.GetEnvironmentVariable("Database__JournalMode")
+            ?? Environment.GetEnvironmentVariable("Database:JournalMode");
+
+        if (!string.IsNullOrWhiteSpace(configuredMode))
+        {
+            return $"PRAGMA journal_mode={configuredMode}; PRAGMA busy_timeout=30000;";
+        }
+
+        // Azure Files SMB / CIFS network mounts do not support POSIX shared memory mmap (.shm),
+        // requiring rollback journal mode (DELETE) per SDD-05 §2.1.
+        var isNetworkMount = !string.IsNullOrWhiteSpace(connectionString) &&
+            connectionString.Contains("/app/data", StringComparison.OrdinalIgnoreCase);
+
+        var mode = isNetworkMount ? "DELETE" : "WAL";
+        return $"PRAGMA journal_mode={mode}; PRAGMA busy_timeout=30000;";
+    }
+
     public override void ConnectionOpened(DbConnection connection, ConnectionEndEventData eventData)
     {
         try
         {
             using var cmd = connection.CreateCommand();
-            cmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+            cmd.CommandText = ResolvePragmaScript(connection.ConnectionString);
             cmd.ExecuteNonQuery();
         }
         catch
@@ -38,7 +57,7 @@ public class SqlitePragmaInterceptor : DbConnectionInterceptor
         try
         {
             using var cmd = connection.CreateCommand();
-            cmd.CommandText = "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=5000;";
+            cmd.CommandText = ResolvePragmaScript(connection.ConnectionString);
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
         catch
@@ -49,3 +68,4 @@ public class SqlitePragmaInterceptor : DbConnectionInterceptor
         await base.ConnectionOpenedAsync(connection, eventData, cancellationToken);
     }
 }
+
