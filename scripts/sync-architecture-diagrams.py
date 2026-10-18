@@ -14,7 +14,7 @@ Functions:
 1. Validates all canonical Mermaid diagrams under docs/architecture/diagrams/*.mermaid
    for valid syntax, ADR-086 Line-1 root directive standard, and license headers.
 2. Performs Semantic Solution Alignment Checks, verifying that critical architecture
-   components (NSG, SMB 3.1.1, Key Vault audit diagnostics, Web/Mobile BFF, 242 tests)
+   components (NSG, SMB 3.1.1, Key Vault audit diagnostics, Web/Mobile BFF, 259 tests)
    are represented in canonical diagrams.
 3. Automatically synchronizes embedded Mermaid diagrams in docs/sdd/02_solution_architecture.md
    and README.md from the canonical source files in docs/architecture/diagrams/.
@@ -55,8 +55,8 @@ REQUIRED_ROOT_DIRECTIVES = [
 SOLUTION_SEMANTIC_REQUIREMENTS = [
     {
         "diagram": "solution_architecture",
-        "tokens": ["nsg-dietdost-dev", "SMB 3.1.1", "dev.dietdost.app", "Web BFF", "Mobile BFF", "242 Automated Tests"],
-        "description": "Master Solution Architecture must reflect Zero-Trust NSG, SMB 3.1.1, Web/Mobile BFFs, and 242 tests."
+        "tokens": ["nsg-dietdost-dev", "SMB 3.1.1", "dev.dietdost.app", "Web BFF", "Mobile BFF", "259 Automated Tests"],
+        "description": "Master Solution Architecture must reflect Zero-Trust NSG, SMB 3.1.1, Web/Mobile BFFs, and 259 tests."
     },
     {
         "diagram": "security_boundary",
@@ -65,8 +65,8 @@ SOLUTION_SEMANTIC_REQUIREMENTS = [
     },
     {
         "diagram": "devops_observability",
-        "tokens": ["nsg-dietdost-dev", "SMB 3.1.1", "AuditEvent Diagnostics", "242 Automated Tests"],
-        "description": "DevOps & Observability must reflect NSG, SMB 3.1.1, Key Vault audit diagnostics, and 242 tests."
+        "tokens": ["nsg-dietdost-dev", "SMB 3.1.1", "AuditEvent Diagnostics", "259 Automated Tests"],
+        "description": "DevOps & Observability must reflect NSG, SMB 3.1.1, Key Vault audit diagnostics, and 259 tests."
     },
     {
         "diagram": "azure_zero_trust_infra_architecture",
@@ -265,7 +265,7 @@ def main():
         print("     • Azure Files SMB 3.1.1 AES-GCM Encryption & 7-Day Soft-Delete")
         print("     • Azure Key Vault AuditEvent Diagnostics & Threat Metric Alerts")
         print("     • Web BFF Composite Hydration & Mobile BFF Readiness")
-        print("     • 242 Automated Tests & 5-Tier E2E Verification Harness")
+        print("     • 259 Automated Tests & 5-Tier E2E Verification Harness")
 
     # Phase 3: Synchronization / Documentation Parity
     print("\n[Phase 3/3] Synchronizing Documentation Embedded Diagrams...")

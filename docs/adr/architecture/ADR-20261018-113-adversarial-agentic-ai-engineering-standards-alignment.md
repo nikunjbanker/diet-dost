@@ -47,15 +47,18 @@ In [`AiJsonParser.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src
 
 ### 3. CNCF OpenTelemetry GenAI Semantic Attribute Compliance
 In [`NutritionTelemetry.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Application/Common/NutritionTelemetry.cs), we registered standard OpenTelemetry GenAI semantic keys:
-- `gen_ai.usage.input_tokens`: Ingested from provider `usageMetadata.promptTokenCount`.
-- `gen_ai.usage.output_tokens`: Ingested from provider `usageMetadata.candidatesTokenCount`.
-- `gen_ai.usage.total_tokens`: Ingested from provider `usageMetadata.totalTokenCount`.
+- `gen_ai.usage.input_tokens`: Ingested from provider `usageMetadata.promptTokenCount` (Gemini) and `Usage.InputTokenCount` (Azure OpenAI).
+- `gen_ai.usage.output_tokens`: Ingested from provider `usageMetadata.candidatesTokenCount` (Gemini) and `Usage.OutputTokenCount` (Azure OpenAI).
+- `gen_ai.usage.total_tokens`: Ingested from provider `usageMetadata.totalTokenCount` (Gemini) and `Usage.TotalTokenCount` (Azure OpenAI).
 - `gen_ai.response.finish_reasons`: Ingested from candidate `finishReason` (`STOP`, `SAFETY`, `MAX_TOKENS`).
 
-### 4. Living Architecture Synchronization
+Enforced token metric collection consistently across both [`GoogleGeminiProvider.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Infrastructure/AI/Providers/GoogleGeminiProvider.cs) and [`AzureOpenAiProvider.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.Infrastructure/AI/Providers/AzureOpenAiProvider.cs).
+
+### 4. Living Architecture & Diagram Synchronization
 - Synchronized Section 2.11 in [`docs/sdd/02_solution_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/02_solution_architecture.md).
 - Updated specification version to `v1.6.0` and appended entry to Section 9.4 in [`docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/11_ai_in_sdlc_and_agentic_workflows_architecture.md).
-- Registered this decision fragment in `docs/adr/architecture/` and regenerated index files.
+- Synchronized canonical diagrams [`solution_architecture.mermaid`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/solution_architecture.mermaid) and [`devops_observability.mermaid`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/architecture/diagrams/devops_observability.mermaid), along with [`scripts/sync-architecture-diagrams.py`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/scripts/sync-architecture-diagrams.py) and embedded Markdown diagrams in [`README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/README.md) to reflect the exact active baseline of **259 Automated Tests** (36 Domain + 223 Eval Harness).
+- Registered this decision fragment in `docs/adr/architecture/` and regenerated index files via `scripts/sync-adr-index.ps1`.
 
 ---
 
