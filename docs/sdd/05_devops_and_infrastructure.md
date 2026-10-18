@@ -263,12 +263,12 @@ Production deployment executes via two decoupled GitHub Actions workflows condit
    - Executes Stage 1 pre-deployment validation with fail-fast Container Base Image Vulnerability Scanning (`trivy image`, <15s) and NuGet dependency audit (OWASP A06).
    - Synchronizes application secrets to `kvdost${environment}...` using corrected Azure CLI network rule syntax (`--name`) and a 10-second firewall propagation guard.
    - Compiles container image targeting Linux x64 with patched .NET 11 runtime (`Containerfile`) and pushes to Azure Container Registry.
-   - Deploys container to Azure Container Apps via `infra/${{ inputs.environment }}/app.bicep` (`app-dietdost-web-${environment}`).
-   - Binds custom domain `${environment}.diet-dost.in` with free Azure managed TLS certificate.
+   - Deploys container to Azure Container Apps via `infra/${{ inputs.environment }}/app.bicep` (`app-dietdost-web-${environment}`) with decoupled custom domain ingress to eliminate ARM circular dependency errors (`RequireCustomHostnameInEnvironment`, ADR-109).
+   - In Step 11b, verifies public DNS propagation for `${environment}.diet-dost.in`: automatically binds custom domain and issues free Azure Managed TLS certificate if DNS resolves, or outputs exact registrar CNAME instructions without failing the workload deployment.
 
 ### 7.2 Declarative Bicep Infrastructure as Code (IaC)
 - [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, and storage mount definitions on the ACA Managed Environment.
-- [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and custom domain hostname bindings.
+- [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), and decoupled custom domain hostname bindings.
 - [`infra/<env>/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep): Composite template orchestrating foundation and workload modules for full end-to-end deployments.
 
 ### 7.3 Azure Files SMB Volume Mount & Zero-Data-Loss Configuration
@@ -279,10 +279,10 @@ The Container App mounts the Azure Files SMB share as a persistent volume:
 - **SQLite Journal Pragma**: `PRAGMA journal_mode = DELETE;` configured at startup.
 - **Replica Guarantee**: `minReplicas: 1, maxReplicas: 1` guarantees that only a single process holds file locks on the SMB network share, eliminating SQLite multi-instance file lock corruption.
 
-### 7.4 Custom Domain & Managed TLS Certificate
-- **Host**: `dev.dietdost.app`
-- **Certificate Type**: Managed Certificate (`Microsoft.App/managedEnvironments/managedCertificates`)
-- **Validation**: Domain validation via CNAME (`dev.dietdost.app` $\to$ `<app-fqdn>`) and TXT record (`asuid.dev.dietdost.app` $\to$ domain verification ID).
+### 7.4 Custom Domain & Managed TLS Certificate (Two-Phase Decoupled Lifecycle)
+- **Host**: `dev.diet-dost.in`
+- **Decoupled Lifecycle (ADR-109)**: Workload Bicep provisions the Container App on its default Azure FQDN first. Once public DNS CNAME points to the FQDN, pipeline Step 11b invokes `az containerapp hostname add` and `az containerapp hostname bind --validation-method CNAME`.
+- **Validation**: Domain validation via CNAME (`dev.diet-dost.in` $\to$ `<app-fqdn>`) and TXT record (`asuid.dev.diet-dost.in` $\to$ domain verification ID).
 ### 7.5 Pre-Deployment PowerShell Configuration Runbook
 For full step-by-step pre-deployment configuration, Azure Entra ID federated credentials creation, RBAC delegation, 256-bit cryptographic JWT key generation, and post-deployment smoke tests in native PowerShell (zero bash dependencies), refer to:
 - **Authoritative Guide**: [`docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_PRE_DEPLOYMENT_POWERSHELL_GUIDE.md)
