@@ -5,11 +5,14 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Nutrition.Application.Common.Options;
 using Nutrition.Application.Common.Options.Validators;
+using Nutrition.Infrastructure.Configuration;
+using Nutrition.Infrastructure.Persistence;
 using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
@@ -231,5 +234,63 @@ public class OptionsPatternFluentValidationTests
         });
 
         Assert.Contains("Options validation failed", ex.Message);
+    }
+
+    [Fact]
+    public void AddStorageInfrastructure_PrioritizesDefaultConnection_OverDatabaseOptionsDefault()
+    {
+        var configData = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db;Cache=Shared",
+            ["Database:Provider"] = "Sqlite"
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddStorageInfrastructure(configuration);
+        var provider = services.BuildServiceProvider();
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var actualConnectionString = db.Database.GetConnectionString();
+
+        Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", actualConnectionString);
+    }
+
+    [Fact]
+    public void DietDostConfiguration_PrioritizesDefaultConnection_OverDatabaseOptionsDefault()
+    {
+        var configData = new Dictionary<string, string?>
+        {
+            ["Jwt:Key"] = "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!",
+            ["Jwt:Issuer"] = "DietDostGateway",
+            ["Jwt:Audience"] = "DietDostClient",
+            ["Auth:SuperAdminEmail"] = "superadmin@dietdost.app",
+            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db;Cache=Shared",
+            ["Database:Provider"] = "Sqlite"
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddDietDostOptions(configuration);
+        var provider = services.BuildServiceProvider();
+
+        var dietDostConfig = new DietDostConfiguration(
+            provider.GetRequiredService<IOptions<JwtOptions>>(),
+            provider.GetRequiredService<IOptions<AuthOptions>>(),
+            provider.GetRequiredService<IOptions<AiOptions>>(),
+            provider.GetRequiredService<IOptions<DatabaseOptions>>(),
+            configuration);
+
+        Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", dietDostConfig.DefaultConnection);
+
+        var fallbackConfig = new DietDostConfiguration(configuration);
+        Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", fallbackConfig.DefaultConnection);
     }
 }

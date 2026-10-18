@@ -133,10 +133,12 @@ public static class ConfigurationExtensions
         normalizedMap["Auth:AllowRegistration"] = currentConfig["Auth:AllowRegistration"] ?? "true";
 
         // 3. Database Normalization
-        normalizedMap["ConnectionStrings:DefaultConnection"] = currentConfig.GetConnectionString("DefaultConnection")
+        var resolvedDbConnStr = currentConfig.GetConnectionString("DefaultConnection")
             ?? currentConfig["ConnectionStrings:DefaultConnection"]
             ?? (env.IsDevelopment() ? "Data Source=diettracker.db" : "Data Source=/app/data/diet_dost.db;Cache=Shared");
 
+        normalizedMap["ConnectionStrings:DefaultConnection"] = resolvedDbConnStr;
+        normalizedMap["Database:ConnectionString"] = resolvedDbConnStr;
         normalizedMap["Database:Provider"] = currentConfig["Database:Provider"] ?? "Sqlite";
 
         // 4. AI Provider Normalization
