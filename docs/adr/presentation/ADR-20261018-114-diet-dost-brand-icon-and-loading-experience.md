@@ -83,6 +83,12 @@ Diet-Dost delivers clinical-grade South Asian nutrition tracking adhering to ICM
   └─────────────────────────────────────────────────────────┘
 ```
 
+### Detailed Concept Breakdown
+
+| Concept | Visual Metaphor | Emotional Connection & Domain Meaning | Best Suited For |
+|---|---|---|---|
+| **Concept: The Clinical DD Pulse & Living Thali (Recommended)** | Bold interlocking DD monogram with an inner living green leaf, set against a warm golden turmeric thali halo and an AI vitality rhythm pulse. | Unites clinical authority with cultural food pride. The double "D" anchors the name Diet Dost, while the pulse highlights AI vitality and the leaf honors fresh Indian produce. | Master app icon, browser favicon, and high-tech health dashboard |
+
 1. **The Interlocking "DD" Monogram**: Two sculpted modern letterforms in emerald gradient (`#10b981` to `#34d399`), symbolizing **Diet** (scientific nutritional intake) and **Dost** (your trusted, empathetic companion).
 2. **The Living Emerald Leaf**: Integrated into the upper crown of the first "D", featuring delicate inner veins symbolizing biological vitality and fiber-rich living nutrition.
 3. **The Golden Turmeric (Haldi) Thali Halo**: Concentric circular track in golden turmeric (`#f59e0b` to `#fbbf24`), echoing the traditional South Asian meal thali with 3 balance studs representing Proteins, Carbs, and Fats.
