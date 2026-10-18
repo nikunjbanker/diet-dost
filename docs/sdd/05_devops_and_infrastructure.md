@@ -258,9 +258,11 @@ Production deployment executes via two decoupled GitHub Actions workflows condit
    - Decomposed into three sequential, observable stages:
      - **Validate**: Aspire AppHost manifest evaluation, Pre-Deployment Gitleaks secret scan, Bicep compilation (`infra/${{ inputs.environment }}/infra.bicep` & `infra/${{ inputs.environment }}/app.bicep`), OIDC authentication with immutable repository IDs, and live ARM API validation (`az deployment group validate`).
      - **Preview**: Azure ARM What-If analysis (`az deployment group what-if`), publishing formatted planned resource mutation matrices to `$GITHUB_STEP_SUMMARY`.
-     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-${environment}`), Storage Account (`stgdost${environment}...`), Azure Files Share (`dietdost-data-${environment}`), Managed Environment (`cae-dietdost-${environment}`), Key Vault (`kvdost${environment}...`), Managed Identity, and ACR (`crdost${environment}...`). Includes automated pre-deployment idempotency guards for Key Vault soft-delete recovery (ADR-102) and ACA environment storage drift auto-remediation (ADR-105).
+     - **Provision**: Live Bicep infrastructure deployment (`Azure/arm-deploy@v2`), provisioning Resource Group (`rg-dietdost-${environment}`), Storage Account (`stgdost${environment}...`), Azure Files Share (`dietdost-data-${environment}`), Managed Environment (`cae-dietdost-${environment}`), Key Vault (`kvdost${environment}...`), Managed Identity, and ACR (`crdost${environment}...`). Includes automated pre-deployment idempotency guards scoped to environment-isolated Key Vault soft-delete recovery (`kvdost${environment}*`, ADR-102 & ADR-108) and ACA environment storage drift auto-remediation (ADR-105).
 2. **Stage 2: Application Deployment (`azure-app-deploy.yml`)**:
-   - Compiles container image targeting Linux x64 and pushes to Azure Container Registry.
+   - Executes Stage 1 pre-deployment validation with fail-fast Container Base Image Vulnerability Scanning (`trivy image`, <15s) and NuGet dependency audit (OWASP A06).
+   - Synchronizes application secrets to `kvdost${environment}...` using corrected Azure CLI network rule syntax (`--name`) and a 10-second firewall propagation guard.
+   - Compiles container image targeting Linux x64 with patched .NET 11 runtime (`Containerfile`) and pushes to Azure Container Registry.
    - Deploys container to Azure Container Apps via `infra/${{ inputs.environment }}/app.bicep` (`app-dietdost-web-${environment}`).
    - Binds custom domain `${environment}.diet-dost.in` with free Azure managed TLS certificate.
 

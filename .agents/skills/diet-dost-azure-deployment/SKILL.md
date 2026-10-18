@@ -522,7 +522,7 @@ graph TD
      - Compiles and lints Bicep templates (`az bicep build --file infra/${{ inputs.environment }}/infra.bicep`).
      - Authenticates via passwordless GitHub Actions OIDC (`azure/login@v2`).
      - Pre-flight verifies/creates target Resource Group.
-     - Runs Step 8b: Detects and auto-recovers soft-deleted Key Vaults (`az keyvault list-deleted` + `az keyvault recover`) to prevent ARM `ConflictError` idempotency blocks.
+     - Runs Step 8b: Detects and auto-recovers soft-deleted Key Vaults scoped to target environment (`kvdost${{ inputs.environment }}*`, ADR-102 & ADR-108) to prevent ARM `ConflictError` idempotency blocks while ignoring legacy vaults.
      - Executes live Azure Resource Manager pre-flight validation (`az deployment group validate`) ensuring schema and quota compliance (supporting optional `keyVaultName`).
      - Emits Stage 1 Validation Summary to `$GITHUB_STEP_SUMMARY`.
   2. **Stage 2: Preview (`preview-infrastructure`)**:
@@ -530,7 +530,7 @@ graph TD
      - Executes Azure ARM What-If analysis (`az deployment group what-if --result-format ResourceIdOnly`).
      - Publishes formatted preview change matrix (Create, Modify, Delete, NoChange) directly to `$GITHUB_STEP_SUMMARY` for operator visibility before mutation.
   3. **Stage 3: Provision (`provision-infrastructure`)**:
-     - Runs Step 3b: Key Vault soft-delete auto-recovery guard pass.
+     - Runs Step 3b: Target environment Key Vault soft-delete auto-recovery guard pass (`kvdost${environment}*`).
      - Deploys [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) via `Azure/arm-deploy@v2` (VNet, Subnet, NSG, Storage Account with SMB share `dietdost-data-${environment}`, Log Analytics, workspace-based Application Insights `appi-dietdost-${environment}` with `DisableLocalAuth: true`, ACA Environment, durable storage link `dietdoststorage`, Key Vault, and User-Assigned Managed Identity with `AcrPull`, `Key Vault Secrets User`, and `Monitoring Metrics Publisher` roles).
      - Emits and verifies infrastructure connection details (ACA Environment Name, SMB File Share, Static IP, Custom Domain Verification ID, ACR Name, Key Vault URI).
      - Publishes Stage 3 Completion Summary table to `$GITHUB_STEP_SUMMARY`.
@@ -539,16 +539,18 @@ graph TD
 - **Purpose**: Builds, tests, scans, and deploys the Diet-Dost application container revision with persistent SQLite SMB volume mount.
 - **Trigger**: Strictly on-demand (`workflow_dispatch`).
 - **Automatic Infrastructure Guarantee**: Includes `provisionInfra: true` (default `true`) which automatically verifies and provisions the foundation infrastructure (`infra/${{ inputs.environment }}/infra.bicep`) before deploying the application workload (`infra/${{ inputs.environment }}/app.bicep`).
-- **Pre-Deployment Security Gates**:
+- **Pre-Deployment Security Gates & Execution Sequence**:
   1. **OWASP A06 Dependency Audit**: Scans all NuGet packages for known CVEs via `dotnet list package --vulnerable --include-transitive`.
-  2. **100% Pass Test Standard**: Runs all unit, domain, and security test suites via `dotnet test --configuration Release`.
-  3. **Aspire Application Model Validation**: Runs `aspire publish` to evaluate AppHost configuration.
-  4. **Podman Container Image Build**: Compiles OCI image via root `Containerfile`.
-  5. **Trivy Container Security Gate**: Scans container image for CRITICAL vulnerabilities.
-  6. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
-  7. **Ensure / Provision Infrastructure**: Executes `infra/${{ inputs.environment }}/infra.bicep` (if `provisionInfra: true`), with automated pre-deployment idempotency guards for Key Vault soft-delete recovery (ADR-102) and ACA environment storage drift auto-remediation (ADR-105).
-  8. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, injecting `APPLICATIONINSIGHTS_CONNECTION_STRING` (scoped strictly to application logs/exceptions via `DefaultAzureCredential`), and applying custom domain TLS.
-  9. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
+  2. **Stage 1 Fail-Fast Base Image Scan (Trivy)**: Scans runtime base image (`mcr.microsoft.com/dotnet/aspnet:11.0`, <15s) to fail fast before touching Azure resources (ADR-108).
+  3. **100% Pass Test Standard**: Runs all unit, domain, and security test suites via `dotnet test --configuration Release`.
+  4. **Aspire Application Model Validation**: Runs `aspire publish` to evaluate AppHost configuration.
+  5. **Deterministic Key Vault Resolution**: Resolves Key Vault strictly filtered by target environment (`kvdost${{ inputs.environment }}*`), preventing legacy vault selection.
+  6. **Firewall ACL Secret Synchronization**: Whitelists runner IP using `--name "$KV_NAME"` with 10-second propagation guard, seeds application secrets, and prunes firewall rule.
+  7. **Podman Container Image Build**: Compiles OCI image via root `Containerfile` (patched .NET 11 runtime).
+  8. **Trivy Container Security Gate**: Scans built image for CRITICAL vulnerabilities before push.
+  9. **Podman Push to ACR**: Authenticates and pushes versioned and `latest` tags.
+  10. **Deploy Workload Revision**: Deploys [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) binding `/app/data` to `dietdoststorage`, enforcing `minReplicas: 1, maxReplicas: 1`, injecting `APPLICATIONINSIGHTS_CONNECTION_STRING` (scoped strictly to application logs/exceptions via `DefaultAzureCredential`), and applying custom domain TLS.
+  11. **Post-Deployment Verification**: Asserts container revision health and queries active FQDN.
 
 ---
 

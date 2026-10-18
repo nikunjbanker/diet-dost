@@ -396,18 +396,24 @@ jobs:
 
       - name: '3b. Detect and Auto-Recover Soft-Deleted Key Vaults (Idempotency Guard)'
         run: |
-          echo "Scanning for soft-deleted Key Vaults to prevent ARM ConflictError during deployment..."
+          echo "Scanning for soft-deleted Key Vaults matching target environment '${{ inputs.environment }}'..."
+          TARGET_PREFIX="kvdost${{ inputs.environment }}"
+          SPECIFIED_KV="${{ inputs.keyVaultName }}"
           DELETED_KVS=$(az keyvault list-deleted --query "[].{name: name, location: properties.location}" -o tsv 2>/dev/null || true)
           if [ -n "$DELETED_KVS" ]; then
-            echo "Found soft-deleted Key Vault(s):"
+            echo "Inspecting soft-deleted Key Vault(s):"
             echo "$DELETED_KVS"
             while IFS=$'\t' read -r KV_NAME KV_LOC; do
               if [ -n "$KV_NAME" ]; then
-                echo "⚡ Auto-recovering soft-deleted Key Vault '$KV_NAME' in '$KV_LOC'..."
-                az keyvault recover --name "$KV_NAME" --location "$KV_LOC" || echo "⚠️ Warning: Failed to recover $KV_NAME, continuing..."
+                if [[ "$KV_NAME" == "$TARGET_PREFIX"* ]] || [ -n "$SPECIFIED_KV" -a "$KV_NAME" = "$SPECIFIED_KV" ]; then
+                  echo "⚡ Auto-recovering target soft-deleted Key Vault '$KV_NAME' in '$KV_LOC'..."
+                  az keyvault recover --name "$KV_NAME" --location "$KV_LOC" || echo "⚠️ Warning: Failed to recover $KV_NAME, continuing..."
+                else
+                  echo "ℹ️ Skipping non-target or legacy soft-deleted Key Vault '$KV_NAME' (not matching '$TARGET_PREFIX')."
+                fi
               fi
             done <<< "$DELETED_KVS"
-            echo "✅ Soft-deleted Key Vault recovery pass completed."
+            echo "✅ Target soft-deleted Key Vault recovery pass completed."
           else
             echo "✅ No soft-deleted Key Vaults detected in subscription."
           fi

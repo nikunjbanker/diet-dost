@@ -160,6 +160,17 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 ## 8. Azure Key Vault Purge Protection & Passwordless Managed Identity
 
 - **Purge Protection Invariant**: The production Key Vault (`kvdost${environment}...`) is provisioned with `enablePurgeProtection: true` and 90-day soft-delete retention in `infra/<env>/infra.bicep` (e.g. `infra/dev/infra.bicep`). Secrets cannot be deleted permanently without administrative governance.
+- **Single Authoritative Instance (`kvdost${environment}...`)**: Eliminates unmanaged legacy vaults (`kvdietdost*`). Infrastructure and application workflows bind strictly to `kvdost${environment}${uniqueSuffix}`, ensuring unambiguous secret and role resolution.
+- **Firewall ACL Automation & Propagation**: Workflows whitelisting runner IPs for secret synchronization strictly use `az keyvault network-rule add/remove --name "$KV_NAME" --ip-address "$RUNNER_IP"` with a 10-second firewall propagation guard before secret write operations.
 - **Passwordless ACR Pull (`acrPullRole`)**: Azure Container Apps retrieves container images from Azure Container Registry via system-assigned managed identity assigned the `AcrPull` built-in role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`), eliminating static registry admin credentials.
 - **Least-Privilege Key Vault Role**: The Container App accesses Key Vault via `Key Vault Secrets User` role assignment, restricting access strictly to read-only secret retrieval.
+
+---
+
+## 9. Container Base Image Vulnerability Governance & Fail-Fast Gates
+
+- **Shift-Left Base Image Scanning (`security-scan.yml`)**: Job 4 (`trivy`) inspects the runtime base image (`mcr.microsoft.com/dotnet/aspnet:11.0`) directly in PR CI using `trivy image --severity CRITICAL --exit-code 1 --ignore-unfixed`. Pull requests targeting `main` cannot merge if the base container image contains unpatched critical CVEs.
+- **Stage 1 Fail-Fast Pre-Deployment Gate (`azure-app-deploy.yml`)**: Pre-deployment validation executes Trivy base image scanning in Step 4b (<15 seconds). Deployments abort immediately upon detecting upstream base image CVEs, preventing unnecessary cloud resource provisioning or secret synchronization.
+- **Release-Aligned Image Tagging (`Containerfile`)**: Pinned strictly to official patched release / release-candidate images (`mcr.microsoft.com/dotnet/sdk:11.0` and `mcr.microsoft.com/dotnet/aspnet:11.0`), preventing exposure to known vulnerabilities in stale preview milestones (ADR-108).
+
 
