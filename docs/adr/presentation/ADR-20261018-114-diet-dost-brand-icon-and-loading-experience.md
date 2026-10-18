@@ -98,7 +98,7 @@ Diet-Dost delivers clinical-grade South Asian nutrition tracking adhering to ICM
 |---|---|---|---|
 | `assets/diet-dost-icon.svg` | SVG | 512x512 Encapsulated Vector | Master icon, HTML badges, Splash screen, SVG Favicon (100% visual parity with icon-512) |
 | `favicon.svg` | SVG | 512x512 Encapsulated Vector | Root modern browser tab icon (infinite DPI, 100% parity with icon-512) |
-| `favicon.ico` | ICO | 16x16, 32x32, 48x48 | Legacy browser tab icon fallback |
+| `favicon.ico` | ICO | 16x16, 32x32, 48x48, 64x64, 128x128, 256x256 | Multi-resolution 32-bit PNG-in-ICO container (100% visual parity with icon-512) |
 | `assets/favicon-16x16.png` | PNG | 16x16 px | Low-DPI browser tab icon |
 | `assets/favicon-32x32.png` | PNG | 32x32 px | High-DPI browser tab & pinned bookmark |
 | `assets/icon-192.png` | PNG | 192x192 px | Android home screen & PWA mobile install |

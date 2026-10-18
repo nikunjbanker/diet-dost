@@ -36,7 +36,7 @@ Diet-Dost's visual brand identity is codified in **"The Clinical DD Pulse & Livi
   │   [ Master Artwork: wwwroot/assets/icon-512.png (512x512) ]            │
   │   [ Vector Encapsulation: wwwroot/assets/diet-dost-icon.svg ]          │
   │                                                                        │
-  │    ├── Root Favicon: wwwroot/favicon.ico (Multi-res 16/32/48)          │
+  │    ├── Root Favicon: wwwroot/favicon.ico (Multi-res 16/32/48/64/128/256 PNG-in-ICO) │
   │    ├── Root SVG Favicon: wwwroot/favicon.svg (Infinite DPI, 100% PNG) │
   │    ├── Browser Pins: wwwroot/assets/favicon-16x16.png & 32x32.png     │
   │    ├── PWA Mobile: wwwroot/assets/icon-192.png (Android home screen)   │
