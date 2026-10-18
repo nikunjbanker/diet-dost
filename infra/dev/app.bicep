@@ -67,6 +67,12 @@ param appInsightsConnectionString string = ''
 @description('Optional pre-provisioned certificate Resource ID (for custom domain binding).')
 param certificateId string = ''
 
+@description('Minimum number of replicas for Container App (0 enables consumption scale-to-zero to utilize Azure free tier grant in dev).')
+param minReplicas int = (environment == 'dev' ? 0 : 1)
+
+@description('Maximum number of replicas for Container App (enforces SQLite single-writer invariant).')
+param maxReplicas int = 1
+
 // ------------------------------------------------------------------------------
 // Container App (Web Gateway & Mobile BFF Workload)
 // ------------------------------------------------------------------------------
@@ -226,8 +232,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
         }
       ]
       scale: {
-        minReplicas: 1
-        maxReplicas: 1 // SQLite Zero Data Loss Golden Rule 1 (Single-writer invariant)
+        minReplicas: minReplicas
+        maxReplicas: maxReplicas // SQLite Zero Data Loss Golden Rule 1 (Single-writer invariant)
       }
       volumes: [
         {

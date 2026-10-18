@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-18T10:18:18.061485+00:00",
-  "totalAdrs": 74,
+  "generatedAt": "2026-10-18T11:49:23.203444+00:00",
+  "totalAdrs": 75,
   "categoryCounts": {
     "architecture": 18,
     "security": 19,
-    "devops": 20,
+    "devops": 21,
     "presentation": 4,
     "governance": 13
   },
@@ -897,6 +897,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261018-109-decoupled-aca-custom-domain-and-managed-tls-lifecycle.md",
       "relativePath": "docs/adr/devops/ADR-20261018-109-decoupled-aca-custom-domain-and-managed-tls-lifecycle.md"
+    },
+    {
+      "id": "ADR-110",
+      "number": 110,
+      "title": "Azure Container Apps Consumption Scale-to-Zero Dev Cost Optimization",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-18",
+      "subsystem": "Devops",
+      "filename": "ADR-20261018-110-aca-consumption-scale-to-zero-dev-cost-optimization.md",
+      "relativePath": "docs/adr/devops/ADR-20261018-110-aca-consumption-scale-to-zero-dev-cost-optimization.md"
     }
   ]
 }
