@@ -66,6 +66,9 @@ Following the initial deployment to Azure Container Apps (`app-dietdost-web-dev`
     - `Login_InReleaseProduction_WithConfiguredSuperAdmin_SuccessfullyLogsIn` (PASS)
     - `ConfigurationExtensions_ResolvesSuperAdminPassword_FromConfigurationSources` (PASS)
     - `ApplicationUser_DistinguishesBetweenPrivilegedDemoAndProductionSuperAdmin` (PASS)
+- **Static Analysis & Security Gate Compliance**:
+  - **Roslyn CA1873**: Guarded all multi-parameter `logger.LogInformation` invocations in `DatabaseInitializationExtensions.cs` with `if (logger.IsEnabled(LogLevel.Information))` to eliminate unconditional `params object[]` heap allocations.
+  - **actionlint / Shellcheck SC2129**: Standardized GitHub output redirections in `azure-app-deploy.yml` to block redirection syntax `{ ... } >> "$GITHUB_OUTPUT"`.
 - **Live Azure Verification**:
   - `az keyvault secret list --vault-name kvdostdevskehxuagttzos`: PASS (secrets enumerated successfully).
   - `az storage file list --share-name dietdost-data-dev --account-name stgdostdevskehxuagttzos`: PASS (files enumerated successfully).

@@ -558,9 +558,11 @@ jobs:
             echo "✅ Azure Key Vault secret synchronization step finished."
           fi
 
-          echo "jwt_key=$ACTUAL_JWT_KEY" >> "$GITHUB_OUTPUT"
-          echo "super_admin_email=$ACTUAL_SUPER_ADMIN_EMAIL" >> "$GITHUB_OUTPUT"
-          echo "super_admin_password=$ACTUAL_SUPER_ADMIN_PASSWORD" >> "$GITHUB_OUTPUT"
+          {
+            echo "jwt_key=$ACTUAL_JWT_KEY"
+            echo "super_admin_email=$ACTUAL_SUPER_ADMIN_EMAIL"
+            echo "super_admin_password=$ACTUAL_SUPER_ADMIN_PASSWORD"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 7. Build OCI Container Image (Podman)
         id: build-image

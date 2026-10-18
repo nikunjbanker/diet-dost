@@ -855,7 +855,10 @@ public static partial class DatabaseInitializationExtensions
             };
             await db.Users.AddAsync(superAdmin);
             await db.SaveChangesAsync();
-            logger.LogInformation("[SECURITY] Autonomous bootstrap completed: Created root SuperAdmin account for {Email} ({Tier}, {Role}).", superAdmin.Email, superAdmin.Tier, superAdmin.Role);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("[SECURITY] Autonomous bootstrap completed: Created root SuperAdmin account for {Email} ({Tier}, {Role}).", superAdmin.Email, superAdmin.Tier, superAdmin.Role);
+            }
         }
         else
         {
@@ -870,7 +873,10 @@ public static partial class DatabaseInitializationExtensions
             superAdmin.IsActive = true;
             superAdmin.PasswordHash = passwordHasher.HashPassword(superAdminPassword);
             await db.SaveChangesAsync();
-            logger.LogInformation("[SECURITY] Autonomous synchronization completed: Reconciled root SuperAdmin account for {Email} ({Tier}, {Role}).", superAdmin.Email, superAdmin.Tier, superAdmin.Role);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("[SECURITY] Autonomous synchronization completed: Reconciled root SuperAdmin account for {Email} ({Tier}, {Role}).", superAdmin.Email, superAdmin.Tier, superAdmin.Role);
+            }
         }
 
         var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == superAdmin.Id);
