@@ -8,9 +8,30 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="assets/diet-dost-icon.svg">
+  <link rel="alternate icon" href="favicon.ico">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#010102">
   <link rel="stylesheet" href="styles.css?v=1.5.0">
 </head>
 <body>
+  <!-- Application Loading & Splash Screen (Zero CLS) -->
+  <div id="app-loading-screen" class="app-splash-screen" aria-label="Loading Diet Dost">
+    <div class="splash-card">
+      <div class="splash-icon-container">
+        <img src="assets/diet-dost-icon.svg" alt="Diet Dost" class="splash-icon-pulse" width="84" height="84">
+        <div class="splash-ambient-glow"></div>
+      </div>
+      <h1 class="splash-title">Diet Dost</h1>
+      <p class="splash-subtitle">Your Empathetic AI Nutrition Companion</p>
+      <div class="splash-progress-track">
+        <div class="splash-progress-indicator"></div>
+      </div>
+      <div class="splash-status-text" id="splash-status-text">Calibrating ICMR-NIN nutrition models...</div>
+    </div>
+  </div>
+
   <!-- Header / Navbar Component -->
   <div data-include="partials/header.html"></div>
 

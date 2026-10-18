@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0c10" />
+      <stop offset="50%" stop-color="#010102" />
+      <stop offset="100%" stop-color="#050608" />
+    </linearGradient>
+
+    <!-- Thali / Golden Halo Gradient -->
+    <linearGradient id="thaliHalo" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" />
+      <stop offset="45%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#d97706" />
+    </linearGradient>
+
+    <!-- Emerald Leaf Vitality Gradient -->
+    <linearGradient id="leafGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#047857" />
+      <stop offset="40%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+
+    <!-- AI Vitality Pulse (Linear Lavender) -->
+    <linearGradient id="pulseGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#818cf8" />
+      <stop offset="100%" stop-color="#a5b4fc" />
+    </linearGradient>
+
+    <!-- Subtle Inner Thali Shadow -->
+    <radialGradient id="thaliPlate" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.9" />
+      <stop offset="70%" stop-color="#f59e0b" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#b45309" stop-opacity="0.95" />
+    </radialGradient>
+
+    <!-- Ambient Glow Filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+
+    <filter id="subtleGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Obsidian Dark Squircle Tile -->
+  <rect x="8" y="8" width="496" height="496" rx="108" fill="url(#bgGrad)" stroke="#23252a" stroke-width="3" />
+
+  <!-- Soft Ambient Glow Under Thali Plate -->
+  <circle cx="256" cy="256" r="150" fill="#f59e0b" opacity="0.12" filter="url(#glow)" />
+  <circle cx="256" cy="256" r="110" fill="#10b981" opacity="0.15" filter="url(#glow)" />
+
+  <!-- Golden Turmeric Thali / Circular Plate Halo -->
+  <circle cx="256" cy="256" r="148" fill="url(#thaliPlate)" stroke="#fcd34d" stroke-width="4" />
+  <!-- Inner Rim of Thali -->
+  <circle cx="256" cy="256" r="132" fill="none" stroke="#d97706" stroke-width="3" stroke-opacity="0.6" stroke-dasharray="6,4" />
+
+  <!-- Vitality AI Pulse Rhythm Line Behind Letterforms -->
+  <path d="M 60 256 L 150 256 L 175 220 L 205 310 L 235 225 L 255 270 L 275 256 L 452 256" 
+        fill="none" stroke="url(#pulseGrad)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" opacity="0.85" filter="url(#subtleGlow)" />
+
+  <!-- Interlocking DD Monogram (Diet Dost) -->
+  <g id="dd-monogram" transform="translate(142, 140)">
+    <!-- Base Shadow for 3D Contrast -->
+    <path d="M 28 20 H 115 C 165 20, 195 55, 195 115 C 195 175, 165 210, 115 210 H 28 Z" 
+          fill="#050608" opacity="0.65" transform="translate(4, 6)" />
+
+    <!-- Outer 'D' Shell (First D - Diet) -->
+    <path d="M 24 16 H 110 C 160 16, 190 52, 190 115 C 190 178, 160 214, 110 214 H 24 Z" 
+          fill="#0c0e12" stroke="#1f242e" stroke-width="12" stroke-linejoin="round" />
+
+    <!-- Second 'D' Offset (Dost - Companion) -->
+    <path d="M 76 34 H 136 C 180 34, 206 66, 206 115 C 206 164, 180 196, 136 196 H 76 Z" 
+          fill="none" stroke="#272c38" stroke-width="10" stroke-linejoin="round" opacity="0.75" />
+
+    <!-- Inner Living Emerald Leaf filling the heart of the 'D' -->
+    <path d="M 48 184 C 48 184, 52 88, 118 48 C 146 86, 142 152, 94 184 C 74 198, 48 184, 48 184 Z" 
+          fill="url(#leafGrad)" stroke="#064e3b" stroke-width="3" filter="url(#subtleGlow)" />
+
+    <!-- Leaf Vein Elegance -->
+    <path d="M 54 180 Q 86 140, 118 48" fill="none" stroke="#a7f3d0" stroke-width="4.5" stroke-linecap="round" />
+    <path d="M 82 144 Q 106 136, 126 126" fill="none" stroke="#a7f3d0" stroke-width="3" stroke-linecap="round" opacity="0.8" />
+    <path d="M 94 116 Q 116 104, 130 90" fill="none" stroke="#a7f3d0" stroke-width="3" stroke-linecap="round" opacity="0.8" />
+    <path d="M 70 166 Q 84 166, 98 160" fill="none" stroke="#a7f3d0" stroke-width="3" stroke-linecap="round" opacity="0.7" />
+
+    <!-- Inner Spine of First D -->
+    <line x1="42" y1="28" x2="42" y2="202" stroke="#10b981" stroke-width="8" stroke-linecap="round" />
+  </g>
+
+  <!-- Vitality AI Pulse Foreground Crest -->
+  <path d="M 270 256 L 295 195 L 320 295 L 340 230 L 360 270 L 380 256 L 452 256" 
+        fill="none" stroke="url(#pulseGrad)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)" />
+
+  <!-- Golden Saffron Center Accent Dot (Turmeric Core Spark) -->
+  <circle cx="380" cy="256" r="6" fill="#fbbf24" filter="url(#subtleGlow)" />
+</svg>

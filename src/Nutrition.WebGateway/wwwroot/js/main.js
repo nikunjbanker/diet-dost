@@ -443,6 +443,16 @@ async function initApp() {
   window.appendMedication = (med) => profileModal.appendMedication(med);
   window.clearMedications = () => profileModal.clearMedications();
 
+  // Dismiss splash screen smoothly once the DOM and controllers are initialized
+  function dismissSplashScreen() {
+    const splash = document.getElementById('app-loading-screen');
+    if (!splash) return;
+    splash.classList.add('splash-fade-out');
+    setTimeout(() => {
+      splash.remove();
+    }, 450);
+  }
+
   // ============================================================================
   // 4. Initial Application Load (Single-Roundtrip Web BFF Hydration)
   // ============================================================================
@@ -469,6 +479,8 @@ async function initApp() {
         ]);
       }
     }
+  } finally {
+    dismissSplashScreen();
   }
 }
 
