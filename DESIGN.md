@@ -499,6 +499,14 @@ Linear's depth is carried by surface ladder + hairline borders. The brand resist
 - Don't use `#000000` true black as the canvas.
 - Don't combine multiple bright accents in product screenshot mockups.
 
+## Brand Identity & Iconography Specification
+
+### Concept: The Clinical DD Pulse & Living Thali (Authoritative)
+
+| Concept | Visual Metaphor | Emotional Connection & Domain Meaning | Best Suited For |
+|---|---|---|---|
+| **Concept: The Clinical DD Pulse & Living Thali (Recommended)** | Bold interlocking DD monogram with an inner living green leaf, set against a warm golden turmeric thali halo and an AI vitality rhythm pulse. | Unites clinical authority with cultural food pride. The double "D" anchors the name Diet Dost, while the pulse highlights AI vitality and the leaf honors fresh Indian produce. | Master app icon, browser favicon, and high-tech health dashboard |
+
 ## Responsive Behavior
 
 ### Breakpoints

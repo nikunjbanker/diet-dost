@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-18T17:57:19.479422+00:00",
-  "totalAdrs": 78,
+  "generatedAt": "2026-10-18T18:36:16.571713+00:00",
+  "totalAdrs": 79,
   "categoryCounts": {
     "architecture": 20,
     "security": 20,
     "devops": 21,
-    "presentation": 4,
+    "presentation": 5,
     "governance": 13
   },
   "records": [
@@ -945,6 +945,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261018-113-adversarial-agentic-ai-engineering-standards-alignment.md",
       "relativePath": "docs/adr/architecture/ADR-20261018-113-adversarial-agentic-ai-engineering-standards-alignment.md"
+    },
+    {
+      "id": "ADR-114",
+      "number": 114,
+      "title": "Diet-Dost Brand Iconography, Favicon Suite, and Zero-CLS Splash Screen",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-18T23:55:00+05:30",
+      "subsystem": "WebGateway | Presentation (",
+      "filename": "ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md",
+      "relativePath": "docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md"
     }
   ]
 }

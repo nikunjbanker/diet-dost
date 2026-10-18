@@ -121,6 +121,11 @@ async function main() {
     }
 
     async function performLogin(email, password) {
+        for (let i = 0; i < 30; i++) {
+            const ready = await evaluate(`!!document.getElementById('form-signin') && !!document.getElementById('signin-identifier')`);
+            if (ready) break;
+            await sleep(200);
+        }
         return await evaluate(`(async () => {
             const idInput = document.getElementById('signin-identifier');
             const pwdInput = document.getElementById('signin-password');
@@ -129,6 +134,8 @@ async function main() {
 
             idInput.value = '${email}';
             pwdInput.value = '${password}';
+            idInput.dispatchEvent(new Event('input', { bubbles: true }));
+            pwdInput.dispatchEvent(new Event('input', { bubbles: true }));
             form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
             return true;
         })()`);
