@@ -176,6 +176,9 @@ async function loadPartials() {
 // 2. Application Bootstrap
 // ============================================================================
 async function initApp() {
+  const splashStartTime = performance.now();
+  const MIN_SPLASH_DURATION_MS = 750; // Smooth brand pulse & loading transition guarantee
+
   // Load modular HTML partials into the DOM before initializing controllers
   await loadPartials();
 
@@ -444,13 +447,18 @@ async function initApp() {
   window.clearMedications = () => profileModal.clearMedications();
 
   // Dismiss splash screen smoothly once the DOM and controllers are initialized
-  function dismissSplashScreen() {
+  async function dismissSplashScreen() {
     const splash = document.getElementById('app-loading-screen');
     if (!splash) return;
+    const elapsed = performance.now() - splashStartTime;
+    const remaining = Math.max(0, MIN_SPLASH_DURATION_MS - elapsed);
+    if (remaining > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remaining));
+    }
     splash.classList.add('splash-fade-out');
     setTimeout(() => {
       splash.remove();
-    }, 450);
+    }, 550);
   }
 
   // ============================================================================
@@ -480,7 +488,7 @@ async function initApp() {
       }
     }
   } finally {
-    dismissSplashScreen();
+    await dismissSplashScreen();
   }
 }
 

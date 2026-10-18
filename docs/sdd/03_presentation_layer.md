@@ -63,9 +63,11 @@ To prevent Flash of Unhydrated Elements (FOUC) and eliminate layout jumping whil
             ▼
    ┌────────────────────────────────────────────────────────┐
    │ Inline Splash Screen Renders Instantly (#app-loading)  │
-   │ - Deep Obsidian #010102 background                     │
-   │ - Breathing SVG brand icon (@keyframes splashBreathe) │
-   │ - Linear shimmer progress bar                         │
+   │ - Deep Obsidian #010102 canvas & hairline borders      │
+   │ - Pulsing 512x512 Brand Image (icon-512.png)           │
+   │ - Rotating orbital loader ring (conic gradient symbol) │
+   │ - Dual concentric biological heartbeat ripple rings    │
+   │ - Micro-spinner indicator & Linear shimmer track       │
    └────────────────────────────────────────────────────────┘
             │
             ▼
@@ -82,9 +84,9 @@ To prevent Flash of Unhydrated Elements (FOUC) and eliminate layout jumping whil
             │
             ▼
    ┌────────────────────────────────────────────────────────┐
-   │ main.js: dismissSplashScreen()                         │
-   │ - Adds .splash-fade-out class (450ms cubic-bezier)     │
-   │ - Safely removes element from DOM                      │
+   │ main.js: dismissSplashScreen() (min 750ms duration)    │
+   │ - Adds .splash-fade-out class (500ms cubic-bezier)     │
+   │ - Smoothly scales and dissolves overlay from DOM       │
    └────────────────────────────────────────────────────────┘
 ```
 

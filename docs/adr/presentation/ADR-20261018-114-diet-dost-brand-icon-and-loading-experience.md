@@ -107,9 +107,12 @@ Diet-Dost delivers clinical-grade South Asian nutrition tracking adhering to ICM
 ### 6.2 Splash Screen Lifecycle & Zero CLS
 
 1. **Inline HTML Execution**: The splash container (`#app-loading-screen`) is declared in `index.html` above all modular partials, styled via `styles.css` with `position: fixed; inset: 0; z-index: 99999; background: #010102`.
-2. **Breathing Animation**: The icon gently breathes (`@keyframes splashBreathe`) with an ambient radial emerald/amber glow.
-3. **Single-Roundtrip Hydration**: `initApp()` in `main.js` loads modular partials and initiates `apiClient.getWebDashboard('7D')`.
-4. **Deterministic Dismissal**: In the `finally` block of `initApp()`, `dismissSplashScreen()` adds `.splash-fade-out` (450ms cubic-bezier transition) and surgically removes the node from the DOM.
+2. **Brand Master Image & Heartbeat Pulse Transition**: The master artwork (`assets/icon-512.png`) renders within the container, pulsating smoothly with dual organic heartbeat ripple rings (`.splash-pulse-ring` and `.splash-pulse-ring-delayed`) and ambient volumetric radial glow (`@keyframes splashBreathe` and `@keyframes splashRipple`).
+3. **Dedicated Loading Representation Symbols**:
+   - Rotating dashed orbital ring (`.splash-orbital-ring`) spinning seamlessly around the brand squircle tile (`@keyframes splashSpin`).
+   - Micro-spinner indicator (`.splash-spinner-ring`) alongside the Linear shimmer progress track.
+   - Pulsing live status dot (`.splash-symbol-badge`).
+4. **Guaranteed Minimum Duration & Smooth Dismissal**: `initApp()` in `main.js` records `splashStartTime` and guarantees a minimum 750ms duration so users experience a complete pulse transition before `.splash-fade-out` (500ms cubic-bezier transition) gracefully dissolves the splash overlay.
 
 ---
 

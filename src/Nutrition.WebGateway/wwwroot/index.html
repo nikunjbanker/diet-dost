@@ -20,14 +20,36 @@
   <div id="app-loading-screen" class="app-splash-screen" aria-label="Loading Diet Dost">
     <div class="splash-card">
       <div class="splash-icon-container">
-        <img src="assets/diet-dost-icon.svg" alt="Diet Dost" class="splash-icon-pulse" width="84" height="84">
+        <!-- Dual Heartbeat Pulse Rings -->
+        <div class="splash-pulse-ring"></div>
+        <div class="splash-pulse-ring splash-pulse-ring-delayed"></div>
+
+        <!-- Ambient Volumetric Glow -->
         <div class="splash-ambient-glow"></div>
+
+        <!-- Rotating Gradient Loading Orbital Ring (Symbol) -->
+        <div class="splash-orbital-ring"></div>
+
+        <!-- Brand Loading PNG Image (Concept 1 Master) -->
+        <img src="assets/icon-512.png" alt="Diet Dost Brand Icon" class="splash-brand-image" width="96" height="96">
+
+        <!-- Live Status Symbol Dot -->
+        <div class="splash-symbol-badge" title="AI Nutrition Engine Initializing">
+          <span class="splash-symbol-dot"></span>
+        </div>
       </div>
+
       <h1 class="splash-title">Diet Dost</h1>
       <p class="splash-subtitle">Your Empathetic AI Nutrition Companion</p>
-      <div class="splash-progress-track">
-        <div class="splash-progress-indicator"></div>
+
+      <!-- Loading Representation Symbol & Bar Row -->
+      <div class="splash-loading-indicator-row">
+        <div class="splash-spinner-ring" aria-label="Loading symbol"></div>
+        <div class="splash-progress-track">
+          <div class="splash-progress-indicator"></div>
+        </div>
       </div>
+
       <div class="splash-status-text" id="splash-status-text">Calibrating ICMR-NIN nutrition models...</div>
     </div>
   </div>
