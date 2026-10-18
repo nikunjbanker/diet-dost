@@ -173,7 +173,113 @@ async function loadPartials() {
 }
 
 // ============================================================================
-// 2. Application Bootstrap
+// 2. Dussehra Festival Launch Dynamic Carousel & Ticker Controller
+// ============================================================================
+function setupDussehraBanner(toastService, confettiService) {
+  const banner = document.getElementById('dussehra-launch-banner');
+  if (!banner) return;
+
+  const tickerBar = document.getElementById('dussehra-ticker-bar');
+  const carouselWrapper = document.getElementById('dussehra-carousel-wrapper');
+  const btnMinimize = document.getElementById('btn-dussehra-minimize');
+  const btnExpand = document.getElementById('btn-dussehra-expand');
+  const tabBtns = banner.querySelectorAll('.dussehra-tab-btn');
+  const slides = banner.querySelectorAll('.dussehra-slide');
+  const dotBtns = banner.querySelectorAll('.dussehra-dot');
+  const prevBtn = document.getElementById('btn-dussehra-prev');
+  const nextBtn = document.getElementById('btn-dussehra-next');
+  const pledgeBtn = document.getElementById('btn-shubh-pledge');
+
+  let currentSlide = 0;
+  const totalSlides = slides.length;
+  let autoTimer = null;
+  let isHovered = false;
+
+  // Restore saved minimize preference
+  const isMinimized = localStorage.getItem('diet_dost_dussehra_minimized') === 'true';
+  if (isMinimized && tickerBar && carouselWrapper) {
+    carouselWrapper.style.display = 'none';
+    tickerBar.style.display = 'flex';
+  }
+
+  function goToSlide(index) {
+    if (totalSlides === 0) return;
+    if (index < 0) index = totalSlides - 1;
+    if (index >= totalSlides) index = 0;
+    currentSlide = index;
+
+    slides.forEach((s, i) => s.classList.toggle('active', i === currentSlide));
+    tabBtns.forEach((t, i) => {
+      const active = i === currentSlide;
+      t.classList.toggle('active', active);
+      t.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    dotBtns.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+  }
+
+  tabBtns.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const idx = parseInt(tab.getAttribute('data-slide') || '0', 10);
+      goToSlide(idx);
+    });
+  });
+
+  dotBtns.forEach((dot) => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.getAttribute('data-slide') || '0', 10);
+      goToSlide(idx);
+    });
+  });
+
+  if (prevBtn) prevBtn.addEventListener('click', () => goToSlide(currentSlide - 1));
+  if (nextBtn) nextBtn.addEventListener('click', () => goToSlide(currentSlide + 1));
+
+  if (btnMinimize && tickerBar && carouselWrapper) {
+    btnMinimize.addEventListener('click', () => {
+      carouselWrapper.style.display = 'none';
+      tickerBar.style.display = 'flex';
+      localStorage.setItem('diet_dost_dussehra_minimized', 'true');
+    });
+  }
+
+  if (btnExpand && tickerBar && carouselWrapper) {
+    btnExpand.addEventListener('click', () => {
+      tickerBar.style.display = 'none';
+      carouselWrapper.style.display = 'block';
+      localStorage.setItem('diet_dost_dussehra_minimized', 'false');
+    });
+  }
+
+  // Auto-advance every 7.5 seconds when visible and not hovered
+  function startAutoAdvance() {
+    if (autoTimer) clearInterval(autoTimer);
+    autoTimer = setInterval(() => {
+      if (!isHovered && carouselWrapper && carouselWrapper.style.display !== 'none') {
+        goToSlide(currentSlide + 1);
+      }
+    }, 7500);
+  }
+
+  banner.addEventListener('mouseenter', () => { isHovered = true; });
+  banner.addEventListener('mouseleave', () => { isHovered = false; });
+  startAutoAdvance();
+
+  // Shubh Aarambh Pledge Celebration Action
+  if (pledgeBtn) {
+    pledgeBtn.addEventListener('click', () => {
+      confettiService?.burst?.();
+      toastService?.show?.({
+        type: 'success',
+        title: '✨ Shubh Sankalp Registered!',
+        message: 'Happy Dussehra from Nikunj Banker & Diet-Dost! May this Vijayadashami bring lifelong vitality, health, and joyful nutrition.',
+        icon: '🌟'
+      });
+    });
+  }
+}
+
+// ============================================================================
+// 3. Application Bootstrap
 // ============================================================================
 async function initApp() {
   const splashStartTime = performance.now();
@@ -195,6 +301,11 @@ async function initApp() {
   const profileModal = container.resolve('profileModal');
   const transparencyModal = container.resolve('transparencyModal');
   const progressModal = container.resolve('progressModal');
+  const toastService = container.resolve('toastService');
+  const confettiService = container.resolve('confettiService');
+
+  // Initialize Dussehra festival launch banner carousel & ticker
+  setupDussehraBanner(toastService, confettiService);
 
   // Helper: Synchronize user header badges and visibility
   function updateUserUI(user, featureFlags = null, quota = null) {

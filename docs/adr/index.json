@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-18T18:36:16.571713+00:00",
-  "totalAdrs": 79,
+  "generatedAt": "2026-10-18T19:27:13.098706+00:00",
+  "totalAdrs": 80,
   "categoryCounts": {
     "architecture": 20,
     "security": 20,
     "devops": 21,
-    "presentation": 5,
+    "presentation": 6,
     "governance": 13
   },
   "records": [
@@ -957,6 +957,18 @@
       "subsystem": "WebGateway | Presentation (",
       "filename": "ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md",
       "relativePath": "docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md"
+    },
+    {
+      "id": "ADR-115",
+      "number": 115,
+      "title": "Permanent Personal Branding, Alpha Version Notice, and Dussehra Festival Launch Carousel",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-19T00:55:00+05:30",
+      "subsystem": "WebGateway | Presentation (",
+      "filename": "ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md",
+      "relativePath": "docs/adr/presentation/ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md"
     }
   ]
 }

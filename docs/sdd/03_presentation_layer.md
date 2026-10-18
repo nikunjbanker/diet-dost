@@ -112,6 +112,23 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
    - Managed by `AnalyticsChartController` (`js/ui/analytics-chart.js`). Renders interactive projection curves, meal history logs, and XLSX export.
 5. **Obsidian Auth Gate (`partials/auth-gate.html`)**:
    - Managed by `AuthGateController` (`js/ui/auth-gate.js`). Provides sign-in, account registration, OTP verification, and quick-access demo account pills for testing all 5 user tiers.
+6. **Authoritative Shared Luxury Footer (`partials/footer.html`)**:
+   - Standardized Obsidian global footer across all pages (`index.html`, `terms.html`, `clinical-health-consent.html`).
+   - Features the Creator Showcase Hero Card: **"Created with ❤️ by Nikunj Banker — Dedicated to health, vitality, and happy diet food."**
+   - Incorporates official copyright: **`© 2026 Diet-Dost (@diet-dost). All rights reserved.`** and interactive GitHub repository link.
+   - Houses the **Alpha Version Warning Strip**: **`⚠️ Alpha Version Notice: Diet-Dost is currently in active Alpha preview (v1.5.0)...`** ensuring full user awareness and clinical transparency.
+7. **Always-Visible Floating Maker Chip (`.floating-maker-chip`)**:
+   - Persistent glassmorphic Obsidian dock (`z-index: 990;`) keeping creator branding visible at all times across all viewports.
+   - Desktop placement: Docked at `bottom: 24px; right: 24px;`.
+   - Mobile placement: Elevated at `bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px); right: 12px;` to guarantee 0 touch collisions with `.mobile-bottom-nav` or the meal logging FAB.
+   - Features animated `@keyframes heartBeat` pulse, brand icon, Alpha version chip, and direct GitHub repo pill.
+8. **Dussehra (Vijayadashami) Festival Launch Dynamic Carousel (`partials/dussehra-launch-banner.html`)**:
+   - Dynamic 4-concept launch banner carousel with auto-rotation (7.5s), concept tabs, indicator dots, and collapse/expand ticker:
+     - *Concept 1 (Metabolic Victory)*: Vanquish the 10 Metabolic Foes with AI Precision.
+     - *Concept 2 (Auspicious Beginning)*: Shubh Aarambh — Gift Yourself the Gold of True Health.
+     - *Concept 3 (Mindful Celebration)*: Celebrate Festive Delicacies with Pure Joy & Mindful Balance.
+     - *Concept 4 (Founder's Dedication)*: Dussehra Dedication — Created with ❤️ by Nikunj Banker.
+   - Interactive *Shubh Sankalp* health pledge button triggers celebratory confetti burst (`ConfettiService`) and empowering launch toast.
 
 ---
 
