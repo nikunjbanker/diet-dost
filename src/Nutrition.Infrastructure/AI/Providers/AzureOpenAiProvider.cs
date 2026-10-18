@@ -75,6 +75,17 @@ internal sealed class AzureOpenAiProvider : IAiFoodAnalysisProvider
             options.InputItems.Add(item);
 
         var response = await client.CreateResponseAsync(options, ct);
+        if (response?.Value is null)
+            return null;
+
+        var activity = System.Diagnostics.Activity.Current;
+        if (activity != null && response.Value.Usage != null)
+        {
+            activity.SetTag(Nutrition.Application.Common.NutritionTelemetry.TagGenAiUsageInputTokens, response.Value.Usage.InputTokenCount);
+            activity.SetTag(Nutrition.Application.Common.NutritionTelemetry.TagGenAiUsageOutputTokens, response.Value.Usage.OutputTokenCount);
+            activity.SetTag(Nutrition.Application.Common.NutritionTelemetry.TagGenAiUsageTotalTokens, response.Value.Usage.TotalTokenCount);
+        }
+
         return AiJsonParser.Parse(response.Value.GetOutputText(), _logger, modelId);
     }
 

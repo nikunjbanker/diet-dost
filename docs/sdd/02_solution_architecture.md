@@ -153,7 +153,7 @@ graph TB
         ASPIRE_Host[".NET Aspire AppHost (net11.0 / Sdk 13.5.4)<br/>(Distributed Orchestration & Typed Topology)"]
         ASPIRE_Dash["Aspire Developer Dashboard (:18888)<br/>(Live Resources, Distributed Traces, GenAI Semantic Spans)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')"]
-        TEST_Harness["Validation Harnesses<br/>(242 Automated Tests across 7 Projects + validate_e2e_tiers.ps1 Across 5 Demo User Tiers)"]
+        TEST_Harness["Validation Harnesses<br/>(259 Automated Tests across 7 Projects + validate_e2e_tiers.ps1 Across 5 Demo User Tiers)"]
         ADR_Registry["Subsystem Domain ADR Architecture (docs/adr/)<br/>(architecture, security, devops, presentation, governance)<br/>docs/adr/index.json Machine-Readable Registry (~4 KB)"]
     end
 
@@ -436,7 +436,7 @@ To prevent SQLite database loss during Container App restarts, image updates, or
 
 ### 2.11 OpenTelemetry GenAI Observability & Semantic Conventions
 
-Per ADR-112 and CNCF OpenTelemetry GenAI standards, `NutritionTelemetry.cs` exports standardized GenAI tracing attributes for all multimodal meal analysis operations:
+Per ADR-113 and CNCF OpenTelemetry GenAI standards, `NutritionTelemetry.cs` exports standardized GenAI tracing attributes for all multimodal meal analysis operations:
 - `gen_ai.system`: Provider engine (`google_gemini`, `azure_openai`, `local_clinical_engine`).
 - `gen_ai.request.model` & `gen_ai.response.model`: Primary and active fallback inference models.
 - `gen_ai.usage.input_tokens` & `gen_ai.usage.output_tokens`: Real-time prompt and completion token accounting.

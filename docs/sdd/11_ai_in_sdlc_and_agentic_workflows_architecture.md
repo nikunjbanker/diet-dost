@@ -7,7 +7,7 @@
 -->
 
 # AI in SDLC & Agentic Workflows Architecture Specification
-> **Specification Version**: `v1.5.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.6.0 (Production & Living SDD)`  
 > **Classification**: Solution Architecture, Engineering Lifecycles & Governance Standard  
 > **Approved Domain Focus**: SDLC vs. AI SDLC vs. Agentic SDLC, Role Evolution, DevSecOps & Closed-Loop Workflows  
 > **Target Framework**: .NET 11, .NET Aspire 13.5.4, OpenTelemetry, GitHub Actions, OWASP Top 10 for LLM  
@@ -584,6 +584,7 @@ graph TD
 | `v1.3.0` | 2026-10-14 | Deep-Dive Enrichment | Added section executive summaries, What/Why/How deep-dives, and 27-term architectural glossary. | Human Architect & AI Agent |
 | `v1.4.0` | 2026-10-14 | Living Evolution Mandate | Codified day-to-day trigger matrix (T-1 to T-7), living sync protocol, and AGENTS.md Rule 17. | Human Architect & AI Agent |
 | `v1.5.0` | 2026-10-14 | T-4 & T-5 (Quality & CI/CD Gating) | Established mandatory pre-deployment quality validation gates across all 4 tiers (Unit 90%, Integration 80%, System 75%, E2E 70%), dual deployment gating, and AGENTS.md Rule 23. | Human Architect & AI Agent |
+| `v1.6.0` | 2026-10-18 | T-2 & T-6 (Prompt Defenses, Structured Outputs, Diagram Alignment & GenAI OTel Observability) | Formalized adversarial agentic alignment (Anthropic/MS/OpenAI), JSON schema structured outputs, resilient AiJsonParser fast-path, 259-test diagram synchronization, and CNCF OpenTelemetry GenAI token telemetry across Gemini and Azure OpenAI (ADR-113). | Human Architect & AI Agent |
 
 ---
 

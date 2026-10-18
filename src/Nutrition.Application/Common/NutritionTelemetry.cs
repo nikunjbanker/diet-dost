@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -37,6 +37,10 @@ public static class NutritionTelemetry
     public const string TagGenAiUserPrompt = "gen_ai.user_prompt";
     public const string TagGenAiTemperature = "gen_ai.request.temperature";
     public const string TagGenAiMaxTokens = "gen_ai.request.max_tokens";
+    public const string TagGenAiUsageInputTokens = "gen_ai.usage.input_tokens";
+    public const string TagGenAiUsageOutputTokens = "gen_ai.usage.output_tokens";
+    public const string TagGenAiUsageTotalTokens = "gen_ai.usage.total_tokens";
+    public const string TagGenAiResponseFinishReasons = "gen_ai.response.finish_reasons";
 
     // User & Clinical Context Keys
     public const string TagUserId = "user.id";
