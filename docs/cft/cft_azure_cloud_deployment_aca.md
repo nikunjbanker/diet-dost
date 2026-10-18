@@ -20,7 +20,7 @@
 - [ ] **Step 1.1**: Container image built successfully with Podman (`podman build -t <acr>.azurecr.io/diet-dost-web:latest -f Containerfile .`).
 - [ ] **Step 1.2**: Azure Bicep deployment validated (`az deployment group validate --resource-group rg-dietdost-dev --template-file infra/dev/main.bicep`).
 - [ ] **Step 1.3**: Azure Files SMB share provisioned with private VNet service endpoint rule (`Microsoft.Storage`) and default network ACL set to `Deny`.
-- [ ] **Step 1.4**: Container App revision active with `minReplicas: 1` and `maxReplicas: 1` (strict SQLite single-replica locking constraint).
+- [ ] **Step 1.4**: Container App revision active with `maxReplicas: 1` (strict SQLite single-replica locking constraint) and parameterized `minReplicas` (`0` for dev consumption scale-to-zero free grant, `1` for production continuous availability).
 - [ ] **Step 1.5**: Persistent volume mounted at `/app/data` pointing to Azure File share `dietdost-data`.
 
 ---

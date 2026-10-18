@@ -80,9 +80,14 @@ public class BicepIaCConfigurationContractTests
         var appBicepPath = GetAppBicepPath("dev");
         var bicepContent = File.ReadAllText(appBicepPath);
 
-        // SQLite Golden Rule 1: Single writer invariant
-        Assert.Contains("minReplicas: 1", bicepContent);
-        Assert.Contains("maxReplicas: 1", bicepContent);
+        // SQLite Golden Rule 1: Single writer invariant & Scale-to-zero dev free tier grant
+        Assert.True(
+            bicepContent.Contains("minReplicas: minReplicas") || bicepContent.Contains("minReplicas: 1"),
+            "app.bicep must bind minReplicas to scale block");
+        Assert.True(
+            bicepContent.Contains("maxReplicas: maxReplicas") || bicepContent.Contains("maxReplicas: 1"),
+            "app.bicep must bind maxReplicas to scale block");
+        Assert.Contains("param maxReplicas int = 1", bicepContent);
 
         // Volume mount invariant: /app/data
         Assert.Contains("mountPath: '/app/data'", bicepContent);

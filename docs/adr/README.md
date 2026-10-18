@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 74 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 75 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -33,7 +33,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **18** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **19** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
-| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **20** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
+| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **21** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **4** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
@@ -115,6 +115,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-106** | Azure Application Insights Monitoring Metrics Publisher Role Definition GUID Remediation | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261018-106-azure-application-insights-role-definition-guid-remediation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261018-106-azure-application-insights-role-definition-guid-remediation.md) |
 | **ADR-108** | Fail-Fast DevSecOps Gates, Key Vault Single-Instance Consolidation & Container CVE Remediation | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261018-108-fail-fast-container-cve-and-key-vault-firewall-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261018-108-fail-fast-container-cve-and-key-vault-firewall-hardening.md) |
 | **ADR-109** | Decoupled ACA Custom Domain & Managed TLS Lifecycle Architecture | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261018-109-decoupled-aca-custom-domain-and-managed-tls-lifecycle.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261018-109-decoupled-aca-custom-domain-and-managed-tls-lifecycle.md) |
+| **ADR-110** | Azure Container Apps Consumption Scale-to-Zero Dev Cost Optimization | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261018-110-aca-consumption-scale-to-zero-dev-cost-optimization.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261018-110-aca-consumption-scale-to-zero-dev-cost-optimization.md) |
 
 ### 🎨 Presentation & UI/UX (`docs/adr/presentation/`)
 > *Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration.*

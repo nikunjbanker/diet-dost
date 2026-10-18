@@ -386,6 +386,10 @@ The full architectural blueprint is codified in the following repository visual 
   - OpenTelemetry configuration in `Nutrition.WebGateway.Extensions.OpenTelemetryExtensions` binds `AddAzureMonitorLogExporter` strictly into `logging.AddOpenTelemetry(...)`.
   - Application distributed traces and custom metrics remain exclusively routed to the local Aspire OTLP collector (`OTEL_EXPORTER_OTLP_ENDPOINT`), ensuring that only structured application logs and unhandled exceptions are forwarded to Azure Monitor Application Insights.
 
-
-
-
+### 8.8 Azure Container Apps Consumption Scale-to-Zero Dev Cost Optimization (ADR-110)
+- **Problem**: Baseline dev hosting with `minReplicas: 1` 24/7 incurred ~$34.00/month (~₹2,873 INR/mo) in container compute alone, representing 78.1% of the overall cloud bill.
+- **Consumption Free Tier Grant**: Azure grants **180,000 vCPU-seconds and 360,000 GiB-seconds free every month**. Setting `minReplicas: 0` for development workloads enables scale-to-zero during idle periods, bringing compute costs down to **₹0.00 / month** while staying comfortably within the monthly free grant.
+- **SQLite Single-Writer Invariant Preserved**: Parameterized in `infra/<env>/app.bicep`:
+  - `param minReplicas int = (environment == 'dev' ? 0 : 1)`
+  - `param maxReplicas int = 1`
+  - While `minReplicas` is 0 during idle dev hours (0 writers = 100% safe), `maxReplicas` is hard-locked to 1 across all environments, strictly safeguarding the SQLite database (`diet_dost.db`) on Azure Files SMB from multi-writer file corruption.

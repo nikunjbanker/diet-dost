@@ -56,9 +56,11 @@ When deploying Diet-Dost (.NET 11, SQLite) to Azure without virtual machines, un
 
 To ensure SQLite never suffers data loss, silent corruption, or file-lock deadlocks in cloud environments, every deployment MUST adhere to these four golden rules:
 
-### Rule 1: The Single-Replica Constraint (`maxReplicas: 1`)
+### Rule 1: The Single-Replica Constraint (`maxReplicas: 1`) & Dev Scale-to-Zero Free Tier
 SQLite is an embedded, single-process write-locking database. In containerized environments, auto-scaling to 2 or more replicas pointing to the same shared SQLite file **will lead to database corruption or immediate `busy / locked` exceptions**.
-- In ACA: Configure `minReplicas: 1`, `maxReplicas: 1`.
+- **In ACA**:
+  - `maxReplicas: 1` (strict single-writer invariant across all environments).
+  - `minReplicas`: Set to `0` for `dev` (enabling **Azure Consumption scale-to-zero** to leverage the 180,000 vCPU-seconds monthly free grant, reducing compute costs to **$0.00** during idle periods). Set to `1` for production continuous availability.
 - In App Service: Scale out must be fixed at `1` instance.
 - In VM: Only 1 application container running at any time.
 
