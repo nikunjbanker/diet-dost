@@ -436,7 +436,7 @@ To prevent SQLite database loss during Container App restarts, image updates, or
 
 ### 2.11 OpenTelemetry GenAI Observability & Semantic Conventions
 
-Per ADR-112 and CNCF OpenTelemetry GenAI standards, `NutritionTelemetry.cs` exports standardized GenAI tracing attributes for all multimodal meal analysis operations:
+Per ADR-113 and CNCF OpenTelemetry GenAI standards, `NutritionTelemetry.cs` exports standardized GenAI tracing attributes for all multimodal meal analysis operations:
 - `gen_ai.system`: Provider engine (`google_gemini`, `azure_openai`, `local_clinical_engine`).
 - `gen_ai.request.model` & `gen_ai.response.model`: Primary and active fallback inference models.
 - `gen_ai.usage.input_tokens` & `gen_ai.usage.output_tokens`: Real-time prompt and completion token accounting.

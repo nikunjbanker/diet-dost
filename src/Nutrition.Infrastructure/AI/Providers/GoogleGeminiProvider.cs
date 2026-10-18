@@ -5,10 +5,12 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using System.Diagnostics;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Agents;
+using Nutrition.Application.Common;
 
 namespace Nutrition.Infrastructure.AI;
 
@@ -37,6 +39,46 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
         new { category = "HARM_CATEGORY_CIVIC_INTEGRITY", threshold = "BLOCK_LOW_AND_ABOVE" }
     };
 
+    private static readonly object StructuredOutputSchema = new
+    {
+        type = "OBJECT",
+        properties = new
+        {
+            dishName = new { type = "STRING", description = "Canonical dish or thali name in English/Hindi" },
+            portionSize = new { type = "STRING", description = "Estimated portion description (e.g. 1 medium katori)" },
+            identifiedItems = new
+            {
+                type = "ARRAY",
+                description = "Granular food items identified in the dish",
+                items = new
+                {
+                    type = "OBJECT",
+                    properties = new
+                    {
+                        name = new { type = "STRING" },
+                        portion = new { type = "STRING" },
+                        calories = new { type = "NUMBER" },
+                        proteinGrams = new { type = "NUMBER" },
+                        carbsGrams = new { type = "NUMBER" },
+                        fatGrams = new { type = "NUMBER" },
+                        fiberGrams = new { type = "NUMBER" }
+                    },
+                    required = new[] { "name", "portion", "calories", "proteinGrams", "carbsGrams", "fatGrams" }
+                }
+            },
+            totalCalories = new { type = "NUMBER" },
+            totalProteinGrams = new { type = "NUMBER" },
+            totalCarbsGrams = new { type = "NUMBER" },
+            totalFatGrams = new { type = "NUMBER" },
+            totalFiberGrams = new { type = "NUMBER" },
+            totalSugarGrams = new { type = "NUMBER" },
+            totalSodiumMg = new { type = "NUMBER" },
+            confidenceScore = new { type = "NUMBER" },
+            notes = new { type = "STRING" }
+        },
+        required = new[] { "dishName", "identifiedItems", "totalCalories", "totalProteinGrams", "totalCarbsGrams", "totalFatGrams" }
+    };
+
     public async Task<IndianMealAnalysisResult?> AnalyzePhotoAsync(
         byte[] imageBytes, string mimeType, string prompt, string modelId, CancellationToken ct)
     {
@@ -57,6 +99,7 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
             generationConfig = new
             {
                 response_mime_type = "application/json",
+                response_schema = StructuredOutputSchema,
                 temperature = _options.Temperature,
                 max_output_tokens = _options.MaxTokens
             }
@@ -74,6 +117,7 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
             generationConfig = new
             {
                 response_mime_type = "application/json",
+                response_schema = StructuredOutputSchema,
                 temperature = _options.Temperature,
                 max_output_tokens = _options.MaxTokens
             }
@@ -133,15 +177,35 @@ internal sealed class GoogleGeminiProvider : IAiFoodAnalysisProvider
         }
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+
+        if (document.RootElement.TryGetProperty("usageMetadata", out var usage))
+        {
+            var activity = Activity.Current;
+            if (activity != null)
+            {
+                if (usage.TryGetProperty("promptTokenCount", out var promptTokens) && promptTokens.TryGetInt32(out var pTokens))
+                    activity.SetTag(NutritionTelemetry.TagGenAiUsageInputTokens, pTokens);
+                if (usage.TryGetProperty("candidatesTokenCount", out var candidatesTokens) && candidatesTokens.TryGetInt32(out var cTokens))
+                    activity.SetTag(NutritionTelemetry.TagGenAiUsageOutputTokens, cTokens);
+                if (usage.TryGetProperty("totalTokenCount", out var totalTokens) && totalTokens.TryGetInt32(out var tTokens))
+                    activity.SetTag(NutritionTelemetry.TagGenAiUsageTotalTokens, tTokens);
+            }
+        }
+
         if (!document.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
             return null;
 
         var candidate = candidates[0];
-        if (candidate.TryGetProperty("finishReason", out var finishReason) &&
-            string.Equals(finishReason.GetString(), "SAFETY", StringComparison.OrdinalIgnoreCase))
+        if (candidate.TryGetProperty("finishReason", out var finishReasonProp))
         {
-            _logger.LogWarning("Google AI blocked prompt due to content safety policy violation for model {Model}", modelId);
-            return PromptShieldValidator.CreateSafetyViolationResult("Google AI Content Safety filter triggered (content flagged as harmful, violent, sexual, or communal).");
+            var finishReasonStr = finishReasonProp.GetString();
+            Activity.Current?.SetTag(NutritionTelemetry.TagGenAiResponseFinishReasons, finishReasonStr);
+
+            if (string.Equals(finishReasonStr, "SAFETY", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("Google AI blocked prompt due to content safety policy violation for model {Model}", modelId);
+                return PromptShieldValidator.CreateSafetyViolationResult("Google AI Content Safety filter triggered (content flagged as harmful, violent, sexual, or communal).");
+            }
         }
 
         if (!candidate.TryGetProperty("content", out var content) ||
