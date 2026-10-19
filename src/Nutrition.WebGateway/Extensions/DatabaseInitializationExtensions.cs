@@ -74,19 +74,23 @@ public static partial class DatabaseInitializationExtensions
 
     private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db)
     {
-        await db.Database.EnsureCreatedAsync();
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
 
-        // If core domain tables were skipped (e.g. if another table pre-existed in sqlite_master), generate schema
+        // Check if core domain tables already exist.
+        // NOTE: We deliberately bypass db.Database.EnsureCreatedAsync() because EF Core's built-in
+        // SqliteDatabaseCreator hardcodes "PRAGMA journal_mode = 'wal';", which fails with SQLite Error 5
+        // ("database is locked") on Azure Files SMB CIFS mounts due to lack of POSIX shared-memory (.shm) mmap support.
+        // Instead, we directly generate the create script via EF Core model metadata and execute the DDL statements,
+        // honoring the SqlitePragmaInterceptor (PRAGMA journal_mode=DELETE).
         var mealsExist = await TableExistsAsync(db, "Meals");
         if (!mealsExist)
         {
             var createScript = db.Database.GenerateCreateScript();
             var rawStatements = createScript.Split(ScriptSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            var connection = db.Database.GetDbConnection();
-            if (connection.State != System.Data.ConnectionState.Open)
-            {
-                await connection.OpenAsync();
-            }
             using var createCmd = connection.CreateCommand();
             foreach (var rawStatement in rawStatements)
             {
