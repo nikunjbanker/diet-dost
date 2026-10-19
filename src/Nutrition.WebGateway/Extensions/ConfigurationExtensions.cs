@@ -135,7 +135,7 @@ public static class ConfigurationExtensions
         // 3. Database Normalization
         var resolvedDbConnStr = currentConfig.GetConnectionString("DefaultConnection")
             ?? currentConfig["ConnectionStrings:DefaultConnection"]
-            ?? (env.IsDevelopment() ? "Data Source=diettracker.db" : "Data Source=/app/data/diet_dost.db;Cache=Shared");
+            ?? (env.IsDevelopment() ? "Data Source=diettracker.db" : "Data Source=/app/data/diet_dost.db");
 
         normalizedMap["ConnectionStrings:DefaultConnection"] = resolvedDbConnStr;
         normalizedMap["Database:ConnectionString"] = resolvedDbConnStr;

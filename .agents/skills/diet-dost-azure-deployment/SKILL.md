@@ -69,8 +69,9 @@ SQLite is an embedded, single-process write-locking database. In containerized e
   ```sql
   PRAGMA journal_mode = DELETE; -- or TRUNCATE
   PRAGMA synchronous = FULL;
-  PRAGMA busy_timeout = 5000;
+  PRAGMA busy_timeout = 30000;
   ```
+  *Note on EF Core*: `RelationalDatabaseCreator.EnsureCreatedAsync()` hardcodes `PRAGMA journal_mode = 'wal'`, which causes `SQLite Error 5: database is locked` on CIFS SMB mounts. Startup initialization must bypass `EnsureCreatedAsync()` and directly execute generated DDL (ADR-117).
 - **Local SSD (VM)**: Native Linux ext4/xfs filesystem fully supports shared memory. Always enable WAL mode for maximum read concurrency:
   ```sql
   PRAGMA journal_mode = WAL;
@@ -82,7 +83,7 @@ SQLite is an embedded, single-process write-locking database. In containerized e
 Diet-Dost stores both the database file (`diet_dost.db`) and user photos (`uploads/meals`, `uploads/progress`).
 The persistent volume mount MUST cover both paths:
 - Mount point in container: `/app/data`
-- Connection String: `Data Source=/app/data/diet_dost.db;Cache=Shared`
+- Connection String: `Data Source=/app/data/diet_dost.db` (private cache; `Cache=Shared` eliminated per ADR-117 to prevent table locking collisions).
 - Photo Storage Path: `Storage:WebRootPath=/app/data/wwwroot` or symlinked `/app/data/uploads` -> `/app/wwwroot/uploads`.
 
 ### Rule 4: Automated Hot-Backup to Azure Blob Storage

@@ -247,6 +247,7 @@ graph TD
 2. **Rollback Journal Mode for Network SMB Mounts**: Because SMB/CIFS network storage does not support POSIX shared memory (`.shm` mapping) reliably, `PRAGMA journal_mode = DELETE;` (or `TRUNCATE`) must be used when deploying against Azure Files.
 3. **Write-Ahead Logging (WAL) for Local SSD Mounts**: When deploying to a Linux VM (Option 3), native block storage allows `PRAGMA journal_mode = WAL;`, enabling concurrent reads without blocking writes.
 4. **Volume Mount Separation**: Container images must mount external persistent storage to `/app/data`, with the connection string pointing to `/app/data/diet_dost.db` and static uploads directed to `/app/data/wwwroot/uploads`.
+5. **EF Core Hardcoded WAL Bypass & Private Cache**: EF Core's built-in `RelationalDatabaseCreator.EnsureCreatedAsync()` hardcodes `PRAGMA journal_mode = 'wal'`, which causes `SQLite Error 5: database is locked` on CIFS SMB network mounts due to missing POSIX shared-memory `.shm` mmap support. Schema initialization must bypass `EnsureCreatedAsync()` and directly execute generated DDL under rollback journal mode (`DELETE`). In addition, connection strings must avoid deprecated `Cache=Shared` mode to eliminate table-level locking on SMB mounts (ADR-117).
 
 ---
 

@@ -51,7 +51,7 @@ ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV Database__Provider=Sqlite
 ENV Database__JournalMode="DELETE"
-ENV ConnectionStrings__DefaultConnection="Data Source=/app/data/diet_dost.db;Cache=Shared"
+ENV ConnectionStrings__DefaultConnection="Data Source=/app/data/diet_dost.db"
 ENV Storage__WebRootPath="/app/data/wwwroot"
 ENV Security__AllowDemoUsers="false"
 

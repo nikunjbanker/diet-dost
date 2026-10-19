@@ -177,7 +177,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'ConnectionStrings__DefaultConnection'
-              value: 'Data Source=/app/data/diet_dost.db;Cache=Shared'
+              value: 'Data Source=/app/data/diet_dost.db'
             }
             {
               name: 'Storage__WebRootPath'

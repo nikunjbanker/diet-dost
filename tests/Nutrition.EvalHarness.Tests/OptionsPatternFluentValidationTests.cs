@@ -241,7 +241,7 @@ public class OptionsPatternFluentValidationTests
     {
         var configData = new Dictionary<string, string?>
         {
-            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db;Cache=Shared",
+            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db",
             ["Database:Provider"] = "Sqlite"
         };
 
@@ -257,7 +257,7 @@ public class OptionsPatternFluentValidationTests
         var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
         var actualConnectionString = db.Database.GetConnectionString();
 
-        Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", actualConnectionString);
+        Assert.Equal("Data Source=/app/data/diet_dost.db", actualConnectionString);
     }
 
     [Fact]
@@ -269,7 +269,7 @@ public class OptionsPatternFluentValidationTests
             ["Jwt:Issuer"] = "DietDostGateway",
             ["Jwt:Audience"] = "DietDostClient",
             ["Auth:SuperAdminEmail"] = "superadmin@dietdost.app",
-            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db;Cache=Shared",
+            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db",
             ["Database:Provider"] = "Sqlite"
         };
 
@@ -288,10 +288,10 @@ public class OptionsPatternFluentValidationTests
             provider.GetRequiredService<IOptions<DatabaseOptions>>(),
             configuration);
 
-        Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", dietDostConfig.DefaultConnection);
+        Assert.Equal("Data Source=/app/data/diet_dost.db", dietDostConfig.DefaultConnection);
 
         var fallbackConfig = new DietDostConfiguration(configuration);
-        Assert.Equal("Data Source=/app/data/diet_dost.db;Cache=Shared", fallbackConfig.DefaultConnection);
+        Assert.Equal("Data Source=/app/data/diet_dost.db", fallbackConfig.DefaultConnection);
     }
 
     [Fact]
