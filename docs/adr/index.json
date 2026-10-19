@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-19T06:06:11.338389+00:00",
-  "totalAdrs": 82,
+  "generatedAt": "2026-10-19T07:37:11.963135+00:00",
+  "totalAdrs": 83,
   "categoryCounts": {
     "architecture": 20,
     "security": 20,
-    "devops": 23,
+    "devops": 24,
     "presentation": 6,
     "governance": 13
   },
@@ -993,6 +993,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261019-117-sqlite-smb-shared-cache-elimination-and-efcore-wal-bypass.md",
       "relativePath": "docs/adr/devops/ADR-20261019-117-sqlite-smb-shared-cache-elimination-and-efcore-wal-bypass.md"
+    },
+    {
+      "id": "ADR-118",
+      "number": 118,
+      "title": "Fast SQLite SMB Initialization via Transaction Batching and ACA Active Replica Invariant",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-19",
+      "subsystem": "Devops",
+      "filename": "ADR-20261019-118-sqlite-smb-fast-init-transaction-and-aca-minreplicas.md",
+      "relativePath": "docs/adr/devops/ADR-20261019-118-sqlite-smb-fast-init-transaction-and-aca-minreplicas.md"
     }
   ]
 }

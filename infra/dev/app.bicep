@@ -72,7 +72,7 @@ param appInsightsConnectionString string = ''
 param certificateId string = ''
 
 @description('Minimum number of replicas for Container App (0 enables consumption scale-to-zero to utilize Azure free tier grant in dev).')
-param minReplicas int = (environment == 'dev' ? 0 : 1)
+param minReplicas int = 1
 
 @description('Maximum number of replicas for Container App (enforces SQLite single-writer invariant).')
 param maxReplicas int = 1
@@ -235,7 +235,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               }
               initialDelaySeconds: 10
               periodSeconds: 5
-              failureThreshold: 24
+              failureThreshold: 30
             }
             {
               type: 'Liveness'
