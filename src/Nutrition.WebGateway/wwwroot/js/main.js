@@ -285,7 +285,6 @@ function setupMobileViewportNotice() {
   const notice = document.getElementById('mobile-viewport-notice');
   if (!notice) return;
 
-  const dismissed = sessionStorage.getItem('diet_dost_mobile_notice_dismissed') === 'true';
   const checkViewport = () => {
     const isDismissedNow = sessionStorage.getItem('diet_dost_mobile_notice_dismissed') === 'true';
     if (!isDismissedNow && window.innerWidth < 768) {
