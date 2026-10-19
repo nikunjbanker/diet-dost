@@ -6,6 +6,7 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Data;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
@@ -51,7 +52,7 @@ public static partial class DatabaseInitializationExtensions
             {
                 try
                 {
-                    await EnsureDatabaseCreatedAndMigratedAsync(db);
+                    await EnsureDatabaseCreatedAndMigratedAsync(db, logger);
                     break;
                 }
                 catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 5 && attempt < maxRetries)
@@ -87,30 +88,80 @@ public static partial class DatabaseInitializationExtensions
         }
     }
 
-    private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db)
+    private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db, ILogger logger)
     {
         var connection = db.Database.GetDbConnection();
+
+        // Fast Pristine Schema Bootstrapping:
+        // Azure Files SMB / CIFS mounts have high per-operation latency (~800ms) and do not support
+        // POSIX byte-range locking required by SQLite transactions. Executing 140+ DDL statements
+        // over SMB takes >120s and transaction COMMIT triggers SQLITE_BUSY (error 5).
+        // If the target SQLite database is missing or empty (0 bytes), we bootstrap the pristine
+        // schema in local container temporary storage (/tmp) in <50ms, switch to DELETE journal mode,
+        // and copy the single complete database file to the target volume in a single atomic I/O operation.
+        if (connection is SqliteConnection sqliteConn)
+        {
+            var builder = new SqliteConnectionStringBuilder(sqliteConn.ConnectionString);
+            var dbPath = builder.DataSource;
+
+            if (!string.IsNullOrWhiteSpace(dbPath) && !dbPath.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
+            {
+                var fullPath = Path.GetFullPath(dbPath);
+                var fi = new FileInfo(fullPath);
+                if (!fi.Exists || fi.Length == 0)
+                {
+                    logger.LogInformation("[INIT] Pristine SQLite bootstrapping initiated for '{DbPath}' via local container temporary storage...", fullPath);
+                    var tempFile = Path.Combine(Path.GetTempPath(), $"diet_dost_init_{Guid.NewGuid():N}.db");
+                    try
+                    {
+                        var tempOptions = new DbContextOptionsBuilder<DietTrackerDbContext>()
+                            .UseSqlite($"Data Source={tempFile}")
+                            .Options;
+
+                        using (var tempDb = new DietTrackerDbContext(tempOptions))
+                        {
+                            await tempDb.Database.EnsureCreatedAsync();
+                            // Checkpoint any WAL entries and ensure journal mode is DELETE for SMB CIFS compatibility
+                            await tempDb.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode = 'DELETE';");
+                        }
+
+                        var targetDir = Path.GetDirectoryName(fullPath);
+                        if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
+                        {
+                            Directory.CreateDirectory(targetDir);
+                        }
+
+                        File.Copy(tempFile, fullPath, overwrite: true);
+                        logger.LogInformation("[INIT] Pristine SQLite schema successfully deployed to '{DbPath}'.", fullPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "[INIT] Local pristine schema bootstrap encountered an exception; falling back to in-place creation.");
+                    }
+                    finally
+                    {
+                        if (File.Exists(tempFile))
+                        {
+                            try { File.Delete(tempFile); } catch { }
+                        }
+                    }
+                }
+            }
+        }
+
         if (connection.State != ConnectionState.Open)
         {
             await connection.OpenAsync();
         }
 
         // Check if core domain tables already exist.
-        // NOTE: We deliberately bypass db.Database.EnsureCreatedAsync() because EF Core's built-in
-        // SqliteDatabaseCreator hardcodes "PRAGMA journal_mode = 'wal';", which fails with SQLite Error 5
-        // ("database is locked") on Azure Files SMB CIFS mounts due to lack of POSIX shared-memory (.shm) mmap support.
-        // Instead, we directly generate the create script via EF Core model metadata and execute the DDL statements,
-        // honoring the SqlitePragmaInterceptor (PRAGMA journal_mode=DELETE).
         var mealsExist = await TableExistsAsync(db, "Meals");
         if (!mealsExist)
         {
             var createScript = db.Database.GenerateCreateScript();
             var rawStatements = createScript.Split(ScriptSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             
-            // Execute all DDL statements in a single transaction to eliminate 100+ separate SMB CIFS fsync/journal roundtrips
-            using var tx = await connection.BeginTransactionAsync();
             using var createCmd = connection.CreateCommand();
-            createCmd.Transaction = tx;
             foreach (var rawStatement in rawStatements)
             {
                 if (string.IsNullOrWhiteSpace(rawStatement)) continue;
@@ -126,7 +177,6 @@ public static partial class DatabaseInitializationExtensions
                     // Table, index, or constraint may already exist
                 }
             }
-            await tx.CommitAsync();
             return;
         }
 

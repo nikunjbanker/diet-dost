@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 83 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 84 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -33,7 +33,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **20** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **20** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
-| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **24** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
+| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **25** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **6** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
@@ -122,6 +122,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-116** | SQLite Azure Files SMB Mount Journal Mode & Container App Startup Probes | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261019-116-sqlite-smb-mount-journal-mode-and-container-startup-probes.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261019-116-sqlite-smb-mount-journal-mode-and-container-startup-probes.md) |
 | **ADR-117** | SQLite SMB Shared Cache Elimination & EF Core WAL Bypass | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261019-117-sqlite-smb-shared-cache-elimination-and-efcore-wal-bypass.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261019-117-sqlite-smb-shared-cache-elimination-and-efcore-wal-bypass.md) |
 | **ADR-118** | Fast SQLite SMB Initialization via Transaction Batching and ACA Active Replica Invariant | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261019-118-sqlite-smb-fast-init-transaction-and-aca-minreplicas.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261019-118-sqlite-smb-fast-init-transaction-and-aca-minreplicas.md) |
+| **ADR-119** | Local Temporary Storage Pristine SQLite Schema Bootstrapping and SMB CIFS POSIX Byte-Locking Elimination | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261019-119-local-temporary-storage-pristine-sqlite-bootstrap.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261019-119-local-temporary-storage-pristine-sqlite-bootstrap.md) |
 
 ### 🎨 Presentation & UI/UX (`docs/adr/presentation/`)
 > *Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration.*

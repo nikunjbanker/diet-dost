@@ -64,14 +64,16 @@ SQLite is an embedded, single-process write-locking database. In containerized e
 - In App Service: Scale out must be fixed at `1` instance.
 - In VM: Only 1 application container running at any time.
 
-### Rule 2: Journal Mode Compatibility & Fast Transaction-Wrapped DDL (SMB vs. Local Disk)
-- **Azure Files SMB**: SMB/CIFS network protocol does not support POSIX shared memory (`.shm` file mapping). Attempting to use SQLite `WAL` (Write-Ahead Logging) over SMB can cause `database disk image is malformed` or `disk I/O error`. Over SMB, SQLite **MUST** run with rollback journal:
-  ```sql
-  PRAGMA journal_mode = DELETE; -- or TRUNCATE
-  PRAGMA synchronous = FULL;
-  PRAGMA busy_timeout = 30000;
-  ```
-  *Fast DDL Transaction Batching (ADR-118)*: Initial schema creation via EF Core model metadata must be executed within an explicit `using var tx = await connection.BeginTransactionAsync()` transaction. Executing individual DDL statements in autocommit mode creates/deletes a `-journal` file per statement over CIFS, taking >120s and triggering ACA `StartupProbe` timeouts. In an explicit transaction, 100+ DDL statements commit in <100ms. Startup initialization must also bypass EF Core `EnsureCreatedAsync()` (which hardcodes `WAL`) and include exponential backoff retries for `SQLITE_BUSY` (ADR-117 & ADR-118).
+### Rule 2: Journal Mode Compatibility & Ephemeral Temp-Disk Schema Bootstrapping (ADR-119)
+- **Azure Files SMB & Ephemeral Temp-Disk Bootstrapping (ADR-119)**:
+  - Azure Files SMB/CIFS network protocol does not support POSIX shared memory (`.shm` file mapping) or low-level POSIX byte-range locking.
+  - Over SMB, SQLite **MUST** run with rollback journal:
+    ```sql
+    PRAGMA journal_mode = DELETE; -- or TRUNCATE
+    PRAGMA synchronous = FULL;
+    PRAGMA busy_timeout = 30000;
+    ```
+  - *Pristine Schema Bootstrap Pattern (ADR-119)*: Initial schema creation via EF Core model metadata must NOT execute 140+ individual DDL statements or transaction commits directly over the SMB share. Instead, `DatabaseInitializationExtensions` constructs a pristine database in local container temporary storage (`/tmp/diet_dost_init_<guid>.db`) via `EnsureCreatedAsync()`, executes `PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode = 'DELETE';`, and copies the complete database to `/app/data/diet_dost.db` in a single `File.Copy` call in <50ms.
 - **Local SSD (VM)**: Native Linux ext4/xfs filesystem fully supports shared memory. Always enable WAL mode for maximum read concurrency:
   ```sql
   PRAGMA journal_mode = WAL;
