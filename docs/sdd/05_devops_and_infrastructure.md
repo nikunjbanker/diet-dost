@@ -402,11 +402,16 @@ The full architectural blueprint is codified in the following repository visual 
   - Azure Files SMB (CIFS) network mounts do not reliably emulate low-level POSIX byte-range locking and transactional synchronization (`fcntl` / `lockf`).
   - When `Microsoft.Data.Sqlite` attempts to `COMMIT` an explicit transaction or write to an uninitialized database file over an SMB CIFS mount, the SMB client returns sharing violation errors which SQLite surfaces as `SQLite Error 5: database is locked`.
   - Concurrently, Kubernetes rolling updates (`RollingUpdate` with `maxSurge: 1`) temporarily run two replicas against the same single-writer SMB volume, causing mutual lock starvation.
-- **The Ephemeral Temp-Disk Bootstrap Solution**:
-  1. **Pristine Local Generation**: If `/app/data/diet_dost.db` is missing or 0 bytes on container startup, `DatabaseInitializationExtensions` constructs the database on local container temporary storage (`/tmp/diet_dost_init_<guid>.db`) via `tempDb.Database.EnsureCreatedAsync()`.
-  2. **Local NVMe Throughput**: Local ephemeral disk execution completes the entire 140-statement schema creation in <50ms with native POSIX locking and zero network latency.
-  3. **DELETE Journal Mode & WAL Truncation**: Flushes WAL checkpoint (`PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode = 'DELETE';`) to ensure all data is in a single self-contained `.db` file without `.shm` or `.wal` dependencies.
-  4. **Single-Shot File Copy**: Deploys the complete database to `/app/data/diet_dost.db` via `File.Copy(..., overwrite: true)` in a single file I/O write, eliminating 100+ network roundtrips and zeroing SMB lock contention.
-  5. **Instant Container Binding**: On container boot, tables are verified in <50ms, demo/SuperAdmin seeders run, and Kestrel binds port 8080 in <500ms, ensuring immediate startup probe success (`HTTP 200 OK`) and healthy revision activation.
+### 8.11 Local Ephemeral Active SQLite Cache & Cloud Storage Vault Sync (ADR-120)
+- **Problem**:
+  - While initial schema bootstrap succeeded via `/tmp` copying (ADR-119), subsequent EF Core write transactions (such as `SeedAppSecretsAsync` and normal runtime modifications) failed on `SaveChangesAsync` with `SQLite Error 5: database is locked`.
+  - On Azure Files SMB (CIFS) mounts, SQLite write transactions cannot acquire or upgrade POSIX byte-range file locks, triggering a 30-second busy timeout failure on every transaction `Commit()`.
+  - Furthermore, default ACA multi-revision configurations allowed previous revision replicas to remain active, creating concurrent read/write handles that blocked the new container.
+- **Architectural Solution**:
+  1. **Single Revision Mode Enforcement**: In `infra/dev/app.bicep`, configured `activeRevisionsMode: 'Single'`. Azure Container Apps terminates older revision replicas before bringing up the new revision, eliminating all concurrent SMB handle collisions.
+  2. **Local Ephemeral Active SQLite Cache**: Active database read and write traffic is decoupled from network mounts and executed exclusively against local container NVMe storage (`/tmp/diet_dost.db`). SQLite runs in high-concurrency **WAL mode** (`PRAGMA journal_mode = WAL`) with native POSIX byte-locking and sub-millisecond execution (<1ms).
+  3. **Bi-directional Startup Hydration**: If the durable vault file `/app/data/diet_dost.db` exists and is >0 bytes, `StorageInfrastructureExtensions` copies it down to `/tmp/diet_dost.db` at boot. If missing, it creates and seeds it locally on `/tmp` with zero lock contention.
+  4. **Pristine Seed Synchronization**: On startup completion, `DatabaseInitializationExtensions` invokes `ISqliteStorageVaultSyncService.SyncActiveToVaultAsync()` to flush the fully seeded database up to `/app/data/diet_dost.db`.
+  5. **Background & Graceful Vault Synchronization**: `SqliteStorageVaultSyncService` runs every 30 seconds to checkpoint active WAL pages (`PRAGMA wal_checkpoint(PASSIVE)`) and perform a safe file copy to `/app/data/diet_dost.db`. On container termination (`StopAsync` / SIGTERM), it performs a final graceful sync to ensure zero data loss.
 
 

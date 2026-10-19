@@ -5,11 +5,15 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
+using Nutrition.Infrastructure.Persistence.Services;
 
 namespace Nutrition.Infrastructure.Persistence;
 
@@ -37,6 +41,58 @@ public static class StorageInfrastructureExtensions
         switch (provider.ToLowerInvariant())
         {
             case "sqlite":
+                var builder = new SqliteConnectionStringBuilder(connectionString);
+                var useEphemeral = dbOptions.UseEphemeralActiveCache;
+
+                if (useEphemeral && !builder.DataSource.Equals(":memory:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var vaultPath = !string.IsNullOrWhiteSpace(dbOptions.StorageVaultPath) ? dbOptions.StorageVaultPath : builder.DataSource;
+                    var activePath = !string.IsNullOrWhiteSpace(dbOptions.ActiveDbPath)
+                        ? dbOptions.ActiveDbPath
+                        : Path.Combine(Path.GetTempPath(), Path.GetFileName(vaultPath));
+
+                    try
+                    {
+                        if (File.Exists(vaultPath) && new FileInfo(vaultPath).Length > 0 && !File.Exists(activePath))
+                        {
+                            var activeDir = Path.GetDirectoryName(activePath);
+                            if (!string.IsNullOrWhiteSpace(activeDir))
+                            {
+                                Directory.CreateDirectory(activeDir);
+                            }
+                            File.Copy(vaultPath, activePath, overwrite: true);
+                        }
+                    }
+                    catch
+                    {
+                        // Fallback to fresh creation if initial hydration fails
+                    }
+
+                    var activeBuilder = new SqliteConnectionStringBuilder
+                    {
+                        DataSource = activePath,
+                        Cache = SqliteCacheMode.Shared
+                    };
+                    connectionString = activeBuilder.ToString();
+
+                    services.AddSingleton<ISqliteStorageVaultSyncService>(sp =>
+                        new SqliteStorageVaultSyncService(
+                            sp.GetRequiredService<ILogger<SqliteStorageVaultSyncService>>(),
+                            activePath,
+                            vaultPath,
+                            enabled: true));
+                    services.AddHostedService(sp => (SqliteStorageVaultSyncService)sp.GetRequiredService<ISqliteStorageVaultSyncService>());
+                }
+                else
+                {
+                    services.AddSingleton<ISqliteStorageVaultSyncService>(sp =>
+                        new SqliteStorageVaultSyncService(
+                            sp.GetRequiredService<ILogger<SqliteStorageVaultSyncService>>(),
+                            builder.DataSource,
+                            null,
+                            enabled: false));
+                }
+
                 services.AddDbContext<DietTrackerDbContext>(options =>
                     options.UseSqlite(connectionString)
                            .AddInterceptors(new SqlitePragmaInterceptor()));
@@ -62,9 +118,9 @@ public static class StorageInfrastructureExtensions
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
-        services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Services.LocalPhotoStorageService>();
-        services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Services.DatabaseSecretStore>();
-        services.AddSingleton<Nutrition.Application.Common.Interfaces.IAppEnvironment, Services.AppEnvironment>();
+        services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Nutrition.Infrastructure.Services.LocalPhotoStorageService>();
+        services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Nutrition.Infrastructure.Services.DatabaseSecretStore>();
+        services.AddSingleton<Nutrition.Application.Common.Interfaces.IAppEnvironment, Nutrition.Infrastructure.Services.AppEnvironment>();
         return services;
     }
 }

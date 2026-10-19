@@ -261,6 +261,40 @@ public class OptionsPatternFluentValidationTests
     }
 
     [Fact]
+    public void AddStorageInfrastructure_WithEphemeralActiveCache_UsesTempStorageAndRegistersVaultSync()
+    {
+        var configData = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnection"] = "Data Source=/app/data/diet_dost.db",
+            ["Database:Provider"] = "Sqlite",
+            ["Database:UseEphemeralActiveCache"] = "true",
+            ["Database:StorageVaultPath"] = "/app/data/diet_dost.db",
+            ["Database:ActiveDbPath"] = "/tmp/diet_dost.db"
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddStorageInfrastructure(configuration);
+        var provider = services.BuildServiceProvider();
+
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var vaultSync = scope.ServiceProvider.GetRequiredService<Nutrition.Application.Common.Interfaces.ISqliteStorageVaultSyncService>();
+
+        var actualConnectionString = db.Database.GetConnectionString();
+
+        Assert.NotNull(actualConnectionString);
+        Assert.Contains("/tmp/diet_dost.db", actualConnectionString);
+        Assert.True(vaultSync.IsEnabled);
+        Assert.Equal("/tmp/diet_dost.db", vaultSync.ActiveDbPath);
+        Assert.Equal("/app/data/diet_dost.db", vaultSync.StorageVaultPath);
+    }
+
+    [Fact]
     public void DietDostConfiguration_PrioritizesDefaultConnection_OverDatabaseOptionsDefault()
     {
         var configData = new Dictionary<string, string?>

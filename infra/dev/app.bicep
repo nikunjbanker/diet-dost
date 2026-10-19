@@ -94,6 +94,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   properties: {
     managedEnvironmentId: acaEnvironmentId
     configuration: {
+      activeRevisionsMode: 'Single'
       ingress: {
         external: true
         targetPort: 8080
@@ -173,7 +174,19 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'Database__JournalMode'
-              value: 'DELETE'
+              value: 'WAL'
+            }
+            {
+              name: 'Database__UseEphemeralActiveCache'
+              value: 'true'
+            }
+            {
+              name: 'Database__StorageVaultPath'
+              value: '/app/data/diet_dost.db'
+            }
+            {
+              name: 'Database__ActiveDbPath'
+              value: '/tmp/diet_dost.db'
             }
             {
               name: 'ConnectionStrings__DefaultConnection'

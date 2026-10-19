@@ -88,7 +88,7 @@ graph TB
             QRY_History["GetMealHistoryQueryHandler<br/>(Multi-Period Trend Filtering)"]
         end
 
-        PORTS["Application Ports & Abstractions<br/>(ISecretStore, IAppEnvironment, IPhotoStorageService, IRepository, IUnitOfWork)"]
+        PORTS["Application Ports & Abstractions<br/>(ISecretStore, IAppEnvironment, IPhotoStorageService, ISqliteStorageVaultSyncService, IRepository, IUnitOfWork)"]
     end
 
     subgraph LAYER_DOMAIN ["5. DOMAIN CORE LAYER (Nutrition.Domain - DDD)"]
@@ -118,11 +118,12 @@ graph TB
         ADAPTER_Photo["LocalPhotoStorageService<br/>(Cryptographic SHA-256 Hashed File Storage)"]
         ADAPTER_Jwt["JwtTokenService<br/>(HMAC-SHA256 Token Issuer via ISecretStore)"]
         ADAPTER_Agent["Microsoft Agent Framework Vision Agent<br/>(Multi-Model Cascade: 3-Flash -> 2.5-Flash -> 2.5-Pro)"]
+        ADAPTER_Vault["SqliteStorageVaultSyncService<br/>(Local Ephemeral /tmp Active SQLite + Azure Files Vault Sync)"]
         
         DB_Context["DietTrackerDbContext<br/>(Universal UTC ValueConverter, Schema-Aware PRAGMA, Collection ValueComparers)"]
         AZURE_NSG["Network Security Group: nsg-dietdost-dev<br/>Stateful Zero-Trust Firewall (Checkov CKV_AZURE_9 & CKV_AZURE_160)<br/>HTTPS Inbound 443 | Port 445 Storage | 443 Cloud & Gemini AI"]
-        AZURE_ACA["Azure Container Apps (Serverless MicroVM)<br/>Single Replica Invariant (min:1, max:1)<br/>Custom Domain: dev.dietdost.app with Free Managed TLS"]
-        AZURE_SMB[("Azure Files Persistent SMB Share<br/>Mount: /app/data/diet_dost.db<br/>SMB 3.1.1 AES-128/256-GCM Wire Encryption<br/>7-Day Soft-Delete Protection (Zero Data Loss)")]
+        AZURE_ACA["Azure Container Apps (Serverless MicroVM)<br/>Single Revision Mode & Single Replica (min:1, max:1)<br/>Custom Domain: dev.dietdost.app with Free Managed TLS"]
+        AZURE_SMB[("Azure Files Persistent SMB Share<br/>Durable Vault: /app/data/diet_dost.db<br/>Active Cache: /tmp/diet_dost.db (WAL Mode)<br/>SMB 3.1.1 AES-128/256-GCM Wire Encryption")]
         AZURE_AKV[("Azure Key Vault (Purge Protection Enabled)<br/>Sole Authority: @nikunjbanker<br/>Managed Identity Access & AuditEvent Diagnostics")]
         AZURE_ACR[("Azure Container Registry (ACR)<br/>Passwordless Image Pull (acrPullRole)")]
         AZURE_ALERT["Azure Monitor Threat Metric Alert<br/>Key Vault 401/403 Unauthorized Spikes (>5 in 5m)"]

@@ -74,13 +74,14 @@ graph TD
         AI["External AI Services (Gemini 3 Flash, OpenAI Responses)"]
         Storage["Local / Blob Photo Storage Implementation"]
         AuthImpl["PasswordHasher, JwtTokenService, OtpService"]
+        SqliteSync["SqliteStorageVaultSyncService (Ephemeral Cache & Vault Sync)"]
     end
 
     subgraph APPLICATION ["3. Application Layer (Nutrition.Application)"]
         Commands["Native Commands & Handlers (Mutations / Business Transactions)"]
         Queries["Native Queries & Handlers (Read Projections / DTOs)"]
         Decorators["Pipeline Decorators (Validation, Logging, Performance)"]
-        Ports["Interfaces & Ports (IRepository, IPhotoStorage, ICurrentUserService)"]
+        Ports["Interfaces & Ports (IRepository, IPhotoStorage, ISqliteStorageVaultSyncService, ICurrentUserService)"]
     end
 
     subgraph DOMAIN ["4. Core Domain Layer (Nutrition.Domain)"]
