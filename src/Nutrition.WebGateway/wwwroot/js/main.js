@@ -279,6 +279,36 @@ function setupDussehraBanner(toastService, confettiService) {
 }
 
 // ============================================================================
+// 2.1 Mobile Viewport Experience Advisory Strip Controller
+// ============================================================================
+function setupMobileViewportNotice() {
+  const notice = document.getElementById('mobile-viewport-notice');
+  if (!notice) return;
+
+  const dismissed = sessionStorage.getItem('diet_dost_mobile_notice_dismissed') === 'true';
+  const checkViewport = () => {
+    const isDismissedNow = sessionStorage.getItem('diet_dost_mobile_notice_dismissed') === 'true';
+    if (!isDismissedNow && window.innerWidth < 768) {
+      notice.classList.add('is-visible');
+      notice.style.display = 'flex';
+    } else {
+      notice.classList.remove('is-visible');
+      notice.style.display = 'none';
+    }
+  };
+
+  checkViewport();
+  window.addEventListener('resize', checkViewport, { passive: true });
+
+  const btnDismiss = document.getElementById('btn-dismiss-mobile-notice');
+  btnDismiss?.addEventListener('click', () => {
+    notice.classList.remove('is-visible');
+    notice.style.display = 'none';
+    sessionStorage.setItem('diet_dost_mobile_notice_dismissed', 'true');
+  });
+}
+
+// ============================================================================
 // 3. Application Bootstrap
 // ============================================================================
 async function initApp() {
@@ -306,6 +336,9 @@ async function initApp() {
 
   // Initialize Dussehra festival launch banner carousel & ticker
   setupDussehraBanner(toastService, confettiService);
+
+  // Initialize mobile viewport laptop recommendation advisory strip
+  setupMobileViewportNotice();
 
   // Helper: Synchronize user header badges and visibility
   function updateUserUI(user, featureFlags = null, quota = null) {

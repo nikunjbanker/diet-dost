@@ -8,6 +8,8 @@
 using System.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Polly;
+using Polly.Retry;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
@@ -47,21 +49,25 @@ public static partial class DatabaseInitializationExtensions
 
         try
         {
-            const int maxRetries = 5;
-            for (var attempt = 1; attempt <= maxRetries; attempt++)
-            {
-                try
+            var sqliteRetryPipeline = new ResiliencePipelineBuilder()
+                .AddRetry(new RetryStrategyOptions
                 {
-                    await EnsureDatabaseCreatedAndMigratedAsync(db, logger);
-                    break;
-                }
-                catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 5 && attempt < maxRetries)
-                {
-                    var delaySeconds = Math.Min(30, (int)Math.Pow(2, attempt));
-                    logger.LogWarning(ex, "SQLite database is temporarily locked (attempt {Attempt}/{MaxRetries}). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, maxRetries, delaySeconds);
-                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
-                }
-            }
+                    ShouldHandle = new PredicateBuilder().Handle<SqliteException>(ex => ex.SqliteErrorCode == 5),
+                    MaxRetryAttempts = 5,
+                    BackoffType = DelayBackoffType.Exponential,
+                    Delay = TimeSpan.FromSeconds(2),
+                    MaxDelay = TimeSpan.FromSeconds(30),
+                    OnRetry = args =>
+                    {
+                        var attempt = args.AttemptNumber + 1;
+                        var delaySeconds = (int)args.RetryDelay.TotalSeconds;
+                        logger.LogWarning(args.Outcome.Exception, "SQLite database is temporarily locked (attempt {Attempt}/5). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, delaySeconds);
+                        return ValueTask.CompletedTask;
+                    }
+                })
+                .Build();
+
+            await sqliteRetryPipeline.ExecuteAsync(async _ => await EnsureDatabaseCreatedAndMigratedAsync(db, logger));
 
             await SeedAppSecretsAsync(db, configuration, appEnv, logger);
             await SeedTierConfigurationsAsync(db, logger);

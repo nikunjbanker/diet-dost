@@ -129,6 +129,12 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
      - *Concept 3 (Mindful Celebration)*: Celebrate Festive Delicacies with Pure Joy & Mindful Balance.
      - *Concept 4 (Founder's Dedication)*: Dussehra Dedication — Created with ❤️ by Nikunj Banker.
    - Interactive *Shubh Sankalp* health pledge button triggers celebratory confetti burst (`ConfettiService`) and empowering launch toast.
+9. **Mobile Ergonomics & Single Fluid Vertical Scroll Architecture (`styles.css`, `partials/review-modal.html`, `partials/auth-gate.html`)**:
+   - **Auth Gate Mobile Ergonomics**: Decouples `.auth-gate-overlay` from desktop bottom-sheet positioning on screens `<640px` (`align-items: flex-start !important;`), eliminating the 250px dead top void and framing `.auth-gate-card` as an immersive, full-height mobile sheet with `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)` support.
+   - **Form-Group Input Standardization**: Enforces `.form-group` (`display: flex; flex-direction: column; gap: 0.35rem; width: 100%;`) and `.form-label-row` (`display: flex; justify-content: space-between; align-items: center;`), guaranteeing that `<label>` elements sit consistently directly above `<input>` fields without awkward side-by-side distortions.
+   - **Dissolved Split Columns (`display: contents`)**: In mobile viewports (`<640px`), `.review-media-column` and `.review-details-column` are dissolved using `display: contents !important;`, eliminating dual nested inner scrollboxes and unifying all modal content into **one single fluid vertical scroll** on `.review-body-layout`.
+   - **Mobile Visual Reading Hierarchy**: Reorders modal sections via CSS `order`: Media preview (1) -> Meal Timing (2) -> **Detected Food Items List (`dish-items-list`) (3)** -> Quick Add Subzi Chips (4) -> Cooking Fat Chips (5) -> Search Bar (6) -> Dietitian Note (7) -> AI Feedback (8) -> Continuous Training Banner (9) -> Matrix Warnings (10).
+   - **Sticky Mobile Action Bar**: `.review-footer` is pinned persistently to the bottom of the viewport with backdrop blur and safe-area padding for effortless one-thumb meal logging confirmation.
 
 ---
 

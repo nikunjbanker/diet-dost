@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 85 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 87 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -32,9 +32,9 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **20** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
-| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **20** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
+| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **21** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **26** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
-| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **6** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
+| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **7** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
 ---
@@ -92,6 +92,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-095** | GitHub Code Scanning Remediation (Roslyn CA & ESLint) and Strict Security Gate Blocking Enforcement | `[SECURITY]` | `ACCEPTED` | [`ADR-20261015-095-code-scanning-remediation-and-strict-gate-enforcement.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261015-095-code-scanning-remediation-and-strict-gate-enforcement.md) |
 | **ADR-107** | OWASP A06 NuGet Vulnerability Audit Shift-Left Integration & MessagePack Transitive CVE Remediation | `[SECURITY]` | `ACCEPTED` | [`ADR-20261018-107-owasp-a06-nuget-vulnerability-audit-and-messagepack-remediation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261018-107-owasp-a06-nuget-vulnerability-audit-and-messagepack-remediation.md) |
 | **ADR-111** | Autonomous Root SuperAdmin Bootstrapping, Secure Password Synchronization & Cloud Data-Plane Access Governance | `[SECURITY]` | `ACCEPTED` | [`ADR-20261018-111-autonomous-superadmin-bootstrapping-and-cloud-access-governance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261018-111-autonomous-superadmin-bootstrapping-and-cloud-access-governance.md) |
+| **ADR-122** | Azure Container Apps Native Key Vault Reference Secrets & Brand Icon Detail Scale Refinement | `[SECURITY]` | `ACCEPTED` | [`ADR-20261019-122-aca-key-vault-reference-secrets-and-brand-icon-scale.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261019-122-aca-key-vault-reference-secrets-and-brand-icon-scale.md) |
 
 ### 🚀 DevOps & Cloud Infrastructure (`docs/adr/devops/`)
 > *Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines.*
@@ -136,6 +137,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-067** | Universal Mobile Modal Ergonomics, Layering Isolation, and Dynamic AI Nutrition Recalculation | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md) |
 | **ADR-114** | Diet-Dost Brand Iconography, Favicon Suite, and Zero-CLS Splash Screen | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md) |
 | **ADR-115** | Permanent Personal Branding, Alpha Version Notice, and Dussehra Festival Launch Carousel | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md) |
+| **ADR-121** | Mobile Ergonomics Single Vertical Scroll, Consistent Form-Group Input Stacks, and Polly Database Resilience | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261019-121-mobile-single-vertical-scroll-and-polly-resilience.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261019-121-mobile-single-vertical-scroll-and-polly-resilience.md) |
 
 ### ⚖️ Governance, Standards & Agentic Workflows (`docs/adr/governance/`)
 > *Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing.*

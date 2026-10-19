@@ -13,7 +13,7 @@
   <link rel="apple-touch-icon" sizes="180x180" href="assets/icon-192.png">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#010102">
-  <link rel="stylesheet" href="styles.css?v=1.5.0">
+  <link rel="stylesheet" href="styles.css?v=1.7.0">
 </head>
 <body>
   <!-- Application Loading & Splash Screen (Zero CLS) -->
@@ -56,6 +56,17 @@
 
   <!-- Header / Navbar Component -->
   <div data-include="partials/header.html"></div>
+
+  <!-- Mobile Viewport Recommendation Strip -->
+  <aside id="mobile-viewport-notice" class="mobile-viewport-notice" aria-label="Device recommendation" style="display: none;">
+    <div class="mobile-notice-content">
+      <span class="mobile-notice-icon" aria-hidden="true">💻</span>
+      <div class="mobile-notice-text">
+        <strong>Laptop Recommended:</strong> Diet-Dost's clinical studio and macro charts are optimized for larger screens. For the best experience, try opening on your laptop or PC!
+      </div>
+    </div>
+    <button type="button" class="mobile-notice-dismiss" id="btn-dismiss-mobile-notice" aria-label="Dismiss recommendation">&times;</button>
+  </aside>
 
   <!-- Main Dashboard Container with Max Width & Centered Margins -->
   <main class="container">

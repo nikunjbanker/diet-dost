@@ -414,4 +414,20 @@ The full architectural blueprint is codified in the following repository visual 
   4. **Pristine Seed Synchronization**: On startup completion, `DatabaseInitializationExtensions` invokes `ISqliteStorageVaultSyncService.SyncActiveToVaultAsync()` to flush the fully seeded database up to `/app/data/diet_dost.db`.
   5. **Background & Graceful Vault Synchronization**: `SqliteStorageVaultSyncService` runs every 30 seconds to checkpoint active WAL pages (`PRAGMA wal_checkpoint(PASSIVE)`) and perform a safe file copy to `/app/data/diet_dost.db`. On container termination (`StopAsync` / SIGTERM), it performs a final graceful sync to ensure zero data loss.
 
+### 8.12 Polly v8 Declarative Resilience Pipeline for SQLite Lock Contention (ADR-121)
+- **Problem**: Database initialization and migration tasks on distributed filesystems or during replica recycling may encounter transient `Microsoft.Data.Sqlite.SqliteException` with error code 5 (`SQLITE_BUSY` / `database is locked`).
+- **Resilience Architecture**:
+  - Replaced manual `for` retry iterations with **Polly v8** declarative resilience pipeline (`ResiliencePipelineBuilder`).
+  - Configured typed predicate handling `SqliteException` where `ex.SqliteErrorCode == 5`.
+  - Configured exponential backoff delay starting at 2s up to 30s ceiling across 5 retry attempts (`BackoffType = DelayBackoffType.Exponential`).
+  - Emits structured diagnostic warning logs on each retry attempt (`logger.LogWarning`) with attempt index and exact backoff duration in seconds.
+
+### 8.13 Native Azure Key Vault Reference Secret Mounting in ACA (ADR-122)
+- **Zero Plaintext Storage Standard**:
+  - In `infra/dev/app.bicep`, replaced inline plaintext `Container Apps Secrets` with native Azure Key Vault references (`keyVaultUrl: '${keyVaultUri}secrets/<name>'` and `identity: managedIdentityId`).
+  - ACA runtime pulls secrets into container memory directly using the User-Assigned Managed Identity (`id-dietdost-dev`) with `Key Vault Secrets User` RBAC permissions (`4633458b-17de-408a-b874-0445c86b69e6`).
+  - Eliminates "Click to show value" portal exposure and prevents secret leakage in ARM deployment history.
+  - Normalized secret keys across Key Vault and Container App: `gemini-api-key`, `jwt-key`, `superadmin-password`, and `app-insights-connection-string`.
+
+
 

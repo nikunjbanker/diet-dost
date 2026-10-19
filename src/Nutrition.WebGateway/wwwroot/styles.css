@@ -87,6 +87,76 @@ html, body {
   justify-content: space-between;
 }
 
+/* Mobile Viewport Laptop Recommendation Strip */
+.mobile-viewport-notice {
+  display: none;
+  position: sticky;
+  top: 56px;
+  z-index: 45;
+  background: rgba(18, 19, 24, 0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
+  padding: 0.65rem 1rem;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.3s ease;
+}
+
+.mobile-notice-content {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1;
+}
+
+.mobile-notice-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.mobile-notice-text {
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.mobile-notice-text strong {
+  color: #f59e0b;
+}
+
+.mobile-notice-dismiss {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-size: 1.15rem;
+  line-height: 1;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.mobile-notice-dismiss:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+@media (max-width: 768px) {
+  .mobile-viewport-notice.is-visible {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
 .brand-container {
   display: flex;
   align-items: center;
@@ -98,20 +168,26 @@ html, body {
   color: #fff;
   font-weight: 700;
   font-size: 1rem;
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 4px 18px rgba(16, 185, 129, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08);
   position: relative;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.brand-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 22px rgba(16, 185, 129, 0.38), 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .brand-badge-img {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   object-fit: contain;
   display: block;
 }
@@ -3558,9 +3634,9 @@ body.modal-open .mobile-bottom-nav {
 }
 
 .brand-badge-large {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 104px;
+  height: 104px;
+  border-radius: 24px;
   background: transparent;
   font-weight: 800;
   font-size: 1.25rem;
@@ -3568,16 +3644,71 @@ body.modal-open .mobile-bottom-nav {
   align-items: center;
   justify-content: center;
   color: #fff;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  margin-bottom: 0.85rem;
+  box-shadow: 0 10px 32px rgba(16, 185, 129, 0.32), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.brand-badge-large:hover {
+  transform: scale(1.04);
+  box-shadow: 0 14px 40px rgba(16, 185, 129, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.18);
 }
 
 .brand-badge-img-large {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 104px;
+  height: 104px;
+  border-radius: 24px;
   object-fit: contain;
   display: block;
+}
+
+/* Mobile Experience Advisory Card on Auth Gate */
+.mobile-experience-advisory {
+  display: none;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.09) 0%, rgba(245, 158, 11, 0.03) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.15rem;
+  text-align: left;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.mobile-advisory-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.mobile-advisory-badge .advisory-icon {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.mobile-advisory-badge .advisory-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.14);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.mobile-advisory-text {
+  font-size: 0.78rem;
+  color: rgba(247, 248, 248, 0.88);
+  line-height: 1.45;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .mobile-experience-advisory {
+    display: block !important;
+  }
 }
 
 .auth-title {
@@ -3625,6 +3756,41 @@ body.modal-open .mobile-bottom-nav {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  margin-bottom: 0.15rem;
+}
+
+.form-group .text-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 0.15rem;
+}
+
+.form-label-row label {
+  margin-bottom: 0;
 }
 
 .auth-error-alert {
@@ -4541,30 +4707,100 @@ h2 {
     min-height: 44px;
   }
 
-  /* Bottom Sheet Modals for Mobile (<640px) */
+  /* Bottom Sheet Confirmation Modals for Mobile (<640px) */
   .modal-overlay,
-  .review-modal-overlay,
-  .delete-modal-overlay,
-  .auth-gate-overlay {
+  .delete-modal-overlay {
     align-items: flex-end !important;
     justify-content: center !important;
     padding: 0 !important;
     z-index: 100010 !important;
   }
 
-  /* Single-Card Compact Modals */
+  /* Dedicated Mobile Authentication Screen (<640px) - Top-Aligned & Zero Empty Void */
+  .auth-gate-overlay {
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    z-index: 100010 !important;
+    background: #010102 !important;
+  }
+
   .auth-gate-card {
     width: 100% !important;
     max-width: 100% !important;
-    max-height: 94vh !important;
-    border-radius: 20px 20px 0 0 !important;
-    border-bottom: none !important;
-    padding: 1.25rem 1rem max(1rem, env(safe-area-inset-bottom, 1rem)) 1rem !important;
-    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.75) !important;
-    animation: slideUpBottom 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding: calc(env(safe-area-inset-top, 16px) + 1.25rem) 1.25rem calc(env(safe-area-inset-bottom, 16px) + 2rem) 1.25rem !important;
+    box-shadow: none !important;
+    animation: fadeIn 0.25s ease !important;
+    overflow-y: visible !important;
     margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    box-sizing: border-box !important;
+  }
+
+  .auth-brand-header {
+    margin-bottom: 1.15rem !important;
+  }
+
+  .brand-badge-large {
+    width: 92px !important;
+    height: 92px !important;
+    border-radius: 20px !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .brand-badge-img-large {
+    width: 92px !important;
+    height: 92px !important;
+    border-radius: 20px !important;
+  }
+
+  .brand-badge {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  .brand-badge-img {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 10px !important;
+  }
+
+  .auth-title {
+    font-size: 1.4rem !important;
+    letter-spacing: -0.4px !important;
+  }
+
+  .auth-subtitle {
+    font-size: 0.76rem !important;
+    max-width: 320px !important;
+  }
+
+  .demo-account-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+
+  .demo-pill-btn {
+    padding: 0.55rem 0.65rem !important;
+  }
+
+  .demo-title {
+    font-size: 0.76rem !important;
+  }
+
+  .demo-role {
+    font-size: 0.68rem !important;
   }
 
   .delete-modal-card {
@@ -4588,7 +4824,6 @@ h2 {
   }
 
   /* Full-Featured Structured Modals: Pinned Header + Scrollable Body + Pinned/Sticky Footer */
-  .review-card,
   .profile-modal-card,
   .admin-modal-card,
   .transparency-modal-card,
@@ -4726,36 +4961,117 @@ h2 {
     font-size: 0.82rem !important;
   }
 
-  .review-body-layout {
-    grid-template-columns: 1fr !important;
-    gap: 1rem !important;
-    flex: 1 !important;
-    min-height: 0 !important;
+  /* Dedicated Mobile Meal Review Screen (<640px) - ONE Single Fluid Vertical Scroll (No Split Screen) */
+  .review-modal-overlay {
+    align-items: flex-start !important;
+    justify-content: center !important;
+    padding: 0 !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
-    padding-bottom: 1rem !important;
-    display: flex !important;
-    flex-direction: column !important;
+    z-index: 100010 !important;
+    background: rgba(8, 9, 12, 0.98) !important;
   }
 
-  .review-footer {
+  .review-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 100vh !important;
+    min-height: 100dvh !important;
+    height: auto !important;
+    max-height: none !important;
+    border-radius: 0 !important;
+    border: none !important;
+    padding: calc(env(safe-area-inset-top, 16px) + 0.75rem) 1rem 0 1rem !important;
+    box-shadow: none !important;
+    overflow: visible !important;
     display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 0.65rem !important;
-    padding: 0.75rem 0.85rem max(0.75rem, env(safe-area-inset-bottom, 0.75rem)) 0.85rem !important;
-    background: var(--surface-modal) !important;
+    flex-direction: column !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Dissolve Desktop Split Columns into ONE Single Vertical Flow */
+  .review-body-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    flex: 1 0 auto !important;
+    gap: 0.85rem !important;
+    padding-bottom: 5.5rem !important; /* Space so content is never hidden behind sticky footer */
+    grid-template-columns: none !important;
+  }
+
+  .review-media-column,
+  .review-details-column {
+    display: contents !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+  }
+
+  /* Single Vertical Scroll Ergonomic Order - Food Items Front and Center! */
+  .review-photo-container {
+    order: 1 !important;
+  }
+  .meal-timing-bar {
+    order: 2 !important;
+  }
+  .dish-items-list {
+    order: 3 !important; /* THE STAR: Detected Food Items directly accessible without scrolling! */
+  }
+  .review-quick-add-wrap {
+    order: 4 !important;
+  }
+  .review-cooking-fat-wrap {
+    order: 5 !important;
+  }
+  .review-search-bar {
+    order: 6 !important;
+  }
+  .review-dietitian-box {
+    order: 7 !important;
+  }
+  .ai-feedback-bar {
+    order: 8 !important;
+  }
+  .training-banner {
+    order: 9 !important;
+  }
+  .flags-container {
+    order: 10 !important;
+  }
+
+  /* Compact Photo Banner on Mobile */
+  .review-photo-wrapper {
+    height: 115px !important;
+    max-height: 115px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Sticky Bottom Action Bar */
+  .review-footer {
+    position: sticky !important;
+    bottom: 0 !important;
+    margin: 0 -1rem !important;
+    padding: 0.75rem 1rem calc(env(safe-area-inset-bottom, 12px) + 0.75rem) 1rem !important;
+    background: rgba(18, 19, 22, 0.96) !important;
+    backdrop-filter: blur(14px) !important;
+    -webkit-backdrop-filter: blur(14px) !important;
     border-top: 1px solid var(--border-subtle) !important;
-    margin: 0 -0.85rem !important;
-    flex-shrink: 0 !important;
-    z-index: 20 !important;
-    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.5) !important;
+    z-index: 100 !important;
+    display: flex !important;
+    gap: 0.65rem !important;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7) !important;
   }
 
   .review-footer .btn {
     flex: 1 !important;
     min-height: 48px !important;
-    font-size: 0.875rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
     justify-content: center !important;
   }
 
@@ -5278,8 +5594,12 @@ h2 {
 }
 
 .footer-brand-logo {
-  filter: drop-shadow(0 2px 10px rgba(16, 185, 129, 0.4));
-  border-radius: 8px;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: contain;
+  display: block;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .footer-brand-meta {
@@ -5571,7 +5891,10 @@ h2 {
 }
 
 .maker-chip-avatar {
-  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  object-fit: contain;
   filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.4));
   flex-shrink: 0;
 }
