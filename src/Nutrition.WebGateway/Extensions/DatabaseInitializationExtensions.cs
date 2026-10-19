@@ -110,7 +110,10 @@ public static partial class DatabaseInitializationExtensions
                 var fi = new FileInfo(fullPath);
                 if (!fi.Exists || fi.Length == 0)
                 {
-                    logger.LogInformation("[INIT] Pristine SQLite bootstrapping initiated for '{DbPath}' via local container temporary storage...", fullPath);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("[INIT] Pristine SQLite bootstrapping initiated for '{DbPath}' via local container temporary storage...", fullPath);
+                    }
                     var tempFile = Path.Combine(Path.GetTempPath(), $"diet_dost_init_{Guid.NewGuid():N}.db");
                     try
                     {
@@ -132,7 +135,10 @@ public static partial class DatabaseInitializationExtensions
                         }
 
                         File.Copy(tempFile, fullPath, overwrite: true);
-                        logger.LogInformation("[INIT] Pristine SQLite schema successfully deployed to '{DbPath}'.", fullPath);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            logger.LogInformation("[INIT] Pristine SQLite schema successfully deployed to '{DbPath}'.", fullPath);
+                        }
                     }
                     catch (Exception ex)
                     {
