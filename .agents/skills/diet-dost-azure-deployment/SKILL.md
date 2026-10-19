@@ -60,18 +60,18 @@ To ensure SQLite never suffers data loss, silent corruption, or file-lock deadlo
 SQLite is an embedded, single-process write-locking database. In containerized environments, auto-scaling to 2 or more replicas pointing to the same shared SQLite file **will lead to database corruption or immediate `busy / locked` exceptions**.
 - **In ACA**:
   - `maxReplicas: 1` (strict single-writer invariant across all environments).
-  - `minReplicas`: Set to `0` for `dev` (enabling **Azure Consumption scale-to-zero** to leverage the 180,000 vCPU-seconds monthly free grant, reducing compute costs to **$0.00** during idle periods). Set to `1` for production continuous availability.
+  - `minReplicas`: Set to `1` across environments (or during active development) to prevent premature KEDA scale-to-zero deactivation during startup and health probe evaluation (ADR-118).
 - In App Service: Scale out must be fixed at `1` instance.
 - In VM: Only 1 application container running at any time.
 
-### Rule 2: Journal Mode Compatibility (SMB vs. Local Disk)
+### Rule 2: Journal Mode Compatibility & Fast Transaction-Wrapped DDL (SMB vs. Local Disk)
 - **Azure Files SMB**: SMB/CIFS network protocol does not support POSIX shared memory (`.shm` file mapping). Attempting to use SQLite `WAL` (Write-Ahead Logging) over SMB can cause `database disk image is malformed` or `disk I/O error`. Over SMB, SQLite **MUST** run with rollback journal:
   ```sql
   PRAGMA journal_mode = DELETE; -- or TRUNCATE
   PRAGMA synchronous = FULL;
   PRAGMA busy_timeout = 30000;
   ```
-  *Note on EF Core*: `RelationalDatabaseCreator.EnsureCreatedAsync()` hardcodes `PRAGMA journal_mode = 'wal'`, which causes `SQLite Error 5: database is locked` on CIFS SMB mounts. Startup initialization must bypass `EnsureCreatedAsync()` and directly execute generated DDL (ADR-117).
+  *Fast DDL Transaction Batching (ADR-118)*: Initial schema creation via EF Core model metadata must be executed within an explicit `using var tx = await connection.BeginTransactionAsync()` transaction. Executing individual DDL statements in autocommit mode creates/deletes a `-journal` file per statement over CIFS, taking >120s and triggering ACA `StartupProbe` timeouts. In an explicit transaction, 100+ DDL statements commit in <100ms. Startup initialization must also bypass EF Core `EnsureCreatedAsync()` (which hardcodes `WAL`) and include exponential backoff retries for `SQLITE_BUSY` (ADR-117 & ADR-118).
 - **Local SSD (VM)**: Native Linux ext4/xfs filesystem fully supports shared memory. Always enable WAL mode for maximum read concurrency:
   ```sql
   PRAGMA journal_mode = WAL;

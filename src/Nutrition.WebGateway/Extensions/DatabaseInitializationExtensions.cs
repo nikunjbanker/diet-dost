@@ -46,7 +46,22 @@ public static partial class DatabaseInitializationExtensions
 
         try
         {
-            await EnsureDatabaseCreatedAndMigratedAsync(db);
+            const int maxRetries = 5;
+            for (var attempt = 1; attempt <= maxRetries; attempt++)
+            {
+                try
+                {
+                    await EnsureDatabaseCreatedAndMigratedAsync(db);
+                    break;
+                }
+                catch (Microsoft.Data.Sqlite.SqliteException ex) when (ex.SqliteErrorCode == 5 && attempt < maxRetries)
+                {
+                    var delaySeconds = Math.Min(30, (int)Math.Pow(2, attempt));
+                    logger.LogWarning(ex, "SQLite database is temporarily locked (attempt {Attempt}/{MaxRetries}). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, maxRetries, delaySeconds);
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
+                }
+            }
+
             await SeedAppSecretsAsync(db, configuration, appEnv, logger);
             await SeedTierConfigurationsAsync(db, logger);
             await EnsureSuperAdminAccountAsync(db, scope.ServiceProvider, configuration, logger);
@@ -91,7 +106,11 @@ public static partial class DatabaseInitializationExtensions
         {
             var createScript = db.Database.GenerateCreateScript();
             var rawStatements = createScript.Split(ScriptSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            
+            // Execute all DDL statements in a single transaction to eliminate 100+ separate SMB CIFS fsync/journal roundtrips
+            using var tx = await connection.BeginTransactionAsync();
             using var createCmd = connection.CreateCommand();
+            createCmd.Transaction = tx;
             foreach (var rawStatement in rawStatements)
             {
                 if (string.IsNullOrWhiteSpace(rawStatement)) continue;
@@ -107,6 +126,8 @@ public static partial class DatabaseInitializationExtensions
                     // Table, index, or constraint may already exist
                 }
             }
+            await tx.CommitAsync();
+            return;
         }
 
         await db.Database.ExecuteSqlRawAsync(@"
