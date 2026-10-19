@@ -164,6 +164,7 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 - **Firewall ACL Automation & Propagation**: Workflows whitelisting runner IPs for secret synchronization strictly use `az keyvault network-rule add/remove --name "$KV_NAME" --ip-address "$RUNNER_IP"` with a 10-second firewall propagation guard before secret write operations.
 - **Passwordless ACR Pull (`acrPullRole`)**: Azure Container Apps retrieves container images from Azure Container Registry via system-assigned managed identity assigned the `AcrPull` built-in role (`7f951dda-4ed3-4680-a7ca-43fe172d538d`), eliminating static registry admin credentials.
 - **Least-Privilege Key Vault Role**: The Container App accesses Key Vault via `Key Vault Secrets User` role assignment, restricting access strictly to read-only secret retrieval.
+- **Native ACA Key Vault Reference Secret Mounting (ADR-122)**: Container App secrets (`gemini-api-key`, `jwt-key`, `superadmin-password`, `app-insights-connection-string`) are defined in `infra/dev/app.bicep` as native Key Vault references (`keyVaultUrl` + `identity: managedIdentityId`) rather than plaintext "Container Apps Secrets". Secrets are fetched dynamically by the ACA Envoy control plane into container process memory without ever exposing plaintext values in the Azure Portal or ARM deployment templates.
 
 ---
 

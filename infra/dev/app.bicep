@@ -115,7 +115,28 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: managedIdentityId
         }
       ] : []
-      secrets: union(
+      secrets: !empty(keyVaultUri) && !empty(managedIdentityId) ? [
+        {
+          name: 'gemini-api-key'
+          keyVaultUrl: '${keyVaultUri}secrets/gemini-api-key'
+          identity: managedIdentityId
+        }
+        {
+          name: 'jwt-key'
+          keyVaultUrl: '${keyVaultUri}secrets/jwt-key'
+          identity: managedIdentityId
+        }
+        {
+          name: 'superadmin-password'
+          keyVaultUrl: '${keyVaultUri}secrets/superadmin-password'
+          identity: managedIdentityId
+        }
+        {
+          name: 'app-insights-connection-string'
+          keyVaultUrl: '${keyVaultUri}secrets/app-insights-connection-string'
+          identity: managedIdentityId
+        }
+      ] : union(
         !empty(geminiApiKey) ? [
           {
             name: 'gemini-api-key'
@@ -202,13 +223,13 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'AI__Google__ApiKey'
-              secretRef: !empty(geminiApiKey) ? 'gemini-api-key' : null
-              value: empty(geminiApiKey) ? '' : null
+              secretRef: (!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(geminiApiKey) ? 'gemini-api-key' : null
+              value: (empty(keyVaultUri) || empty(managedIdentityId)) && empty(geminiApiKey) ? '' : null
             }
             {
               name: 'Jwt__Key'
-              secretRef: !empty(jwtKey) ? 'jwt-key' : null
-              value: empty(jwtKey) ? '' : null
+              secretRef: (!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(jwtKey) ? 'jwt-key' : null
+              value: (empty(keyVaultUri) || empty(managedIdentityId)) && empty(jwtKey) ? '' : null
             }
             {
               name: 'Auth__SuperAdminEmail'
@@ -216,8 +237,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'Auth__SuperAdminPassword'
-              secretRef: !empty(superAdminPassword) ? 'superadmin-password' : null
-              value: empty(superAdminPassword) ? '' : null
+              secretRef: (!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(superAdminPassword) ? 'superadmin-password' : null
+              value: (empty(keyVaultUri) || empty(managedIdentityId)) && empty(superAdminPassword) ? '' : null
             }
             {
               name: 'KeyVault__VaultUri'
@@ -229,8 +250,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
-              secretRef: !empty(appInsightsConnectionString) ? 'app-insights-connection-string' : null
-              value: empty(appInsightsConnectionString) ? '' : null
+              secretRef: (!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(appInsightsConnectionString) ? 'app-insights-connection-string' : null
+              value: (empty(keyVaultUri) || empty(managedIdentityId)) && empty(appInsightsConnectionString) ? '' : null
             }
           ]
           volumeMounts: [
