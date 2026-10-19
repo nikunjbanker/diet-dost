@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-19T07:37:11.963135+00:00",
-  "totalAdrs": 83,
+  "generatedAt": "2026-10-19T08:27:58.821955+00:00",
+  "totalAdrs": 84,
   "categoryCounts": {
     "architecture": 20,
     "security": 20,
-    "devops": 24,
+    "devops": 25,
     "presentation": 6,
     "governance": 13
   },
@@ -1005,6 +1005,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261019-118-sqlite-smb-fast-init-transaction-and-aca-minreplicas.md",
       "relativePath": "docs/adr/devops/ADR-20261019-118-sqlite-smb-fast-init-transaction-and-aca-minreplicas.md"
+    },
+    {
+      "id": "ADR-119",
+      "number": 119,
+      "title": "Local Temporary Storage Pristine SQLite Schema Bootstrapping and SMB CIFS POSIX Byte-Locking Elimination",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-19",
+      "subsystem": "Devops",
+      "filename": "ADR-20261019-119-local-temporary-storage-pristine-sqlite-bootstrap.md",
+      "relativePath": "docs/adr/devops/ADR-20261019-119-local-temporary-storage-pristine-sqlite-bootstrap.md"
     }
   ]
 }
