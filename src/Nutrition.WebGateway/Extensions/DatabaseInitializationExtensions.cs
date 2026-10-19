@@ -79,6 +79,16 @@ public static partial class DatabaseInitializationExtensions
 
             await MigrateLegacyDataAsync(db, logger);
 
+            var vaultSyncService = scope.ServiceProvider.GetService<Nutrition.Application.Common.Interfaces.ISqliteStorageVaultSyncService>();
+            if (vaultSyncService != null && vaultSyncService.IsEnabled)
+            {
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("[INIT] Synchronizing pristine seeded database to durable storage vault '{VaultPath}'...", vaultSyncService.StorageVaultPath);
+                }
+                await vaultSyncService.SyncActiveToVaultAsync();
+            }
+
             logger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");
         }
         catch (Exception ex)

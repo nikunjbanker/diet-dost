@@ -56,24 +56,24 @@ When deploying Diet-Dost (.NET 11, SQLite) to Azure without virtual machines, un
 
 To ensure SQLite never suffers data loss, silent corruption, or file-lock deadlocks in cloud environments, every deployment MUST adhere to these four golden rules:
 
-### Rule 1: The Single-Replica Constraint (`maxReplicas: 1`) & Dev Scale-to-Zero Free Tier
-SQLite is an embedded, single-process write-locking database. In containerized environments, auto-scaling to 2 or more replicas pointing to the same shared SQLite file **will lead to database corruption or immediate `busy / locked` exceptions**.
+### Rule 1: The Single-Replica & Single-Revision Constraint (`activeRevisionsMode: 'Single'`, `maxReplicas: 1`)
+SQLite is an embedded, single-process write-locking database. In containerized environments, auto-scaling to 2 or more replicas or running concurrent multi-revision replicas pointing to the same shared SQLite file **will lead to database corruption or immediate `busy / locked` exceptions**.
 - **In ACA**:
+  - `activeRevisionsMode: 'Single'` in `infra/dev/app.bicep` configuration (ADR-120). Guarantees previous revision replicas are terminated before activating the new container revision, preventing mutual SMB CIFS file-handle sharing violations.
   - `maxReplicas: 1` (strict single-writer invariant across all environments).
   - `minReplicas`: Set to `1` across environments (or during active development) to prevent premature KEDA scale-to-zero deactivation during startup and health probe evaluation (ADR-118).
 - In App Service: Scale out must be fixed at `1` instance.
 - In VM: Only 1 application container running at any time.
 
-### Rule 2: Journal Mode Compatibility & Ephemeral Temp-Disk Schema Bootstrapping (ADR-119)
-- **Azure Files SMB & Ephemeral Temp-Disk Bootstrapping (ADR-119)**:
-  - Azure Files SMB/CIFS network protocol does not support POSIX shared memory (`.shm` file mapping) or low-level POSIX byte-range locking.
-  - Over SMB, SQLite **MUST** run with rollback journal:
-    ```sql
-    PRAGMA journal_mode = DELETE; -- or TRUNCATE
-    PRAGMA synchronous = FULL;
-    PRAGMA busy_timeout = 30000;
-    ```
-  - *Pristine Schema Bootstrap Pattern (ADR-119)*: Initial schema creation via EF Core model metadata must NOT execute 140+ individual DDL statements or transaction commits directly over the SMB share. Instead, `DatabaseInitializationExtensions` constructs a pristine database in local container temporary storage (`/tmp/diet_dost_init_<guid>.db`) via `EnsureCreatedAsync()`, executes `PRAGMA wal_checkpoint(TRUNCATE); PRAGMA journal_mode = 'DELETE';`, and copies the complete database to `/app/data/diet_dost.db` in a single `File.Copy` call in <50ms.
+### Rule 2: Local Ephemeral Active SQLite Cache & Storage Vault Sync (ADR-120)
+- **The SMB CIFS Write Transaction Lock Issue**:
+  - Azure Files SMB/CIFS network protocol does not support low-level POSIX advisory byte-range locking (`fcntl` / `lockf`) or memory-mapped file locking (`.shm`).
+  - Standard SQLite write transactions (`SaveChangesAsync()` / `Commit()`) executed directly against an SMB mount time out after 30 seconds with `SQLite Error 5: database is locked`.
+- **The Local Ephemeral Active Cache Pattern (ADR-120)**:
+  - **Decoupled NVMe Execution**: Active database reads and writes execute against local container ephemeral NVMe storage (`/tmp/diet_dost.db`). SQLite runs in native **WAL mode** (`PRAGMA journal_mode = WAL`) with native POSIX byte-locking and sub-millisecond query execution (<1ms).
+  - **Bi-directional Startup Hydration**: At boot, `StorageInfrastructureExtensions` copies `/app/data/diet_dost.db` down to `/tmp/diet_dost.db`. If missing, it creates and seeds it locally.
+  - **Pristine Seed Flush**: On startup completion, `DatabaseInitializationExtensions` invokes `ISqliteStorageVaultSyncService.SyncActiveToVaultAsync()` to flush seeded data up to `/app/data/diet_dost.db`.
+  - **Periodic & Graceful Vault Synchronization**: `SqliteStorageVaultSyncService` runs every 30 seconds to checkpoint active WAL pages (`PRAGMA wal_checkpoint(PASSIVE)`) and perform a safe file copy to `/app/data/diet_dost.db`. On container termination (`StopAsync` / SIGTERM), it performs a final graceful sync to ensure zero data loss.
 - **Local SSD (VM)**: Native Linux ext4/xfs filesystem fully supports shared memory. Always enable WAL mode for maximum read concurrency:
   ```sql
   PRAGMA journal_mode = WAL;

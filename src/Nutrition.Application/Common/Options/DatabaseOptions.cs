@@ -17,4 +17,20 @@ public sealed class DatabaseOptions
 
     public string Provider { get; set; } = "Sqlite";
     public string ConnectionString { get; set; } = "Data Source=diettracker.db";
+
+    /// <summary>
+    /// When true, SQLite active connections use high-performance local ephemeral storage (/tmp),
+    /// backed by asynchronous/graceful synchronization to a persistent network storage vault (/app/data).
+    /// </summary>
+    public bool UseEphemeralActiveCache { get; set; }
+
+    /// <summary>
+    /// Path to the durable network-mounted storage vault file (e.g., /app/data/diet_dost.db).
+    /// </summary>
+    public string? StorageVaultPath { get; set; }
+
+    /// <summary>
+    /// Path to the active local ephemeral database file (e.g., /tmp/diet_dost.db).
+    /// </summary>
+    public string? ActiveDbPath { get; set; }
 }

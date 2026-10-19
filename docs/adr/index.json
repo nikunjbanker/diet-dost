@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-19T08:27:58.821955+00:00",
-  "totalAdrs": 84,
+  "generatedAt": "2026-10-19T09:48:05.828850+00:00",
+  "totalAdrs": 85,
   "categoryCounts": {
     "architecture": 20,
     "security": 20,
-    "devops": 25,
+    "devops": 26,
     "presentation": 6,
     "governance": 13
   },
@@ -1017,6 +1017,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261019-119-local-temporary-storage-pristine-sqlite-bootstrap.md",
       "relativePath": "docs/adr/devops/ADR-20261019-119-local-temporary-storage-pristine-sqlite-bootstrap.md"
+    },
+    {
+      "id": "ADR-120",
+      "number": 120,
+      "title": "Local Ephemeral Active SQLite Cache with Azure Files Durable Vault Synchronization and Single Revision Enforcement",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-19",
+      "subsystem": "Devops",
+      "filename": "ADR-20261019-120-local-ephemeral-active-sqlite-with-azure-files-vault-sync.md",
+      "relativePath": "docs/adr/devops/ADR-20261019-120-local-ephemeral-active-sqlite-with-azure-files-vault-sync.md"
     }
   ]
 }
