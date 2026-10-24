@@ -307,7 +307,7 @@ public class WebBffCompositeTests : IDisposable
 
         Assert.Equal("1D", composite.Projections.Period);
         Assert.Single(composite.RecentMeals);
-        Assert.Equal("Besan Chilla", composite.RecentMeals.First().DishName);
+        Assert.Equal("Besan Chilla", composite.RecentMeals[0].DishName);
 
         // Assert 1D trends represent meal categories
         Assert.Equal(4, composite.Projections.DailyTrends.Count);
