@@ -122,7 +122,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           identity: managedIdentityId
         }
       ] : []
-      secrets: !empty(keyVaultUri) && !empty(managedIdentityId) ? [
+      secrets: !empty(keyVaultUri) && !empty(managedIdentityId) ? concat([
         {
           name: 'gemini-api-key'
           keyVaultUrl: '${keyVaultUri}secrets/gemini-api-key'
@@ -143,12 +143,18 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           keyVaultUrl: '${keyVaultUri}secrets/app-insights-connection-string'
           identity: managedIdentityId
         }
+      ], databaseProvider == 'AzureSql' ? [
         {
           name: 'azure-sql-connection-string'
           keyVaultUrl: '${keyVaultUri}secrets/azure-sql-connection-string'
           identity: managedIdentityId
         }
-      ] : union(
+      ] : (!empty(azureSqlConnectionString) ? [
+        {
+          name: 'azure-sql-connection-string'
+          value: azureSqlConnectionString
+        }
+      ] : [])) : union(
         !empty(geminiApiKey) ? [
           {
             name: 'gemini-api-key'
@@ -233,8 +239,8 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'ConnectionStrings__AzureSqlConnection'
-              secretRef: (!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(azureSqlConnectionString) ? 'azure-sql-connection-string' : null
-              value: (empty(keyVaultUri) || empty(managedIdentityId)) && empty(azureSqlConnectionString) ? '' : null
+              secretRef: databaseProvider == 'AzureSql' && ((!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(azureSqlConnectionString)) ? 'azure-sql-connection-string' : null
+              value: databaseProvider != 'AzureSql' || ((empty(keyVaultUri) || empty(managedIdentityId)) && empty(azureSqlConnectionString)) ? '' : null
             }
             {
               name: 'Storage__WebRootPath'

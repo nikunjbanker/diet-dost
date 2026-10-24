@@ -38,10 +38,10 @@ on:
         type: number
         default: 1
       acrName:
-        description: 'Azure Container Registry name (alphanumeric only, e.g. crdietdostdev, auto-generated if empty)'
+        description: 'Azure Container Registry name (alphanumeric only, e.g. crdostdevskehxuagttzos, auto-generated if empty)'
         required: false
         type: string
-        default: 'acrdietdostdev'
+        default: 'crdostdevskehxuagttzos'
       keyVaultName:
         description: 'Azure Key Vault name (alphanumeric only, e.g. kvdostdevskehxuagttzos, auto-generated if empty)'
         required: false
@@ -95,8 +95,11 @@ jobs:
             echo "| **Resource Group** | \`${{ inputs.resourceGroupName || 'rg-dietdost-dev' }}\` | Target Azure Resource Group |"
             echo "| **Azure Region** | \`${{ inputs.location || 'centralindia' }}\` | Target Azure Region |"
             echo "| **File Share Quota (GB)** | \`${{ inputs.fileShareQuotaGb || 1 }}\` | Persistent SQLite SMB quota |"
-            echo "| **ACR Name** | \`${{ inputs.acrName || 'acrdietdostdev' }}\` | Azure Container Registry |"
+            echo "| **ACR Name** | \`${{ inputs.acrName || 'crdostdevskehxuagttzos' }}\` | Azure Container Registry |"
             echo "| **Key Vault Name** | \`${{ inputs.keyVaultName || 'kvdostdevskehxuagttzos' }}\` | Azure Key Vault |"
+            echo "| **Deploy Azure SQL Serverless** | \`${{ inputs.deployAzureSql || false }}\` | Azure SQL Free Tier (GP_S_Gen5_1, 100k vCore-s) |"
+            echo "| **SQL Admin Login** | \`${{ inputs.sqlAdminLogin || 'sqladmin' }}\` | SQL Server Authentication admin username |"
+            echo "| **Allowed Client IP** | \`${{ inputs.allowedClientIp || 'None' }}\` | Local workstation IP permitted in firewall |"
             echo "| **Skip Pre-Flight Gates** | \`${{ inputs.skipPreFlightGates }}\` | Pre-flight security scan status |"
             echo "| **Triggered By** | \`@${{ github.actor }}\` | User / Identity initiating workflow |"
             echo "| **Git Ref / SHA** | \`${{ github.ref_name }}\` (\`${{ github.sha }}\`) | Source commit reference |"
@@ -550,6 +553,7 @@ jobs:
             echo "| **Key Vault URI** | \`${{ steps.deploy-infra.outputs.keyVaultUri }}\` |"
             echo "| **Managed Identity** | \`${{ steps.deploy-infra.outputs.managedIdentityId }}\` |"
             echo "| **Application Insights** | \`${{ steps.deploy-infra.outputs.appInsightsName }}\` (DisableLocalAuth: true) |"
+            echo "| **Azure SQL Serverless** | $([ "${{ inputs.deployAzureSql }}" = "true" ] && echo "✅ Provisioned (\`${{ steps.deploy-infra.outputs.sqlServerFqdn }}\` / \`${{ steps.deploy-infra.outputs.sqlDatabaseName }}\`)" || echo "Disabled (Using SQLite)") |"
             echo "| **Static Ingress IP** | \`${{ steps.deploy-infra.outputs.staticIp }}\` |"
             echo "| **Custom Domain Verification ID** | \`${{ steps.deploy-infra.outputs.customDomainVerificationId }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"

@@ -140,7 +140,10 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
           sourceAddressPrefix: '*'
           sourcePortRange: '*'
           destinationAddressPrefix: 'Sql'
-          destinationPortRange: '1433'
+          destinationPortRanges: [
+            '1433'
+            '11000-11999'
+          ]
         }
       }
       {

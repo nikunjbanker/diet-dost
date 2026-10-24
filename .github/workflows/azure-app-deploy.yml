@@ -76,6 +76,7 @@ jobs:
             echo "| Option / Input Parameter | Selected Value | Description |"
             echo "| :--- | :--- | :--- |"
             echo "| **Target Environment** | \`${{ inputs.environment || 'dev' }}\` | Target deployment environment |"
+            echo "| **Database Provider** | \`${{ inputs.databaseProvider || 'Sqlite' }}\` | Persistence engine (Sqlite, AzureSql) |"
             echo "| **Enable Custom Domain** | \`${{ inputs.enableCustomDomain }}\` | Custom domain binding (\`${{ inputs.environment || 'dev' }}.diet-dost.in\`) |"
             echo "| **Resource Group** | \`${{ inputs.resourceGroupName || 'rg-dietdost-dev' }}\` | Target Azure Resource Group |"
             echo "| **Azure Region** | \`${{ inputs.location || 'centralindia' }}\` | Target Azure Region |"
@@ -262,6 +263,7 @@ jobs:
               enableCustomDomain=${{ inputs.enableCustomDomain }} \
               allowDemoUsers=${{ inputs.allowDemoUsers }} \
               storageMountName="dietdoststorage" \
+              databaseProvider="${{ inputs.databaseProvider || 'Sqlite' }}" \
             --output table || echo "⚠️ Note: Pre-flight validation executed."
 
       - name: 12. Publish Stage 1 Validation Summary
@@ -277,6 +279,7 @@ jobs:
             echo "| **Gitleaks Secret Scan** | ✅ 0 Secrets Detected |"
             echo "| **Client ESLint Gate** | ✅ Passed |"
             echo "| **Bicep IaC Compilation** | ✅ Validated (\`app.bicep\`) |"
+            echo "| **Database Provider** | \`${{ inputs.databaseProvider || 'Sqlite' }}\` |"
             echo "| **Target Resource Group** | \`${{ steps.ensure-rg.outputs.rg_name }}\` (\`${{ steps.ensure-rg.outputs.rg_location }}\`) |"
           } >> "$GITHUB_STEP_SUMMARY"
 
@@ -342,6 +345,7 @@ jobs:
               enableCustomDomain=${{ inputs.enableCustomDomain }} \
               allowDemoUsers=${{ inputs.allowDemoUsers }} \
               storageMountName="dietdoststorage" \
+              databaseProvider="${{ inputs.databaseProvider || 'Sqlite' }}" \
             --result-format ResourceIdOnly > whatif_app_summary.txt || true
 
           cat whatif_app_summary.txt
@@ -445,6 +449,8 @@ jobs:
             environment=${{ inputs.environment }}
             location=${{ needs.validate-application.outputs.rg_location || inputs.location || vars.AZURE_LOCATION || 'centralindia' }}
             fileShareQuotaGb=1
+            deployAzureSql=${{ inputs.databaseProvider == 'AzureSql' }}
+            sqlAdminPassword=${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}
           failOnStderr: false
 
       - name: 5. Resolve ACR & ACA Environment Details
@@ -771,6 +777,7 @@ jobs:
             echo "| **Container Image** | \`${{ steps.build-image.outputs.image_tag }}\` |"
             echo "| **Trivy Vulnerability Scan** | ✅ Passed (0 CRITICAL) |"
             echo "| **Container App Name** | \`app-dietdost-web-${{ inputs.environment }}\` |"
+            echo "| **Database Provider** | \`${{ inputs.databaseProvider || 'Sqlite' }}\` |"
             echo "| **Custom Domain Enabled** | \`${{ inputs.enableCustomDomain }}\` ($([ "${{ inputs.enableCustomDomain }}" = "true" ] && echo "https://${{ inputs.environment }}.diet-dost.in" || echo "Disabled")) |"
             echo "| **Allow Demo Users** | \`${{ inputs.allowDemoUsers }}\` |"
             echo "| **ACA Environment** | \`${{ steps.resolve-env.outputs.aca_env_id }}\` |"
