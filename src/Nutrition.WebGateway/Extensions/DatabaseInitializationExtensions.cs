@@ -107,11 +107,21 @@ public static partial class DatabaseInitializationExtensions
 
             EnsureSeedMediaAssetsMirrored(scope.ServiceProvider, logger);
 
-            logger.LogInformation("Database schema verified and initialized successfully with 0 errors using provider '{Provider}'.", db.Database.ProviderName);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+#pragma warning disable CA1873 // Avoid evaluation of arguments when logging is disabled
+                logger.LogInformation("Database schema verified and initialized successfully with 0 errors using provider '{Provider}'.", db.Database.ProviderName);
+#pragma warning restore CA1873
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Critical database initialization failure during startup. ErrorType: {ErrorType}, Message: {ErrorMessage}", ex.GetType().Name, ex.Message);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+#pragma warning disable CA1873 // Avoid evaluation of arguments when logging is disabled
+                logger.LogError(ex, "Critical database initialization failure during startup. ErrorType: {ErrorType}, Message: {ErrorMessage}", ex.GetType().Name, ex.Message);
+#pragma warning restore CA1873
+            }
             throw;
         }
     }
