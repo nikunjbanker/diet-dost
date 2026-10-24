@@ -38,7 +38,19 @@ public static class WebApplicationExtensions
         app.UseCors("AppCorsPolicy");
         app.UseResponseCompression();
         app.UseDefaultFiles();
-        app.UseStaticFiles();
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            OnPrepareResponse = ctx =>
+            {
+                var path = ctx.Context.Request.Path.Value ?? string.Empty;
+                if (path.EndsWith(".html", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".css", StringComparison.OrdinalIgnoreCase) ||
+                    path.EndsWith(".js", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Context.Response.Headers.CacheControl = "no-cache, must-revalidate";
+                }
+            }
+        });
 
         // Persistent Azure File Share SMB Mount Static Media Serving (/uploads)
         var storageOptions = app.Services.GetService<Microsoft.Extensions.Options.IOptions<Nutrition.Application.Common.Options.StorageOptions>>()?.Value;

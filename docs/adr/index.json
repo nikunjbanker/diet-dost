@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T09:07:40.249577+00:00",
-  "totalAdrs": 89,
+  "generatedAt": "2026-10-24T10:17:11.442878+00:00",
+  "totalAdrs": 90,
   "categoryCounts": {
     "architecture": 21,
     "security": 21,
     "devops": 26,
-    "presentation": 8,
+    "presentation": 9,
     "governance": 13
   },
   "records": [
@@ -1077,6 +1077,18 @@
       "subsystem": "WebGateway (",
       "filename": "ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md",
       "relativePath": "docs/adr/presentation/ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md"
+    },
+    {
+      "id": "ADR-125",
+      "number": 125,
+      "title": "Mobile Dashboard Unobscured Face Photo Presentation, External Metadata Chip Architecture, and Mobile Static Asset Cache Invalidation",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-24T15:35:00+05:30",
+      "subsystem": "WebGateway (",
+      "filename": "ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md",
+      "relativePath": "docs/adr/presentation/ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md"
     }
   ]
 }
