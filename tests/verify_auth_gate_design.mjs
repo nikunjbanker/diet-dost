@@ -76,6 +76,7 @@ async function main() {
         '--no-sandbox',
         '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
+        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',
@@ -298,7 +299,7 @@ async function main() {
     await captureScreenshot(ws, 'cft_auth_gate_after_login_375x667.png');
 
     console.log('Cleaning up browser session...');
-    edge.kill();
+    try { edge.kill(); } catch {}
 
     const allPassed = desktopChecks.registerTabPresent &&
                       desktopChecks.signInActive &&

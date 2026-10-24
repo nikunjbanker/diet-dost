@@ -7,7 +7,7 @@ import { existsSync } from 'fs';
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
     : (existsSync('/usr/bin/google-chrome') ? '/usr/bin/google-chrome' : '/usr/bin/chromium-browser'));
-const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9222;
+const PORT = process.env.CDP_PORT ? parseInt(process.env.CDP_PORT, 10) : 9224;
 const BASE_URL = process.env.BASE_URL ? (process.env.BASE_URL.endsWith('/') ? process.env.BASE_URL : process.env.BASE_URL + '/') : 'http://localhost:5240/';
 
 function sleep(ms) {
@@ -63,6 +63,7 @@ async function main() {
         '--no-sandbox',
         '--disable-dev-shm-usage',
         `--remote-debugging-port=${PORT}`,
+        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
         '--disable-gpu',
         '--no-first-run',
         '--no-default-browser-check',
@@ -153,8 +154,12 @@ async function main() {
         console.log('======================================================================');
 
     } finally {
-        ws.close();
-        edge.kill();
+        if (ws) {
+            try { ws.close(); } catch {}
+        }
+        if (edge) {
+            try { edge.kill(); } catch {}
+        }
     }
 }
 

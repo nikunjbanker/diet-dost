@@ -429,5 +429,12 @@ The full architectural blueprint is codified in the following repository visual 
   - Eliminates "Click to show value" portal exposure and prevents secret leakage in ARM deployment history.
   - Normalized secret keys across Key Vault and Container App: `gemini-api-key`, `jwt-key`, `superadmin-password`, and `app-insights-connection-string`.
 
+### 8.14 Headless Chrome CDP Isolated User Data Directory & Port Allocation in CI Quality Gates (ADR-126)
+- **Problem**: Sequential or background execution of Chrome DevTools Protocol (CDP) test scripts in Tier 3 System Tests (`test_dynamic_config_modes.mjs`, `verify_admin_tier_governance.mjs`, `verify_auth_gate_design.mjs`) on Ubuntu CI runners failed with `Error: Failed to connect to CDP port 9222`.
+- **Architectural Solution**:
+  1. **Isolated User Data Directory**: Appended `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}` to all browser spawn processes, preventing Linux `SingletonLock` collision against `~/.config/google-chrome`.
+  2. **Non-Colliding Default Port Allocation**: Allocated disjoint default CDP ports (`9224`, `9226`, `9228`, `9230`) across test scripts.
+  3. **Guarded Process Lifecycle**: Wrapped browser sessions in defensive `try ... finally` blocks to guarantee child process cleanup and eliminate port exhaustion across test runs.
+
 
 
