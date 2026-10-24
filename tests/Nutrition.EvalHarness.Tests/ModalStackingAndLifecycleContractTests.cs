@@ -93,4 +93,38 @@ public class ModalStackingAndLifecycleContractTests
         // Assert review modal has an accessible close button in header
         Assert.Contains("id=\"btn-review-header-close\"", content);
     }
+
+    [Fact]
+    public void ProgressAndSelfPhotos_StylesAndAspectRatios_ShowFullUncutPhotosWithoutCropping()
+    {
+        var stylesPath = Path.Combine(_wwwroot, "styles.css");
+        Assert.True(File.Exists(stylesPath), $"styles.css must exist at {stylesPath}");
+        var stylesContent = File.ReadAllText(stylesPath);
+
+        // Assert .progress-img uses object-fit: contain (and not cover)
+        var progressImgMatch = Regex.Match(stylesContent, @"\.progress-img\s*\{([^}]+)\}");
+        Assert.True(progressImgMatch.Success, ".progress-img must be defined in styles.css");
+        Assert.Contains("object-fit: contain", progressImgMatch.Groups[1].Value);
+        Assert.DoesNotContain("object-fit: cover", progressImgMatch.Groups[1].Value);
+
+        // Assert .detail-img uses object-fit: contain (and not cover)
+        var detailImgMatch = Regex.Match(stylesContent, @"\.detail-img\s*\{([^}]+)\}");
+        Assert.True(detailImgMatch.Success, ".detail-img must be defined in styles.css");
+        Assert.Contains("object-fit: contain", detailImgMatch.Groups[1].Value);
+        Assert.DoesNotContain("object-fit: cover", detailImgMatch.Groups[1].Value);
+
+        // Assert .timeline-thumb uses object-fit: contain (and not cover)
+        var timelineThumbMatch = Regex.Match(stylesContent, @"\.timeline-thumb\s*\{([^}]+)\}");
+        Assert.True(timelineThumbMatch.Success, ".timeline-thumb must be defined in styles.css");
+        Assert.Contains("object-fit: contain", timelineThumbMatch.Groups[1].Value);
+        Assert.DoesNotContain("object-fit: cover", timelineThumbMatch.Groups[1].Value);
+
+        // Assert progress-img-preview in progress-modal.html has object-fit: contain
+        var progressModalHtmlPath = Path.Combine(_wwwroot, "partials", "progress-modal.html");
+        Assert.True(File.Exists(progressModalHtmlPath), $"progress-modal.html must exist at {progressModalHtmlPath}");
+        var progressModalHtml = File.ReadAllText(progressModalHtmlPath);
+        Assert.Contains("progress-img-preview", progressModalHtml);
+        Assert.Matches(@"<img[^>]*id=""progress-img-preview""[^>]*object-fit:\s*contain", progressModalHtml);
+    }
 }
+

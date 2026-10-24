@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T07:46:46.652970+00:00",
-  "totalAdrs": 88,
+  "generatedAt": "2026-10-24T09:07:40.249577+00:00",
+  "totalAdrs": 89,
   "categoryCounts": {
     "architecture": 21,
     "security": 21,
     "devops": 26,
-    "presentation": 7,
+    "presentation": 8,
     "governance": 13
   },
   "records": [
@@ -1065,6 +1065,18 @@
       "subsystem": "WebGateway (",
       "filename": "ADR-20261024-123-azure-files-persistent-uploads-and-modal-stacking.md",
       "relativePath": "docs/adr/architecture/ADR-20261024-123-azure-files-persistent-uploads-and-modal-stacking.md"
+    },
+    {
+      "id": "ADR-124",
+      "number": 124,
+      "title": "Full Photo Uncut Aspect-Ratio Display, High-Resolution Lightbox Inspection, and GitHub Actions Dispatch Options Audit Summary",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-24T14:35:00+05:30",
+      "subsystem": "WebGateway (",
+      "filename": "ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md",
+      "relativePath": "docs/adr/presentation/ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md"
     }
   ]
 }

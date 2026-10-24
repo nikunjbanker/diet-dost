@@ -40,7 +40,7 @@ on:
         description: 'Enable custom domain binding (dev.diet-dost.in)'
         required: false
         type: boolean
-        default: false
+        default: true
       environment:
         description: 'Target environment name (e.g. dev, prod)'
         required: false
@@ -60,6 +60,27 @@ permissions:
   pull-requests: write
 
 jobs:
+  workflow-dispatch-summary:
+    name: 'Workflow Dispatch Options & Configuration'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish Selected Options Matrix
+        run: |
+          {
+            echo "## ⚙️ Workflow Dispatch Configuration & Selected Options"
+            echo "| Option / Input Parameter | Selected Value | Description |"
+            echo "| :--- | :--- | :--- |"
+            echo "| **Target Environment** | \`${{ inputs.environment || 'dev' }}\` | Target deployment environment |"
+            echo "| **Enable Custom Domain** | \`${{ inputs.enableCustomDomain }}\` | Custom domain binding (\`${{ inputs.environment || 'dev' }}.diet-dost.in\`) |"
+            echo "| **Resource Group** | \`${{ inputs.resourceGroupName || 'rg-dietdost-dev' }}\` | Target Azure Resource Group |"
+            echo "| **Azure Region** | \`${{ inputs.location || 'centralindia' }}\` | Target Azure Region |"
+            echo "| **Provision Infrastructure** | \`${{ inputs.provisionInfra }}\` | Ensure underlying storage and ACA environment |"
+            echo "| **Allow Demo Users** | \`${{ inputs.allowDemoUsers }}\` | Enable seeded 5-tier test accounts |"
+            echo "| **Skip Pre-Deployment Gates** | \`${{ inputs.skipPreDeploymentGates }}\` | Bypass security scans (Admin only) |"
+            echo "| **Triggered By** | \`@${{ github.actor }}\` | User / Identity initiating workflow |"
+            echo "| **Git Ref / SHA** | \`${{ github.ref_name }}\` (\`${{ github.sha }}\`) | Source commit reference |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   pre-deployment-security-scan:
     name: Mandatory Pre-Deployment Security Gates
     if: inputs.skipPreDeploymentGates != true || github.actor != 'nikunjbanker'
@@ -744,6 +765,8 @@ jobs:
             echo "| **Container Image** | \`${{ steps.build-image.outputs.image_tag }}\` |"
             echo "| **Trivy Vulnerability Scan** | ✅ Passed (0 CRITICAL) |"
             echo "| **Container App Name** | \`app-dietdost-web-${{ inputs.environment }}\` |"
+            echo "| **Custom Domain Enabled** | \`${{ inputs.enableCustomDomain }}\` ($([ "${{ inputs.enableCustomDomain }}" = "true" ] && echo "https://${{ inputs.environment }}.diet-dost.in" || echo "Disabled")) |"
+            echo "| **Allow Demo Users** | \`${{ inputs.allowDemoUsers }}\` |"
             echo "| **ACA Environment** | \`${{ steps.resolve-env.outputs.aca_env_id }}\` |"
             echo "| **Key Vault URI** | \`${{ steps.resolve-env.outputs.kv_uri }}\` |"
             echo "| **Managed Identity** | \`${{ steps.resolve-env.outputs.mi_id }}\` |"

@@ -143,6 +143,11 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Save & Cancel Lifecycle**: Standardized `ProgressModalController` to invoke `this.close()` on both Save and Cancel button actions instead of switching tabs. Eliminated redundant inline `onclick` handlers on navigation tabs.
     - **Accessible Mobile Dismissal**: Integrated explicit header close button (`#btn-review-header-close`) in `review-modal.html`, ensuring thumb-friendly dismissal from anywhere in the modal hierarchy.
 
+11. **Uncut Aspect-Ratio Photo Architecture & Universal Lightbox Inspection (`styles.css`, `progress-modal.html`, `face-progress-card.html`, `review-modal.js`, `progress-modal.js`)**:
+    - **Zero-Cropping Standard**: Standardized `.progress-img`, `.detail-img`, `.timeline-thumb`, and `#progress-img-preview` with `object-fit: contain; object-position: center;`, eliminating legacy `object-fit: cover` truncation where selfie faces or heads were cut off.
+    - **Letterboxed Centering**: Configured containers (`.photo-frame`, `.detail-photo-frame`, `.timeline-thumb-frame`) with obsidian-dark backdrop (`#080a0f`) and flex centering (`display: flex; align-items: center; justify-content: center;`), displaying 100% of any uploaded portrait (9:16, 3:4, 1:1, or landscape).
+    - **Universal High-Resolution Lightbox**: Exposes `window.openPhotoLightbox(photoUrl, title)` across the entire presentation layer. Users can tap any progress or comparison photo to inspect full resolution without cuts in the modal stack.
+
 ---
 
 ## 5. Verification & Quality Gates
