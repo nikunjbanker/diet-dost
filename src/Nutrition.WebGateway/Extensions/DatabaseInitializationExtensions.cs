@@ -95,6 +95,8 @@ public static partial class DatabaseInitializationExtensions
                 await vaultSyncService.SyncActiveToVaultAsync();
             }
 
+            EnsureSeedMediaAssetsMirrored(scope.ServiceProvider, logger);
+
             logger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");
         }
         catch (Exception ex)
@@ -807,7 +809,7 @@ public static partial class DatabaseInitializationExtensions
                         LoggedAt = now.AddHours(-3),
                         MealType = MealType.Lunch,
                         DishName = "North Indian Thali (Phulkas, Dal & Bhindi Masala)",
-                        PhotoUri = "/uploads/meals/sample_thali.jpg",
+                        PhotoUri = "/uploads/meals/sample_lunch_thali.jpg",
                         OverallConfidenceScore = 0.96,
                         IsVerifiedByUser = true,
                         DietitianAdvice = "Balanced meal with adequate protein and high-fiber okra. Great portion control under 550 kcal.",
@@ -1013,4 +1015,65 @@ public static partial class DatabaseInitializationExtensions
         string Cuisine,
         List<string> Conditions,
         List<MedicationEntry> Medications);
+
+    private static readonly string[] SeedMediaSubdirectories = ["meals", "progress"];
+
+    /// <summary>
+    /// Mirrors seed media assets (sample meals and baseline progress photos) from the container's
+    /// wwwroot/uploads directory to persistent storage (e.g. Azure Files SMB share at /app/data/wwwroot/uploads)
+    /// if they do not exist yet. Prevents HTTP 404 for seed media in production environments.
+    /// </summary>
+    private static void EnsureSeedMediaAssetsMirrored(IServiceProvider services, ILogger logger)
+    {
+        try
+        {
+            var hostEnv = services.GetService<IWebHostEnvironment>();
+            var storageOptions = services.GetService<Microsoft.Extensions.Options.IOptions<Nutrition.Application.Common.Options.StorageOptions>>()?.Value;
+
+            if (hostEnv == null || string.IsNullOrWhiteSpace(storageOptions?.WebRootPath))
+            {
+                return;
+            }
+
+            var sourceUploads = Path.Combine(hostEnv.WebRootPath, "uploads");
+            var destUploads = Path.Combine(storageOptions.WebRootPath, "uploads");
+
+            if (!Directory.Exists(sourceUploads))
+            {
+                return;
+            }
+
+            if (string.Equals(Path.GetFullPath(sourceUploads), Path.GetFullPath(destUploads), StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            foreach (var subDir in SeedMediaSubdirectories)
+            {
+                var srcDir = Path.Combine(sourceUploads, subDir);
+                var dstDir = Path.Combine(destUploads, subDir);
+
+                if (!Directory.Exists(srcDir)) continue;
+                Directory.CreateDirectory(dstDir);
+
+                foreach (var file in Directory.GetFiles(srcDir))
+                {
+                    var destFile = Path.Combine(dstDir, Path.GetFileName(file));
+                    if (!File.Exists(destFile))
+                    {
+                        File.Copy(file, destFile, overwrite: false);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            var fileName = Path.GetFileName(file);
+                            logger.LogInformation("[STORAGE] Mirrored seed media asset '{FileName}' to persistent storage volume '{DestPath}'.", fileName, destFile);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "[STORAGE] Non-fatal warning while mirroring seed media assets to persistent volume.");
+        }
+    }
 }

@@ -9,6 +9,8 @@
  * TransparencyModalController
  * Manages the ICMR-NIN & WHO South Asian Clinical Calculation Transparency One-Pager.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class TransparencyModalController {
   /**
    * @param {Object} options
@@ -70,7 +72,7 @@ export class TransparencyModalController {
     await this.populate();
     const el = this.elements;
     if (el.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(el.modal);
       el.modal.style.display = 'flex';
     }
   }
@@ -79,7 +81,7 @@ export class TransparencyModalController {
     const el = this.elements;
     if (el.modal) {
       el.modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      modalStack.pop(el.modal);
     }
   }
 

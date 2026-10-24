@@ -10,6 +10,8 @@
  * Manages the Face Transformation & Progress dashboard card,
  * and the Visual Progress Detail & Full Body multi-tab modal.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class ProgressModalController {
   /**
    * @param {Object} options
@@ -138,7 +140,7 @@ export class ProgressModalController {
 
     if (el.btnCancelUpload) {
       el.btnCancelUpload.addEventListener('click', () => {
-        this.switchTab('pane-face-progress');
+        this.close();
       });
     }
 
@@ -170,7 +172,7 @@ export class ProgressModalController {
     }
 
     if (el.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(el.modal);
       el.modal.style.display = 'flex';
     }
   }
@@ -179,7 +181,7 @@ export class ProgressModalController {
     const el = this.elements;
     if (el.modal) {
       el.modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      modalStack.pop(el.modal);
     }
   }
 
@@ -421,7 +423,7 @@ export class ProgressModalController {
       if (el.dropzonePreview) el.dropzonePreview.style.display = 'none';
 
       await this.refresh();
-      this.switchTab('pane-timeline-gallery');
+      this.close();
 
       this._bus.emit('progress:saved', data);
     } catch (err) {

@@ -10,6 +10,8 @@
  * Manages AI Food Detection Review, interactive portion steppers, ghee/tadka adjustments,
  * item renaming/corrections, portion scaling, and continuous model retraining.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class ReviewModalController {
   /**
    * @param {Object} options
@@ -71,6 +73,7 @@ export class ReviewModalController {
       flagsContainer: document.getElementById('review-flags-container'),
       dietitianAdvice: document.getElementById('review-dietitian-advice'),
       btnCancel: document.getElementById('btn-cancel-review'),
+      btnHeaderClose: document.getElementById('btn-review-header-close'),
       btnConfirm: document.getElementById('btn-confirm-meal'),
       photoContainer: document.getElementById('review-photo-container'),
       photoWrapper: document.getElementById('review-photo-wrapper'),
@@ -145,6 +148,10 @@ export class ReviewModalController {
       el.btnCancel.addEventListener('click', () => this.close());
     }
 
+    if (el.btnHeaderClose) {
+      el.btnHeaderClose.addEventListener('click', () => this.close());
+    }
+
     if (el.btnConfirm) {
       el.btnConfirm.addEventListener('click', () => this.handleConfirmMeal());
     }
@@ -176,11 +183,15 @@ export class ReviewModalController {
       if (el.lightboxTitle && this._state.currentMeal) {
         el.lightboxTitle.textContent = `📸 ${this._state.currentMeal.dishName || 'Meal Plate Inspection'}`;
       }
+      modalStack.push(el.lightbox);
       el.lightbox.style.display = 'flex';
     };
 
     const closeLightbox = () => {
-      if (el.lightbox) el.lightbox.style.display = 'none';
+      if (el.lightbox) {
+        el.lightbox.style.display = 'none';
+        modalStack.pop(el.lightbox);
+      }
       if (el.lightboxImg) el.lightboxImg.src = '';
     };
 
@@ -602,7 +613,7 @@ export class ReviewModalController {
     }
 
     if (el.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(el.modal);
       el.modal.style.display = 'flex';
     }
   }
@@ -625,7 +636,7 @@ export class ReviewModalController {
     }
     if (el.modal) {
       el.modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      modalStack.pop(el.modal);
     }
     this._state.currentMeal = null;
   }
@@ -769,7 +780,7 @@ export class ReviewModalController {
     }
 
     if (el.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(el.modal);
       el.modal.style.display = 'flex';
     }
   }

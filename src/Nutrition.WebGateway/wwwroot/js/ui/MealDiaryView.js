@@ -12,6 +12,8 @@
  * updating meal count badges and filter subtitles, managing empty states,
  * and handling meal deletion confirmation modals.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class MealDiaryView {
   /**
    * @param {Object} options
@@ -447,7 +449,7 @@ export class MealDiaryView {
         isClosed = true;
         modal.style.display = 'none';
         modal.classList.remove('active');
-        document.body.classList.remove('modal-open');
+        modalStack.pop(modal);
         document.removeEventListener('keydown', onKeyDown);
         if (btnConfirm) btnConfirm.removeEventListener('click', onConfirm);
         if (btnCancel) btnCancel.removeEventListener('click', onCancel);
@@ -484,7 +486,7 @@ export class MealDiaryView {
       modal.addEventListener('click', onBackdropClick);
       document.addEventListener('keydown', onKeyDown);
 
-      document.body.classList.add('modal-open');
+      modalStack.push(modal);
       modal.style.display = 'flex';
       modal.classList.add('active');
       if (btnCancel) btnCancel.focus();

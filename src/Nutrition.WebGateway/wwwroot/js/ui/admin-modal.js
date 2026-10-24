@@ -9,6 +9,8 @@
  * SuperAdmin & Admin Governance Console UI Controller
  * Manages user accounts, dynamic tier entitlements, and telemetry audits.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class AdminModalController {
   constructor({ adminService, authService, toastService, eventBus }) {
     this.adminService = adminService;
@@ -103,7 +105,7 @@ export class AdminModalController {
 
   open() {
     if (this.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(this.modal);
       this.modal.style.display = 'flex';
       this.switchTab('users');
     }
@@ -112,7 +114,7 @@ export class AdminModalController {
   close() {
     if (this.modal) {
       this.modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      modalStack.pop(this.modal);
     }
   }
 
@@ -296,11 +298,15 @@ export class AdminModalController {
     const verifiedCb = document.getElementById('admin-new-user-verified');
     if (activeCb) activeCb.checked = true;
     if (verifiedCb) verifiedCb.checked = true;
+    modalStack.push(this.createUserModal);
     this.createUserModal.style.display = 'flex';
   }
 
   closeCreateUserModal() {
-    if (this.createUserModal) this.createUserModal.style.display = 'none';
+    if (this.createUserModal) {
+      this.createUserModal.style.display = 'none';
+      modalStack.pop(this.createUserModal);
+    }
   }
 
   async handleCreateUserSubmit(e) {
@@ -363,11 +369,15 @@ export class AdminModalController {
     document.getElementById('admin-edit-user-tier').disabled = isSuper;
     document.getElementById('admin-edit-user-active').disabled = isSuper;
 
+    modalStack.push(this.editUserModal);
     this.editUserModal.style.display = 'flex';
   }
 
   closeEditUserModal() {
-    if (this.editUserModal) this.editUserModal.style.display = 'none';
+    if (this.editUserModal) {
+      this.editUserModal.style.display = 'none';
+      modalStack.pop(this.editUserModal);
+    }
   }
 
   async handleEditUserSubmit(e) {

@@ -137,10 +137,17 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
    - **Mobile Visual Reading Hierarchy**: Reorders modal sections via CSS `order`: Media preview (1) -> Meal Timing (2) -> **Detected Food Items List (`dish-items-list`) (3)** -> Quick Add Subzi Chips (4) -> Cooking Fat Chips (5) -> Search Bar (6) -> Dietitian Note (7) -> AI Feedback (8) -> Continuous Training Banner (9) -> Matrix Warnings (10).
    - **Sticky Mobile Action Bar**: `.review-footer` is pinned persistently to the bottom of the viewport with backdrop blur and safe-area padding for effortless one-thumb meal logging confirmation.
 
+10. **LIFO Modal Stacking & Lifecycle Governance (`modal-stack-manager.js`, `styles.css`)**:
+    - **Centralized Stacking Context**: Implemented `ModalStackManager` to assign calculated z-indices (`100010 + depth * 20`) dynamically, ensuring that child dialogs (Admin Create/Edit User, Review Photo Lightbox, Delete Confirmations) strictly render on top of their parent modals.
+    - **Scroll-Lock Retention**: Manages `body.modal-open` such that background scroll-lock is acquired on the first opened modal and revoked ONLY when the entire stack is empty. Dismissing a child dialog never prematurely unfreezes background scrolling.
+    - **Save & Cancel Lifecycle**: Standardized `ProgressModalController` to invoke `this.close()` on both Save and Cancel button actions instead of switching tabs. Eliminated redundant inline `onclick` handlers on navigation tabs.
+    - **Accessible Mobile Dismissal**: Integrated explicit header close button (`#btn-review-header-close`) in `review-modal.html`, ensuring thumb-friendly dismissal from anywhere in the modal hierarchy.
+
 ---
 
 ## 5. Verification & Quality Gates
 
 * **Zero Console Errors**: All script dependencies, favicons, and assets resolve with HTTP 200.
 * **Responsive Breakpoints**: Seamless scaling across Mobile (<640px), Tablet (640px–1024px), Desktop (1024px–1440px), and Ultra-wide (>1440px).
-* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md` and `tests/validate_e2e_tiers.ps1`.
+* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, and `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`.
+
