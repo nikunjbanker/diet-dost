@@ -51,7 +51,7 @@ public class GetHistoricalAnalyticsQueryHandler : IQueryHandler<GetHistoricalAna
             "1D" or "DAILY" => 1,
             "7D" or "WEEKLY" => 7,
             "30D" or "MONTHLY" => 30,
-            "365D" or "YEARLY" or "1Y" => 365,
+            "90D" or "QUARTERLY" => 90,
             _ => 7
         };
 

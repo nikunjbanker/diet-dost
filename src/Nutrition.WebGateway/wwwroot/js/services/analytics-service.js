@@ -7,7 +7,7 @@
  */
 /**
  * AnalyticsService
- * Handles deficit projections, historical trends, and compliance metrics (7D, 30D, 90D, 365D).
+ * Handles deficit projections, historical trends, and compliance metrics (1D, 7D, 30D, 90D).
  */
 export class AnalyticsService {
   /**
@@ -21,7 +21,7 @@ export class AnalyticsService {
    * Retrieve projections and daily trend bars for a given time window.
    * @deprecated Deprecated for startup hydration in favor of Web BFF single-roundtrip getWebDashboard(). Retained for on-demand period switching and chart filtering.
    * @param {string} userId
-   * @param {string} period - '7D', '30D', '90D', or '365D'
+   * @param {string} period - '1D', '7D', '30D', or '90D'
    */
   async getProjections(userId, period) {
     return this._api.get('/api/analytics/projections', { userId, period });

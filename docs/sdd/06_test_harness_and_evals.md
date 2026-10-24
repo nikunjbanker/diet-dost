@@ -22,7 +22,7 @@ In adherence with Skill §7.1 and §7.2, all implementations must satisfy ten ve
 3. **Quantity Detection & Macro Recalculation**: Validates natural portion strings (`1.5 Cup`, `1 Katori`, `5-6 Slices`, `2 Phulkas`) parsing to numeric multipliers and synchronous recalculation of all 6 macronutrients.
 4. **Dietary Fiber & Free Sugar Tracking**: Validates 30g/day Dietary Fiber (ICMR-NIN) target and < 25g/day Free Sugar (WHO threshold) tracking across meals, food items, and daily ledgers.
 5. **Universal UTC Persistence & Timezone Normalization**: Validates EF Core `ValueConverter` converting all `DateTime` instances to UTC on write and restoring `DateTimeKind.Utc` on read, with circadian boundaries correctly calculated across user timezones.
-6. **Food Diary & In-Place Meal Management**: Validates period filtering (1D, 7D, 30D, 90D, 365D), switchable Card/Grid views, Excel export formatting, and in-place meal deletion with daily ledger recalculation.
+6. **Food Diary & In-Place Meal Management**: Validates period filtering (1D, 7D, 30D, 90D), switchable Card/Grid views, Excel export formatting, and in-place meal deletion with daily ledger recalculation.
 7. **Database Resilience & Integrity Verification**: Validates schema-aware idempotent column migrations (`PRAGMA table_info`), EF Core collection `ValueComparer` instances (preventing change-tracking loss and eliminating model configuration warnings), and non-PII diagnostic error logging.
 8. **Universal SVG Fallback Verification**: Validates capturing-phase error listener substituting broken/missing image URIs with Obsidian Dark vector placeholders (`placeholder-meal.svg`, `placeholder-progress.svg`).
 9. **Multi-Tier Customer & Functional Acceptance Test (`tests/validate_e2e_tiers.ps1`)**: Validates live product behavior across all 5 demo user tiers (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`).
@@ -46,7 +46,7 @@ In adherence with Skill §7.1 and §7.2, all implementations must satisfy ten ve
 | **FIX-10** | Quantity Multiplier & Macro Recalculation | Instant reactive math | Updating portion from `1 Katori` to `1.5` updates calories, protein, carbs, fat, fiber, sugar by 1.5x |
 | **FIX-11** | Dietary Fiber & Sugar Threshold Warnings | Clinical Advice generation | Meals with > 10g free sugar trigger WHO sugar warning; daily fiber deficiency highlighted |
 | **FIX-12** | Universal UTC Temporal Persistence | ISO 8601 UTC in SQLite | Datetime values stored in SQLite are UTC strings; queries restore `DateTimeKind.Utc` |
-| **FIX-13** | Food Diary Period & Export Generation | Complete 6-macro sheet | Filter by 1D/7D/30D/90D/365D; Excel export generates structured CSV with all 6 macros and cooking fat |
+| **FIX-13** | Food Diary Period & Export Generation | Complete 6-macro sheet | Filter by 1D/7D/30D/90D; Excel export generates structured CSV with all 6 macros and cooking fat |
 | **FIX-14** | Universal SVG Fallback Interception | Zero broken image icons | Inaccessible photo URIs instantly render Obsidian `placeholder-meal.svg` or `placeholder-progress.svg` |
 | **FIX-15** | PromptShield Content Safety & LLM Injection | Content Blocked HTTP 400 | Reject harmful, violent, sexual, communal content & prompt injection attacks |
 | **FIX-16** | Pre-Deployment Security Gate (8 Scanners) | 100% Green in CI Pipeline | Gitleaks, ESLint, SecurityCodeScan (7 projects), Trivy, Checkov, actionlint, AI Defense |

@@ -12,7 +12,7 @@
 > **Classification**: Software Design Document (SDD) – Presentation & Web UI  
 > **Governing Design System**: [`DESIGN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/DESIGN.md) (Linear Obsidian Surface Ladder)  
 > **Architecture Pattern**: Native ES Modules, Zero-Bundler Vanilla JS, Component Partials, Web BFF Single-Roundtrip Hydration  
-> **Associated ADRs**: [`ADR-055`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261001-055-web-client-single-roundtrip-hydration.md), [`ADR-061`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md), [`ADR-065`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md), [`ADR-067`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md), [`ADR-114`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md)  
+> **Associated ADRs**: [`ADR-055`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261001-055-web-client-single-roundtrip-hydration.md), [`ADR-061`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md), [`ADR-065`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md), [`ADR-067`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md), [`ADR-114`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md), [`ADR-128`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md)  
 > **Relevant CFTs**: [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md), [`cft_responsive_web_and_tablet.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_responsive_web_and_tablet.md)  
 
 ---
@@ -159,12 +159,17 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Multi-Modal Scroll-Lock Integrity**: Updated `ModalStackManager` to ensure `document.body.classList.add('modal-open')` is applied whenever `this._stack.length > 0`, preventing bottom nav leaks during stacked modal workflows.
     - **ESLint & SAST Verification**: Standardized debounce timer cleanup iterations using `_debounceTimers.values()`, guaranteeing zero unused variable lint warnings across CI pipelines.
 
+13. **Analytics Timeline Period Standardization & Daily Isolation (`analytics-card.html`, `analytics-chart.js`, `MealDiaryView.js`)**:
+    - **Daily View Isolation (`1D`)**: Daily timeline view strictly filters meal history and category trends to today's logged meals (`userLocalDate == today`), displaying subtitle *"Showing Today's meal history"*.
+    - **Yearly View Retirement (`365D`)**: Retired the 365D period tab from client UI and backend aggregation to eliminate massive data consolidation overhead, standardizing the supported timeline intervals to `1D` (Daily), `7D` (Weekly), `30D` (Monthly), and `90D` (Quarterly).
+    - **Dedicated Contract Tests**: Isolated timeline assertions into `tests/Nutrition.EvalHarness.Tests/AnalyticsTimelineContractTests.cs`, preserving test segregation boundaries.
+
 ---
 
 ## 5. Verification & Quality Gates
 
 * **Zero Console Errors**: All script dependencies, favicons, and assets resolve with HTTP 200.
 * **Responsive Breakpoints**: Seamless scaling across Mobile (<640px), Tablet (640px–1024px), Desktop (1024px–1440px), and Ultra-wide (>1440px).
-* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, and `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`.
+* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`, and `tests/Nutrition.EvalHarness.Tests/AnalyticsTimelineContractTests.cs`.
 
 

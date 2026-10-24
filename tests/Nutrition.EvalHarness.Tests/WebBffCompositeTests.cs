@@ -242,6 +242,80 @@ public class WebBffCompositeTests : IDisposable
     }
 
     [Fact]
+    public async Task GetDashboardComposite_WithPeriod1D_Returns1DPeriodAndTodayMealsOnly()
+    {
+        // Arrange
+        var userId = "usr-1d-composite-test";
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+            var profile = new UserProfile
+            {
+                Id = userId,
+                Name = "Aarav Patel",
+                Age = 28,
+                Sex = BiologicalSex.Male,
+                HeightCm = 178,
+                CurrentWeightKg = 75,
+                TargetWeightKg = 70,
+                ActivityLevel = ActivityLevel.Sedentary,
+                DietaryPreference = DietaryPreference.LactoVeg,
+                Timezone = "Asia/Kolkata"
+            };
+            db.Profiles.Add(profile);
+
+            // Add a meal today
+            db.Meals.Add(new MealLog
+            {
+                Id = "meal-today-1d",
+                UserId = userId,
+                DishName = "Besan Chilla",
+                MealType = MealType.Breakfast,
+                LoggedAt = DateTime.UtcNow,
+                TotalCalories = 250,
+                TotalProteinGrams = 12,
+                TotalCarbsGrams = 30,
+                TotalFatGrams = 6
+            });
+
+            // Add a meal 2 days ago
+            db.Meals.Add(new MealLog
+            {
+                Id = "meal-past-1d",
+                UserId = userId,
+                DishName = "Dal Tadka",
+                MealType = MealType.Dinner,
+                LoggedAt = DateTime.UtcNow.AddDays(-2),
+                TotalCalories = 350,
+                TotalProteinGrams = 14,
+                TotalCarbsGrams = 45,
+                TotalFatGrams = 9
+            });
+
+            await db.SaveChangesAsync();
+        }
+
+        var principal = CreateUserPrincipal(userId, "aarav@example.com", "User", "Basic", "Aarav Patel");
+        var controller = CreateController(principal);
+
+        // Act - Request 1D
+        var actionResult = await controller.GetDashboardComposite("1D");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var composite = Assert.IsType<WebDashboardCompositeDto>(okResult.Value);
+
+        Assert.Equal("1D", composite.Projections.Period);
+        Assert.Single(composite.RecentMeals);
+        Assert.Equal("Besan Chilla", composite.RecentMeals.First().DishName);
+
+        // Assert 1D trends represent meal categories
+        Assert.Equal(4, composite.Projections.DailyTrends.Count);
+        Assert.Contains(composite.Projections.DailyTrends, t => t.Date == "Breakfast");
+        Assert.Contains(composite.Projections.DailyTrends, t => t.Date == "Lunch");
+    }
+
+    [Fact]
     public async Task GetDashboardComposite_Sub50msExecutionTime_GuaranteesLowLatency()
     {
         // Arrange: Seeded user

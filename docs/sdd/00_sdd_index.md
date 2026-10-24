@@ -67,7 +67,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Configurable Model Transparency Badge** | Skill §2.3, §5.1 | Complete (`"AI:ShowModelDetails": true`, `review-modal.html`, `review-modal.js`) | Verified via Browser Subagent |
 | **Quantity Detection & Editable Portions** | Skill §2.3 | Complete (`Quantity` detection, unit steppers, real-time macro recalculation) | Verified in Browser |
 | **Fiber & Sugar Nutrition Tracking** | Skill §1.1, §1.3 | Complete (`FiberGrams`, `SugarGrams`, WHO free sugar ceiling < 25g/day) | 100% Passed (Unit Tests) |
-| **Food Diary & Excel Export** | Skill §5.1 | Complete (1D/7D/30D/90D/365D filter, Card/Grid layouts, XLSX/CSV export) | Verified in Browser |
+| **Food Diary & Excel Export** | Skill §5.1 | Complete (1D/7D/30D/90D filter, Card/Grid layouts, XLSX/CSV export) | Verified in Browser |
 | **Obsidian Dark Delete Confirmation Modal** | Skill §5.1 | Complete (Linear danger modal, 6-macro pills, deficit impact advisory) | Verified in Browser |
 | **Profile Timezone & Universal UTC Persistence** | Skill §3.3, §3.4 | Complete (EF Core ValueConverter, `Timezone` column, circadian day grouping) | 100% Passed (Unit Tests) |
 | **Universal Obsidian SVG Image Fallbacks** | Skill §3.5 | Complete (`placeholder-meal.svg`, `placeholder-progress.svg`, window error listener) | Verified via Browser Subagent |

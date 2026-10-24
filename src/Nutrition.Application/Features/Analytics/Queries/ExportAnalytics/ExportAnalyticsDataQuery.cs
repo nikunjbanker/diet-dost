@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -60,7 +60,7 @@ public class ExportAnalyticsDataQueryHandler : IQueryHandler<ExportAnalyticsData
             return Result<ExportAnalyticsResultDto>.Forbidden("Access denied to export another user's data.");
         }
 
-        var meals = await _dietitianService.GetMealHistoryAsync(targetUserId, "365D", null, null, ct);
+        var meals = await _dietitianService.GetMealHistoryAsync(targetUserId, "90D", null, null, ct);
         var csv = new StringBuilder();
         csv.AppendLine("LoggedAtUtc,MealType,TotalCalories,TotalProteinGrams,TotalCarbsGrams,TotalFatGrams,TotalSodiumMg,ItemCount");
         foreach (var m in meals)

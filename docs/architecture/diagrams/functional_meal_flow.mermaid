@@ -60,7 +60,7 @@ sequenceDiagram
     end
 
     opt User Manages Food Diary
-        User->>DiaryUI: Select Period (1D, 7D, 30D, 90D, 365D) or Switch Card/Grid View
+        User->>DiaryUI: Select Period (1D, 7D, 30D, 90D) or Switch Card/Grid View
         DiaryUI-->>User: Display Formatted Meal History with 6-Macro Badges & Timezone Conversion
         opt User Exports Data
             User->>DiaryUI: Click 'Export to Excel'

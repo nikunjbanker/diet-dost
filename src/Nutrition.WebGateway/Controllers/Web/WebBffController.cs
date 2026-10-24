@@ -75,6 +75,7 @@ public class WebBffController : ControllerBase
 
         var sanitizedPeriod = period switch
         {
+            "1D" => "1D",
             "30D" => "30D",
             "90D" => "90D",
             _ => "7D"
