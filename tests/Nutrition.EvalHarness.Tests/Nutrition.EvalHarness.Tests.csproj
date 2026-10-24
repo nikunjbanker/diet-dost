@@ -19,6 +19,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="11.0.0-rc.1.26425.128" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="11.0.0-rc.1.26425.128" />
     <PackageReference Include="Polly.RateLimiting" Version="8.5.2" />
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>

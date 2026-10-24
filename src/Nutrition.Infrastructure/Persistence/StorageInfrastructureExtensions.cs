@@ -104,10 +104,52 @@ public static class StorageInfrastructureExtensions
                     options.UseSqlite(connectionString));
                 break;
 
+            case "azuresql":
             case "sqlserver":
-                // Reserved for enterprise SQL Server deployment
+                var sqlConnectionString = configuration.GetConnectionString("AzureSqlConnection")
+                    ?? (!string.IsNullOrWhiteSpace(defaultConnStr) && !defaultConnStr.Contains(".db", StringComparison.OrdinalIgnoreCase) ? defaultConnStr : null);
+
+                if (string.IsNullOrWhiteSpace(sqlConnectionString) &&
+                    !string.IsNullOrWhiteSpace(dbOptions.ConnectionString) &&
+                    !dbOptions.ConnectionString.Contains(".db", StringComparison.OrdinalIgnoreCase))
+                {
+                    sqlConnectionString = dbOptions.ConnectionString;
+                }
+
+                if (string.IsNullOrWhiteSpace(sqlConnectionString))
+                {
+                    throw new InvalidOperationException(
+                        "Database provider is configured as 'AzureSql' or 'SqlServer', but no connection string was found. " +
+                        "Please configure 'ConnectionStrings:AzureSqlConnection' or configure Azure Key Vault secret 'azure-sql-connection-string'.");
+                }
+
+                // Guarantee minimum 60-second connection timeout for Azure SQL Serverless cold-pause wake-ups (resuming takes 15-45s)
+                try
+                {
+                    var sqlBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(sqlConnectionString);
+                    if (sqlBuilder.ConnectTimeout < 60)
+                    {
+                        sqlBuilder.ConnectTimeout = 60;
+                        sqlConnectionString = sqlBuilder.ConnectionString;
+                    }
+                }
+                catch
+                {
+                    // Fall back to raw connection string if custom or non-standard format
+                }
+
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite(connectionString));
+                {
+                    options.UseSqlServer(sqlConnectionString, sqlOpts =>
+                    {
+                        sqlOpts.EnableRetryOnFailure(
+                            maxRetryCount: 6,
+                            maxRetryDelay: TimeSpan.FromSeconds(30),
+                            errorNumbersToAdd: new[] { 40613 }); // Azure SQL Serverless auto-pause waking error
+                        sqlOpts.CommandTimeout(60);
+                        sqlOpts.MigrationsAssembly(typeof(DietTrackerDbContext).Assembly.FullName);
+                    });
+                });
                 break;
 
             default:

@@ -49,25 +49,35 @@ public static partial class DatabaseInitializationExtensions
 
         try
         {
-            var sqliteRetryPipeline = new ResiliencePipelineBuilder()
-                .AddRetry(new RetryStrategyOptions
-                {
-                    ShouldHandle = new PredicateBuilder().Handle<SqliteException>(ex => ex.SqliteErrorCode == 5),
-                    MaxRetryAttempts = 5,
-                    BackoffType = DelayBackoffType.Exponential,
-                    Delay = TimeSpan.FromSeconds(2),
-                    MaxDelay = TimeSpan.FromSeconds(30),
-                    OnRetry = args =>
+            if (db.Database.IsSqlite())
+            {
+                var sqliteRetryPipeline = new ResiliencePipelineBuilder()
+                    .AddRetry(new RetryStrategyOptions
                     {
-                        var attempt = args.AttemptNumber + 1;
-                        var delaySeconds = (int)args.RetryDelay.TotalSeconds;
-                        logger.LogWarning(args.Outcome.Exception, "SQLite database is temporarily locked (attempt {Attempt}/5). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, delaySeconds);
-                        return ValueTask.CompletedTask;
-                    }
-                })
-                .Build();
+                        ShouldHandle = new PredicateBuilder().Handle<SqliteException>(ex => ex.SqliteErrorCode == 5),
+                        MaxRetryAttempts = 5,
+                        BackoffType = DelayBackoffType.Exponential,
+                        Delay = TimeSpan.FromSeconds(2),
+                        MaxDelay = TimeSpan.FromSeconds(30),
+                        OnRetry = args =>
+                        {
+                            if (logger.IsEnabled(LogLevel.Warning))
+                            {
+                                var attempt = args.AttemptNumber + 1;
+                                var delaySeconds = (int)args.RetryDelay.TotalSeconds;
+                                logger.LogWarning(args.Outcome.Exception, "SQLite database is temporarily locked (attempt {Attempt}/5). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, delaySeconds);
+                            }
+                            return ValueTask.CompletedTask;
+                        }
+                    })
+                    .Build();
 
-            await sqliteRetryPipeline.ExecuteAsync(async _ => await EnsureDatabaseCreatedAndMigratedAsync(db, logger));
+                await sqliteRetryPipeline.ExecuteAsync(async _ => await EnsureDatabaseCreatedAndMigratedAsync(db, logger));
+            }
+            else
+            {
+                await EnsureDatabaseCreatedAndMigratedAsync(db, logger);
+            }
 
             await SeedAppSecretsAsync(db, configuration, appEnv, logger);
             await SeedTierConfigurationsAsync(db, logger);
@@ -97,17 +107,33 @@ public static partial class DatabaseInitializationExtensions
 
             EnsureSeedMediaAssetsMirrored(scope.ServiceProvider, logger);
 
-            logger.LogInformation("SQLite database schema verified and initialized successfully with 0 errors.");
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+#pragma warning disable CA1873 // Avoid evaluation of arguments when logging is disabled
+                logger.LogInformation("Database schema verified and initialized successfully with 0 errors using provider '{Provider}'.", db.Database.ProviderName);
+#pragma warning restore CA1873
+            }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Critical database initialization failure during startup. ErrorType: {ErrorType}, Message: {ErrorMessage}", ex.GetType().Name, ex.Message);
+            if (logger.IsEnabled(LogLevel.Error))
+            {
+#pragma warning disable CA1873 // Avoid evaluation of arguments when logging is disabled
+                logger.LogError(ex, "Critical database initialization failure during startup. ErrorType: {ErrorType}, Message: {ErrorMessage}", ex.GetType().Name, ex.Message);
+#pragma warning restore CA1873
+            }
             throw;
         }
     }
 
     private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db, ILogger logger)
     {
+        if (db.Database.IsSqlServer())
+        {
+            await EnsureSqlServerDatabaseMigratedAsync(db, logger);
+            return;
+        }
+
         var connection = db.Database.GetDbConnection();
 
         // Fast Pristine Schema Bootstrapping:
@@ -359,7 +385,14 @@ public static partial class DatabaseInitializationExtensions
         }
 
         using var checkTableCmd = connection.CreateCommand();
-        checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
+        if (db.Database.IsSqlServer())
+        {
+            checkTableCmd.CommandText = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @tableName;";
+        }
+        else
+        {
+            checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
+        }
         var p = checkTableCmd.CreateParameter();
         p.ParameterName = "@tableName";
         p.Value = tableName;
@@ -376,41 +409,48 @@ public static partial class DatabaseInitializationExtensions
             await connection.OpenAsync();
         }
 
-        var tableExists = false;
-        using (var checkTableCmd = connection.CreateCommand())
-        {
-            checkTableCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name = @tableName;";
-            var p = checkTableCmd.CreateParameter();
-            p.ParameterName = "@tableName";
-            p.Value = tableName;
-            checkTableCmd.Parameters.Add(p);
-            var count = Convert.ToInt64(await checkTableCmd.ExecuteScalarAsync());
-            tableExists = count > 0;
-        }
-
+        var tableExists = await TableExistsAsync(db, tableName);
         if (!tableExists)
         {
             return;
         }
 
-        if (!ValidIdentifierRegex().IsMatch(tableName))
+        if (!ValidIdentifierRegex().IsMatch(tableName) || !ValidIdentifierRegex().IsMatch(columnName))
         {
-            throw new ArgumentException("Invalid table name identifier", nameof(tableName));
+            throw new ArgumentException("Invalid identifier", nameof(tableName));
         }
 
         var columnExists = false;
         using (var cmd = connection.CreateCommand())
         {
-#pragma warning disable CA2100 // Table name is validated against strict alphanumeric identifier pattern; SQLite PRAGMA does not support parameterized table names
-            cmd.CommandText = $"PRAGMA table_info(\"{tableName}\");";
-#pragma warning restore CA2100
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            if (db.Database.IsSqlServer())
             {
-                if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+                cmd.CommandText = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @tableName AND COLUMN_NAME = @columnName;";
+                var pTable = cmd.CreateParameter();
+                pTable.ParameterName = "@tableName";
+                pTable.Value = tableName;
+                cmd.Parameters.Add(pTable);
+
+                var pCol = cmd.CreateParameter();
+                pCol.ParameterName = "@columnName";
+                pCol.Value = columnName;
+                cmd.Parameters.Add(pCol);
+
+                columnExists = Convert.ToInt64(await cmd.ExecuteScalarAsync()) > 0;
+            }
+            else
+            {
+#pragma warning disable CA2100 // Table name is validated against strict alphanumeric identifier pattern; SQLite PRAGMA does not support parameterized table names
+                cmd.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+#pragma warning restore CA2100
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
                 {
-                    columnExists = true;
-                    break;
+                    if (string.Equals(reader.GetString(1), columnName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        columnExists = true;
+                        break;
+                    }
                 }
             }
         }
@@ -419,9 +459,243 @@ public static partial class DatabaseInitializationExtensions
         {
             using var alterCmd = connection.CreateCommand();
 #pragma warning disable CA2100 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
-            alterCmd.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};";
+            if (db.Database.IsSqlServer())
+            {
+                var sqlServerDef = columnDefinition
+                    .Replace("TEXT", "NVARCHAR(MAX)")
+                    .Replace("REAL", "FLOAT")
+                    .Replace("INTEGER", "INT");
+                alterCmd.CommandText = $"ALTER TABLE [{tableName}] ADD [{columnName}] {sqlServerDef};";
+            }
+            else
+            {
+                alterCmd.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};";
+            }
 #pragma warning restore CA2100
             await alterCmd.ExecuteNonQueryAsync();
+        }
+    }
+
+    private static async Task EnsureIndexExistsAsync(DietTrackerDbContext db, string tableName, string indexName, string columns)
+    {
+        var connection = db.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
+
+        using var cmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic index creation uses internally sanitized identifiers from trusted schema migrations
+        if (db.Database.IsSqlServer())
+        {
+            cmd.CommandText = $@"
+                IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N'{indexName}' AND object_id = OBJECT_ID(N'[{tableName}]'))
+                BEGIN
+                    CREATE INDEX [{indexName}] ON [{tableName}] ({columns});
+                END";
+        }
+        else
+        {
+            cmd.CommandText = $@"CREATE INDEX IF NOT EXISTS ""{indexName}"" ON ""{tableName}"" ({columns});";
+        }
+#pragma warning restore CA2100
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    private static async Task EnsureSqlServerDatabaseMigratedAsync(DietTrackerDbContext db, ILogger logger)
+    {
+        var mealsExist = await TableExistsAsync(db, "Meals");
+        if (!mealsExist)
+        {
+            await db.Database.EnsureCreatedAsync();
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("[INIT] Azure SQL Database pristine schema bootstrapped via EnsureCreatedAsync.");
+            }
+            return;
+        }
+
+        // Incremental Table Reconciler (Ensures all domain tables exist even if created under older schema versions)
+        if (!await TableExistsAsync(db, "Corrections"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [Corrections] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_Corrections] PRIMARY KEY,
+                    [UserId] NVARCHAR(450) NOT NULL,
+                    [OriginalDetectedItem] NVARCHAR(450) NOT NULL,
+                    [CorrectedItemName] NVARCHAR(MAX) NOT NULL,
+                    [HindiOrRegionalName] NVARCHAR(MAX) NOT NULL,
+                    [EstimatedPortion] NVARCHAR(MAX) NOT NULL,
+                    [Calories] FLOAT NOT NULL,
+                    [ProteinGrams] FLOAT NOT NULL,
+                    [CarbsGrams] FLOAT NOT NULL,
+                    [FatGrams] FLOAT NOT NULL,
+                    [MealType] NVARCHAR(MAX) NOT NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [FrequencyCount] INT NOT NULL
+                );");
+            await EnsureIndexExistsAsync(db, "Corrections", "IX_Corrections_UserId_OriginalDetectedItem", "[UserId], [OriginalDetectedItem]");
+        }
+
+        if (!await TableExistsAsync(db, "ProgressPhotos"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [ProgressPhotos] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_ProgressPhotos] PRIMARY KEY,
+                    [UserId] NVARCHAR(450) NOT NULL,
+                    [CapturedAtUtc] DATETIME2 NOT NULL,
+                    [WeightKg] FLOAT NOT NULL,
+                    [PhotoType] INT NOT NULL,
+                    [PhotoUri] NVARCHAR(MAX) NOT NULL,
+                    [IsBaseline] BIT NOT NULL,
+                    [Notes] NVARCHAR(MAX) NULL
+                );");
+            await EnsureIndexExistsAsync(db, "ProgressPhotos", "IX_ProgressPhotos_UserId_CapturedAtUtc", "[UserId], [CapturedAtUtc]");
+            await EnsureIndexExistsAsync(db, "ProgressPhotos", "IX_ProgressPhotos_UserId_PhotoType", "[UserId], [PhotoType]");
+        }
+
+        if (!await TableExistsAsync(db, "AiFeedbacks"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [AiFeedbacks] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_AiFeedbacks] PRIMARY KEY,
+                    [UserId] NVARCHAR(450) NOT NULL,
+                    [MealLogId] NVARCHAR(450) NULL,
+                    [DishName] NVARCHAR(MAX) NOT NULL,
+                    [DetectedByModel] NVARCHAR(MAX) NOT NULL,
+                    [ConfidenceScore] FLOAT NOT NULL,
+                    [Rating] NVARCHAR(450) NOT NULL,
+                    [Remarks] NVARCHAR(MAX) NULL,
+                    [IdentifiedItemsSummary] NVARCHAR(MAX) NULL,
+                    [RetrainingTriggered] BIT NOT NULL,
+                    [RetrainingOutcome] NVARCHAR(MAX) NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL
+                );");
+            await EnsureIndexExistsAsync(db, "AiFeedbacks", "IX_AiFeedbacks_UserId_CreatedAtUtc", "[UserId], [CreatedAtUtc]");
+            await EnsureIndexExistsAsync(db, "AiFeedbacks", "IX_AiFeedbacks_Rating", "[Rating]");
+        }
+
+        if (!await TableExistsAsync(db, "Users"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [Users] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_Users] PRIMARY KEY,
+                    [Email] NVARCHAR(256) NOT NULL,
+                    [NormalizedEmail] NVARCHAR(256) NOT NULL,
+                    [MobileNumber] NVARCHAR(50) NOT NULL,
+                    [NormalizedMobileNumber] NVARCHAR(50) NOT NULL,
+                    [PasswordHash] NVARCHAR(MAX) NOT NULL,
+                    [SecurityStamp] NVARCHAR(MAX) NOT NULL,
+                    [Role] INT NOT NULL,
+                    [Tier] INT NOT NULL,
+                    [IsEmailVerified] BIT NOT NULL,
+                    [IsMobileVerified] BIT NOT NULL,
+                    [IsActive] BIT NOT NULL,
+                    [TermsAcceptedAtUtc] DATETIME2 NULL,
+                    [TermsVersionAccepted] NVARCHAR(MAX) NULL,
+                    [HealthConsentAcceptedAtUtc] DATETIME2 NULL,
+                    [HealthConsentVersionAccepted] NVARCHAR(MAX) NULL,
+                    [ConsentIpAddress] NVARCHAR(MAX) NULL,
+                    [ConsentUserAgent] NVARCHAR(MAX) NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [LastLoginAtUtc] DATETIME2 NULL
+                );");
+            await EnsureIndexExistsAsync(db, "Users", "IX_Users_NormalizedEmail", "[NormalizedEmail]");
+            await EnsureIndexExistsAsync(db, "Users", "IX_Users_NormalizedMobileNumber", "[NormalizedMobileNumber]");
+            await EnsureIndexExistsAsync(db, "Users", "IX_Users_Role", "[Role]");
+            await EnsureIndexExistsAsync(db, "Users", "IX_Users_Tier", "[Tier]");
+        }
+
+        if (!await TableExistsAsync(db, "VerificationOtps"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [VerificationOtps] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_VerificationOtps] PRIMARY KEY,
+                    [UserId] NVARCHAR(450) NOT NULL,
+                    [Target] NVARCHAR(450) NOT NULL,
+                    [OtpCodeHash] NVARCHAR(MAX) NOT NULL,
+                    [Channel] INT NOT NULL,
+                    [ExpiresAtUtc] DATETIME2 NOT NULL,
+                    [AttemptCount] INT NOT NULL,
+                    [IsUsed] BIT NOT NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL
+                );");
+            await EnsureIndexExistsAsync(db, "VerificationOtps", "IX_VerificationOtps_UserId_Target", "[UserId], [Target]");
+            await EnsureIndexExistsAsync(db, "VerificationOtps", "IX_VerificationOtps_Target_Channel_IsUsed", "[Target], [Channel], [IsUsed]");
+            await EnsureIndexExistsAsync(db, "VerificationOtps", "IX_VerificationOtps_ExpiresAtUtc", "[ExpiresAtUtc]");
+        }
+
+        if (!await TableExistsAsync(db, "TierConfigurations"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [TierConfigurations] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_TierConfigurations] PRIMARY KEY,
+                    [Tier] INT NOT NULL,
+                    [DailyAiDetectionLimit] INT NOT NULL,
+                    [AllowPhotoCompare] BIT NOT NULL,
+                    [AllowDataExport] BIT NOT NULL,
+                    [AnalyticsHistoryDays] INT NOT NULL,
+                    [Description] NVARCHAR(MAX) NOT NULL,
+                    [UpdatedAtUtc] DATETIME2 NOT NULL,
+                    [UpdatedByUserId] NVARCHAR(450) NULL
+                );");
+            await EnsureIndexExistsAsync(db, "TierConfigurations", "IX_TierConfigurations_Tier", "[Tier]");
+        }
+
+        if (!await TableExistsAsync(db, "AiUsageLogs"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [AiUsageLogs] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_AiUsageLogs] PRIMARY KEY,
+                    [UserId] NVARCHAR(450) NOT NULL,
+                    [OperationType] INT NOT NULL,
+                    [ModelId] NVARCHAR(MAX) NOT NULL,
+                    [EstimatedTokensUsed] INT NOT NULL,
+                    [LatencyMs] FLOAT NOT NULL,
+                    [IsSuccess] BIT NOT NULL,
+                    [ErrorReason] NVARCHAR(MAX) NULL,
+                    [TimestampUtc] DATETIME2 NOT NULL
+                );");
+            await EnsureIndexExistsAsync(db, "AiUsageLogs", "IX_AiUsageLogs_UserId_TimestampUtc", "[UserId], [TimestampUtc]");
+            await EnsureIndexExistsAsync(db, "AiUsageLogs", "IX_AiUsageLogs_UserId_OperationType", "[UserId], [OperationType]");
+        }
+
+        if (!await TableExistsAsync(db, "AppSecrets"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [AppSecrets] (
+                    [Key] NVARCHAR(128) NOT NULL CONSTRAINT [PK_AppSecrets] PRIMARY KEY,
+                    [Value] NVARCHAR(MAX) NOT NULL,
+                    [Description] NVARCHAR(512) NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [UpdatedAtUtc] DATETIME2 NOT NULL
+                );");
+        }
+
+        // Reconcile all incremental columns on existing tables
+        await EnsureColumnExistsAsync(db, "Meals", "TotalCalories", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "TotalProteinGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "TotalCarbsGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "TotalFatGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "TotalFiberGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "TotalSugarGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "TotalSodiumMg", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Meals", "AiFeedbackRating", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Meals", "AiFeedbackRemarks", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Meals", "ClientMutationId", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Meals", "ClientTimestampUtc", "TEXT NULL");
+        await EnsureIndexExistsAsync(db, "Meals", "IX_Meals_UserId_ClientMutationId", "[UserId], [ClientMutationId]");
+
+        await EnsureColumnExistsAsync(db, "FoodItems", "OriginalDetection", "TEXT NOT NULL DEFAULT ''");
+        await EnsureColumnExistsAsync(db, "FoodItems", "FiberGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "FoodItems", "SugarGrams", "REAL NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
+        await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
+        await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("[INIT] Azure SQL Database incremental schema and columns verified successfully.");
         }
     }
 
@@ -885,14 +1159,23 @@ public static partial class DatabaseInitializationExtensions
         var activeSuperAdmin = await db.Users.FirstOrDefaultAsync(u => u.Role == UserRole.SuperAdmin);
         if (activeSuperAdmin != null)
         {
-            await db.Database.ExecuteSqlRawAsync(@"
-                UPDATE ""Profiles"" SET ""Id"" = {0} WHERE ""Id"" = 'user-default';
-                UPDATE ""Meals"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
-                UPDATE ""Ledgers"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
-                UPDATE ""ProgressPhotos"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
-                UPDATE ""Corrections"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
-                UPDATE ""AiFeedbacks"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
-            ", activeSuperAdmin.Id);
+            var updateSql = db.Database.IsSqlServer()
+                ? @"
+                    UPDATE [Profiles] SET [Id] = {0} WHERE [Id] = 'user-default';
+                    UPDATE [Meals] SET [UserId] = {0} WHERE [UserId] = 'user-default';
+                    UPDATE [Ledgers] SET [UserId] = {0} WHERE [UserId] = 'user-default';
+                    UPDATE [ProgressPhotos] SET [UserId] = {0} WHERE [UserId] = 'user-default';
+                    UPDATE [Corrections] SET [UserId] = {0} WHERE [UserId] = 'user-default';
+                    UPDATE [AiFeedbacks] SET [UserId] = {0} WHERE [UserId] = 'user-default';"
+                : @"
+                    UPDATE ""Profiles"" SET ""Id"" = {0} WHERE ""Id"" = 'user-default';
+                    UPDATE ""Meals"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+                    UPDATE ""Ledgers"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+                    UPDATE ""ProgressPhotos"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+                    UPDATE ""Corrections"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';
+                    UPDATE ""AiFeedbacks"" SET ""UserId"" = {0} WHERE ""UserId"" = 'user-default';";
+
+            await db.Database.ExecuteSqlRawAsync(updateSql, activeSuperAdmin.Id);
         }
     }
 

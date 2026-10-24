@@ -41,7 +41,9 @@ public class SqlitePragmaInterceptor : DbConnectionInterceptor
         try
         {
             using var cmd = connection.CreateCommand();
+#pragma warning disable CA2100 // PRAGMA script is generated from validated internal configuration constants
             cmd.CommandText = ResolvePragmaScript(connection.ConnectionString);
+#pragma warning restore CA2100
             cmd.ExecuteNonQuery();
         }
         catch
@@ -57,7 +59,9 @@ public class SqlitePragmaInterceptor : DbConnectionInterceptor
         try
         {
             using var cmd = connection.CreateCommand();
+#pragma warning disable CA2100 // PRAGMA script is generated from validated internal configuration constants
             cmd.CommandText = ResolvePragmaScript(connection.ConnectionString);
+#pragma warning restore CA2100
             await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
         catch

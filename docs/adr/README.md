@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 93 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 94 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **22** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **23** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **21** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **27** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **10** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -68,6 +68,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-113** | Adversarial Agentic AI Engineering Standards Alignment, Structured Outputs & CNCF OpenTelemetry GenAI Observability | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261018-113-adversarial-agentic-ai-engineering-standards-alignment.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261018-113-adversarial-agentic-ai-engineering-standards-alignment.md) |
 | **ADR-123** | Azure Files Persistent Static Uploads Serving, Seed Media Mirroring, and LIFO Modal Stacking Architecture | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261024-123-azure-files-persistent-uploads-and-modal-stacking.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-123-azure-files-persistent-uploads-and-modal-stacking.md) |
 | **ADR-128** | Web BFF Daily View Isolation to Today's Records, Retirement of Yearly (365D) Analytics View, and Contract Test Segregation | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md) |
+| **ADR-129** | Azure SQL Serverless Free Tier Persistence & Phased NoSQL Architecture | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261024-129-azure-sql-serverless-free-tier-persistence.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-129-azure-sql-serverless-free-tier-persistence.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*

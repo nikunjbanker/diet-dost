@@ -46,6 +46,11 @@ on:
         required: false
         type: string
         default: 'dev'
+      databaseProvider:
+        description: 'Persistence database provider (Sqlite, AzureSql)'
+        required: false
+        type: string
+        default: 'Sqlite'
       skipPreDeploymentGates:
         description: '⚡ Skip Pre-Deployment Security & Quality Gates (Admin Only: nikunjbanker)'
         required: false
@@ -656,6 +661,7 @@ jobs:
             managedIdentityId=${{ steps.resolve-env.outputs.mi_id }}
             managedIdentityClientId=${{ steps.resolve-env.outputs.mi_client_id }}
             appInsightsConnectionString="${{ steps.resolve-env.outputs.app_insights_cs }}"
+            databaseProvider=${{ inputs.databaseProvider || 'Sqlite' }}
           failOnStderr: false
 
       - name: 11. Verify Application Health & Revision Status

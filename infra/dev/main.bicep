@@ -46,6 +46,29 @@ param acaSubnetName string = 'snet-aca-infra'
 @secure()
 param geminiApiKey string = ''
 
+@description('Database persistence provider (Sqlite, AzureSql, SqlServer).')
+param databaseProvider string = 'Sqlite'
+
+@description('Optional Azure SQL Connection String (for Managed Identity or SQL auth).')
+@secure()
+param azureSqlConnectionString string = ''
+
+@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default false, must be explicitly enabled during deployment).')
+param deployAzureSql bool = false
+
+@description('Optional explicit name for Azure SQL Server. If omitted, a unique name is derived.')
+param sqlServerName string = ''
+
+@description('SQL Server Administrator login username (SQL Authentication).')
+param sqlAdminLogin string = 'sqladmin'
+
+@description('SQL Server Administrator login password (SQL Authentication).')
+@secure()
+param sqlAdminPassword string = ''
+
+@description('Optional client IP address of local developer workstation to permit through SQL Server firewall.')
+param allowedClientIp string = ''
+
 // 1. Foundation Infrastructure (VNet, Storage, SMB File Share, Log Analytics, ACA Environment, ACR)
 module foundation 'infra.bicep' = {
   name: 'foundation-deployment'
@@ -56,6 +79,11 @@ module foundation 'infra.bicep' = {
     acrName: acrName
     keyVaultName: keyVaultName
     acaSubnetName: acaSubnetName
+    deployAzureSql: deployAzureSql
+    sqlServerName: sqlServerName
+    sqlAdminLogin: sqlAdminLogin
+    sqlAdminPassword: sqlAdminPassword
+    allowedClientIp: allowedClientIp
   }
 }
 
@@ -77,6 +105,8 @@ module workload 'app.bicep' = {
     managedIdentityId: foundation.outputs.managedIdentityId
     managedIdentityClientId: foundation.outputs.managedIdentityClientId
     appInsightsConnectionString: foundation.outputs.appInsightsConnectionString
+    databaseProvider: databaseProvider
+    azureSqlConnectionString: azureSqlConnectionString
   }
 }
 
@@ -98,3 +128,6 @@ output acaSubnetName string = foundation.outputs.acaSubnetName
 output appInsightsName string = foundation.outputs.appInsightsName
 output appInsightsId string = foundation.outputs.appInsightsId
 output appInsightsConnectionString string = foundation.outputs.appInsightsConnectionString
+output sqlServerFqdn string = foundation.outputs.sqlServerFqdn
+output sqlServerName string = foundation.outputs.sqlServerName
+output sqlDatabaseName string = foundation.outputs.sqlDatabaseName

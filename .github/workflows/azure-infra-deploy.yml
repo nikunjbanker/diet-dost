@@ -52,6 +52,21 @@ on:
         required: false
         type: string
         default: 'snet-aca-infra'
+      deployAzureSql:
+        description: 'Deploy Azure SQL Database Serverless Free Tier (GP_S_Gen5_1, 100k vCore-s free)'
+        required: false
+        type: boolean
+        default: false
+      sqlAdminLogin:
+        description: 'SQL Server Administrator login username (SQL Authentication)'
+        required: false
+        type: string
+        default: 'sqladmin'
+      allowedClientIp:
+        description: 'Optional local developer workstation client IP to allow in Azure SQL firewall'
+        required: false
+        type: string
+        default: ''
       skipPreFlightGates:
         description: '⚡ Skip Pre-Flight Security & Quality Gates (Admin Only: nikunjbanker)'
         required: false
@@ -270,6 +285,11 @@ jobs:
               fileShareQuotaGb=${{ inputs.fileShareQuotaGb }} \
               acrName="${{ inputs.acrName }}" \
               keyVaultName="${{ inputs.keyVaultName }}" \
+              acaSubnetName="${{ inputs.acaSubnetName || 'snet-aca-infra' }}" \
+              deployAzureSql=${{ inputs.deployAzureSql || false }} \
+              sqlAdminLogin="${{ inputs.sqlAdminLogin || 'sqladmin' }}" \
+              sqlAdminPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}" \
+              allowedClientIp="${{ inputs.allowedClientIp || '' }}" \
             --output table
           echo "✅ Live Azure ARM Pre-Flight Validation Succeeded: 0 template or quota violations."
 
@@ -348,6 +368,10 @@ jobs:
               acrName="${{ inputs.acrName }}" \
               keyVaultName="${{ inputs.keyVaultName }}" \
               acaSubnetName="${{ inputs.acaSubnetName || 'snet-aca-infra' }}" \
+              deployAzureSql=${{ inputs.deployAzureSql || false }} \
+              sqlAdminLogin="${{ inputs.sqlAdminLogin || 'sqladmin' }}" \
+              sqlAdminPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}" \
+              allowedClientIp="${{ inputs.allowedClientIp || '' }}" \
             --result-format ResourceIdOnly > whatif_summary.txt || true
 
           cat whatif_summary.txt
@@ -481,6 +505,10 @@ jobs:
             acrName=${{ inputs.acrName }}
             keyVaultName=${{ inputs.keyVaultName }}
             acaSubnetName=${{ inputs.acaSubnetName || 'snet-aca-infra' }}
+            deployAzureSql=${{ inputs.deployAzureSql || false }}
+            sqlAdminLogin=${{ inputs.sqlAdminLogin || 'sqladmin' }}
+            sqlAdminPassword=${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}
+            allowedClientIp=${{ inputs.allowedClientIp || '' }}
           failOnStderr: false
 
       - name: 5. Verify & Output Infrastructure Endpoints
