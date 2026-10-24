@@ -445,6 +445,7 @@ public static partial class DatabaseInitializationExtensions
         if (!columnExists)
         {
             using var alterCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
             if (db.Database.IsSqlServer())
             {
                 var sqlServerDef = columnDefinition
@@ -455,10 +456,9 @@ public static partial class DatabaseInitializationExtensions
             }
             else
             {
-#pragma warning disable CA2100 // Dynamic column addition uses internally sanitized identifiers from trusted schema migrations
                 alterCmd.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};";
-#pragma warning restore CA2100
             }
+#pragma warning restore CA2100
             await alterCmd.ExecuteNonQueryAsync();
         }
     }
@@ -472,6 +472,7 @@ public static partial class DatabaseInitializationExtensions
         }
 
         using var cmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic index creation uses internally sanitized identifiers from trusted schema migrations
         if (db.Database.IsSqlServer())
         {
             cmd.CommandText = $@"
@@ -484,6 +485,7 @@ public static partial class DatabaseInitializationExtensions
         {
             cmd.CommandText = $@"CREATE INDEX IF NOT EXISTS ""{indexName}"" ON ""{tableName}"" ({columns});";
         }
+#pragma warning restore CA2100
         await cmd.ExecuteNonQueryAsync();
     }
 

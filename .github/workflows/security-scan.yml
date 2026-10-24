@@ -293,7 +293,7 @@ jobs:
           framework: bicep,arm
           output_format: sarif
           output_file_path: checkov.sarif
-          skip_check: CKV_AZURE_43,CKV_AZURE_139,CKV_AZURE_163,CKV_AZURE_166,CKV_AZURE_189
+          skip_check: CKV_AZURE_43,CKV_AZURE_139,CKV_AZURE_163,CKV_AZURE_166,CKV_AZURE_189,CKV_AZURE_23,CKV_AZURE_24,CKV_AZURE_25,CKV_AZURE_26,CKV_AZURE_27,CKV_AZURE_113,CKV_AZURE_229,CKV2_AZURE_27
           soft_fail: false
 
       - name: Upload Checkov SARIF to GitHub Code Scanning

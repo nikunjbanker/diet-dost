@@ -139,6 +139,7 @@ resource secretSqlPassword 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (
   name: 'sql-admin-password'
   properties: {
     value: sqlAdminPassword
+    contentType: 'text/plain'
   }
 }
 
@@ -147,6 +148,7 @@ resource secretSqlConn 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (!emp
   name: 'azure-sql-connection-string'
   properties: {
     value: formattedConnectionString
+    contentType: 'connection-string'
   }
 }
 

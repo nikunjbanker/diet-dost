@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.48.1.52935",
-      "templateHash": "3903061313796231821"
+      "templateHash": "13269808926932475126"
     }
   },
   "parameters": {
@@ -195,7 +195,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.48.1.52935",
-              "templateHash": "4985689720383847743"
+              "templateHash": "8686780309894561529"
             }
           },
           "parameters": {
@@ -850,7 +850,7 @@
                     "_generator": {
                       "name": "bicep",
                       "version": "0.48.1.52935",
-                      "templateHash": "1629097270778995593"
+                      "templateHash": "17072557627612034445"
                     }
                   },
                   "parameters": {
@@ -1007,7 +1007,8 @@
                       "apiVersion": "2023-07-01",
                       "name": "[format('{0}/{1}', parameters('keyVaultName'), 'sql-admin-password')]",
                       "properties": {
-                        "value": "[parameters('sqlAdminPassword')]"
+                        "value": "[parameters('sqlAdminPassword')]",
+                        "contentType": "text/plain"
                       }
                     },
                     {
@@ -1016,7 +1017,8 @@
                       "apiVersion": "2023-07-01",
                       "name": "[format('{0}/{1}', parameters('keyVaultName'), 'azure-sql-connection-string')]",
                       "properties": {
-                        "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;User ID={2};Password={3};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;', reference(resourceId('Microsoft.Sql/servers', variables('actualSqlServerName')), '2023-08-01-preview').fullyQualifiedDomainName, parameters('databaseName'), parameters('sqlAdminLogin'), parameters('sqlAdminPassword'))]"
+                        "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;User ID={2};Password={3};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;', reference(resourceId('Microsoft.Sql/servers', variables('actualSqlServerName')), '2023-08-01-preview').fullyQualifiedDomainName, parameters('databaseName'), parameters('sqlAdminLogin'), parameters('sqlAdminPassword'))]",
+                        "contentType": "connection-string"
                       },
                       "dependsOn": [
                         "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
