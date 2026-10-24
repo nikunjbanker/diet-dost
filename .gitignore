@@ -53,6 +53,7 @@ aspire-output/
 aspire-manifest.json
 **/aspire-manifest.json
 aspire.config.json
+infra/dev/main.json
 
 ## OS generated files
 .DS_Store

@@ -61,9 +61,12 @@ public static partial class DatabaseInitializationExtensions
                         MaxDelay = TimeSpan.FromSeconds(30),
                         OnRetry = args =>
                         {
-                            var attempt = args.AttemptNumber + 1;
-                            var delaySeconds = (int)args.RetryDelay.TotalSeconds;
-                            logger.LogWarning(args.Outcome.Exception, "SQLite database is temporarily locked (attempt {Attempt}/5). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, delaySeconds);
+                            if (logger.IsEnabled(LogLevel.Warning))
+                            {
+                                var attempt = args.AttemptNumber + 1;
+                                var delaySeconds = (int)args.RetryDelay.TotalSeconds;
+                                logger.LogWarning(args.Outcome.Exception, "SQLite database is temporarily locked (attempt {Attempt}/5). Waiting {DelaySeconds}s for lock release on SMB share...", attempt, delaySeconds);
+                            }
                             return ValueTask.CompletedTask;
                         }
                     })
