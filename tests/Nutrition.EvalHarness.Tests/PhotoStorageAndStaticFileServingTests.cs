@@ -15,7 +15,7 @@ using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
 
-public class PhotoStorageAndStaticFileServingTests : IDisposable
+public sealed class PhotoStorageAndStaticFileServingTests : IDisposable
 {
     private readonly string _tempRoot;
 
@@ -38,6 +38,7 @@ public class PhotoStorageAndStaticFileServingTests : IDisposable
         {
             // Ignore cleanup failure in temp directory
         }
+        GC.SuppressFinalize(this);
     }
 
     [Fact]

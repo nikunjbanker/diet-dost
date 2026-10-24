@@ -1016,6 +1016,8 @@ public static partial class DatabaseInitializationExtensions
         List<string> Conditions,
         List<MedicationEntry> Medications);
 
+    private static readonly string[] SeedMediaSubdirectories = ["meals", "progress"];
+
     /// <summary>
     /// Mirrors seed media assets (sample meals and baseline progress photos) from the container's
     /// wwwroot/uploads directory to persistent storage (e.g. Azure Files SMB share at /app/data/wwwroot/uploads)
@@ -1046,7 +1048,7 @@ public static partial class DatabaseInitializationExtensions
                 return;
             }
 
-            foreach (var subDir in new[] { "meals", "progress" })
+            foreach (var subDir in SeedMediaSubdirectories)
             {
                 var srcDir = Path.Combine(sourceUploads, subDir);
                 var dstDir = Path.Combine(destUploads, subDir);
@@ -1060,7 +1062,11 @@ public static partial class DatabaseInitializationExtensions
                     if (!File.Exists(destFile))
                     {
                         File.Copy(file, destFile, overwrite: false);
-                        logger.LogInformation("[STORAGE] Mirrored seed media asset '{FileName}' to persistent storage volume '{DestPath}'.", Path.GetFileName(file), destFile);
+                        if (logger.IsEnabled(LogLevel.Information))
+                        {
+                            var fileName = Path.GetFileName(file);
+                            logger.LogInformation("[STORAGE] Mirrored seed media asset '{FileName}' to persistent storage volume '{DestPath}'.", fileName, destFile);
+                        }
                     }
                 }
             }
