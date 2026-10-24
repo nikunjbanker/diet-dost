@@ -157,6 +157,7 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Floating Element Touch Suppression**: Added `body.modal-open .floating-maker-chip { display: none !important; pointer-events: none !important; }` to eliminate touch collisions between the docked creator pill and the mobile `.review-footer`.
     - **Sticky Action Bar Stacking Context**: Elevated `.review-footer` on screens `<640px` to `z-index: 100020 !important;` with `pointer-events: auto !important;`, `touch-action: manipulation;`, and `-webkit-tap-highlight-color: transparent;`.
     - **Multi-Modal Scroll-Lock Integrity**: Updated `ModalStackManager` to ensure `document.body.classList.add('modal-open')` is applied whenever `this._stack.length > 0`, preventing bottom nav leaks during stacked modal workflows.
+    - **ESLint & SAST Verification**: Standardized debounce timer cleanup iterations using `_debounceTimers.values()`, guaranteeing zero unused variable lint warnings across CI pipelines.
 
 ---
 

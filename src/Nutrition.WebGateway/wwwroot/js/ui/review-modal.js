@@ -676,7 +676,7 @@ export class ReviewModalController {
     if (el.btnFeedbackDown) el.btnFeedbackDown.classList.remove('active-down');
     if (el.feedbackRemarksRow) el.feedbackRemarksRow.style.display = 'none';
     if (el.feedbackRetrainStatus) el.feedbackRetrainStatus.style.display = 'none';
-    for (const [key, entry] of this._debounceTimers.entries()) {
+    for (const entry of this._debounceTimers.values()) {
       clearTimeout(entry.timer);
     }
     this._debounceTimers.clear();

@@ -61,6 +61,7 @@ Investigation identified three interrelated root causes across touch layout, lif
   - Immediately read values from `.item-name-input` and `.item-portion-input` directly into state to eliminate input blur race conditions.
   - Set button text to `'Recalculating with AI...'` and `await this.flushPendingAiSearches()` before generating the payload.
   - Set button text to `'Saving Changes...'` and send payload with fallback `userId: this._state.currentMeal.userId || this._state.userId || 'user-default'`.
+- In `close()`: iterated over `this._debounceTimers.values()` to clean up pending timers cleanly without unused variable bindings, maintaining 100% ESLint SAST compliance.
 
 ### 2.2 Modal Layering & Tap Isolation Guarantee (`styles.css` & `modal-stack-manager.js`)
 - In `modal-stack-manager.js`:
