@@ -6029,32 +6029,54 @@ h2 {
 }
 
 /* ==========================================================================
-   Dussehra Festival Launch Banner: All-in-One Carousel
+   Diwali Festival Celebration Banner: All-in-One Carousel & Panch-Deep
    ========================================================================== */
-.dussehra-banner-card {
-  background: linear-gradient(135deg, #0e1014 0%, #151821 50%, #111319 100%);
+.diwali-banner-card {
+  background: linear-gradient(135deg, #0b0d13 0%, #171410 50%, #0e0f14 100%);
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: var(--radius-lg);
   margin-bottom: 1.5rem;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(245, 158, 11, 0.1);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 24px rgba(245, 158, 11, 0.12);
   transition: all 0.3s ease;
 }
 
-.dussehra-banner-glow-halo {
+.diwali-banner-glow-halo {
   position: absolute;
-  top: -60px;
-  right: -40px;
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, rgba(16, 185, 129, 0.08) 50%, transparent 70%);
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(36px);
+  filter: blur(42px);
 }
 
-.dussehra-banner-header {
+.diwali-banner-glow-halo.halo-amber {
+  top: -60px;
+  right: -40px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.22) 0%, rgba(245, 158, 11, 0.08) 50%, transparent 70%);
+}
+
+.diwali-banner-glow-halo.halo-saffron {
+  bottom: -50px;
+  left: -30px;
+  width: 220px;
+  height: 220px;
+  background: radial-gradient(circle, rgba(249, 115, 22, 0.16) 0%, rgba(234, 88, 12, 0.06) 50%, transparent 70%);
+}
+
+@keyframes diyaFlicker {
+  0%, 100% {
+    transform: scale(1) translateY(0);
+    filter: drop-shadow(0 0 6px rgba(251, 191, 36, 0.8));
+  }
+  50% {
+    transform: scale(1.12) translateY(-2px);
+    filter: drop-shadow(0 0 14px rgba(249, 115, 22, 0.95));
+  }
+}
+
+.diwali-banner-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6062,15 +6084,15 @@ h2 {
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   flex-wrap: wrap;
   gap: 0.75rem;
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(0, 0, 0, 0.28);
 }
 
-.dussehra-festival-badge {
+.diwali-festival-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   padding: 4px 10px;
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(245, 158, 11, 0.14);
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: var(--radius-pill);
   color: #fbbf24;
@@ -6079,7 +6101,7 @@ h2 {
   letter-spacing: 0.02em;
 }
 
-.dussehra-tabs-nav {
+.diwali-tabs-nav {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -6087,7 +6109,7 @@ h2 {
   -webkit-overflow-scrolling: touch;
 }
 
-.dussehra-tab-btn {
+.diwali-tab-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -6103,19 +6125,19 @@ h2 {
   white-space: nowrap;
 }
 
-.dussehra-tab-btn:hover {
+.diwali-tab-btn:hover {
   color: #f8fafc;
   background: rgba(255, 255, 255, 0.08);
 }
 
-.dussehra-tab-btn.active {
+.diwali-tab-btn.active {
   background: rgba(245, 158, 11, 0.18);
   border-color: rgba(245, 158, 11, 0.5);
   color: #f8fafc;
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
 }
 
-.dussehra-minimize-btn {
+.diwali-minimize-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-sm);
@@ -6129,17 +6151,101 @@ h2 {
   transition: all 0.2s ease;
 }
 
-.dussehra-minimize-btn:hover {
+.diwali-minimize-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #f8fafc;
 }
 
-.dussehra-slides-viewport {
+/* Interactive Panch-Deep 5-Day Diya Lighting Bar */
+.diwali-panch-deep {
+  padding: 0.65rem 1.25rem;
+  background: rgba(245, 158, 11, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.panch-deep-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: #fbbf24;
+  font-weight: 600;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.panch-deep-title {
+  color: #fbbf24;
+}
+
+.panch-deep-status {
+  color: #cbd5e1;
+  font-size: 0.72rem;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.panch-deep-diyas-track {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 2px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.diwali-diya-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-pill);
+  color: #94a3b8;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.diwali-diya-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.diwali-diya-btn .diya-flame {
+  opacity: 0.35;
+  filter: grayscale(1);
+  transition: all 0.3s ease;
+  display: inline-block;
+  font-size: 0.8rem;
+}
+
+.diwali-diya-btn.lit {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fef08a;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
+}
+
+.diwali-diya-btn.lit .diya-flame {
+  opacity: 1;
+  filter: none;
+  animation: diyaFlicker 1.8s infinite ease-in-out;
+}
+
+.diwali-slides-viewport {
   position: relative;
   min-height: 200px;
 }
 
-.dussehra-slide {
+.diwali-slide {
   display: none;
   padding: 1.5rem 1.75rem;
   opacity: 0;
@@ -6147,42 +6253,89 @@ h2 {
   transform: translateY(6px);
 }
 
-.dussehra-slide.active {
+.diwali-slide.active {
   display: block;
   opacity: 1;
   transform: translateY(0);
 }
 
-.slide-grid {
-  display: grid;
-  grid-template-columns: 96px 1fr;
-  gap: 1.5rem;
-  align-items: center;
+/* Mithai & Farsan Calibrator Elements */
+.mithai-chips-container {
+  margin-bottom: 0.85rem;
 }
 
-.slide-visual-col {
+.mithai-chips-label {
+  display: block;
+  font-size: 0.72rem;
+  color: #fbbf24;
+  font-weight: 700;
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mithai-chips-row {
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
 }
 
-.visual-halo-ring {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(94, 106, 210, 0.25), rgba(15, 16, 18, 0.8));
-  border: 2px solid rgba(94, 106, 210, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.1rem;
-  box-shadow: 0 0 24px rgba(94, 106, 210, 0.25);
+.mithai-chip {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-pill);
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.visual-halo-ring.gold-accent {
+.mithai-chip:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mithai-chip.active {
+  background: rgba(249, 115, 22, 0.18);
+  border-color: rgba(249, 115, 22, 0.5);
+  color: #fff;
+  box-shadow: 0 0 8px rgba(249, 115, 22, 0.25);
+}
+
+.mithai-dynamic-card {
+  padding: 0.75rem 1rem;
+  background: rgba(20, 21, 26, 0.85);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+}
+
+.mithai-card-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #fb923c;
+  margin-bottom: 0.3rem;
+}
+
+.mithai-card-text {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.visual-halo-ring.amber-accent {
   border-color: rgba(245, 158, 11, 0.5);
   background: radial-gradient(circle, rgba(245, 158, 11, 0.25), rgba(15, 16, 18, 0.8));
   box-shadow: 0 0 24px rgba(245, 158, 11, 0.3);
+}
+
+.visual-halo-ring.gold-accent {
+  border-color: rgba(251, 191, 36, 0.5);
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.25), rgba(15, 16, 18, 0.8));
+  box-shadow: 0 0 24px rgba(251, 191, 36, 0.3);
 }
 
 .visual-halo-ring.saffron-accent {
@@ -6191,70 +6344,13 @@ h2 {
   box-shadow: 0 0 24px rgba(249, 115, 22, 0.3);
 }
 
-.visual-halo-ring.founder-accent {
+.visual-halo-ring.emerald-accent {
   border-color: rgba(16, 185, 129, 0.5);
   background: radial-gradient(circle, rgba(16, 185, 129, 0.25), rgba(15, 16, 18, 0.8));
   box-shadow: 0 0 24px rgba(16, 185, 129, 0.3);
 }
 
-.visual-sub-badge {
-  font-size: 0.68rem;
-  color: #94a3b8;
-  font-weight: 600;
-  text-align: center;
-  margin-top: 0.4rem;
-}
-
-.slide-eyebrow {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #f59e0b;
-  margin-bottom: 0.3rem;
-}
-
-.slide-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #f8fafc;
-  letter-spacing: -0.02em;
-  margin-bottom: 0.45rem;
-  line-height: 1.35;
-}
-
-.slide-desc {
-  font-size: 0.88rem;
-  color: #cbd5e1;
-  line-height: 1.6;
-  margin-bottom: 0.95rem;
-}
-
-.slide-pills-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
-  margin-bottom: 1.15rem;
-}
-
-.slide-pill {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 3px 9px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  border-radius: var(--radius-pill);
-  color: #cbd5e1;
-}
-
-.slide-actions-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem;
-  align-items: center;
-}
-
-.dussehra-cta-btn {
+.diwali-cta-btn {
   padding: 8px 16px;
   border-radius: var(--radius-md);
   font-size: 0.82rem;
@@ -6268,56 +6364,56 @@ h2 {
   border: none;
 }
 
-.dussehra-cta-btn.primary-glow {
-  background: linear-gradient(135deg, #5e6ad2, #4338ca);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  box-shadow: 0 4px 16px rgba(94, 106, 210, 0.35);
-}
-
-.dussehra-cta-btn.gold-glow {
+.diwali-cta-btn.amber-glow {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: #1e1302;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35);
 }
 
-.dussehra-cta-btn.saffron-glow {
+.diwali-cta-btn.gold-glow {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #1c1303;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(251, 191, 36, 0.35);
+}
+
+.diwali-cta-btn.saffron-glow {
   background: linear-gradient(135deg, #ea580c, #c2410c);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 16px rgba(234, 88, 12, 0.35);
 }
 
-.dussehra-cta-btn.emerald-glow {
+.diwali-cta-btn.emerald-glow {
   background: linear-gradient(135deg, #10b981, #059669);
   color: #022014;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35);
 }
 
-.dussehra-cta-btn.ghost {
+.diwali-cta-btn.ghost {
   background: transparent;
   color: #cbd5e1;
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-.dussehra-cta-btn:hover {
+.diwali-cta-btn:hover {
   transform: translateY(-1px);
   filter: brightness(1.1);
 }
 
-.dussehra-carousel-controls {
+.diwali-carousel-controls {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 1rem;
   padding: 0.65rem 1.25rem 0.85rem;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.18);
 }
 
-.dussehra-nav-arrow {
+.diwali-nav-arrow {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 50%;
@@ -6331,18 +6427,18 @@ h2 {
   transition: all 0.2s ease;
 }
 
-.dussehra-nav-arrow:hover {
+.diwali-nav-arrow:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
-.dussehra-dots-track {
+.diwali-dots-track {
   display: flex;
   align-items: center;
   gap: 0.45rem;
 }
 
-.dussehra-dot {
+.diwali-dot {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-pill);
@@ -6353,14 +6449,14 @@ h2 {
   padding: 0;
 }
 
-.dussehra-dot.active {
+.diwali-dot.active {
   width: 22px;
   background: #f59e0b;
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
 }
 
 /* Ticker Bar (Collapsed Mode) */
-.dussehra-ticker-bar {
+.diwali-ticker-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -6369,29 +6465,29 @@ h2 {
   gap: 1rem;
 }
 
-.dussehra-ticker-content {
+.diwali-ticker-content {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
 }
 
-.dussehra-ticker-badge {
+.diwali-ticker-badge {
   font-size: 0.74rem;
   font-weight: 700;
   color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
+  background: rgba(245, 158, 11, 0.14);
   padding: 3px 8px;
   border-radius: var(--radius-pill);
   border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
-.dussehra-ticker-text {
+.diwali-ticker-text {
   font-size: 0.84rem;
   color: #cbd5e1;
 }
 
-.dussehra-expand-btn {
+.diwali-expand-btn {
   background: rgba(245, 158, 11, 0.12);
   border: 1px solid rgba(245, 158, 11, 0.35);
   border-radius: var(--radius-pill);
@@ -6407,7 +6503,7 @@ h2 {
   transition: all 0.2s ease;
 }
 
-.dussehra-expand-btn:hover {
+.diwali-expand-btn:hover {
   background: rgba(245, 158, 11, 0.22);
 }
 
@@ -6470,7 +6566,7 @@ h2 {
     font-size: 1.5rem;
   }
 
-  .dussehra-tab-btn {
+  .diwali-tab-btn {
     padding: 4px 8px;
     font-size: 0.72rem;
   }

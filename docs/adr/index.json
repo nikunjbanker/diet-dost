@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T18:35:48.396216+00:00",
-  "totalAdrs": 95,
+  "generatedAt": "2026-10-25T11:02:35.658764+00:00",
+  "totalAdrs": 96,
   "categoryCounts": {
     "architecture": 24,
     "security": 21,
     "devops": 27,
-    "presentation": 10,
+    "presentation": 11,
     "governance": 13
   },
   "records": [
@@ -1149,6 +1149,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261024-130-azure-sql-redirect-nsg-ports-and-workflow-summaries.md",
       "relativePath": "docs/adr/architecture/ADR-20261024-130-azure-sql-redirect-nsg-ports-and-workflow-summaries.md"
+    },
+    {
+      "id": "ADR-131",
+      "number": 131,
+      "title": "Interactive Diwali (Deepavali) Celebration Banner, Panch-Deep Diya Lighting, Smart Mithai Calibrator, and Gujarati New Year (Bestu Varas) Integration",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-24T23:58:00+05:30",
+      "subsystem": "WebGateway | Presentation (",
+      "filename": "ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md",
+      "relativePath": "docs/adr/presentation/ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md"
     }
   ]
 }
