@@ -32,7 +32,9 @@ export class ReviewModalController {
     this._feedbackSubmitted = false;
     this._isEditing = false;
     this._editingMealId = null;
+    this._isSaving = false;
     this._debounceTimers = new Map();
+    this._activeAiPromises = new Set();
 
     this._bindEvents();
 
@@ -42,20 +44,61 @@ export class ReviewModalController {
   }
 
   /**
-   * Debounces a named callback by the specified millisecond delay.
+   * Debounces a named callback by the specified millisecond delay, storing the callback
+   * so it can be flushed immediately on user submission.
    * @param {string} key
    * @param {Function} fn
    * @param {number} [delay=300]
    */
   _debounce(key, fn, delay = 300) {
     if (this._debounceTimers.has(key)) {
-      clearTimeout(this._debounceTimers.get(key));
+      clearTimeout(this._debounceTimers.get(key).timer);
     }
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       this._debounceTimers.delete(key);
-      fn();
+      try {
+        const p = fn();
+        if (p && typeof p.then === 'function') {
+          this._activeAiPromises.add(p);
+          await p;
+        }
+      } catch (err) {
+        console.warn(`Debounced task '${key}' error:`, err);
+      }
     }, delay);
-    this._debounceTimers.set(key, timer);
+    this._debounceTimers.set(key, { timer, fn });
+  }
+
+  /**
+   * Flushes all active debounce timers immediately and awaits all in-flight AI estimations.
+   * Guarantees zero race condition between fast clicks on 'Save Changes' and pending AI estimations.
+   */
+  async flushPendingAiSearches() {
+    const pendingFns = [];
+    for (const [key, entry] of this._debounceTimers.entries()) {
+      clearTimeout(entry.timer);
+      try {
+        const p = entry.fn();
+        if (p && typeof p.then === 'function') {
+          pendingFns.push(p);
+        }
+      } catch (err) {
+        console.warn(`Error invoking pending debounce '${key}':`, err);
+      }
+    }
+    this._debounceTimers.clear();
+
+    for (const p of pendingFns) {
+      this._activeAiPromises.add(p);
+    }
+
+    if (this._activeAiPromises.size > 0) {
+      try {
+        await Promise.all(Array.from(this._activeAiPromises));
+      } catch (err) {
+        console.warn('One or more AI search estimations encountered errors during flush:', err);
+      }
+    }
   }
 
   get elements() {
@@ -633,6 +676,12 @@ export class ReviewModalController {
     if (el.btnFeedbackDown) el.btnFeedbackDown.classList.remove('active-down');
     if (el.feedbackRemarksRow) el.feedbackRemarksRow.style.display = 'none';
     if (el.feedbackRetrainStatus) el.feedbackRetrainStatus.style.display = 'none';
+    for (const [key, entry] of this._debounceTimers.entries()) {
+      clearTimeout(entry.timer);
+    }
+    this._debounceTimers.clear();
+    this._activeAiPromises.clear();
+    this._isSaving = false;
     this._feedbackRating = null;
     this._feedbackSubmitted = false;
     this._isEditing = false;
@@ -1049,41 +1098,47 @@ export class ReviewModalController {
     item.isAiSearching = true;
     this.renderItems();
 
-    try {
-      const aiResult = await this._meals.estimateFoodItem(
-        name,
-        item.estimatedPortion,
-        true,
-        this._state.userId || 'user-default',
-        this._state.currentMeal?.mealType
-      );
+    const taskPromise = (async () => {
+      try {
+        const aiResult = await this._meals.estimateFoodItem(
+          name,
+          item.estimatedPortion,
+          true,
+          this._state.userId || 'user-default',
+          this._state.currentMeal?.mealType
+        );
 
-      if (aiResult) {
-        item.calories = Math.round(aiResult.calories);
-        item.proteinGrams = aiResult.proteinGrams;
-        item.carbsGrams = aiResult.carbsGrams;
-        item.fatGrams = aiResult.fatGrams;
-        item.fiberGrams = aiResult.fiberGrams;
-        item.sugarGrams = aiResult.sugarGrams;
-        item.sodiumMg = aiResult.sodiumMg;
-        if (aiResult.grams) item.grams = aiResult.grams;
-        if (aiResult.estimatedPortion) item.estimatedPortion = aiResult.estimatedPortion;
-        if (aiResult.hindiOrRegionalName) item.hindiOrRegionalName = aiResult.hindiOrRegionalName;
-        if (aiResult.cookingMediumEstimate) item.cookingMediumEstimate = aiResult.cookingMediumEstimate;
-        item.isAiEstimated = true;
+        if (aiResult) {
+          item.calories = Math.round(aiResult.calories);
+          item.proteinGrams = aiResult.proteinGrams;
+          item.carbsGrams = aiResult.carbsGrams;
+          item.fatGrams = aiResult.fatGrams;
+          item.fiberGrams = aiResult.fiberGrams;
+          item.sugarGrams = aiResult.sugarGrams;
+          item.sodiumMg = aiResult.sodiumMg;
+          if (aiResult.grams) item.grams = aiResult.grams;
+          if (aiResult.estimatedPortion) item.estimatedPortion = aiResult.estimatedPortion;
+          if (aiResult.hindiOrRegionalName) item.hindiOrRegionalName = aiResult.hindiOrRegionalName;
+          if (aiResult.cookingMediumEstimate) item.cookingMediumEstimate = aiResult.cookingMediumEstimate;
+          item.isAiEstimated = true;
 
-        this._toast.show({
-          title: '🤖 AI Nutrition Updated!',
-          message: `${aiResult.normalizedName || name}: ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
-        });
+          this._toast.show({
+            title: '🤖 AI Nutrition Updated!',
+            message: `${aiResult.normalizedName || name}: ${Math.round(item.calories)} kcal, ${item.proteinGrams}g Protein.`
+          });
+        }
+      } catch (e) {
+        console.error('Error in searchItemWithAi:', e);
+      } finally {
+        item.isAiSearching = false;
+        this.renderItems();
+        this.recalculateTotals();
+        this._activeAiPromises.delete(taskPromise);
       }
-    } catch (e) {
-      console.error('Error in searchItemWithAi:', e);
-    } finally {
-      item.isAiSearching = false;
-      this.renderItems();
-      this.recalculateTotals();
-    }
+    })();
+
+    this._activeAiPromises.add(taskPromise);
+    await taskPromise;
   }
 
   renderItems() {
@@ -1621,7 +1676,24 @@ export class ReviewModalController {
 
   async handleConfirmMeal() {
     if (!this._state.currentMeal) return;
+    if (this._isSaving) return;
     const el = this.elements;
+
+    // Immediately capture latest values from editable input elements to eliminate keyboard blur race
+    if (el.itemsList) {
+      el.itemsList.querySelectorAll('.item-name-input').forEach(input => {
+        const idx = parseInt(input.dataset.idx, 10);
+        if (this._state.currentMeal?.identifiedItems && this._state.currentMeal.identifiedItems[idx] && input.value.trim()) {
+          this._state.currentMeal.identifiedItems[idx].name = input.value.trim();
+        }
+      });
+      el.itemsList.querySelectorAll('.item-portion-input').forEach(input => {
+        const idx = parseInt(input.dataset.idx, 10);
+        if (this._state.currentMeal?.identifiedItems && this._state.currentMeal.identifiedItems[idx] && input.value.trim()) {
+          this._state.currentMeal.identifiedItems[idx].estimatedPortion = input.value.trim();
+        }
+      });
+    }
 
     // Capture latest header and timing inputs
     if (el.dishNameInput && el.dishNameInput.value.trim()) {
@@ -1631,25 +1703,43 @@ export class ReviewModalController {
       this._state.currentMeal.loggedAt = new Date(el.logTimeInput.value).toISOString();
     }
 
-    if (this._isEditing) {
-      if (el.btnConfirm) {
-        el.btnConfirm.disabled = true;
-        el.btnConfirm.textContent = 'Saving Changes...';
+    this._isSaving = true;
+
+    // Provide immediate responsive feedback on button
+    if (el.btnConfirm) {
+      el.btnConfirm.disabled = true;
+      el.btnConfirm.textContent = this._isEditing ? 'Saving Changes...' : 'Logging & Training Model...';
+    }
+
+    try {
+      // If any item AI estimation is debounced or in-flight, await completion so that updated nutrition is saved
+      if (this._debounceTimers.size > 0 || this._activeAiPromises.size > 0) {
+        if (el.btnConfirm) {
+          el.btnConfirm.textContent = 'Recalculating with AI...';
+        }
+        await this.flushPendingAiSearches();
       }
 
-      try {
-        const mealTypeMap = { 'Breakfast': 0, 'Lunch': 1, 'Snack': 2, 'Dinner': 3 };
-        const numericMealType = mealTypeMap[this._state.currentMeal.mealType] !== undefined
-          ? mealTypeMap[this._state.currentMeal.mealType]
-          : 1;
+      const mealTypeMap = { 'Breakfast': 0, 'Lunch': 1, 'Snack': 2, 'Dinner': 3 };
+      const numericMealType = mealTypeMap[this._state.currentMeal.mealType] !== undefined
+        ? mealTypeMap[this._state.currentMeal.mealType]
+        : 1;
+
+      const effectiveUserId = this._state.currentMeal.userId || this._state.userId || 'user-default';
+      const currentDishTitle = this._state.currentMeal.dishName || 'meal';
+
+      if (this._isEditing) {
+        if (el.btnConfirm) {
+          el.btnConfirm.textContent = 'Saving Changes...';
+        }
 
         const payload = {
           id: this._editingMealId,
-          userId: this._state.userId,
+          userId: effectiveUserId,
           mealType: numericMealType,
           dishName: this._state.currentMeal.dishName,
           loggedAt: this._state.currentMeal.loggedAt || new Date().toISOString(),
-          photoUri: this._state.currentMeal.photoUrl || null,
+          photoUri: this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri || null,
           overallConfidenceScore: this._state.currentMeal.overallConfidenceScore || 0.88,
           addedGheeKcal: this._state.addedGhee || 0,
           addedTadkaKcal: this._state.addedTadka || 0,
@@ -1680,11 +1770,6 @@ export class ReviewModalController {
 
         const data = await this._meals.updateMeal(this._editingMealId, payload);
 
-        if (el.btnConfirm) {
-          el.btnConfirm.disabled = false;
-          el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
-        }
-
         this.close();
         this._confetti.burst();
 
@@ -1693,41 +1778,21 @@ export class ReviewModalController {
 
         this._toast.show({
           title: 'Meal Updated! ✏️',
-          message: `Updated ${this._state.currentMeal?.dishName || 'meal'}! Daily calorie ledger synchronized.`
+          message: `Updated ${currentDishTitle}! Daily calorie ledger synchronized.`
         });
-      } catch (err) {
-        if (el.btnConfirm) {
-          el.btnConfirm.disabled = false;
-          el.btnConfirm.textContent = '💾 Save Changes ✨';
-        }
-        this._toast.show({
-          title: 'Error Updating Meal',
-          message: err.message || 'Failed to update meal.'
-        });
+        return;
       }
-      return;
-    }
 
-    if (el.btnConfirm) {
-      el.btnConfirm.disabled = true;
-      el.btnConfirm.textContent = 'Logging & Training Model...';
-    }
-
-    try {
-      const mealTypeMap = { 'Breakfast': 0, 'Lunch': 1, 'Snack': 2, 'Dinner': 3 };
-      const numericMealType = mealTypeMap[this._state.currentMeal.mealType] !== undefined
-        ? mealTypeMap[this._state.currentMeal.mealType]
-        : 1;
-
+      // Creating a new logged meal
       const payload = {
-        userId: this._state.userId,
+        userId: effectiveUserId,
         mealType: numericMealType,
         dishName: this._state.currentMeal.dishName,
         loggedAt: this._state.currentMeal.loggedAt || new Date().toISOString(),
         photoUri: this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri || null,
         overallConfidenceScore: this._state.currentMeal.overallConfidenceScore || 0.88,
-        addedGheeKcal: this._state.addedGhee,
-        addedTadkaKcal: this._state.addedTadka,
+        addedGheeKcal: this._state.addedGhee || 0,
+        addedTadkaKcal: this._state.addedTadka || 0,
         items: this._state.currentMeal.identifiedItems.map(i => ({
           name: i.name,
           originalDetection: i.originalDetection || i.name,
@@ -1753,18 +1818,13 @@ export class ReviewModalController {
 
       const data = await this._meals.confirmMeal(payload);
 
-      if (el.btnConfirm) {
-        el.btnConfirm.disabled = false;
-        el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
-      }
-
       this.close();
       this._confetti.burst();
 
       // Emit global meal:logged event
       this._bus.emit('meal:logged', data);
 
-      if (data.learnedMessage) {
+      if (data?.learnedMessage) {
         this._toast.show({
           title: '🧠 AI Vision Re-Trained! 🎉',
           message: `${data.learnedMessage}. Diet Dost memorized your household preference for future scans!`,
@@ -1773,8 +1833,8 @@ export class ReviewModalController {
         });
       } else {
         const mealTypeName = this._state.currentMeal?.mealType || 'Meal';
-        const loggedKcal = data.meal?.totalCalories ?? data.meal?.calories ?? this._state.currentMeal?.totalCalories ?? 0;
-        const loggedProtein = data.meal?.totalProteinGrams ?? this._state.currentMeal?.totalProteinGrams ?? 0;
+        const loggedKcal = data?.meal?.totalCalories ?? data?.meal?.calories ?? this._state.currentMeal?.totalCalories ?? 0;
+        const loggedProtein = data?.meal?.totalProteinGrams ?? this._state.currentMeal?.totalProteinGrams ?? 0;
         this._toast.show({
           title: `${mealTypeName} Logged! 🎉`,
           message: `Logged ${Math.round(loggedKcal)} kcal and ${Math.round(loggedProtein)}g Protein. Compliance score updated!`,
@@ -1783,14 +1843,17 @@ export class ReviewModalController {
         });
       }
     } catch (err) {
+      console.error('Error confirming/updating meal:', err);
       if (el.btnConfirm) {
         el.btnConfirm.disabled = false;
-        el.btnConfirm.textContent = 'Looks Great! Log Meal 🎉';
+        el.btnConfirm.textContent = this._isEditing ? '💾 Save Changes ✨' : 'Looks Great! Log Meal 🎉';
       }
       this._toast.show({
-        title: 'Error Logging Meal',
-        message: err.message || 'Failed to save meal.'
+        title: this._isEditing ? 'Error Updating Meal' : 'Error Logging Meal',
+        message: err.message || 'Failed to save meal. Please try again.'
       });
+    } finally {
+      this._isSaving = false;
     }
   }
 

@@ -780,8 +780,10 @@ html, body {
   overflow: hidden;
 }
 
-body.modal-open .mobile-bottom-nav {
+body.modal-open .mobile-bottom-nav,
+body.modal-open .floating-maker-chip {
   display: none !important;
+  pointer-events: none !important;
 }
 
 .review-card {
@@ -5135,10 +5137,11 @@ h2 {
     backdrop-filter: blur(14px) !important;
     -webkit-backdrop-filter: blur(14px) !important;
     border-top: 1px solid var(--border-subtle) !important;
-    z-index: 100 !important;
+    z-index: 100020 !important;
     display: flex !important;
     gap: 0.65rem !important;
     box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.7) !important;
+    pointer-events: auto !important;
   }
 
   .review-footer .btn {
@@ -5147,6 +5150,10 @@ h2 {
     font-size: 0.9rem !important;
     font-weight: 600 !important;
     justify-content: center !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
   }
 
   /* Food item rows mobile ergonomics */

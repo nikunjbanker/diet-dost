@@ -37,7 +37,7 @@ export class ModalStackManager {
     const assignedZ = this._baseZIndex + (this._stack.length - 1) * this._step;
     modalEl.style.zIndex = `${assignedZ}`;
 
-    if (this._stack.length === 1) {
+    if (this._stack.length > 0) {
       document.body.classList.add('modal-open');
     }
 
