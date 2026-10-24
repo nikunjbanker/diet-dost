@@ -177,5 +177,38 @@ public partial class ModalStackingAndLifecycleContractTests
         var indexContent = File.ReadAllText(indexHtmlPath);
         Assert.Matches(CacheBustedStylesCssRegex(), indexContent);
     }
+
+    [Fact]
+    public void ReviewModal_MobileSaveButton_HasTouchErgonomics_AndIsIsolatedFromFloatingElements()
+    {
+        var stylesPath = Path.Combine(_wwwroot, "styles.css");
+        var stylesContent = File.ReadAllText(stylesPath);
+
+        // 1. Assert body.modal-open hides floating-maker-chip to prevent touch interception
+        Assert.Contains("body.modal-open .floating-maker-chip", stylesContent);
+        Assert.Contains("pointer-events: none !important", stylesContent);
+
+        // 2. Assert mobile review-footer has z-index 100020 and pointer-events: auto
+        Assert.Contains("z-index: 100020 !important", stylesContent);
+
+        // 3. Assert modal-stack-manager adds modal-open whenever stack has > 0 elements
+        var stackManagerPath = Path.Combine(_wwwroot, "js", "ui", "modal-stack-manager.js");
+        var stackManagerContent = File.ReadAllText(stackManagerPath);
+        Assert.Contains("if (this._stack.length > 0)", stackManagerContent);
+
+        // 4. Assert review-modal.html has explicit type=\"button\" on confirmation button
+        var reviewModalHtmlPath = Path.Combine(_wwwroot, "partials", "review-modal.html");
+        var reviewModalHtml = File.ReadAllText(reviewModalHtmlPath);
+        Assert.Contains("type=\"button\" id=\"btn-confirm-meal\"", reviewModalHtml);
+        Assert.Contains("type=\"button\" id=\"btn-cancel-review\"", reviewModalHtml);
+
+        // 5. Assert review-modal.js implements flushPendingAiSearches to prevent race condition on Save
+        var reviewModalJsPath = Path.Combine(_wwwroot, "js", "ui", "review-modal.js");
+        var reviewModalJs = File.ReadAllText(reviewModalJsPath);
+        Assert.Contains("flushPendingAiSearches", reviewModalJs);
+        Assert.Contains("await this.flushPendingAiSearches()", reviewModalJs);
+        Assert.Contains("this._isSaving = true", reviewModalJs);
+    }
 }
+
 

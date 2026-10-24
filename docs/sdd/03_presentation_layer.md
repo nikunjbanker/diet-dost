@@ -148,7 +148,16 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **External Metadata Chip Row (`.photo-meta-sub`)**: Moved date and weight badges outside `.photo-frame` and `.detail-photo-frame` into dedicated sub-rows beneath the photos. Eliminates internal dark gradient overlays (`.photo-meta-overlay`) that previously sat directly over the user's chin, jawline, mouth, and neck, ensuring 100% unobstructed visibility of all facial slimming progress.
     - **Letterboxed Centering**: Configured containers (`.photo-frame`, `.detail-photo-frame`, `.timeline-thumb-frame`) with obsidian-dark backdrop (`#080a0f`) and flex centering (`display: flex; align-items: center; justify-content: center;`), displaying 100% of any uploaded portrait (9:16, 3:4, 1:1, or landscape).
     - **Universal High-Resolution Lightbox**: Exposes `window.openPhotoLightbox(photoUrl, title)` across the entire presentation layer. Users can tap any progress or comparison photo to inspect full resolution without cuts in the modal stack.
-    - **Mobile Cache Invalidation & Static Asset Headers**: Bumped `index.html` asset query strings (`styles.css?v=1.8.0`, `modal-stack-manager.js?v=1.6.0`, `main.js?v=1.6.0`) and configured `OnPrepareResponse` in `WebApplicationExtensions.cs` to issue `Cache-Control: no-cache, must-revalidate` for HTML, CSS, and JS, guaranteeing mobile browsers immediately receive fresh layout rules without manual cache clearing.
+    - **Mobile Cache Invalidation & Static Asset Headers**: Bumped `index.html` asset query strings (`styles.css?v=1.9.0`, `modal-stack-manager.js?v=1.7.0`, `main.js?v=1.7.0`) and configured `OnPrepareResponse` in `WebApplicationExtensions.cs` to issue `Cache-Control: no-cache, must-revalidate` for HTML, CSS, and JS, guaranteeing mobile browsers immediately receive fresh layout rules without manual cache clearing.
+
+12. **Mobile Edit Review Modal Save Button Isolation & AI Debounce Flush Synchronization (`review-modal.js`, `modal-stack-manager.js`, `styles.css`)**:
+    - **Asynchronous AI Debounce Synchronization**: Upgraded `_debounce` to register active tasks and introduced `flushPendingAiSearches()`. When tapping "Save Changes" (`#btn-confirm-meal`), any pending 300ms debounce timers and in-flight Gemini estimation queries are automatically flushed and awaited before creating the update payload.
+    - **Interactive Submission Feedback**: Added `this._isSaving = true;` guard to eliminate double submissions. When in-flight searches exist, button text transitions immediately to `'Recalculating with AI...'` and then `'Saving Changes...'`.
+    - **Direct DOM Input Synchronization**: Before generating the PUT payload, `handleConfirmMeal()` reads the current values of `.item-name-input` and `.item-portion-input` directly from the DOM, ensuring modifications are never lost if a user taps Save without triggering an input `blur` event.
+    - **Floating Element Touch Suppression**: Added `body.modal-open .floating-maker-chip { display: none !important; pointer-events: none !important; }` to eliminate touch collisions between the docked creator pill and the mobile `.review-footer`.
+    - **Sticky Action Bar Stacking Context**: Elevated `.review-footer` on screens `<640px` to `z-index: 100020 !important;` with `pointer-events: auto !important;`, `touch-action: manipulation;`, and `-webkit-tap-highlight-color: transparent;`.
+    - **Multi-Modal Scroll-Lock Integrity**: Updated `ModalStackManager` to ensure `document.body.classList.add('modal-open')` is applied whenever `this._stack.length > 0`, preventing bottom nav leaks during stacked modal workflows.
+    - **ESLint & SAST Verification**: Standardized debounce timer cleanup iterations using `_debounceTimers.values()`, guaranteeing zero unused variable lint warnings across CI pipelines.
 
 ---
 
@@ -157,4 +166,5 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 * **Zero Console Errors**: All script dependencies, favicons, and assets resolve with HTTP 200.
 * **Responsive Breakpoints**: Seamless scaling across Mobile (<640px), Tablet (640px–1024px), Desktop (1024px–1440px), and Ultra-wide (>1440px).
 * **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, and `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`.
+
 

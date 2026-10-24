@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T10:40:58.786200+00:00",
-  "totalAdrs": 91,
+  "generatedAt": "2026-10-24T13:31:22.680159+00:00",
+  "totalAdrs": 92,
   "categoryCounts": {
     "architecture": 21,
     "security": 21,
     "devops": 27,
-    "presentation": 9,
+    "presentation": 10,
     "governance": 13
   },
   "records": [
@@ -1101,6 +1101,18 @@
       "subsystem": "Test Harness (",
       "filename": "ADR-20261024-126-headless-chrome-cdp-isolated-user-data-dir-and-ports.md",
       "relativePath": "docs/adr/devops/ADR-20261024-126-headless-chrome-cdp-isolated-user-data-dir-and-ports.md"
+    },
+    {
+      "id": "ADR-127",
+      "number": 127,
+      "title": "Mobile Edit Review Modal Save Button Isolation, Asynchronous AI Debounce Flush Synchronization, and Modal Layering Immunity",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-24T19:00:00+05:30",
+      "subsystem": "WebGateway (",
+      "filename": "ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md",
+      "relativePath": "docs/adr/presentation/ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md"
     }
   ]
 }
