@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T10:17:11.442878+00:00",
-  "totalAdrs": 90,
+  "generatedAt": "2026-10-24T10:40:58.786200+00:00",
+  "totalAdrs": 91,
   "categoryCounts": {
     "architecture": 21,
     "security": 21,
-    "devops": 26,
+    "devops": 27,
     "presentation": 9,
     "governance": 13
   },
@@ -1089,6 +1089,18 @@
       "subsystem": "WebGateway (",
       "filename": "ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md",
       "relativePath": "docs/adr/presentation/ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md"
+    },
+    {
+      "id": "ADR-126",
+      "number": 126,
+      "title": "Headless Chrome CDP Isolated User Data Directory & Port Allocation in CI Quality Gates",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-24T16:05:00+05:30",
+      "subsystem": "Test Harness (",
+      "filename": "ADR-20261024-126-headless-chrome-cdp-isolated-user-data-dir-and-ports.md",
+      "relativePath": "docs/adr/devops/ADR-20261024-126-headless-chrome-cdp-isolated-user-data-dir-and-ports.md"
     }
   ]
 }
