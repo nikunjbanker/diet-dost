@@ -77,6 +77,13 @@ param minReplicas int = 1
 @description('Maximum number of replicas for Container App (enforces SQLite single-writer invariant).')
 param maxReplicas int = 1
 
+@description('Database persistence provider (Sqlite, AzureSql, SqlServer).')
+param databaseProvider string = 'Sqlite'
+
+@description('Optional Azure SQL Connection String (for Managed Identity or SQL auth).')
+@secure()
+param azureSqlConnectionString string = ''
+
 // ------------------------------------------------------------------------------
 // Container App (Web Gateway & Mobile BFF Workload)
 // ------------------------------------------------------------------------------
@@ -136,6 +143,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           keyVaultUrl: '${keyVaultUri}secrets/app-insights-connection-string'
           identity: managedIdentityId
         }
+        {
+          name: 'azure-sql-connection-string'
+          keyVaultUrl: '${keyVaultUri}secrets/azure-sql-connection-string'
+          identity: managedIdentityId
+        }
       ] : union(
         !empty(geminiApiKey) ? [
           {
@@ -159,6 +171,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           {
             name: 'app-insights-connection-string'
             value: appInsightsConnectionString
+          }
+        ] : [],
+        !empty(azureSqlConnectionString) ? [
+          {
+            name: 'azure-sql-connection-string'
+            value: azureSqlConnectionString
           }
         ] : []
       )
@@ -191,7 +209,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             }
             {
               name: 'Database__Provider'
-              value: 'Sqlite'
+              value: databaseProvider
             }
             {
               name: 'Database__JournalMode'
@@ -212,6 +230,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'ConnectionStrings__DefaultConnection'
               value: 'Data Source=/app/data/diet_dost.db'
+            }
+            {
+              name: 'ConnectionStrings__AzureSqlConnection'
+              secretRef: (!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(azureSqlConnectionString) ? 'azure-sql-connection-string' : null
+              value: (empty(keyVaultUri) || empty(managedIdentityId)) && empty(azureSqlConnectionString) ? '' : null
             }
             {
               name: 'Storage__WebRootPath'

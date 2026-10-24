@@ -28,6 +28,22 @@ param keyVaultName string = ''
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
 param acaSubnetName string = 'snet-aca-infra'
 
+@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned.')
+param deployAzureSql bool = false
+
+@description('Optional explicit name for Azure SQL Server. If omitted, a unique name is derived.')
+param sqlServerName string = ''
+
+@description('SQL Server Administrator login username (SQL Authentication).')
+param sqlAdminLogin string = 'sqladmin'
+
+@description('SQL Server Administrator login password (SQL Authentication).')
+@secure()
+param sqlAdminPassword string = ''
+
+@description('Optional client IP address of local developer workstation to permit through SQL Server firewall.')
+param allowedClientIp string = ''
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = take('stgdost${environment}${uniqueSuffix}', 24)
 var sanitizedAcrName = replace(replace(toLower(acrName), '-', ''), '_', '')
@@ -112,6 +128,19 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
           sourcePortRange: '*'
           destinationAddressPrefix: 'Storage'
           destinationPortRange: '445'
+        }
+      }
+      {
+        name: 'Allow-SQL-Outbound'
+        properties: {
+          priority: 105
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'Sql'
+          destinationPortRange: '1433'
         }
       }
       {
@@ -230,6 +259,9 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
             }
             {
               service: 'Microsoft.KeyVault'
+            }
+            {
+              service: 'Microsoft.Sql'
             }
           ]
         }
@@ -541,6 +573,29 @@ resource keyVaultUnauthorizedAlert 'Microsoft.Insights/metricAlerts@2018-03-01' 
 }
 
 // ------------------------------------------------------------------------------
+// 11. Azure SQL Serverless Free Tier Database Module
+// ------------------------------------------------------------------------------
+module sql 'sql.bicep' = if (deployAzureSql) {
+  name: 'sql-deployment'
+  params: {
+    environment: environment
+    location: location
+    sqlServerName: sqlServerName
+    sqlAdminLogin: sqlAdminLogin
+    sqlAdminPassword: sqlAdminPassword
+    acaSubnetId: acaSubnet.id
+    keyVaultName: keyVault.name
+    allowedClientIp: allowedClientIp
+  }
+  dependsOn: [
+    #disable-next-line no-unnecessary-dependson
+    keyVault
+    #disable-next-line no-unnecessary-dependson
+    vnet
+  ]
+}
+
+// ------------------------------------------------------------------------------
 // Outputs for Application Deployment Pipeline
 // ------------------------------------------------------------------------------
 output acaEnvironmentId string = acaEnvironment.id
@@ -563,3 +618,7 @@ output acaSubnetName string = acaSubnetName
 output appInsightsName string = appInsights.name
 output appInsightsId string = appInsights.id
 output appInsightsConnectionString string = appInsights.properties.ConnectionString
+output sqlServerFqdn string = sql.?outputs.sqlServerFqdn ?? ''
+output sqlServerName string = sql.?outputs.sqlServerName ?? ''
+output sqlDatabaseName string = sql.?outputs.sqlDatabaseName ?? ''
+output azureSqlConnectionStringSecretName string = sql.?outputs.connectionStringSecretName ?? ''

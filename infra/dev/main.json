@@ -1,0 +1,1663 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.48.1.52935",
+      "templateHash": "3903061313796231821"
+    }
+  },
+  "parameters": {
+    "environment": {
+      "type": "string",
+      "defaultValue": "dev",
+      "metadata": {
+        "description": "Environment prefix for deployed resources (e.g. dev, prod)."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for all resources."
+      }
+    },
+    "appName": {
+      "type": "string",
+      "defaultValue": "[format('app-dietdost-web-{0}', parameters('environment'))]",
+      "metadata": {
+        "description": "Name of the Container App."
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "defaultValue": "mcr.microsoft.com/dotnet/samples:aspnetapp",
+      "metadata": {
+        "description": "Container image reference (e.g. <registry>.azurecr.io/diet-dost-web:latest)."
+      }
+    },
+    "customDomain": {
+      "type": "string",
+      "defaultValue": "[format('{0}.diet-dost.in', parameters('environment'))]",
+      "metadata": {
+        "description": "Custom domain name to bind (e.g. dev.diet-dost.in)."
+      }
+    },
+    "enableCustomDomain": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Flag indicating whether the custom domain binding should be applied directly in Bicep."
+      }
+    },
+    "allowDemoUsers": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Flag indicating whether 5-tier demo user accounts are enabled for showcase testing."
+      }
+    },
+    "fileShareQuotaGb": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "Storage quota for Azure Files SMB share in GB (defaults to 1 GB for dev environment)."
+      }
+    },
+    "acrName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used."
+      }
+    },
+    "keyVaultName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional explicit name for Azure Key Vault. If omitted, an auto-generated unique name is used."
+      }
+    },
+    "acaSubnetName": {
+      "type": "string",
+      "defaultValue": "snet-aca-infra",
+      "metadata": {
+        "description": "Name of the delegated subnet for Azure Container Apps infrastructure."
+      }
+    },
+    "geminiApiKey": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Gemini API Key for AI nutrition feedback."
+      }
+    },
+    "databaseProvider": {
+      "type": "string",
+      "defaultValue": "Sqlite",
+      "metadata": {
+        "description": "Database persistence provider (Sqlite, AzureSql, SqlServer)."
+      }
+    },
+    "azureSqlConnectionString": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional Azure SQL Connection String (for Managed Identity or SQL auth)."
+      }
+    },
+    "deployAzureSql": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default false, must be explicitly enabled during deployment)."
+      }
+    },
+    "sqlServerName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional explicit name for Azure SQL Server. If omitted, a unique name is derived."
+      }
+    },
+    "sqlAdminLogin": {
+      "type": "string",
+      "defaultValue": "sqladmin",
+      "metadata": {
+        "description": "SQL Server Administrator login username (SQL Authentication)."
+      }
+    },
+    "sqlAdminPassword": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "SQL Server Administrator login password (SQL Authentication)."
+      }
+    },
+    "allowedClientIp": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional client IP address of local developer workstation to permit through SQL Server firewall."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "foundation-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "environment": {
+            "value": "[parameters('environment')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "fileShareQuotaGb": {
+            "value": "[parameters('fileShareQuotaGb')]"
+          },
+          "acrName": {
+            "value": "[parameters('acrName')]"
+          },
+          "keyVaultName": {
+            "value": "[parameters('keyVaultName')]"
+          },
+          "acaSubnetName": {
+            "value": "[parameters('acaSubnetName')]"
+          },
+          "deployAzureSql": {
+            "value": "[parameters('deployAzureSql')]"
+          },
+          "sqlServerName": {
+            "value": "[parameters('sqlServerName')]"
+          },
+          "sqlAdminLogin": {
+            "value": "[parameters('sqlAdminLogin')]"
+          },
+          "sqlAdminPassword": {
+            "value": "[parameters('sqlAdminPassword')]"
+          },
+          "allowedClientIp": {
+            "value": "[parameters('allowedClientIp')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.48.1.52935",
+              "templateHash": "4985689720383847743"
+            }
+          },
+          "parameters": {
+            "environment": {
+              "type": "string",
+              "defaultValue": "dev",
+              "metadata": {
+                "description": "Environment prefix for deployed resources (e.g. dev, prod)."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for all resources."
+              }
+            },
+            "fileShareQuotaGb": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Storage quota for Azure Files SMB share in GB (defaults to 1 GB for dev environment)."
+              }
+            },
+            "acrName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional explicit name for Azure Container Registry (ACR). If omitted, an auto-generated unique name is used."
+              }
+            },
+            "keyVaultName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional explicit name for Azure Key Vault. If omitted, an auto-generated unique name is used."
+              }
+            },
+            "acaSubnetName": {
+              "type": "string",
+              "defaultValue": "snet-aca-infra",
+              "metadata": {
+                "description": "Name of the delegated subnet for Azure Container Apps infrastructure."
+              }
+            },
+            "deployAzureSql": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned."
+              }
+            },
+            "sqlServerName": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional explicit name for Azure SQL Server. If omitted, a unique name is derived."
+              }
+            },
+            "sqlAdminLogin": {
+              "type": "string",
+              "defaultValue": "sqladmin",
+              "metadata": {
+                "description": "SQL Server Administrator login username (SQL Authentication)."
+              }
+            },
+            "sqlAdminPassword": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "SQL Server Administrator login password (SQL Authentication)."
+              }
+            },
+            "allowedClientIp": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional client IP address of local developer workstation to permit through SQL Server firewall."
+              }
+            }
+          },
+          "variables": {
+            "uniqueSuffix": "[uniqueString(resourceGroup().id)]",
+            "storageAccountName": "[take(format('stgdost{0}{1}', parameters('environment'), variables('uniqueSuffix')), 24)]",
+            "sanitizedAcrName": "[replace(replace(toLower(parameters('acrName')), '-', ''), '_', '')]",
+            "actualAcrName": "[if(not(empty(variables('sanitizedAcrName'))), variables('sanitizedAcrName'), take(format('crdost{0}{1}', parameters('environment'), variables('uniqueSuffix')), 50))]",
+            "sanitizedKeyVaultName": "[replace(replace(toLower(parameters('keyVaultName')), '-', ''), '_', '')]",
+            "actualKeyVaultName": "[if(not(empty(variables('sanitizedKeyVaultName'))), variables('sanitizedKeyVaultName'), take(format('kvdost{0}{1}', parameters('environment'), variables('uniqueSuffix')), 24))]",
+            "fileShareName": "[format('dietdost-data-{0}', parameters('environment'))]",
+            "logAnalyticsName": "[format('log-dietdost-{0}', parameters('environment'))]",
+            "appInsightsName": "[format('appi-dietdost-{0}', parameters('environment'))]",
+            "acaEnvName": "[format('cae-dietdost-{0}', parameters('environment'))]",
+            "vnetName": "[format('vnet-dietdost-{0}', parameters('environment'))]",
+            "nsgName": "[format('nsg-dietdost-{0}', parameters('environment'))]"
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-05-01",
+              "name": "[variables('nsgName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-HTTPS-Inbound",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "*",
+                      "destinationPortRange": "443"
+                    }
+                  },
+                  {
+                    "name": "Allow-AzureLoadBalancer-Inbound",
+                    "properties": {
+                      "priority": 110,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "*",
+                      "sourceAddressPrefix": "AzureLoadBalancer",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "*",
+                      "destinationPortRange": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-VNet-Internal-Inbound",
+                    "properties": {
+                      "priority": 120,
+                      "direction": "Inbound",
+                      "access": "Allow",
+                      "protocol": "*",
+                      "sourceAddressPrefix": "VirtualNetwork",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "VirtualNetwork",
+                      "destinationPortRange": "*"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Other-Inbound",
+                    "properties": {
+                      "priority": 4000,
+                      "direction": "Inbound",
+                      "access": "Deny",
+                      "protocol": "*",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "*",
+                      "destinationPortRange": "*"
+                    }
+                  },
+                  {
+                    "name": "Allow-Storage-SMB-Outbound",
+                    "properties": {
+                      "priority": 100,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "Storage",
+                      "destinationPortRange": "445"
+                    }
+                  },
+                  {
+                    "name": "Allow-SQL-Outbound",
+                    "properties": {
+                      "priority": 105,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "Sql",
+                      "destinationPortRange": "1433"
+                    }
+                  },
+                  {
+                    "name": "Allow-AzureCloud-HTTPS-Outbound",
+                    "properties": {
+                      "priority": 110,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "AzureCloud",
+                      "destinationPortRange": "443"
+                    }
+                  },
+                  {
+                    "name": "Allow-DNS-Outbound",
+                    "properties": {
+                      "priority": 120,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "*",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "*",
+                      "destinationPortRange": "53"
+                    }
+                  },
+                  {
+                    "name": "Allow-NTP-Outbound",
+                    "properties": {
+                      "priority": 130,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Udp",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "*",
+                      "destinationPortRange": "123"
+                    }
+                  },
+                  {
+                    "name": "Allow-Internet-HTTPS-Outbound",
+                    "properties": {
+                      "priority": 140,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "Tcp",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "Internet",
+                      "destinationPortRange": "443"
+                    }
+                  },
+                  {
+                    "name": "Allow-VNet-Internal-Outbound",
+                    "properties": {
+                      "priority": 150,
+                      "direction": "Outbound",
+                      "access": "Allow",
+                      "protocol": "*",
+                      "sourceAddressPrefix": "VirtualNetwork",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "VirtualNetwork",
+                      "destinationPortRange": "*"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Other-Outbound",
+                    "properties": {
+                      "priority": 4000,
+                      "direction": "Outbound",
+                      "access": "Deny",
+                      "protocol": "*",
+                      "sourceAddressPrefix": "*",
+                      "sourcePortRange": "*",
+                      "destinationAddressPrefix": "*",
+                      "destinationPortRange": "*"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2023-05-01",
+              "name": "[variables('vnetName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": [
+                    "10.0.0.0/16"
+                  ]
+                },
+                "subnets": [
+                  {
+                    "name": "[parameters('acaSubnetName')]",
+                    "properties": {
+                      "addressPrefix": "10.0.0.0/23",
+                      "networkSecurityGroup": {
+                        "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+                      },
+                      "delegations": [
+                        {
+                          "name": "aca-delegation",
+                          "properties": {
+                            "serviceName": "Microsoft.App/environments"
+                          }
+                        }
+                      ],
+                      "serviceEndpoints": [
+                        {
+                          "service": "Microsoft.Storage"
+                        },
+                        {
+                          "service": "Microsoft.KeyVault"
+                        },
+                        {
+                          "service": "Microsoft.Sql"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[variables('storageAccountName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Standard_LRS"
+              },
+              "kind": "StorageV2",
+              "properties": {
+                "minimumTlsVersion": "TLS1_2",
+                "supportsHttpsTrafficOnly": true,
+                "allowBlobPublicAccess": false,
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "virtualNetworkRules": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), parameters('acaSubnetName'))]",
+                      "action": "Allow"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', variables('storageAccountName'), 'default')]",
+              "properties": {
+                "shareDeleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', variables('storageAccountName'), 'default', variables('fileShareName'))]",
+              "properties": {
+                "shareQuota": "[parameters('fileShareQuotaGb')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices', variables('storageAccountName'), 'default')]"
+              ]
+            },
+            {
+              "type": "Microsoft.OperationalInsights/workspaces",
+              "apiVersion": "2022-10-01",
+              "name": "[variables('logAnalyticsName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "name": "PerGB2018"
+                },
+                "retentionInDays": 30
+              }
+            },
+            {
+              "type": "Microsoft.Insights/components",
+              "apiVersion": "2020-02-02",
+              "name": "[variables('appInsightsName')]",
+              "location": "[parameters('location')]",
+              "kind": "web",
+              "properties": {
+                "Application_Type": "web",
+                "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]",
+                "DisableLocalAuth": true,
+                "publicNetworkAccessForIngestion": "Enabled",
+                "publicNetworkAccessForQuery": "Enabled"
+              },
+              "tags": {
+                "aspire-resource-name": "dietdost-appinsights",
+                "environment": "[parameters('environment')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.App/managedEnvironments",
+              "apiVersion": "2024-03-01",
+              "name": "[variables('acaEnvName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "appLogsConfiguration": {
+                  "destination": "log-analytics",
+                  "logAnalyticsConfiguration": {
+                    "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName')), '2022-10-01').customerId]",
+                    "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName')), '2022-10-01').primarySharedKey]"
+                  }
+                },
+                "vnetConfiguration": {
+                  "internal": false,
+                  "infrastructureSubnetId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), parameters('acaSubnetName'))]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.App/managedEnvironments/storages",
+              "apiVersion": "2024-03-01",
+              "name": "[format('{0}/{1}', variables('acaEnvName'), 'dietdoststorage')]",
+              "properties": {
+                "azureFile": {
+                  "accountName": "[variables('storageAccountName')]",
+                  "accountKey": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2023-01-01').keys[0].value]",
+                  "shareName": "[variables('fileShareName')]",
+                  "accessMode": "ReadWrite"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.App/managedEnvironments', variables('acaEnvName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts/fileServices/shares', variables('storageAccountName'), 'default', variables('fileShareName'))]",
+                "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.ContainerRegistry/registries",
+              "apiVersion": "2023-01-01-preview",
+              "name": "[variables('actualAcrName')]",
+              "location": "[parameters('location')]",
+              "sku": {
+                "name": "Basic"
+              },
+              "properties": {
+                "adminUserEnabled": false
+              },
+              "tags": {
+                "aspire-resource-name": "cae-dietdost-acr",
+                "environment": "[parameters('environment')]"
+              }
+            },
+            {
+              "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+              "apiVersion": "2023-01-31",
+              "name": "[format('id-dietdost-{0}', parameters('environment'))]",
+              "location": "[parameters('location')]",
+              "tags": {
+                "aspire-resource-name": "dietdost-identity",
+                "environment": "[parameters('environment')]"
+              }
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.ContainerRegistry/registries', variables('actualAcrName'))]",
+              "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', variables('actualAcrName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.ContainerRegistry/registries', variables('actualAcrName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[variables('actualKeyVaultName')]",
+              "location": "[parameters('location')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "standard"
+                },
+                "tenantId": "[subscription().tenantId]",
+                "enableRbacAuthorization": true,
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 7,
+                "enablePurgeProtection": true,
+                "networkAcls": {
+                  "defaultAction": "Deny",
+                  "bypass": "AzureServices",
+                  "virtualNetworkRules": [
+                    {
+                      "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), parameters('acaSubnetName'))]"
+                    }
+                  ]
+                }
+              },
+              "tags": {
+                "aspire-resource-name": "dietdost-kv",
+                "environment": "[parameters('environment')]"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '4633458b-17de-408a-b874-0445c86b69e6')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+              "name": "[guid(resourceId('Microsoft.Insights/components', variables('appInsightsName')), resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '3913510d-42f4-4e42-8a64-420c390055eb')]",
+              "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3913510d-42f4-4e42-8a64-420c390055eb')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment')))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]",
+              "name": "[format('diag-kv-{0}', parameters('environment'))]",
+              "properties": {
+                "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]",
+                "logs": [
+                  {
+                    "category": "AuditEvent",
+                    "enabled": true
+                  },
+                  {
+                    "category": "AzurePolicyEvaluationDetails",
+                    "enabled": true
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]",
+                "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Insights/metricAlerts",
+              "apiVersion": "2018-03-01",
+              "name": "[format('alert-kv-unauthorized-{0}', parameters('environment'))]",
+              "location": "global",
+              "properties": {
+                "description": "Alert when Key Vault unauthorized requests (401/403) exceed security baseline threshold.",
+                "severity": 1,
+                "enabled": true,
+                "scopes": [
+                  "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]"
+                ],
+                "evaluationFrequency": "PT5M",
+                "windowSize": "PT5M",
+                "criteria": {
+                  "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                  "allOf": [
+                    {
+                      "name": "HighUnauthorizedRequests",
+                      "metricNamespace": "Microsoft.KeyVault/vaults",
+                      "metricName": "ServiceApiResult",
+                      "dimensions": [
+                        {
+                          "name": "StatusCode",
+                          "operator": "Include",
+                          "values": [
+                            "401",
+                            "403"
+                          ]
+                        }
+                      ],
+                      "operator": "GreaterThan",
+                      "threshold": 5,
+                      "timeAggregation": "Total",
+                      "criterionType": "StaticThresholdCriterion"
+                    }
+                  ]
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]"
+              ]
+            },
+            {
+              "condition": "[parameters('deployAzureSql')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2025-04-01",
+              "name": "sql-deployment",
+              "properties": {
+                "expressionEvaluationOptions": {
+                  "scope": "inner"
+                },
+                "mode": "Incremental",
+                "parameters": {
+                  "environment": {
+                    "value": "[parameters('environment')]"
+                  },
+                  "location": {
+                    "value": "[parameters('location')]"
+                  },
+                  "sqlServerName": {
+                    "value": "[parameters('sqlServerName')]"
+                  },
+                  "sqlAdminLogin": {
+                    "value": "[parameters('sqlAdminLogin')]"
+                  },
+                  "sqlAdminPassword": {
+                    "value": "[parameters('sqlAdminPassword')]"
+                  },
+                  "acaSubnetId": {
+                    "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), parameters('acaSubnetName'))]"
+                  },
+                  "keyVaultName": {
+                    "value": "[variables('actualKeyVaultName')]"
+                  },
+                  "allowedClientIp": {
+                    "value": "[parameters('allowedClientIp')]"
+                  }
+                },
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "metadata": {
+                    "_generator": {
+                      "name": "bicep",
+                      "version": "0.48.1.52935",
+                      "templateHash": "1629097270778995593"
+                    }
+                  },
+                  "parameters": {
+                    "environment": {
+                      "type": "string",
+                      "defaultValue": "dev",
+                      "metadata": {
+                        "description": "Target environment name (e.g. dev, prod)."
+                      }
+                    },
+                    "location": {
+                      "type": "string",
+                      "defaultValue": "[resourceGroup().location]",
+                      "metadata": {
+                        "description": "Azure region for the SQL Server and database."
+                      }
+                    },
+                    "sqlServerName": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional explicit name for Azure SQL Server. If empty, a unique name is derived."
+                      }
+                    },
+                    "databaseName": {
+                      "type": "string",
+                      "defaultValue": "dietdost",
+                      "metadata": {
+                        "description": "Database name."
+                      }
+                    },
+                    "sqlAdminLogin": {
+                      "type": "string",
+                      "defaultValue": "sqladmin",
+                      "metadata": {
+                        "description": "SQL Server Administrator login username (SQL Authentication)."
+                      }
+                    },
+                    "sqlAdminPassword": {
+                      "type": "securestring",
+                      "metadata": {
+                        "description": "SQL Server Administrator login password (SQL Authentication)."
+                      }
+                    },
+                    "acaSubnetId": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Resource ID of the delegated Azure Container Apps subnet for Service Endpoint binding."
+                      }
+                    },
+                    "keyVaultName": {
+                      "type": "string",
+                      "metadata": {
+                        "description": "Name of the Azure Key Vault for storing the SQL connection string and admin credentials."
+                      }
+                    },
+                    "allowedClientIp": {
+                      "type": "string",
+                      "defaultValue": "",
+                      "metadata": {
+                        "description": "Optional client IP address of the local developer workstation to allow through SQL Server firewall."
+                      }
+                    }
+                  },
+                  "variables": {
+                    "uniqueSuffix": "[uniqueString(resourceGroup().id)]",
+                    "actualSqlServerName": "[if(not(empty(parameters('sqlServerName'))), toLower(parameters('sqlServerName')), take(format('sql-dietdost-{0}-{1}', parameters('environment'), variables('uniqueSuffix')), 63))]"
+                  },
+                  "resources": [
+                    {
+                      "type": "Microsoft.Sql/servers",
+                      "apiVersion": "2023-08-01-preview",
+                      "name": "[variables('actualSqlServerName')]",
+                      "location": "[parameters('location')]",
+                      "properties": {
+                        "administratorLogin": "[parameters('sqlAdminLogin')]",
+                        "administratorLoginPassword": "[parameters('sqlAdminPassword')]",
+                        "minimalTlsVersion": "1.2",
+                        "publicNetworkAccess": "Enabled"
+                      },
+                      "tags": {
+                        "aspire-resource-name": "dietdost-sql",
+                        "environment": "[parameters('environment')]"
+                      }
+                    },
+                    {
+                      "type": "Microsoft.Sql/servers/databases",
+                      "apiVersion": "2023-08-01-preview",
+                      "name": "[format('{0}/{1}', variables('actualSqlServerName'), parameters('databaseName'))]",
+                      "location": "[parameters('location')]",
+                      "sku": {
+                        "name": "GP_S_Gen5_1",
+                        "tier": "GeneralPurpose",
+                        "family": "Gen5",
+                        "capacity": 1
+                      },
+                      "properties": {
+                        "collation": "SQL_Latin1_General_CP1_CI_AS",
+                        "maxSizeBytes": 34359738368,
+                        "autoPauseDelay": 60,
+                        "minCapacity": "[json('0.5')]",
+                        "useFreeLimit": true,
+                        "freeLimitExhaustionBehavior": "AutoPause"
+                      },
+                      "tags": {
+                        "aspire-resource-name": "dietdost-sqldb",
+                        "environment": "[parameters('environment')]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
+                      ]
+                    },
+                    {
+                      "condition": "[not(empty(parameters('acaSubnetId')))]",
+                      "type": "Microsoft.Sql/servers/virtualNetworkRules",
+                      "apiVersion": "2023-08-01-preview",
+                      "name": "[format('{0}/{1}', variables('actualSqlServerName'), 'allow-aca-subnet')]",
+                      "properties": {
+                        "virtualNetworkSubnetId": "[parameters('acaSubnetId')]",
+                        "ignoreMissingVnetServiceEndpoint": false
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
+                      ]
+                    },
+                    {
+                      "type": "Microsoft.Sql/servers/firewallRules",
+                      "apiVersion": "2023-08-01-preview",
+                      "name": "[format('{0}/{1}', variables('actualSqlServerName'), 'AllowAllWindowsAzureIps')]",
+                      "properties": {
+                        "startIpAddress": "0.0.0.0",
+                        "endIpAddress": "0.0.0.0"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
+                      ]
+                    },
+                    {
+                      "condition": "[not(empty(parameters('allowedClientIp')))]",
+                      "type": "Microsoft.Sql/servers/firewallRules",
+                      "apiVersion": "2023-08-01-preview",
+                      "name": "[format('{0}/{1}', variables('actualSqlServerName'), 'AllowLocalDeveloperWorkstationIp')]",
+                      "properties": {
+                        "startIpAddress": "[parameters('allowedClientIp')]",
+                        "endIpAddress": "[parameters('allowedClientIp')]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
+                      ]
+                    },
+                    {
+                      "condition": "[not(empty(parameters('keyVaultName')))]",
+                      "type": "Microsoft.KeyVault/vaults/secrets",
+                      "apiVersion": "2023-07-01",
+                      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'sql-admin-password')]",
+                      "properties": {
+                        "value": "[parameters('sqlAdminPassword')]"
+                      }
+                    },
+                    {
+                      "condition": "[not(empty(parameters('keyVaultName')))]",
+                      "type": "Microsoft.KeyVault/vaults/secrets",
+                      "apiVersion": "2023-07-01",
+                      "name": "[format('{0}/{1}', parameters('keyVaultName'), 'azure-sql-connection-string')]",
+                      "properties": {
+                        "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;User ID={2};Password={3};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;', reference(resourceId('Microsoft.Sql/servers', variables('actualSqlServerName')), '2023-08-01-preview').fullyQualifiedDomainName, parameters('databaseName'), parameters('sqlAdminLogin'), parameters('sqlAdminPassword'))]"
+                      },
+                      "dependsOn": [
+                        "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
+                      ]
+                    }
+                  ],
+                  "outputs": {
+                    "sqlServerId": {
+                      "type": "string",
+                      "value": "[resourceId('Microsoft.Sql/servers', variables('actualSqlServerName'))]"
+                    },
+                    "sqlServerName": {
+                      "type": "string",
+                      "value": "[variables('actualSqlServerName')]"
+                    },
+                    "sqlServerFqdn": {
+                      "type": "string",
+                      "value": "[reference(resourceId('Microsoft.Sql/servers', variables('actualSqlServerName')), '2023-08-01-preview').fullyQualifiedDomainName]"
+                    },
+                    "sqlDatabaseName": {
+                      "type": "string",
+                      "value": "[parameters('databaseName')]"
+                    },
+                    "connectionStringSecretName": {
+                      "type": "string",
+                      "value": "azure-sql-connection-string"
+                    },
+                    "serverlessConnectionString": {
+                      "type": "string",
+                      "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;User ID={2};Password={3};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=60;', reference(resourceId('Microsoft.Sql/servers', variables('actualSqlServerName')), '2023-08-01-preview').fullyQualifiedDomainName, parameters('databaseName'), parameters('sqlAdminLogin'), parameters('sqlAdminPassword'))]"
+                    }
+                  }
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+              ]
+            }
+          ],
+          "outputs": {
+            "acaEnvironmentId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.App/managedEnvironments', variables('acaEnvName'))]"
+            },
+            "acaEnvironmentName": {
+              "type": "string",
+              "value": "[variables('acaEnvName')]"
+            },
+            "customDomainVerificationId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', variables('acaEnvName')), '2024-03-01').customDomainConfiguration.customDomainVerificationId]"
+            },
+            "staticIp": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/managedEnvironments', variables('acaEnvName')), '2024-03-01').staticIp]"
+            },
+            "storageAccountName": {
+              "type": "string",
+              "value": "[variables('storageAccountName')]"
+            },
+            "fileShareName": {
+              "type": "string",
+              "value": "[variables('fileShareName')]"
+            },
+            "storageMountName": {
+              "type": "string",
+              "value": "dietdoststorage"
+            },
+            "acrName": {
+              "type": "string",
+              "value": "[variables('actualAcrName')]"
+            },
+            "acrLoginServer": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('actualAcrName')), '2023-01-01-preview').loginServer]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "value": "[variables('actualKeyVaultName')]"
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('actualKeyVaultName')), '2023-07-01').vaultUri]"
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment')))]"
+            },
+            "managedIdentityClientId": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', format('id-dietdost-{0}', parameters('environment'))), '2023-01-31').clientId]"
+            },
+            "nsgId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('nsgName'))]"
+            },
+            "nsgName": {
+              "type": "string",
+              "value": "[variables('nsgName')]"
+            },
+            "acaSubnetId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), parameters('acaSubnetName'))]"
+            },
+            "acaSubnetName": {
+              "type": "string",
+              "value": "[parameters('acaSubnetName')]"
+            },
+            "appInsightsName": {
+              "type": "string",
+              "value": "[variables('appInsightsName')]"
+            },
+            "appInsightsId": {
+              "type": "string",
+              "value": "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+            },
+            "appInsightsConnectionString": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+            },
+            "sqlServerFqdn": {
+              "type": "string",
+              "value": "[coalesce(tryGet(if(parameters('deployAzureSql'), reference(resourceId('Microsoft.Resources/deployments', 'sql-deployment'), '2025-04-01'), null()), 'outputs', 'sqlServerFqdn', 'value'), '')]"
+            },
+            "sqlServerName": {
+              "type": "string",
+              "value": "[coalesce(tryGet(if(parameters('deployAzureSql'), reference(resourceId('Microsoft.Resources/deployments', 'sql-deployment'), '2025-04-01'), null()), 'outputs', 'sqlServerName', 'value'), '')]"
+            },
+            "sqlDatabaseName": {
+              "type": "string",
+              "value": "[coalesce(tryGet(if(parameters('deployAzureSql'), reference(resourceId('Microsoft.Resources/deployments', 'sql-deployment'), '2025-04-01'), null()), 'outputs', 'sqlDatabaseName', 'value'), '')]"
+            },
+            "azureSqlConnectionStringSecretName": {
+              "type": "string",
+              "value": "[coalesce(tryGet(if(parameters('deployAzureSql'), reference(resourceId('Microsoft.Resources/deployments', 'sql-deployment'), '2025-04-01'), null()), 'outputs', 'connectionStringSecretName', 'value'), '')]"
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "workload-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "environment": {
+            "value": "[parameters('environment')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "appName": {
+            "value": "[parameters('appName')]"
+          },
+          "acaEnvironmentId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.acaEnvironmentId.value]"
+          },
+          "containerImage": {
+            "value": "[parameters('containerImage')]"
+          },
+          "customDomain": {
+            "value": "[parameters('customDomain')]"
+          },
+          "enableCustomDomain": {
+            "value": "[parameters('enableCustomDomain')]"
+          },
+          "allowDemoUsers": {
+            "value": "[parameters('allowDemoUsers')]"
+          },
+          "storageMountName": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.storageMountName.value]"
+          },
+          "geminiApiKey": {
+            "value": "[parameters('geminiApiKey')]"
+          },
+          "keyVaultUri": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.keyVaultUri.value]"
+          },
+          "managedIdentityId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.managedIdentityId.value]"
+          },
+          "managedIdentityClientId": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.managedIdentityClientId.value]"
+          },
+          "appInsightsConnectionString": {
+            "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+          },
+          "databaseProvider": {
+            "value": "[parameters('databaseProvider')]"
+          },
+          "azureSqlConnectionString": {
+            "value": "[parameters('azureSqlConnectionString')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.48.1.52935",
+              "templateHash": "13063205167213949632"
+            }
+          },
+          "parameters": {
+            "environment": {
+              "type": "string",
+              "defaultValue": "dev",
+              "metadata": {
+                "description": "Target environment name (e.g. dev, prod)."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Azure region for the container app."
+              }
+            },
+            "appName": {
+              "type": "string",
+              "defaultValue": "[format('app-dietdost-web-{0}', parameters('environment'))]",
+              "metadata": {
+                "description": "Name of the Container App."
+              }
+            },
+            "acaEnvironmentId": {
+              "type": "string",
+              "metadata": {
+                "description": "Resource ID of the ACA Managed Environment."
+              }
+            },
+            "containerImage": {
+              "type": "string",
+              "metadata": {
+                "description": "Container image reference (e.g. <registry>.azurecr.io/diet-dost-web:latest)."
+              }
+            },
+            "customDomain": {
+              "type": "string",
+              "defaultValue": "[format('{0}.diet-dost.in', parameters('environment'))]",
+              "metadata": {
+                "description": "Custom domain name to bind (e.g. dev.diet-dost.in)."
+              }
+            },
+            "enableCustomDomain": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Flag indicating whether custom domain binding should be applied."
+              }
+            },
+            "allowDemoUsers": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Flag indicating whether 5-tier demo user accounts are enabled for showcase testing."
+              }
+            },
+            "ipSecurityRestrictions": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Optional list of IP security restrictions for Container App ingress (e.g. allowed CIDRs or WAF reverse proxies)."
+              }
+            },
+            "storageMountName": {
+              "type": "string",
+              "defaultValue": "dietdoststorage",
+              "metadata": {
+                "description": "Name of the durable storage mount linked to the ACA environment."
+              }
+            },
+            "geminiApiKey": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional Gemini API Key for AI nutrition feedback."
+              }
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Azure Key Vault URI (e.g. https://<kv-name>.vault.azure.net/) for cloud secrets."
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Resource ID of User-Assigned Managed Identity for Key Vault authentication."
+              }
+            },
+            "managedIdentityClientId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Client ID of User-Assigned Managed Identity for Key Vault authentication."
+              }
+            },
+            "jwtKey": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional cryptographic JWT signing key (fallback if Key Vault secret is not yet seeded)."
+              }
+            },
+            "superAdminEmail": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional SuperAdmin email address (fallback if Key Vault secret is not yet seeded)."
+              }
+            },
+            "superAdminPassword": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional SuperAdmin password (fallback if Key Vault secret is not yet seeded)."
+              }
+            },
+            "appInsightsConnectionString": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional Azure Application Insights Connection String."
+              }
+            },
+            "certificateId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional pre-provisioned certificate Resource ID (for custom domain binding)."
+              }
+            },
+            "minReplicas": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Minimum number of replicas for Container App (0 enables consumption scale-to-zero to utilize Azure free tier grant in dev)."
+              }
+            },
+            "maxReplicas": {
+              "type": "int",
+              "defaultValue": 1,
+              "metadata": {
+                "description": "Maximum number of replicas for Container App (enforces SQLite single-writer invariant)."
+              }
+            },
+            "databaseProvider": {
+              "type": "string",
+              "defaultValue": "Sqlite",
+              "metadata": {
+                "description": "Database persistence provider (Sqlite, AzureSql, SqlServer)."
+              }
+            },
+            "azureSqlConnectionString": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Optional Azure SQL Connection String (for Managed Identity or SQL auth)."
+              }
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.App/containerApps",
+              "apiVersion": "2024-03-01",
+              "name": "[parameters('appName')]",
+              "location": "[parameters('location')]",
+              "identity": "[if(not(empty(parameters('managedIdentityId'))), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('managedIdentityId')), createObject())), createObject('type', 'None'))]",
+              "properties": {
+                "managedEnvironmentId": "[parameters('acaEnvironmentId')]",
+                "configuration": {
+                  "activeRevisionsMode": "Single",
+                  "ingress": {
+                    "external": true,
+                    "targetPort": 8080,
+                    "transport": "auto",
+                    "allowInsecure": false,
+                    "ipSecurityRestrictions": "[if(not(empty(parameters('ipSecurityRestrictions'))), parameters('ipSecurityRestrictions'), null())]",
+                    "customDomains": "[if(and(parameters('enableCustomDomain'), not(empty(parameters('certificateId')))), createArray(createObject('name', parameters('customDomain'), 'bindingType', 'SniEnabled', 'certificateId', parameters('certificateId'))), createArray())]"
+                  },
+                  "registries": "[if(not(empty(parameters('managedIdentityId'))), createArray(createObject('server', split(parameters('containerImage'), '/')[0], 'identity', parameters('managedIdentityId'))), createArray())]",
+                  "secrets": "[if(and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('managedIdentityId')))), createArray(createObject('name', 'gemini-api-key', 'keyVaultUrl', format('{0}secrets/gemini-api-key', parameters('keyVaultUri')), 'identity', parameters('managedIdentityId')), createObject('name', 'jwt-key', 'keyVaultUrl', format('{0}secrets/jwt-key', parameters('keyVaultUri')), 'identity', parameters('managedIdentityId')), createObject('name', 'superadmin-password', 'keyVaultUrl', format('{0}secrets/superadmin-password', parameters('keyVaultUri')), 'identity', parameters('managedIdentityId')), createObject('name', 'app-insights-connection-string', 'keyVaultUrl', format('{0}secrets/app-insights-connection-string', parameters('keyVaultUri')), 'identity', parameters('managedIdentityId')), createObject('name', 'azure-sql-connection-string', 'keyVaultUrl', format('{0}secrets/azure-sql-connection-string', parameters('keyVaultUri')), 'identity', parameters('managedIdentityId'))), union(if(not(empty(parameters('geminiApiKey'))), createArray(createObject('name', 'gemini-api-key', 'value', parameters('geminiApiKey'))), createArray()), if(not(empty(parameters('jwtKey'))), createArray(createObject('name', 'jwt-key', 'value', parameters('jwtKey'))), createArray()), if(not(empty(parameters('superAdminPassword'))), createArray(createObject('name', 'superadmin-password', 'value', parameters('superAdminPassword'))), createArray()), if(not(empty(parameters('appInsightsConnectionString'))), createArray(createObject('name', 'app-insights-connection-string', 'value', parameters('appInsightsConnectionString'))), createArray()), if(not(empty(parameters('azureSqlConnectionString'))), createArray(createObject('name', 'azure-sql-connection-string', 'value', parameters('azureSqlConnectionString'))), createArray())))]"
+                },
+                "template": {
+                  "containers": [
+                    {
+                      "name": "diet-dost-web",
+                      "image": "[parameters('containerImage')]",
+                      "resources": {
+                        "cpu": "[json('0.5')]",
+                        "memory": "1.0Gi"
+                      },
+                      "env": [
+                        {
+                          "name": "ASPNETCORE_URLS",
+                          "value": "http://+:8080"
+                        },
+                        {
+                          "name": "ASPNETCORE_ENVIRONMENT",
+                          "value": "Production"
+                        },
+                        {
+                          "name": "ASPNETCORE_FORWARDEDHEADERS_ENABLED",
+                          "value": "true"
+                        },
+                        {
+                          "name": "OTEL_DOTNET_EXPERIMENTAL_OTLP_RETRY",
+                          "value": "in_memory"
+                        },
+                        {
+                          "name": "Database__Provider",
+                          "value": "[parameters('databaseProvider')]"
+                        },
+                        {
+                          "name": "Database__JournalMode",
+                          "value": "WAL"
+                        },
+                        {
+                          "name": "Database__UseEphemeralActiveCache",
+                          "value": "true"
+                        },
+                        {
+                          "name": "Database__StorageVaultPath",
+                          "value": "/app/data/diet_dost.db"
+                        },
+                        {
+                          "name": "Database__ActiveDbPath",
+                          "value": "/tmp/diet_dost.db"
+                        },
+                        {
+                          "name": "ConnectionStrings__DefaultConnection",
+                          "value": "Data Source=/app/data/diet_dost.db"
+                        },
+                        {
+                          "name": "ConnectionStrings__AzureSqlConnection",
+                          "secretRef": "[if(or(and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('managedIdentityId')))), not(empty(parameters('azureSqlConnectionString')))), 'azure-sql-connection-string', null())]",
+                          "value": "[if(and(or(empty(parameters('keyVaultUri')), empty(parameters('managedIdentityId'))), empty(parameters('azureSqlConnectionString'))), '', null())]"
+                        },
+                        {
+                          "name": "Storage__WebRootPath",
+                          "value": "/app/data/wwwroot"
+                        },
+                        {
+                          "name": "Security__AllowDemoUsers",
+                          "value": "[string(parameters('allowDemoUsers'))]"
+                        },
+                        {
+                          "name": "AI__Google__ApiKey",
+                          "secretRef": "[if(or(and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('managedIdentityId')))), not(empty(parameters('geminiApiKey')))), 'gemini-api-key', null())]",
+                          "value": "[if(and(or(empty(parameters('keyVaultUri')), empty(parameters('managedIdentityId'))), empty(parameters('geminiApiKey'))), '', null())]"
+                        },
+                        {
+                          "name": "Jwt__Key",
+                          "secretRef": "[if(or(and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('managedIdentityId')))), not(empty(parameters('jwtKey')))), 'jwt-key', null())]",
+                          "value": "[if(and(or(empty(parameters('keyVaultUri')), empty(parameters('managedIdentityId'))), empty(parameters('jwtKey'))), '', null())]"
+                        },
+                        {
+                          "name": "Auth__SuperAdminEmail",
+                          "value": "[parameters('superAdminEmail')]"
+                        },
+                        {
+                          "name": "Auth__SuperAdminPassword",
+                          "secretRef": "[if(or(and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('managedIdentityId')))), not(empty(parameters('superAdminPassword')))), 'superadmin-password', null())]",
+                          "value": "[if(and(or(empty(parameters('keyVaultUri')), empty(parameters('managedIdentityId'))), empty(parameters('superAdminPassword'))), '', null())]"
+                        },
+                        {
+                          "name": "KeyVault__VaultUri",
+                          "value": "[parameters('keyVaultUri')]"
+                        },
+                        {
+                          "name": "AZURE_CLIENT_ID",
+                          "value": "[parameters('managedIdentityClientId')]"
+                        },
+                        {
+                          "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                          "secretRef": "[if(or(and(not(empty(parameters('keyVaultUri'))), not(empty(parameters('managedIdentityId')))), not(empty(parameters('appInsightsConnectionString')))), 'app-insights-connection-string', null())]",
+                          "value": "[if(and(or(empty(parameters('keyVaultUri')), empty(parameters('managedIdentityId'))), empty(parameters('appInsightsConnectionString'))), '', null())]"
+                        }
+                      ],
+                      "volumeMounts": [
+                        {
+                          "volumeName": "[parameters('storageMountName')]",
+                          "mountPath": "/app/data"
+                        }
+                      ],
+                      "probes": [
+                        {
+                          "type": "Startup",
+                          "httpGet": {
+                            "path": "/healthz",
+                            "port": 8080
+                          },
+                          "initialDelaySeconds": 10,
+                          "periodSeconds": 5,
+                          "failureThreshold": 30
+                        },
+                        {
+                          "type": "Liveness",
+                          "httpGet": {
+                            "path": "/healthz",
+                            "port": 8080
+                          },
+                          "initialDelaySeconds": 30,
+                          "periodSeconds": 15,
+                          "failureThreshold": 5
+                        },
+                        {
+                          "type": "Readiness",
+                          "httpGet": {
+                            "path": "/ready",
+                            "port": 8080
+                          },
+                          "initialDelaySeconds": 20,
+                          "periodSeconds": 10,
+                          "failureThreshold": 3
+                        }
+                      ]
+                    }
+                  ],
+                  "scale": {
+                    "minReplicas": "[parameters('minReplicas')]",
+                    "maxReplicas": "[parameters('maxReplicas')]"
+                  },
+                  "volumes": [
+                    {
+                      "name": "[parameters('storageMountName')]",
+                      "storageType": "AzureFile",
+                      "storageName": "[parameters('storageMountName')]"
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "outputs": {
+            "appFqdn": {
+              "type": "string",
+              "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('appName')), '2024-03-01').configuration.ingress.fqdn]"
+            },
+            "containerAppName": {
+              "type": "string",
+              "value": "[parameters('appName')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', 'foundation-deployment')]"
+      ]
+    }
+  ],
+  "outputs": {
+    "appFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'workload-deployment'), '2025-04-01').outputs.appFqdn.value]"
+    },
+    "customDomainVerificationId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.customDomainVerificationId.value]"
+    },
+    "staticIp": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.staticIp.value]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.storageAccountName.value]"
+    },
+    "fileShareName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.fileShareName.value]"
+    },
+    "acaEnvironmentName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.acaEnvironmentName.value]"
+    },
+    "containerAppName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'workload-deployment'), '2025-04-01').outputs.containerAppName.value]"
+    },
+    "acrName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.acrName.value]"
+    },
+    "acrLoginServer": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.acrLoginServer.value]"
+    },
+    "keyVaultName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.keyVaultName.value]"
+    },
+    "keyVaultUri": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.keyVaultUri.value]"
+    },
+    "managedIdentityId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.managedIdentityId.value]"
+    },
+    "acaSubnetId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.acaSubnetId.value]"
+    },
+    "acaSubnetName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.acaSubnetName.value]"
+    },
+    "appInsightsName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.appInsightsName.value]"
+    },
+    "appInsightsId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.appInsightsId.value]"
+    },
+    "appInsightsConnectionString": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.appInsightsConnectionString.value]"
+    },
+    "sqlServerFqdn": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.sqlServerFqdn.value]"
+    },
+    "sqlServerName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.sqlServerName.value]"
+    },
+    "sqlDatabaseName": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Resources/deployments', 'foundation-deployment'), '2025-04-01').outputs.sqlDatabaseName.value]"
+    }
+  }
+}
