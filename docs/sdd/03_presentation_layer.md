@@ -144,9 +144,11 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Accessible Mobile Dismissal**: Integrated explicit header close button (`#btn-review-header-close`) in `review-modal.html`, ensuring thumb-friendly dismissal from anywhere in the modal hierarchy.
 
 11. **Uncut Aspect-Ratio Photo Architecture & Universal Lightbox Inspection (`styles.css`, `progress-modal.html`, `face-progress-card.html`, `review-modal.js`, `progress-modal.js`)**:
-    - **Zero-Cropping Standard**: Standardized `.progress-img`, `.detail-img`, `.timeline-thumb`, and `#progress-img-preview` with `object-fit: contain; object-position: center;`, eliminating legacy `object-fit: cover` truncation where selfie faces or heads were cut off.
+    - **Zero-Cropping Standard**: Standardized `.progress-img`, `.detail-img`, `.timeline-thumb`, and `#progress-img-preview` with `object-fit: contain; object-position: center; max-width: 100%; max-height: 100%; width: auto; height: auto;`, eliminating legacy `object-fit: cover` and fixed percentage stretching where selfie faces or heads were cut off.
+    - **External Metadata Chip Row (`.photo-meta-sub`)**: Moved date and weight badges outside `.photo-frame` and `.detail-photo-frame` into dedicated sub-rows beneath the photos. Eliminates internal dark gradient overlays (`.photo-meta-overlay`) that previously sat directly over the user's chin, jawline, mouth, and neck, ensuring 100% unobstructed visibility of all facial slimming progress.
     - **Letterboxed Centering**: Configured containers (`.photo-frame`, `.detail-photo-frame`, `.timeline-thumb-frame`) with obsidian-dark backdrop (`#080a0f`) and flex centering (`display: flex; align-items: center; justify-content: center;`), displaying 100% of any uploaded portrait (9:16, 3:4, 1:1, or landscape).
     - **Universal High-Resolution Lightbox**: Exposes `window.openPhotoLightbox(photoUrl, title)` across the entire presentation layer. Users can tap any progress or comparison photo to inspect full resolution without cuts in the modal stack.
+    - **Mobile Cache Invalidation & Static Asset Headers**: Bumped `index.html` asset query strings (`styles.css?v=1.8.0`, `modal-stack-manager.js?v=1.6.0`, `main.js?v=1.6.0`) and configured `OnPrepareResponse` in `WebApplicationExtensions.cs` to issue `Cache-Control: no-cache, must-revalidate` for HTML, CSS, and JS, guaranteeing mobile browsers immediately receive fresh layout rules without manual cache clearing.
 
 ---
 

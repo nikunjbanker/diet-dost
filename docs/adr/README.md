@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 89 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 90 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -34,7 +34,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **21** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **21** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **26** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
-| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **8** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
+| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **9** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
 ---
@@ -140,6 +140,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-115** | Permanent Personal Branding, Alpha Version Notice, and Dussehra Festival Launch Carousel | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261019-115-personal-branding-and-dussehra-launch-experience.md) |
 | **ADR-121** | Mobile Ergonomics Single Vertical Scroll, Consistent Form-Group Input Stacks, and Polly Database Resilience | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261019-121-mobile-single-vertical-scroll-and-polly-resilience.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261019-121-mobile-single-vertical-scroll-and-polly-resilience.md) |
 | **ADR-124** | Full Photo Uncut Aspect-Ratio Display, High-Resolution Lightbox Inspection, and GitHub Actions Dispatch Options Audit Summary | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md) |
+| **ADR-125** | Mobile Dashboard Unobscured Face Photo Presentation, External Metadata Chip Architecture, and Mobile Static Asset Cache Invalidation | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md) |
 
 ### ⚖️ Governance, Standards & Agentic Workflows (`docs/adr/governance/`)
 > *Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing.*

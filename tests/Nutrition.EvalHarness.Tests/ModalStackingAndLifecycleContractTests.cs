@@ -37,6 +37,12 @@ public partial class ModalStackingAndLifecycleContractTests
     [GeneratedRegex(@"<img[^>]*id=""progress-img-preview""[^>]*object-fit:\s*contain")]
     private static partial Regex ProgressImgPreviewRegex();
 
+    [GeneratedRegex(@"\.photo-meta-sub\s*\{([^}]+)\}")]
+    private static partial Regex PhotoMetaSubRegex();
+
+    [GeneratedRegex(@"styles\.css\?v=1\.[8-9]\.[0-9]+")]
+    private static partial Regex CacheBustedStylesCssRegex();
+
     [Fact]
     public void StylesCss_EliminatesLowZIndexOverlays_ThatBreakModalStacking()
     {
@@ -143,6 +149,33 @@ public partial class ModalStackingAndLifecycleContractTests
         var progressModalHtml = File.ReadAllText(progressModalHtmlPath);
         Assert.Contains("progress-img-preview", progressModalHtml);
         Assert.Matches(ProgressImgPreviewRegex(), progressModalHtml);
+    }
+
+    [Fact]
+    public void MobileDashboardFaceCard_MovesMetadataOutsidePhotoFrame_ToPreventOcclusionAndCropping()
+    {
+        var faceCardPath = Path.Combine(_wwwroot, "partials", "face-progress-card.html");
+        Assert.True(File.Exists(faceCardPath), $"face-progress-card.html must exist at {faceCardPath}");
+        var content = File.ReadAllText(faceCardPath);
+
+        // Assert face card uses external photo-meta-sub rather than photo-meta-overlay inside the frame
+        Assert.Contains("photo-meta-sub", content);
+        Assert.DoesNotContain("photo-meta-overlay", content);
+
+        // Assert styles.css defines photo-meta-sub and progress-img uses max-width/max-height auto sizing
+        var stylesPath = Path.Combine(_wwwroot, "styles.css");
+        var stylesContent = File.ReadAllText(stylesPath);
+        Assert.Matches(PhotoMetaSubRegex(), stylesContent);
+
+        var progressImgMatch = ProgressImgRegex().Match(stylesContent);
+        Assert.True(progressImgMatch.Success, ".progress-img must be defined in styles.css");
+        Assert.Contains("max-width: 100%", progressImgMatch.Groups[1].Value);
+        Assert.Contains("max-height: 100%", progressImgMatch.Groups[1].Value);
+
+        // Assert index.html has bumped cache-busting version (v >= 1.8.0)
+        var indexHtmlPath = Path.Combine(_wwwroot, "index.html");
+        var indexContent = File.ReadAllText(indexHtmlPath);
+        Assert.Matches(CacheBustedStylesCssRegex(), indexContent);
     }
 }
 
