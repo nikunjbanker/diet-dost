@@ -73,7 +73,7 @@ flowchart TD
 
 ### Network Perimeter Standards
 - **Private Azure Backbone (Service Endpoints)**: Container Apps communicate with Azure SQL through the `Microsoft.Sql` service endpoint on `snet-aca-infra` linked via `Microsoft.Sql/servers/virtualNetworkRules`. Traffic never leaves Microsoft's software-defined backbone.
-- **Egress NSG Rule**: `nsg-dietdost-dev` includes an explicit outbound rule `Allow-SQL-Outbound` permitting TCP traffic on port 1433 to destination service tag `Sql` with priority 105.
+- **Egress NSG Rule**: `nsg-dietdost-dev` includes an explicit outbound rule `Allow-SQL-Outbound` permitting TCP traffic on ports **1433** (gateway) and **11000–11999** (database cluster worker nodes) to destination service tag `Sql` with priority 105. This satisfies Azure SQL's internal **Redirect connection policy** without dropping worker node data-plane packets.
 
 ---
 

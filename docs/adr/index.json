@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T15:55:23.206363+00:00",
-  "totalAdrs": 94,
+  "generatedAt": "2026-10-24T18:35:48.396216+00:00",
+  "totalAdrs": 95,
   "categoryCounts": {
-    "architecture": 23,
+    "architecture": 24,
     "security": 21,
     "devops": 27,
     "presentation": 10,
@@ -1137,6 +1137,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261024-129-azure-sql-serverless-free-tier-persistence.md",
       "relativePath": "docs/adr/architecture/ADR-20261024-129-azure-sql-serverless-free-tier-persistence.md"
+    },
+    {
+      "id": "ADR-130",
+      "number": 130,
+      "title": "Azure SQL Redirect NSG Outbound Ports and Workflow Summary Synchronization",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-24",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261024-130-azure-sql-redirect-nsg-ports-and-workflow-summaries.md",
+      "relativePath": "docs/adr/architecture/ADR-20261024-130-azure-sql-redirect-nsg-ports-and-workflow-summaries.md"
     }
   ]
 }

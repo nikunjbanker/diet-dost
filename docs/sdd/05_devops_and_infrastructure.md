@@ -340,6 +340,7 @@ graph TD
     - `Deny-All-Other-Inbound` (Priority 4000, Explicit Catch-All Deny).
   - **Outbound**:
     - `Allow-Storage-SMB-Outbound` (Priority 100, Port 445) restricted strictly to `Storage` service tag for persistent SQLite mount.
+    - `Allow-SQL-Outbound` (Priority 105, Ports `1433` and `11000-11999`) restricted to `Sql` service tag for direct Azure SQL Serverless connectivity via Azure SQL Redirect connection policy.
     - `Allow-AzureCloud-HTTPS-Outbound` (Priority 110, Port 443) restricted to `AzureCloud` service tag (Key Vault, ACR image pulls, Entra ID, Log Analytics).
     - `Allow-DNS-Outbound` (Priority 120, Port 53) for core name resolution.
     - `Allow-NTP-Outbound` (Priority 130, Port 123) for clock synchronization.
@@ -436,6 +437,18 @@ The full architectural blueprint is codified in the following repository visual 
   1. **Isolated User Data Directory**: Appended `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}` to all browser spawn processes, preventing Linux `SingletonLock` collision against `~/.config/google-chrome`.
   2. **Non-Colliding Default Port Allocation**: Allocated disjoint default CDP ports (`9224`, `9226`, `9228`, `9230`) across test scripts.
   3. **Guarded Process Lifecycle**: Wrapped browser sessions in defensive `try ... finally` blocks to guarantee child process cleanup and eliminate port exhaustion across test runs.
+
+### 8.15 Azure SQL Serverless Free Tier Redirect Connectivity & Conditional Secret Wiring (ADR-130)
+- **Problem**:
+  1. **Azure SQL Redirect Connection Policy Timeout**: Inside Azure, Azure SQL defaults to the **Redirect connection policy** for reduced network latency. Initial connection connects to port 1433 gateway, which responds with a redirect packet instructing the client to connect directly to the database worker node on port range `11000-11999` (e.g. `worker.database.windows.net:11001`). Because NSG rule `Allow-SQL-Outbound` only allowed destination port `1433`, rule `Deny-All-Other-Outbound` (Priority 4000) dropped packets to port 11001, resulting in container startup timeout (`SqlException 0x80131904 / Win32Exception 258`).
+  2. **ACA Secret Fetch Failure when Azure SQL Provisioning is Skipped**: When deploying with `databaseProvider: Sqlite` and `deployAzureSql: false`, Key Vault does not contain the `azure-sql-connection-string` secret. If `infra/dev/app.bicep` unconditionally declared a Key Vault secret reference for `azure-sql-connection-string`, ACA container provisioning failed with `unable to fetch secret 'azure-sql-connection-string' using Managed identity`.
+  3. **Workflow Dispatch & Step Summary Parameter Gaps**: Deployed summaries lacked critical operational visibility into `databaseProvider`, `deployAzureSql`, `sqlAdminLogin`, and client IP allowlisting.
+- **Architectural Solution**:
+  1. **NSG Outbound Expansion**: In `infra/dev/infra.bicep`, updated `Allow-SQL-Outbound` (Priority 105) from `destinationPortRange: '1433'` to `destinationPortRanges: ['1433', '11000-11999']` targeting service tag `Sql`.
+  2. **Conditional Key Vault Secret Binding**: In `infra/dev/app.bicep`, wrapped `azure-sql-connection-string` secret reference in an inline conditional check `(databaseProvider == 'AzureSql' ? [{ name: 'azure-sql-connection-string', keyVaultUrl: '${keyVaultUri}secrets/azure-sql-connection-string', identity: managedIdentityId }] : [])`. Similarly, container environment variable `ConnectionStrings__AzureSqlConnection` references the secret only when `databaseProvider == 'AzureSql'`, defaulting to empty string otherwise.
+  3. **Step Summary Transparency**: Updated `.github/workflows/azure-app-deploy.yml` and `azure-infra-deploy.yml` to display full parameter tables in `$GITHUB_STEP_SUMMARY` across dispatch, validation, what-if, and stage completion.
+
+
 
 
 

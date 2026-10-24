@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Nutrition.Infrastructure.Persistence;
 
@@ -31,7 +32,15 @@ public class DatabaseHealthCheck : IHealthCheck
             var canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);
             if (canConnect)
             {
-                return HealthCheckResult.Healthy("Database is connected and ready.");
+                var providerName = _dbContext.Database.ProviderName ?? "Unknown";
+                var data = new Dictionary<string, object>
+                {
+                    ["provider"] = providerName,
+                    ["isSqlServer"] = _dbContext.Database.IsSqlServer(),
+                    ["isSqlite"] = _dbContext.Database.IsSqlite()
+                };
+
+                return HealthCheckResult.Healthy($"Database is connected and ready using provider '{providerName}'.", data);
             }
 
             return HealthCheckResult.Unhealthy("Database connection failed.");
