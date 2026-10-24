@@ -569,18 +569,18 @@ async function initApp() {
   // ============================================================================
   // 3. Global Window Facades (for HTML onclick & inline attribute compatibility)
   // ============================================================================
-  window.openAuthGate = (tab) => { document.body.classList.add('modal-open'); authGate.show(tab); };
-  window.closeAuthGate = () => { document.body.classList.remove('modal-open'); authGate.hide(); };
-  window.openAdminModal = () => { document.body.classList.add('modal-open'); adminModal.open(); };
-  window.closeAdminModal = () => { document.body.classList.remove('modal-open'); adminModal.close(); };
-  window.openQuotaModal = () => { document.body.classList.add('modal-open'); quotaModal.open(); };
-  window.closeQuotaModal = () => { document.body.classList.remove('modal-open'); quotaModal.close(); };
-  window.openProgressModal = (tab) => { document.body.classList.add('modal-open'); progressModal.open(tab); };
-  window.closeProgressModal = () => { document.body.classList.remove('modal-open'); progressModal.close(); };
-  window.openTransparencyModal = () => { document.body.classList.add('modal-open'); transparencyModal.open(); };
-  window.closeTransparencyModal = () => { document.body.classList.remove('modal-open'); transparencyModal.close(); };
-  window.openProfileModal = () => { document.body.classList.add('modal-open'); profileModal.open(); };
-  window.closeProfileModal = () => { document.body.classList.remove('modal-open'); profileModal.close(); };
+  window.openAuthGate = (tab) => authGate.show(tab);
+  window.closeAuthGate = () => authGate.hide();
+  window.openAdminModal = () => adminModal.open();
+  window.closeAdminModal = () => adminModal.close();
+  window.openQuotaModal = () => quotaModal.open();
+  window.closeQuotaModal = () => quotaModal.close();
+  window.openProgressModal = (tab) => progressModal.open(tab);
+  window.closeProgressModal = () => progressModal.close();
+  window.openTransparencyModal = () => transparencyModal.open();
+  window.closeTransparencyModal = () => transparencyModal.close();
+  window.openProfileModal = () => profileModal.open();
+  window.closeProfileModal = () => profileModal.close();
   window.switchAnalyticsPeriod = (period) => analyticsChart.switchPeriod(period);
   window.quickAddSubzi = (name, kcal, p, c, f) => reviewModal.quickAddSubzi(name, kcal, p, c, f);
   window.updateItemName = (idx, name) => reviewModal.updateItemName(idx, name);

@@ -10,6 +10,8 @@
  * Manages Zero Assumption Clinical Intake, dual-unit height synchronization,
  * dynamic medication chips, and recalculation of clinical targets.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class ProfileModalController {
   /**
    * @param {Object} options
@@ -140,7 +142,7 @@ export class ProfileModalController {
     this._autoDetectTimezone();
 
     if (el.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(el.modal);
       el.modal.style.display = 'flex';
     }
 
@@ -158,7 +160,7 @@ export class ProfileModalController {
     const el = this.elements;
     if (el.modal) {
       el.modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      modalStack.pop(el.modal);
     }
   }
 

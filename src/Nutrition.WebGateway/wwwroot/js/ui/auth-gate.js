@@ -15,6 +15,8 @@
  *  – Confirm-password live match check on Register & Reset flows
  *  – Forgot-Password OTP flow (2 steps: email → OTP + new password)
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class AuthGateController {
   constructor({ authService, toastService, eventBus }) {
     this.authService = authService;
@@ -166,7 +168,7 @@ export class AuthGateController {
 
   show(defaultTab = 'signin') {
     if (this.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(this.modal);
       this.modal.style.display = 'flex';
       document.body.style.overflow = 'hidden';
       this.applyRegistrationState();
@@ -176,7 +178,7 @@ export class AuthGateController {
 
   hide() {
     if (this.modal) {
-      document.body.classList.remove('modal-open');
+      modalStack.pop(this.modal);
       this.modal.style.display = 'none';
       document.body.style.overflow = '';
     }

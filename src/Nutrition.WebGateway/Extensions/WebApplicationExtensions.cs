@@ -40,6 +40,23 @@ public static class WebApplicationExtensions
         app.UseDefaultFiles();
         app.UseStaticFiles();
 
+        // Persistent Azure File Share SMB Mount Static Media Serving (/uploads)
+        var storageOptions = app.Services.GetService<Microsoft.Extensions.Options.IOptions<Nutrition.Application.Common.Options.StorageOptions>>()?.Value;
+        var persistentUploadsDir = !string.IsNullOrWhiteSpace(storageOptions?.WebRootPath)
+            ? Path.Combine(storageOptions.WebRootPath, "uploads")
+            : Path.Combine(app.Environment.WebRootPath, "uploads");
+
+        if (!Directory.Exists(persistentUploadsDir))
+        {
+            Directory.CreateDirectory(persistentUploadsDir);
+        }
+
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(persistentUploadsDir),
+            RequestPath = "/uploads"
+        });
+
         app.UseAuthentication();
         app.UseAuthorization();
 

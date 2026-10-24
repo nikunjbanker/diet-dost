@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-19T14:45:51.321530+00:00",
-  "totalAdrs": 87,
+  "generatedAt": "2026-10-24T07:46:46.652970+00:00",
+  "totalAdrs": 88,
   "categoryCounts": {
-    "architecture": 20,
+    "architecture": 21,
     "security": 21,
     "devops": 26,
     "presentation": 7,
@@ -1053,6 +1053,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261019-122-aca-key-vault-reference-secrets-and-brand-icon-scale.md",
       "relativePath": "docs/adr/security/ADR-20261019-122-aca-key-vault-reference-secrets-and-brand-icon-scale.md"
+    },
+    {
+      "id": "ADR-123",
+      "number": 123,
+      "title": "Azure Files Persistent Static Uploads Serving, Seed Media Mirroring, and LIFO Modal Stacking Architecture",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-24T13:15:00+05:30",
+      "subsystem": "WebGateway (",
+      "filename": "ADR-20261024-123-azure-files-persistent-uploads-and-modal-stacking.md",
+      "relativePath": "docs/adr/architecture/ADR-20261024-123-azure-files-persistent-uploads-and-modal-stacking.md"
     }
   ]
 }

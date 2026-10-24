@@ -10,6 +10,8 @@
  * Displays the user's active tier, today's detections gauge, localized midnight reset countdown,
  * and recent AI operations history.
  */
+import { modalStack } from './modal-stack-manager.js';
+
 export class QuotaModalController {
   constructor({ apiClient, toastService, eventBus }) {
     this.api = apiClient;
@@ -45,7 +47,7 @@ export class QuotaModalController {
 
   open() {
     if (this.modal) {
-      document.body.classList.add('modal-open');
+      modalStack.push(this.modal);
       this.modal.style.display = 'flex';
       this.refresh();
     }
@@ -54,7 +56,7 @@ export class QuotaModalController {
   close() {
     if (this.modal) {
       this.modal.style.display = 'none';
-      document.body.classList.remove('modal-open');
+      modalStack.pop(this.modal);
     }
   }
 
