@@ -164,7 +164,7 @@ export class AnalyticsChartController {
   renderProjections(data, period = '7D') {
     const el = this.elements;
     if (el.periodTitle) {
-      const titles = { '1D': 'Daily', '7D': '7-Day', '30D': '30-Day', '90D': 'Quarterly (90D)', '365D': 'Yearly (1Y)' };
+      const titles = { '1D': 'Daily (Today)', '7D': '7-Day', '30D': '30-Day', '90D': 'Quarterly (90D)' };
       el.periodTitle.textContent = titles[period] || period;
     }
     if (el.mealLogClearPeriod) el.mealLogClearPeriod.textContent = period;

@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-24T13:31:22.680159+00:00",
-  "totalAdrs": 92,
+  "generatedAt": "2026-10-24T14:56:58.346830+00:00",
+  "totalAdrs": 93,
   "categoryCounts": {
-    "architecture": 21,
+    "architecture": 22,
     "security": 21,
     "devops": 27,
     "presentation": 10,
@@ -1113,6 +1113,18 @@
       "subsystem": "WebGateway (",
       "filename": "ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md",
       "relativePath": "docs/adr/presentation/ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md"
+    },
+    {
+      "id": "ADR-128",
+      "number": 128,
+      "title": "Web BFF Daily View Isolation to Today's Records, Retirement of Yearly (365D) Analytics View, and Contract Test Segregation",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-24T20:25:00+05:30",
+      "subsystem": "WebGateway (",
+      "filename": "ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md",
+      "relativePath": "docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md"
     }
   ]
 }

@@ -435,65 +435,6 @@ public class ClinicalDietitianService
                 DailyTrends: trends
             );
         }
-
-        if (normPeriod is "365D" or "YEARLY" or "1Y")
-        {
-            var startDate = new DateOnly(today.Year, today.Month, 1).AddMonths(-11);
-            var ledgers = await _ledgerRepo.FindAsync(l => l.UserId == userId && l.Date >= startDate && l.Date <= today, ct);
-            var trends = new List<DailyTrendPoint>();
-            double totalDeficit = 0;
-            double totalCalories = 0;
-            int activeDays = 0;
-            int proteinMetDays = 0;
-
-            for (int m = 0; m < 12; m++)
-            {
-                var monthDate = startDate.AddMonths(m);
-                var daysInMonth = DateTime.DaysInMonth(monthDate.Year, monthDate.Month);
-                var monthEnd = new DateOnly(monthDate.Year, monthDate.Month, daysInMonth);
-                if (monthEnd > today) monthEnd = today;
-
-                var monthLedgers = ledgers.Where(l => l.Date.Year == monthDate.Year && l.Date.Month == monthDate.Month).ToList();
-                double consumed = monthLedgers.Sum(l => l.ConsumedCalories);
-                int dayCount = (monthEnd.Day - 1) + 1;
-                double budget = dayCount * targetBudget;
-
-                if (consumed > 0)
-                {
-                    activeDays += monthLedgers.Count(l => l.ConsumedCalories > 0);
-                    double def = monthLedgers.Sum(l => l.BudgetedCalories - l.ConsumedCalories);
-                    totalDeficit += def;
-                    totalCalories += consumed;
-                    proteinMetDays += monthLedgers.Count(l => l.ConsumedProteinGrams >= l.TargetProteinGrams * 0.85);
-                }
-
-                trends.Add(new DailyTrendPoint(
-                    Date: monthDate.ToString("MMM yyyy"),
-                    ConsumedCalories: Math.Round(consumed, 0),
-                    BudgetCalories: Math.Round(budget, 0),
-                    ProteinGrams: Math.Round(monthLedgers.Sum(l => l.ConsumedProteinGrams), 1),
-                    SodiumMg: Math.Round(monthLedgers.Sum(l => l.ConsumedSodiumMg), 0),
-                    HealthScore: monthLedgers.Count > 0 ? (int)monthLedgers.Average(l => l.HealthScore) : 85
-                ));
-            }
-
-            var projectedWeightLossKg = Math.Round(Math.Max(0, totalDeficit) / 7700.0, 2);
-            var avgDailyCalories = activeDays > 0 ? Math.Round(totalCalories / activeDays, 0) : targetBudget;
-            var proteinCompliance = activeDays > 0 ? Math.Round((double)proteinMetDays / activeDays * 100, 1) : 100.0;
-
-            return new AnalyticsProjection(
-                Period: "365D",
-                TotalDeficitKcal: Math.Round(totalDeficit, 0),
-                ProjectedWeightLossKg: projectedWeightLossKg,
-                AverageDailyCalories: avgDailyCalories,
-                ProteinCompliancePercent: proteinCompliance,
-                SodiumWarningCount: 0,
-                SugarWarningCount: 0,
-                PlateauRiskDetected: false,
-                DailyTrends: trends
-            );
-        }
-
         if (normPeriod is "90D" or "QUARTERLY")
         {
             int days = 91;
@@ -650,7 +591,6 @@ public class ClinicalDietitianService
             "7D" or "WEEKLY" => today.AddDays(-6),
             "30D" or "MONTHLY" => today.AddDays(-29),
             "90D" or "QUARTERLY" => today.AddDays(-89),
-            "365D" or "YEARLY" or "1Y" => today.AddDays(-364),
             _ => today.AddDays(-6)
         };
 

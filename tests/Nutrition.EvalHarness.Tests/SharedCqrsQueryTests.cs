@@ -259,6 +259,75 @@ public class SharedCqrsQueryTests : IDisposable
     }
 
     [Fact]
+    public async Task GetMealHistory_Daily1D_ReturnsOnlyMealsFromToday()
+    {
+        const string userId = "user-daily-1d-test";
+        await SeedUserWithProfileAndMealsAsync(userId, UserTier.Basic);
+
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        // Add a meal from 3 days ago
+        db.Meals.Add(new MealLog
+        {
+            Id = $"meal-{userId}-old",
+            UserId = userId,
+            DishName = "Old Poha",
+            LoggedAt = DateTime.UtcNow.AddDays(-3),
+            MealType = MealType.Breakfast,
+            TotalCalories = 300,
+            TotalProteinGrams = 8,
+            TotalCarbsGrams = 50,
+            TotalFatGrams = 8,
+            TotalFiberGrams = 3,
+            TotalSodiumMg = 200,
+            TotalSugarGrams = 2,
+            OverallConfidenceScore = 0.9
+        });
+        await db.SaveChangesAsync();
+
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        // Query 1D - must return only today's meal
+        var query1D = new GetMealHistoryQuery(userId, null, false, "1D", null, null);
+        var result1D = await dispatcher.QueryAsync(query1D);
+
+        Assert.True(result1D.Succeeded);
+        Assert.NotNull(result1D.Data);
+        Assert.Single(result1D.Data.Meals);
+        Assert.Equal("Moong Dal Khichdi with Curd", result1D.Data.Meals[0].DishName);
+
+        // Query 7D - must return both meals
+        var query7D = new GetMealHistoryQuery(userId, null, false, "7D", null, null);
+        var result7D = await dispatcher.QueryAsync(query7D);
+
+        Assert.True(result7D.Succeeded);
+        Assert.NotNull(result7D.Data);
+        Assert.Equal(2, result7D.Data.Meals.Count);
+    }
+
+    [Fact]
+    public async Task GetHistoricalAnalytics_Daily1D_ReturnsTodayMealCategoryTrends()
+    {
+        const string userId = "user-daily-trends-test";
+        await SeedUserWithProfileAndMealsAsync(userId, UserTier.Free);
+
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        var query = new GetHistoricalAnalyticsQuery(userId, null, UserTier.Free, false, "1D");
+        var result = await dispatcher.QueryAsync(query);
+
+        Assert.True(result.Succeeded);
+        Assert.NotNull(result.Data);
+        Assert.Equal("1D", result.Data.Period);
+        Assert.Equal(4, result.Data.DailyTrends.Count);
+        Assert.Contains(result.Data.DailyTrends, t => t.Date == "Breakfast");
+        Assert.Contains(result.Data.DailyTrends, t => t.Date == "Lunch");
+        Assert.Contains(result.Data.DailyTrends, t => t.Date == "Snack");
+        Assert.Contains(result.Data.DailyTrends, t => t.Date == "Dinner");
+    }
+
+    [Fact]
     public async Task GetAiQuota_ValidUser_ReturnsTierStats()
     {
         const string userId = "user-quota-test";

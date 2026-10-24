@@ -9,7 +9,7 @@
 /**
  * ChartRenderer
  * Single Responsibility: Pure SVG / CSS bar chart rendering, tooltip calculation,
- * coordinate mapping, and interactive bar selection for analytics timelines (1D, 7D, 30D, 90D, 365D).
+ * coordinate mapping, and interactive bar selection for analytics timelines (1D, 7D, 30D, 90D).
  */
 export class ChartRenderer {
   /**

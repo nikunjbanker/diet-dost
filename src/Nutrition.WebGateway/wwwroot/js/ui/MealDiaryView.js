@@ -125,8 +125,7 @@ export class MealDiaryView {
           '1D': "Today's",
           '7D': '7-Day',
           '30D': '30-Day',
-          '90D': 'Quarterly (90D)',
-          '365D': 'Yearly (1Y)'
+          '90D': 'Quarterly (90D)'
         };
         this._filterSubtitle.textContent = `Showing ${periodLabels[period] || period} meal history`;
       }
