@@ -66,6 +66,27 @@ permissions:
   pull-requests: write
 
 jobs:
+  workflow-dispatch-summary:
+    name: 'Workflow Dispatch Options & Configuration'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish Selected Options Matrix
+        run: |
+          {
+            echo "## ⚙️ Infrastructure Provisioning Dispatch Configuration & Selected Options"
+            echo "| Option / Input Parameter | Selected Value | Description |"
+            echo "| :--- | :--- | :--- |"
+            echo "| **Target Environment** | \`${{ inputs.environment || 'dev' }}\` | Target infrastructure environment |"
+            echo "| **Resource Group** | \`${{ inputs.resourceGroupName || 'rg-dietdost-dev' }}\` | Target Azure Resource Group |"
+            echo "| **Azure Region** | \`${{ inputs.location || 'centralindia' }}\` | Target Azure Region |"
+            echo "| **File Share Quota (GB)** | \`${{ inputs.fileShareQuotaGb || 1 }}\` | Persistent SQLite SMB quota |"
+            echo "| **ACR Name** | \`${{ inputs.acrName || 'acrdietdostdev' }}\` | Azure Container Registry |"
+            echo "| **Key Vault Name** | \`${{ inputs.keyVaultName || 'kvdostdevskehxuagttzos' }}\` | Azure Key Vault |"
+            echo "| **Skip Pre-Flight Gates** | \`${{ inputs.skipPreFlightGates }}\` | Pre-flight security scan status |"
+            echo "| **Triggered By** | \`@${{ github.actor }}\` | User / Identity initiating workflow |"
+            echo "| **Git Ref / SHA** | \`${{ github.ref_name }}\` (\`${{ github.sha }}\`) | Source commit reference |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   pre-provisioning-security-scan:
     name: Mandatory Pre-Provisioning Security Gates
     if: inputs.skipPreFlightGates != true || github.actor != 'nikunjbanker'

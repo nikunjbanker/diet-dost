@@ -27,7 +27,7 @@
       <div class="detail-comparison-grid">
         <div class="detail-photo-col">
           <div class="compare-badge baseline-badge">Day 1 · Baseline Face</div>
-          <div class="detail-photo-frame">
+          <div class="detail-photo-frame" title="Click to inspect photo in high-resolution lightbox">
             <img id="detail-baseline-face-img" src="/uploads/progress/face_baseline.svg" alt="Baseline Face" class="detail-img" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="detail-overlay">
               <span id="detail-baseline-face-date">30 Days Ago (Aug 16)</span>
@@ -39,7 +39,7 @@
 
         <div class="detail-photo-col">
           <div class="compare-badge current-badge">Latest Check-In · Face</div>
-          <div class="detail-photo-frame current-glow">
+          <div class="detail-photo-frame current-glow" title="Click to inspect photo in high-resolution lightbox">
             <img id="detail-current-face-img" src="/uploads/progress/face_current.svg" alt="Latest Face" class="detail-img" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="detail-overlay">
               <span id="detail-current-face-date">Today (Day 30)</span>
@@ -60,7 +60,7 @@
       <div class="detail-comparison-grid">
         <div class="detail-photo-col">
           <div class="compare-badge baseline-badge">Day 1 · Full Body (Front)</div>
-          <div class="detail-photo-frame body-frame">
+          <div class="detail-photo-frame body-frame" title="Click to inspect photo in high-resolution lightbox">
             <img id="detail-baseline-body-img" src="/uploads/progress/body_baseline.svg" alt="Baseline Body" class="detail-img" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="detail-overlay">
               <span id="detail-baseline-body-date">Day 1 (Aug 16)</span>
@@ -72,7 +72,7 @@
 
         <div class="detail-photo-col">
           <div class="compare-badge current-badge">Latest Check-In · Full Body (Front)</div>
-          <div class="detail-photo-frame body-frame current-glow">
+          <div class="detail-photo-frame body-frame current-glow" title="Click to inspect photo in high-resolution lightbox">
             <img id="detail-current-body-img" src="/uploads/progress/body_current.svg" alt="Latest Body" class="detail-img" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="detail-overlay">
               <span id="detail-current-body-date">Today (Day 30)</span>
@@ -119,7 +119,7 @@
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">JPEG, PNG, WebP up to 8MB · Automatic EXIF telemetry stripping for privacy</div>
             </div>
             <div id="dropzone-preview" style="display: none;">
-              <img id="progress-img-preview" src="" alt="Upload preview" style="max-height: 160px; border-radius: 8px;">
+              <img id="progress-img-preview" src="" alt="Upload preview" style="max-height: 200px; max-width: 100%; object-fit: contain; border-radius: 8px; background: #080a0f;">
               <div style="font-size: 0.75rem; color: var(--status-emerald); margin-top: 4px;">✓ Photo selected. Click Save below.</div>
             </div>
           </div>

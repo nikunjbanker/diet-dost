@@ -176,24 +176,31 @@ export class ReviewModalController {
       });
     }
 
-    const openLightbox = () => {
-      const currentPhoto = (this._state.currentMeal && (this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri)) || (el.mealPhoto ? el.mealPhoto.src : '');
-      if (!currentPhoto || !el.lightbox || !el.lightboxImg) return;
-      el.lightboxImg.src = currentPhoto;
-      if (el.lightboxTitle && this._state.currentMeal) {
-        el.lightboxTitle.textContent = `📸 ${this._state.currentMeal.dishName || 'Meal Plate Inspection'}`;
+    window.openPhotoLightbox = (photoUrl, title = 'Photo Inspection') => {
+      if (!photoUrl || !el.lightbox || !el.lightboxImg) return;
+      el.lightboxImg.src = photoUrl;
+      if (el.lightboxTitle) {
+        el.lightboxTitle.textContent = `📸 ${title}`;
       }
       modalStack.push(el.lightbox);
       el.lightbox.style.display = 'flex';
     };
 
-    const closeLightbox = () => {
+    window.closePhotoLightbox = () => {
       if (el.lightbox) {
         el.lightbox.style.display = 'none';
         modalStack.pop(el.lightbox);
       }
       if (el.lightboxImg) el.lightboxImg.src = '';
     };
+
+    const openLightbox = () => {
+      const currentPhoto = (this._state.currentMeal && (this._state.currentMeal.photoUrl || this._state.currentMeal.photoUri)) || (el.mealPhoto ? el.mealPhoto.src : '');
+      const title = this._state.currentMeal?.dishName || 'Meal Plate Inspection';
+      window.openPhotoLightbox(currentPhoto, title);
+    };
+
+    const closeLightbox = () => window.closePhotoLightbox();
 
     if (el.btnZoomPhoto) {
       el.btnZoomPhoto.addEventListener('click', (e) => {

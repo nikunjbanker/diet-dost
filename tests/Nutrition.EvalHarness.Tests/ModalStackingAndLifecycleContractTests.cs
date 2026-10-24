@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
 
-public class ModalStackingAndLifecycleContractTests
+public partial class ModalStackingAndLifecycleContractTests
 {
     private readonly string _wwwroot;
 
@@ -18,6 +18,24 @@ public class ModalStackingAndLifecycleContractTests
     {
         _wwwroot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../src/Nutrition.WebGateway/wwwroot"));
     }
+
+    [GeneratedRegex(@"\.delete-modal-overlay\s*\{[^}]*z-index:\s*120;")]
+    private static partial Regex DeleteModalLowZIndexRegex();
+
+    [GeneratedRegex(@"\.review-lightbox-overlay\s*\{[^}]*z-index:\s*1200;")]
+    private static partial Regex ReviewLightboxLowZIndexRegex();
+
+    [GeneratedRegex(@"\.progress-img\s*\{([^}]+)\}")]
+    private static partial Regex ProgressImgRegex();
+
+    [GeneratedRegex(@"\.detail-img\s*\{([^}]+)\}")]
+    private static partial Regex DetailImgRegex();
+
+    [GeneratedRegex(@"\.timeline-thumb\s*\{([^}]+)\}")]
+    private static partial Regex TimelineThumbRegex();
+
+    [GeneratedRegex(@"<img[^>]*id=""progress-img-preview""[^>]*object-fit:\s*contain")]
+    private static partial Regex ProgressImgPreviewRegex();
 
     [Fact]
     public void StylesCss_EliminatesLowZIndexOverlays_ThatBreakModalStacking()
@@ -27,10 +45,10 @@ public class ModalStackingAndLifecycleContractTests
         var stylesContent = File.ReadAllText(stylesPath);
 
         // Assert delete-modal-overlay does not have z-index: 120 (must be >= 100010)
-        Assert.DoesNotMatch(@"\.delete-modal-overlay\s*\{[^}]*z-index:\s*120;", stylesContent);
+        Assert.DoesNotMatch(DeleteModalLowZIndexRegex(), stylesContent);
 
         // Assert review-lightbox does not have z-index: 1200 (must be >= 100010)
-        Assert.DoesNotMatch(@"\.review-lightbox-overlay\s*\{[^}]*z-index:\s*1200;", stylesContent);
+        Assert.DoesNotMatch(ReviewLightboxLowZIndexRegex(), stylesContent);
     }
 
     [Fact]
@@ -93,4 +111,38 @@ public class ModalStackingAndLifecycleContractTests
         // Assert review modal has an accessible close button in header
         Assert.Contains("id=\"btn-review-header-close\"", content);
     }
+
+    [Fact]
+    public void ProgressAndSelfPhotos_StylesAndAspectRatios_ShowFullUncutPhotosWithoutCropping()
+    {
+        var stylesPath = Path.Combine(_wwwroot, "styles.css");
+        Assert.True(File.Exists(stylesPath), $"styles.css must exist at {stylesPath}");
+        var stylesContent = File.ReadAllText(stylesPath);
+
+        // Assert .progress-img uses object-fit: contain (and not cover)
+        var progressImgMatch = ProgressImgRegex().Match(stylesContent);
+        Assert.True(progressImgMatch.Success, ".progress-img must be defined in styles.css");
+        Assert.Contains("object-fit: contain", progressImgMatch.Groups[1].Value);
+        Assert.DoesNotContain("object-fit: cover", progressImgMatch.Groups[1].Value);
+
+        // Assert .detail-img uses object-fit: contain (and not cover)
+        var detailImgMatch = DetailImgRegex().Match(stylesContent);
+        Assert.True(detailImgMatch.Success, ".detail-img must be defined in styles.css");
+        Assert.Contains("object-fit: contain", detailImgMatch.Groups[1].Value);
+        Assert.DoesNotContain("object-fit: cover", detailImgMatch.Groups[1].Value);
+
+        // Assert .timeline-thumb uses object-fit: contain (and not cover)
+        var timelineThumbMatch = TimelineThumbRegex().Match(stylesContent);
+        Assert.True(timelineThumbMatch.Success, ".timeline-thumb must be defined in styles.css");
+        Assert.Contains("object-fit: contain", timelineThumbMatch.Groups[1].Value);
+        Assert.DoesNotContain("object-fit: cover", timelineThumbMatch.Groups[1].Value);
+
+        // Assert progress-img-preview in progress-modal.html has object-fit: contain
+        var progressModalHtmlPath = Path.Combine(_wwwroot, "partials", "progress-modal.html");
+        Assert.True(File.Exists(progressModalHtmlPath), $"progress-modal.html must exist at {progressModalHtmlPath}");
+        var progressModalHtml = File.ReadAllText(progressModalHtmlPath);
+        Assert.Contains("progress-img-preview", progressModalHtml);
+        Assert.Matches(ProgressImgPreviewRegex(), progressModalHtml);
+    }
 }
+

@@ -147,6 +147,50 @@ export class ProgressModalController {
     if (el.formUpload) {
       el.formUpload.addEventListener('submit', (e) => this.handleSubmit(e));
     }
+
+    // High-Resolution Uncut Photo Lightbox Inspection
+    if (el.imgBaselineFace) {
+      el.imgBaselineFace.parentElement?.addEventListener('click', () => {
+        if (el.imgBaselineFace.src && window.openPhotoLightbox) {
+          window.openPhotoLightbox(el.imgBaselineFace.src, 'Baseline Face Photo');
+        }
+      });
+    }
+    if (el.imgCurrentFace) {
+      el.imgCurrentFace.parentElement?.addEventListener('click', () => {
+        if (el.imgCurrentFace.src && window.openPhotoLightbox) {
+          window.openPhotoLightbox(el.imgCurrentFace.src, 'Latest Face Check-In Photo');
+        }
+      });
+    }
+    if (el.detailBaselineFaceImg) {
+      el.detailBaselineFaceImg.parentElement?.addEventListener('click', () => {
+        if (el.detailBaselineFaceImg.src && window.openPhotoLightbox) {
+          window.openPhotoLightbox(el.detailBaselineFaceImg.src, 'Baseline Face Photo');
+        }
+      });
+    }
+    if (el.detailCurrentFaceImg) {
+      el.detailCurrentFaceImg.parentElement?.addEventListener('click', () => {
+        if (el.detailCurrentFaceImg.src && window.openPhotoLightbox) {
+          window.openPhotoLightbox(el.detailCurrentFaceImg.src, 'Latest Face Check-In Photo');
+        }
+      });
+    }
+    if (el.detailBaselineBodyImg) {
+      el.detailBaselineBodyImg.parentElement?.addEventListener('click', () => {
+        if (el.detailBaselineBodyImg.src && window.openPhotoLightbox) {
+          window.openPhotoLightbox(el.detailBaselineBodyImg.src, 'Baseline Full Body Photo');
+        }
+      });
+    }
+    if (el.detailCurrentBodyImg) {
+      el.detailCurrentBodyImg.parentElement?.addEventListener('click', () => {
+        if (el.detailCurrentBodyImg.src && window.openPhotoLightbox) {
+          window.openPhotoLightbox(el.detailCurrentBodyImg.src, 'Latest Full Body Photo');
+        }
+      });
+    }
   }
 
   open(targetTab = 'pane-face-progress') {
@@ -366,7 +410,7 @@ export class ProgressModalController {
 
       return `
         <div class="timeline-card">
-          <div class="timeline-thumb-frame">
+          <div class="timeline-thumb-frame" onclick="if (window.openPhotoLightbox) window.openPhotoLightbox('${p.photoUri}', '${dateStr} · ${typeLabels[p.photoType] || 'Progress Photo'}');" title="Click to inspect full photo">
             <img src="${p.photoUri}" alt="Progress photo" class="timeline-thumb" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="photo-meta-overlay" style="padding: 6px 8px;">
               <span class="weight-tag" style="font-size: 0.72rem;">${p.weightKg.toFixed(1)} kg</span>
