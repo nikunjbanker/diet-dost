@@ -47,14 +47,14 @@ param acaSubnetName string = 'snet-aca-infra'
 param geminiApiKey string = ''
 
 @description('Database persistence provider (Sqlite, AzureSql, SqlServer).')
-param databaseProvider string = 'Sqlite'
+param databaseProvider string = 'AzureSql'
 
 @description('Optional Azure SQL Connection String (for Managed Identity or SQL auth).')
 @secure()
 param azureSqlConnectionString string = ''
 
-@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default false, must be explicitly enabled during deployment).')
-param deployAzureSql bool = false
+@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default true for AzureSql database provider).')
+param deployAzureSql bool = true
 
 @description('Optional explicit name for Azure SQL Server. If omitted, a unique name is derived.')
 param sqlServerName string = ''

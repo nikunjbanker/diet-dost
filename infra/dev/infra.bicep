@@ -28,8 +28,8 @@ param keyVaultName string = ''
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
 param acaSubnetName string = 'snet-aca-infra'
 
-@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned.')
-param deployAzureSql bool = false
+@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default true for AzureSql database provider).')
+param deployAzureSql bool = true
 
 @description('Optional explicit name for Azure SQL Server. If omitted, a unique name is derived.')
 param sqlServerName string = ''

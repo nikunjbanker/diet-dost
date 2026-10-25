@@ -111,6 +111,7 @@ jobs:
           BASE_URL: http://127.0.0.1:5240
           ASPNETCORE_ENVIRONMENT: Development
           DOTNET_ENVIRONMENT: Development
+          Database__Provider: Sqlite
         run: |
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier System -BaseUrl "http://127.0.0.1:5240"
 
@@ -144,6 +145,7 @@ jobs:
           BASE_URL: http://127.0.0.1:5240
           ASPNETCORE_ENVIRONMENT: Development
           DOTNET_ENVIRONMENT: Development
+          Database__Provider: Sqlite
         run: |
           pwsh -File scripts/verify-quality-test-gates.ps1 -Tier E2E -BaseUrl "http://127.0.0.1:5240"
 

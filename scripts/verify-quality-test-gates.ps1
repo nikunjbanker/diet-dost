@@ -122,7 +122,7 @@ function Start-WebGatewayIfNeeded {
     $workingDir = Join-Path $RepoRoot "src/Nutrition.WebGateway"
     $argList = @()
 
-    $baseArgs = @("--urls", $Url, "--environment", "Development", "--Auth:SuperAdminEmail", "nikunj_banker@hotmail.com", "--Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!")
+    $baseArgs = @("--urls", $Url, "--environment", "Development", "--Database:Provider", "Sqlite", "--Auth:SuperAdminEmail", "nikunj_banker@hotmail.com", "--Jwt:Key", "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!")
     if (Test-Path $debugDll) {
         $argList = @($debugDll) + $baseArgs
     } elseif (Test-Path $releaseDll) {

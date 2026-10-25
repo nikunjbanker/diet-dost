@@ -78,7 +78,7 @@ param minReplicas int = 1
 param maxReplicas int = 1
 
 @description('Database persistence provider (Sqlite, AzureSql, SqlServer).')
-param databaseProvider string = 'Sqlite'
+param databaseProvider string = 'AzureSql'
 
 @description('Optional Azure SQL Connection String (for Managed Identity or SQL auth).')
 @secure()

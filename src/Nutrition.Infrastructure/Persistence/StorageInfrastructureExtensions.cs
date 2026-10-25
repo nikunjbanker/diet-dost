@@ -32,7 +32,7 @@ public static class StorageInfrastructureExtensions
     public static IServiceCollection AddStorageInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var dbOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
-        var provider = !string.IsNullOrWhiteSpace(dbOptions.Provider) ? dbOptions.Provider : "Sqlite";
+        var provider = !string.IsNullOrWhiteSpace(dbOptions.Provider) ? dbOptions.Provider : "AzureSql";
         var defaultConnStr = configuration.GetConnectionString("DefaultConnection");
         var connectionString = !string.IsNullOrWhiteSpace(defaultConnStr)
             ? defaultConnStr
@@ -123,13 +123,13 @@ public static class StorageInfrastructureExtensions
                         "Please configure 'ConnectionStrings:AzureSqlConnection' or configure Azure Key Vault secret 'azure-sql-connection-string'.");
                 }
 
-                // Guarantee minimum 60-second connection timeout for Azure SQL Serverless cold-pause wake-ups (resuming takes 15-45s)
+                // Guarantee minimum 120-second connection timeout for Azure SQL Serverless cold-pause wake-ups (resuming takes 15-45s)
                 try
                 {
                     var sqlBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(sqlConnectionString);
-                    if (sqlBuilder.ConnectTimeout < 60)
+                    if (sqlBuilder.ConnectTimeout < 120)
                     {
-                        sqlBuilder.ConnectTimeout = 60;
+                        sqlBuilder.ConnectTimeout = 120;
                         sqlConnectionString = sqlBuilder.ConnectionString;
                     }
                 }
@@ -145,8 +145,8 @@ public static class StorageInfrastructureExtensions
                         sqlOpts.EnableRetryOnFailure(
                             maxRetryCount: 6,
                             maxRetryDelay: TimeSpan.FromSeconds(30),
-                            errorNumbersToAdd: new[] { 40613 }); // Azure SQL Serverless auto-pause waking error
-                        sqlOpts.CommandTimeout(60);
+                            errorNumbersToAdd: new[] { 40613, 258, -2 }); // Azure SQL Serverless auto-pause waking and timeout errors
+                        sqlOpts.CommandTimeout(120);
                         sqlOpts.MigrationsAssembly(typeof(DietTrackerDbContext).Assembly.FullName);
                     });
                 });
@@ -160,6 +160,7 @@ public static class StorageInfrastructureExtensions
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IDatabaseWarmupService, DatabaseWarmupService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Nutrition.Infrastructure.Services.LocalPhotoStorageService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Nutrition.Infrastructure.Services.DatabaseSecretStore>();
         services.AddSingleton<Nutrition.Application.Common.Interfaces.IAppEnvironment, Nutrition.Infrastructure.Services.AppEnvironment>();

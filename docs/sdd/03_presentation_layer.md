@@ -179,12 +179,18 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Tactile Mobile Haptics**: Added `navigator.vibrate(10)` micro-haptic feedback on tab interactions.
     - **Touch Target & Contract Invariants**: Retained 100% DOM element IDs (`btn-nav-overview`, `btn-nav-log-meal`, `btn-nav-history`, `btn-nav-profile`), ensuring all CFT suites, accessibility targets (>= 48x48px), and routing listeners continue to function without drift.
 
+15. **Non-Blocking Database Pre-Warming & Azure SQL Serverless Auto-Resume Architecture (`api-client.js`, `main.js`, `SystemController.cs`, `IDatabaseWarmupService.cs`, ADR-134)**:
+    - **Non-Blocking Cloud Database Pre-Warming**:
+      - `apiClient.warmupDatabase()`: Issues a background `GET /api/system/warmup` probe on `initApp()` while HTML partials hydrate, triggering Azure SQL Serverless Free Tier instances to auto-resume from cold pause before user-facing requests are made.
+      - **Human-Presence Keep-Alive**: Triggers background warm-up on pointer/keyboard interaction when the user engages after 15+ minutes of inactivity, plus a 45-minute keep-alive interval while the browser tab remains active and visible, guaranteeing zero cold-start delay during user sessions without wasting monthly vCore-seconds.
+
 ---
 
 ## 5. Verification & Quality Gates
 
 * **Zero Console Errors**: All script dependencies, favicons, and assets resolve with HTTP 200.
 * **Responsive Breakpoints**: Seamless scaling across Mobile (<640px), Tablet (640px–1024px), Desktop (1024px–1440px), and Ultra-wide (>1440px).
-* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`, and `tests/Nutrition.EvalHarness.Tests/AnalyticsTimelineContractTests.cs`.
+* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`, and `tests/Nutrition.EvalHarness.Tests/DatabaseWarmupTests.cs`.
+
 
 

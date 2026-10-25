@@ -465,6 +465,10 @@ async function initApp() {
   const splashStartTime = performance.now();
   const MIN_SPLASH_DURATION_MS = 750; // Smooth brand pulse & loading transition guarantee
 
+  // Fire early database warm-up probe asynchronously in background
+  // Wakes cold-paused serverless cloud databases (Azure SQL Free Tier) while HTML partials hydrate
+  apiClient.warmupDatabase();
+
   // Load modular HTML partials into the DOM before initializing controllers
   await loadPartials();
 
@@ -759,6 +763,25 @@ async function initApp() {
       splash.remove();
     }, 550);
   }
+
+  // Background Keep-Alive for Serverless Cloud Database (every 45m while tab is visible)
+  let lastWarmupTime = Date.now();
+  setInterval(() => {
+    if (document.visibilityState === 'visible' && Date.now() - lastWarmupTime >= 45 * 60 * 1000) {
+      lastWarmupTime = Date.now();
+      apiClient.warmupDatabase();
+    }
+  }, 5 * 60 * 1000);
+
+  // Interaction-triggered pre-warming: on auth gate engagement or active user touch
+  const triggerInteractionWarmup = () => {
+    if (Date.now() - lastWarmupTime >= 15 * 60 * 1000) {
+      lastWarmupTime = Date.now();
+      apiClient.warmupDatabase();
+    }
+  };
+  document.addEventListener('pointerdown', triggerInteractionWarmup, { passive: true });
+  document.addEventListener('keydown', triggerInteractionWarmup, { passive: true });
 
   // ============================================================================
   // 4. Initial Application Load (Single-Roundtrip Web BFF Hydration)

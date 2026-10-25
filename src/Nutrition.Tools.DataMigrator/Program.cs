@@ -123,6 +123,9 @@ public static class Program
                 Console.WriteLine($"--> Connecting to target Azure SQL database ({targetDbName})...");
                 await targetWriter.OpenAsync();
                 Console.WriteLine("    Azure SQL connection established successfully.");
+                Console.WriteLine("--> Waking and verifying Azure SQL Serverless database...");
+                await targetWriter.WarmupAndVerifyAsync();
+                Console.WriteLine("    Azure SQL database is online and responsive.");
 
                 if (parsed.EnsureSchema && !parsed.IsDryRun)
                 {
