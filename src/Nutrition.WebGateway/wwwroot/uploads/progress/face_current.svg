@@ -1,33 +1,92 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 360" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 380" width="100%" height="100%">
   <defs>
-    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#12231b"/>
-      <stop offset="100%" stop-color="#0b1712"/>
+    <linearGradient id="faceBg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#091310"/>
+      <stop offset="50%" stop-color="#0d1c17"/>
+      <stop offset="100%" stop-color="#11241e"/>
     </linearGradient>
-    <linearGradient id="faceGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ecc7ab"/>
-      <stop offset="100%" stop-color="#d4a382"/>
+    <radialGradient id="meshGlow2" cx="50%" cy="42%" r="45%">
+      <stop offset="0%" stop-color="rgba(16, 185, 129, 0.2)"/>
+      <stop offset="60%" stop-color="rgba(56, 189, 248, 0.08)"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+    <linearGradient id="scanBeam2" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="50%" stop-color="rgba(16, 185, 129, 0.9)"/>
+      <stop offset="100%" stop-color="transparent"/>
     </linearGradient>
   </defs>
-  <rect width="300" height="360" rx="14" fill="url(#bg2)"/>
-  
-  <!-- Chiseled / Sculpted Slimmer Jawline (Day 30) -->
-  <path d="M84 140 C84 80, 216 80, 216 140 C216 195, 185 228, 150 234 C115 228, 84 195, 84 140 Z" fill="url(#faceGrad2)"/>
-  
-  <!-- Hair (Trimmed Style) -->
-  <path d="M80 130 C80 62, 220 62, 220 130 C198 80, 102 80, 80 130 Z" fill="#24292f"/>
-  
-  <!-- Eyes -->
-  <ellipse cx="124" cy="138" rx="7" ry="5.5" fill="#1e1e24"/>
-  <ellipse cx="176" cy="138" rx="7" ry="5.5" fill="#1e1e24"/>
-  
-  <!-- Sharp Eyebrows -->
-  <path d="M112 126 Q124 122 136 126" stroke="#24292f" stroke-width="2.8" stroke-linecap="round" fill="none"/>
-  <path d="M164 126 Q176 122 188 126" stroke="#24292f" stroke-width="2.8" stroke-linecap="round" fill="none"/>
-  
-  <!-- Confident Radiant Smile -->
-  <path d="M132 176 Q150 194 168 176" stroke="#10b981" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  
-  <!-- Defined Neck & Athletic Shoulders -->
-  <path d="M128 232 L122 255 L56 345 L244 345 L178 255 L172 232 Z" fill="#2e3440"/>
+
+  <!-- Deep Obsidian Canvas with Emerald Sub-Glow -->
+  <rect width="320" height="380" rx="16" fill="url(#faceBg2)"/>
+  <rect x="1" y="1" width="318" height="378" rx="15" fill="none" stroke="rgba(16, 185, 129, 0.25)" stroke-width="1"/>
+
+  <!-- Ambient Glow Behind Sculpted Face -->
+  <circle cx="160" cy="150" r="110" fill="url(#meshGlow2)"/>
+
+  <!-- Scanning Corner Reticle Brackets (Emerald Glow) -->
+  <path d="M40 70 V45 H65" stroke="rgba(16, 185, 129, 0.7)" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M280 70 V45 H255" stroke="rgba(16, 185, 129, 0.7)" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M40 240 V265 H65" stroke="rgba(16, 185, 129, 0.7)" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M280 240 V265 H255" stroke="rgba(16, 185, 129, 0.7)" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Day 30 Biometric Wireframe Face (Tapered Jawline, Zero Bloating, Sharpened Mandibular Line) -->
+  <g id="biometric-mesh-current" stroke="rgba(16, 185, 129, 0.75)" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Sculpted, Tapered Jaw Contour -->
+    <path d="M102 130 C98 75, 222 75, 218 130 C218 185, 188 238, 160 252 C132 238, 102 185, 102 130 Z" stroke-width="2" stroke="rgba(52, 211, 153, 0.95)"/>
+    
+    <!-- Forehead & Temple Contours -->
+    <path d="M115 95 Q160 85 205 95" stroke-dasharray="2 3"/>
+    <path d="M108 120 Q160 110 212 120"/>
+    
+    <!-- Sharp Brow Arches -->
+    <path d="M122 124 Q136 118 148 124" stroke-width="1.8"/>
+    <path d="M172 124 Q184 118 198 124" stroke-width="1.8"/>
+    
+    <!-- Clear Orbits & Focused Pupils -->
+    <ellipse cx="135" cy="136" rx="11" ry="6.5"/>
+    <circle cx="135" cy="136" r="2.5" fill="rgba(16, 185, 129, 0.9)"/>
+    <ellipse cx="185" cy="136" rx="11" ry="6.5"/>
+    <circle cx="185" cy="136" r="2.5" fill="rgba(16, 185, 129, 0.9)"/>
+    
+    <!-- Defined Nose Contour -->
+    <path d="M160 124 V172 L152 176 H168 L160 172"/>
+    
+    <!-- Tapered Cheekbone & Sharpened Mandibular Contours -->
+    <path d="M112 152 Q136 162 148 175"/>
+    <path d="M208 152 Q184 162 172 175"/>
+    <!-- Chiseled Jawline Laser Vector Highlights -->
+    <path d="M115 180 L138 222 L160 252 L182 222 L205 180" stroke="rgba(52, 211, 153, 0.9)" stroke-width="1.8"/>
+    
+    <!-- Mouth & Confident Expression -->
+    <path d="M142 202 Q160 210 178 202" stroke-width="1.6"/>
+    <path d="M148 210 Q160 216 172 210"/>
+    
+    <!-- Vertical Biometric Symmetry Axis -->
+    <line x1="160" y1="65" x2="160" y2="258" stroke="rgba(16, 185, 129, 0.3)" stroke-dasharray="3 3"/>
+  </g>
+
+  <!-- Horizontal Laser Scan Beam -->
+  <line x1="45" y1="180" x2="275" y2="180" stroke="url(#scanBeam2)" stroke-width="2"/>
+
+  <!-- Latest Check-In Telemetry Card -->
+  <g transform="translate(20, 290)">
+    <rect width="280" height="72" rx="10" fill="rgba(13, 28, 22, 0.92)" stroke="rgba(16, 185, 129, 0.35)" stroke-width="1"/>
+    
+    <!-- Status Dot & Mode -->
+    <circle cx="16" cy="20" r="4" fill="#10b981"/>
+    <text x="28" y="24" fill="#34d399" font-family="'JetBrains Mono', -apple-system, monospace" font-size="10.5" font-weight="700" letter-spacing="0.5">
+      CHECK-IN TELEMETRY · DAY 30
+    </text>
+    
+    <!-- Metrics Row 1 -->
+    <text x="16" y="44" fill="#f8fafc" font-family="'Plus Jakarta Sans', -apple-system, sans-serif" font-size="12" font-weight="700">
+      Weight: 81.5 kg (▼ 3.5 kg Lost!) · Chiseled
+    </text>
+    
+    <!-- Metrics Row 2 -->
+    <text x="16" y="60" fill="#a7f3d0" font-family="'Plus Jakarta Sans', -apple-system, sans-serif" font-size="10.5">
+      Water Retention: -42% · Jawline Angle: 116° (Sharper)
+    </text>
+  </g>
 </svg>

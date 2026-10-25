@@ -12,8 +12,8 @@
 > **Classification**: Software Design Document (SDD) – Presentation & Web UI  
 > **Governing Design System**: [`DESIGN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/DESIGN.md) (Linear Obsidian Surface Ladder)  
 > **Architecture Pattern**: Native ES Modules, Zero-Bundler Vanilla JS, Component Partials, Web BFF Single-Roundtrip Hydration  
-> **Associated ADRs**: [`ADR-055`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261001-055-web-client-single-roundtrip-hydration.md), [`ADR-061`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md), [`ADR-065`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md), [`ADR-067`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md), [`ADR-114`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md), [`ADR-128`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md)  
-> **Relevant CFTs**: [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md), [`cft_responsive_web_and_tablet.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_responsive_web_and_tablet.md)  
+> **Associated ADRs**: [`ADR-055`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261001-055-web-client-single-roundtrip-hydration.md), [`ADR-061`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md), [`ADR-065`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md), [`ADR-067`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md), [`ADR-114`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md), [`ADR-128`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md), [`ADR-133`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md)  
+> **Relevant CFTs**: [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md), [`cft_responsive_web_and_tablet.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_responsive_web_and_tablet.md), [`cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md)  
 
 ---
 
@@ -164,6 +164,20 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Daily View Isolation (`1D`)**: Daily timeline view strictly filters meal history and category trends to today's logged meals (`userLocalDate == today`), displaying subtitle *"Showing Today's meal history"*.
     - **Yearly View Retirement (`365D`)**: Retired the 365D period tab from client UI and backend aggregation to eliminate massive data consolidation overhead, standardizing the supported timeline intervals to `1D` (Daily), `7D` (Weekly), `30D` (Monthly), and `90D` (Quarterly).
     - **Dedicated Contract Tests**: Isolated timeline assertions into `tests/Nutrition.EvalHarness.Tests/AnalyticsTimelineContractTests.cs`, preserving test segregation boundaries.
+
+14. **Futuristic Bio-Telemetry Mobile Bottom Navigation Dock & Biometric Progress Visualizations (`bottom-nav.html`, `index.html`, `styles.css`, `main.js`, `uploads/progress/*.svg`, `assets/placeholder-progress.svg`, `ADR-133`)**:
+    - **Zero-Emoji Bio-Telemetry Mobile Dock**: Completely phased out legacy OS emojis (`📊`, `➕`, `📅`, `⚙️`) in favor of vector-rendered bio-telemetry interfaces on `<640px` viewports:
+      - **Pulse** (`#btn-nav-overview`): Electrocardiogram metabolic rhythm wave with live status pulse indicator.
+      - **AI Snap** (`#btn-nav-log-meal`): Elevated Neural Aperture Capsule with 4-point AI sparkle star, optical iris, and animated `@keyframes aiFabPulse` radial ambient glow.
+      - **Timeline** (`#btn-nav-history`): Circadian chrononutrition clock dial with meal checkpoint nodes representing meal timing.
+      - **Bio-Profile** (`#btn-nav-profile`): Precision DNA double-helix encased in a clinical shield (`#06b6d4`), signifying deep biomarker health analytics.
+    - **Glassmorphic Obsidian Dock**: Encapsulated in `backdrop-filter: blur(24px)`, specular top hairline border `rgba(255, 255, 255, 0.08)`, and active capsule pill styling.
+    - **Biometric Face Slimming & DEXA 3D Body Composition Scans**:
+      - **Facial Slimming HUD** (`face_baseline.svg`, `face_current.svg`): Replaced cartoon faces with high-tech cyan vector wireframes, anatomical scan reticles, jawline angle telemetry (132° $\rightarrow$ 124°), and hydration water-retention status chips.
+      - **DEXA 3D Anatomical Body Scans** (`body_baseline.svg`, `body_current.svg`): Medical-grade anatomical silhouettes displaying visceral fat density heatmaps, waist caliper tape readings (38.0" $\rightarrow$ 35.5"), and lean mass preservation indicators.
+      - **Biometric Scanning Reticle Placeholder** (`placeholder-progress.svg`): Replaced stick-figure mannequin placeholder with an illuminated biometric scanning reticle HUD.
+    - **Tactile Mobile Haptics**: Added `navigator.vibrate(10)` micro-haptic feedback on tab interactions.
+    - **Touch Target & Contract Invariants**: Retained 100% DOM element IDs (`btn-nav-overview`, `btn-nav-log-meal`, `btn-nav-history`, `btn-nav-profile`), ensuring all CFT suites, accessibility targets (>= 48x48px), and routing listeners continue to function without drift.
 
 ---
 

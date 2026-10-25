@@ -632,7 +632,12 @@ async function initApp() {
 
   function setBottomNavActive(activeBtn) {
     document.querySelectorAll('.bottom-nav-item').forEach(b => b.classList.remove('active'));
-    if (activeBtn) activeBtn.classList.add('active');
+    if (activeBtn) {
+      activeBtn.classList.add('active');
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate(10); } catch (_) { /* Ignore unsupported/blocked vibration */ }
+      }
+    }
   }
 
   btnNavOverview?.addEventListener('click', () => {

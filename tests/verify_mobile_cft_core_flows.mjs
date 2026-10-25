@@ -459,18 +459,26 @@ async function main() {
         const btn = document.getElementById('btn-confirm-meal');
         if (btn) btn.click();
     })()`);
-    await sleep(2500);
-
-    const modalClosed = await evaluate(`(() => {
-        const modal = document.getElementById('review-modal');
-        const closed = !modal || window.getComputedStyle(modal).display === 'none';
-        const modalOpenClassRemoved = !document.body.classList.contains('modal-open');
-        const bottomNav = document.getElementById('mobile-bottom-nav');
-        const bottomNavRestored = bottomNav && window.getComputedStyle(bottomNav).display === 'flex';
-        return { closed, modalOpenClassRemoved, bottomNavRestored };
-    })()`);
+    let modalClosed = { closed: false, bottomNavRestored: false };
+    for (let i = 0; i < 70; i++) {
+        await sleep(500);
+        modalClosed = await evaluate(`(() => {
+            const modal = document.getElementById('review-modal');
+            const closed = !modal || window.getComputedStyle(modal).display === 'none';
+            const modalOpenClassRemoved = !document.body.classList.contains('modal-open');
+            const bottomNav = document.getElementById('mobile-bottom-nav');
+            const bottomNavRestored = bottomNav && window.getComputedStyle(bottomNav).display === 'flex';
+            const btnConfirm = document.getElementById('btn-confirm-meal');
+            return { closed, modalOpenClassRemoved, bottomNavRestored, btnText: btnConfirm?.textContent, disabled: btnConfirm?.disabled };
+        })()`);
+        if (modalClosed.closed && modalClosed.bottomNavRestored) break;
+        if (i % 10 === 0) {
+            console.log(`    [DEBUG Save Poll ${i}]:`, JSON.stringify(modalClosed));
+        }
+    }
 
     const updateAndSavePass = modalClosed.closed && modalClosed.bottomNavRestored;
+    console.log(`    [DEBUG modalClosed]:`, JSON.stringify(modalClosed));
     console.log(`    [PASS/FAIL] Meal Saved & Mobile Nav Restored: ${updateAndSavePass ? 'PASS' : 'FAIL'}`);
     testResults.push({ name: 'Update Food Item & Save Daily Meal Log', pass: updateAndSavePass });
 
