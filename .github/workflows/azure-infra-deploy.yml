@@ -56,7 +56,7 @@ on:
         description: 'Deploy Azure SQL Database Serverless Free Tier (GP_S_Gen5_1, 100k vCore-s free)'
         required: false
         type: boolean
-        default: false
+        default: true
       sqlAdminLogin:
         description: 'SQL Server Administrator login username (SQL Authentication)'
         required: false
@@ -97,7 +97,7 @@ jobs:
             echo "| **File Share Quota (GB)** | \`${{ inputs.fileShareQuotaGb || 1 }}\` | Persistent SQLite SMB quota |"
             echo "| **ACR Name** | \`${{ inputs.acrName || 'crdostdevskehxuagttzos' }}\` | Azure Container Registry |"
             echo "| **Key Vault Name** | \`${{ inputs.keyVaultName || 'kvdostdevskehxuagttzos' }}\` | Azure Key Vault |"
-            echo "| **Deploy Azure SQL Serverless** | \`${{ inputs.deployAzureSql || false }}\` | Azure SQL Free Tier (GP_S_Gen5_1, 100k vCore-s) |"
+            echo "| **Deploy Azure SQL Serverless** | \`${{ inputs.deployAzureSql != false }}\` | Azure SQL Free Tier (GP_S_Gen5_1, 100k vCore-s) |"
             echo "| **SQL Admin Login** | \`${{ inputs.sqlAdminLogin || 'sqladmin' }}\` | SQL Server Authentication admin username |"
             echo "| **Allowed Client IP** | \`${{ inputs.allowedClientIp || 'None' }}\` | Local workstation IP permitted in firewall |"
             echo "| **Skip Pre-Flight Gates** | \`${{ inputs.skipPreFlightGates }}\` | Pre-flight security scan status |"
@@ -289,7 +289,7 @@ jobs:
               acrName="${{ inputs.acrName }}" \
               keyVaultName="${{ inputs.keyVaultName }}" \
               acaSubnetName="${{ inputs.acaSubnetName || 'snet-aca-infra' }}" \
-              deployAzureSql=${{ inputs.deployAzureSql || false }} \
+              deployAzureSql=${{ inputs.deployAzureSql != false }} \
               sqlAdminLogin="${{ inputs.sqlAdminLogin || 'sqladmin' }}" \
               sqlAdminPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}" \
               allowedClientIp="${{ inputs.allowedClientIp || '' }}" \
@@ -371,7 +371,7 @@ jobs:
               acrName="${{ inputs.acrName }}" \
               keyVaultName="${{ inputs.keyVaultName }}" \
               acaSubnetName="${{ inputs.acaSubnetName || 'snet-aca-infra' }}" \
-              deployAzureSql=${{ inputs.deployAzureSql || false }} \
+              deployAzureSql=${{ inputs.deployAzureSql != false }} \
               sqlAdminLogin="${{ inputs.sqlAdminLogin || 'sqladmin' }}" \
               sqlAdminPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}" \
               allowedClientIp="${{ inputs.allowedClientIp || '' }}" \
@@ -508,7 +508,7 @@ jobs:
             acrName=${{ inputs.acrName }}
             keyVaultName=${{ inputs.keyVaultName }}
             acaSubnetName=${{ inputs.acaSubnetName || 'snet-aca-infra' }}
-            deployAzureSql=${{ inputs.deployAzureSql || false }}
+            deployAzureSql=${{ inputs.deployAzureSql != false }}
             sqlAdminLogin=${{ inputs.sqlAdminLogin || 'sqladmin' }}
             sqlAdminPassword=${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}
             allowedClientIp=${{ inputs.allowedClientIp || '' }}

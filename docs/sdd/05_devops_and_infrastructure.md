@@ -448,7 +448,13 @@ The full architectural blueprint is codified in the following repository visual 
   2. **Conditional Key Vault Secret Binding**: In `infra/dev/app.bicep`, wrapped `azure-sql-connection-string` secret reference in an inline conditional check `(databaseProvider == 'AzureSql' ? [{ name: 'azure-sql-connection-string', keyVaultUrl: '${keyVaultUri}secrets/azure-sql-connection-string', identity: managedIdentityId }] : [])`. Similarly, container environment variable `ConnectionStrings__AzureSqlConnection` references the secret only when `databaseProvider == 'AzureSql'`, defaulting to empty string otherwise.
   3. **Step Summary Transparency**: Updated `.github/workflows/azure-app-deploy.yml` and `azure-infra-deploy.yml` to display full parameter tables in `$GITHUB_STEP_SUMMARY` across dispatch, validation, what-if, and stage completion.
 
-
-
-
-
+### 8.16 Default Persistence Alignment to Azure SQL Serverless & App Deployment Workflow Modernization (ADR-134)
+- **Problem**:
+  1. **Deployment Workflow Drift**: `.github/workflows/azure-app-deploy.yml` and `infra/dev/main.bicep` defaulted `databaseProvider` to `Sqlite` and `deployAzureSql` to `false`. When triggering an application deployment via GitHub Actions without manually overriding inputs, the workflow defaulted to SQLite rather than the production-ready Azure SQL Serverless architecture.
+  2. **Infrastructure Template Default Divergence**: In `infra/dev/main.bicep` and `infra/dev/infra.bicep`, `deployAzureSql` defaulted to `false`, necessitating explicit flags during Bicep orchestration.
+  3. **CI/CD Quality Gate Runner Network Isolation**: When `Database:Provider` defaults to `AzureSql` in `appsettings.json`, headless GitHub Actions runners (`ubuntu-latest`) executing Tier 3 System Tests and Tier 4 E2E Tests in `quality-test-gate.yml` cannot connect to Azure SQL Serverless because runner dynamic IPs are not permitted in Azure SQL firewall and runners lack Azure AD/secret credentials, leading to test startup timeouts.
+- **Architectural Solution**:
+  1. **Application Deployment Workflow Alignment**: In `.github/workflows/azure-app-deploy.yml`, updated workflow dispatch inputs, validation what-if, ARM foundation infrastructure deployment, and ACA application deployment to default `databaseProvider` to `AzureSql`. Foundation deployment dynamically computes `deployAzureSql=${{ (inputs.databaseProvider || 'AzureSql') == 'AzureSql' }}`.
+  2. **Infrastructure Deployment Workflow Alignment**: In `.github/workflows/azure-infra-deploy.yml`, updated default input and execution parameters so that `deployAzureSql` defaults to `true`.
+  3. **Bicep Template Parameter Convergence**: Updated `infra/dev/main.bicep` and `infra/dev/infra.bicep` to default `databaseProvider string = 'AzureSql'` and `deployAzureSql bool = true`, aligning Infrastructure as Code with the application's default persistence configuration.
+  4. **CI Test Runner Isolation**: In `.github/workflows/quality-test-gate.yml`, injected `Database__Provider: Sqlite` into the runner environment variables for Job 3 (`system-tests`) and Job 4 (`e2e-tests`). Similarly, updated `scripts/verify-quality-test-gates.ps1` to explicitly append `--Database:Provider Sqlite` to the local WebGateway startup command. This ensures fast, hermetic, 100% offline-isolated test execution on CI runners without requiring Azure SQL firewall traversal or credentials.
