@@ -7,6 +7,7 @@
  */
 using Microsoft.Data.Sqlite;
 
+#pragma warning disable CA2100 // Dynamic SQL commands use verified table and column metadata discovered from SQLite schema introspection
 namespace Nutrition.Tools.DataMigrator.Services;
 
 public record SqliteColumnMetadata(
@@ -146,5 +147,6 @@ public class SqliteSourceReader : IDisposable
     {
         _connection?.Dispose();
         _connection = null;
+        GC.SuppressFinalize(this);
     }
 }

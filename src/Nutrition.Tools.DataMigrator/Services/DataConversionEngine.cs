@@ -52,6 +52,7 @@ public class DataConversionEngine
         "EarnedBadges"
     };
 
+#pragma warning disable CA1822 // ConvertValue is designed as an instance method for dependency injection and testing
     public object? ConvertValue(
         string tableName,
         string columnName,
@@ -108,7 +109,7 @@ public class DataConversionEngine
         return ConvertToString(sourceValue, tableName, columnName, maxLength, rowKey, stats);
     }
 
-    private static object ConvertToBoolean(object sourceValue, string tableName, string columnName, string rowKey, TableConversionStats stats)
+    private static bool ConvertToBoolean(object sourceValue, string tableName, string columnName, string rowKey, TableConversionStats stats)
     {
         if (sourceValue is bool b)
         {
@@ -241,7 +242,7 @@ public class DataConversionEngine
         return dt;
     }
 
-    private static object ConvertToJson(object sourceValue, string tableName, string columnName, string rowKey, TableConversionStats stats)
+    private static string ConvertToJson(object sourceValue, string tableName, string columnName, string rowKey, TableConversionStats stats)
     {
         var rawStr = sourceValue.ToString()?.Trim();
         if (string.IsNullOrWhiteSpace(rawStr))
@@ -408,7 +409,7 @@ public class DataConversionEngine
         return null;
     }
 
-    private static object ConvertToString(object sourceValue, string tableName, string columnName, int? maxLength, string rowKey, TableConversionStats stats)
+    private static string ConvertToString(object sourceValue, string tableName, string columnName, int? maxLength, string rowKey, TableConversionStats stats)
     {
         var raw = sourceValue.ToString() ?? "";
         // Strip null characters

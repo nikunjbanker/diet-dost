@@ -8,6 +8,7 @@
 using System.Data;
 using Microsoft.Data.SqlClient;
 
+#pragma warning disable CA2100 // Dynamic SQL commands use verified table and column metadata discovered from INFORMATION_SCHEMA
 namespace Nutrition.Tools.DataMigrator.Services;
 
 public enum MigrationMode
@@ -668,5 +669,6 @@ public class AzureSqlTargetWriter : IDisposable
     {
         _connection?.Dispose();
         _connection = null;
+        GC.SuppressFinalize(this);
     }
 }
