@@ -94,23 +94,45 @@
 
   <!-- Fixed Thumb-Zone Bottom Navigation Bar (<640px) -->
   <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="Mobile Navigation">
-    <button type="button" class="bottom-nav-item active" id="btn-nav-overview" aria-label="Overview">
-      <span class="bottom-nav-icon">📊</span>
-      <span class="bottom-nav-label">Overview</span>
-    </button>
-    <button type="button" class="bottom-nav-item bottom-nav-fab" id="btn-nav-log-meal" aria-label="Log Meal">
-      <div class="fab-circle">
-        <span class="fab-icon">➕</span>
+    <button type="button" class="bottom-nav-item active" id="btn-nav-overview" aria-label="Metabolic Pulse Overview">
+      <div class="bottom-nav-icon-wrapper">
+        <svg class="bottom-nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" opacity="0.35" stroke-dasharray="2 3"></circle>
+          <path d="M3 12h4l2.5-6 3.5 12 3-8 2 4h3"></path>
+        </svg>
       </div>
-      <span class="bottom-nav-label">Log Meal</span>
+      <span class="bottom-nav-label">Pulse</span>
     </button>
-    <button type="button" class="bottom-nav-item" id="btn-nav-history" aria-label="Meal Diary and History">
-      <span class="bottom-nav-icon">📅</span>
-      <span class="bottom-nav-label">Diary</span>
+    <button type="button" class="bottom-nav-item bottom-nav-fab" id="btn-nav-log-meal" aria-label="AI Snap Food and Nutrition Scan">
+      <div class="fab-circle">
+        <svg class="fab-icon-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M4 16v3a1 1 0 0 0 1 1h3M16 20h3a1 1 0 0 0 1-1v-3" stroke-width="1.8"></path>
+          <circle cx="12" cy="12" r="3.2" stroke-width="1.8"></circle>
+          <path d="M12 9v-1m0 8v-1m-3-3H8m8 0h-1" stroke-width="1.5"></path>
+        </svg>
+      </div>
+      <span class="bottom-nav-label">AI Snap</span>
     </button>
-    <button type="button" class="bottom-nav-item" id="btn-nav-profile" aria-label="Clinical Profile and Intake">
-      <span class="bottom-nav-icon">⚙️</span>
-      <span class="bottom-nav-label">Clinical</span>
+    <button type="button" class="bottom-nav-item" id="btn-nav-history" aria-label="Meal Timeline and History">
+      <div class="bottom-nav-icon-wrapper">
+        <svg class="bottom-nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <polyline points="12 7 12 12 15.5 14"></polyline>
+          <circle cx="12" cy="3" r="1.2" fill="currentColor"></circle>
+          <circle cx="21" cy="12" r="1.2" fill="currentColor"></circle>
+        </svg>
+      </div>
+      <span class="bottom-nav-label">Timeline</span>
+    </button>
+    <button type="button" class="bottom-nav-item" id="btn-nav-profile" aria-label="Clinical Nutrition Bio-Profile and Intake">
+      <div class="bottom-nav-icon-wrapper">
+        <svg class="bottom-nav-svg" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 2L4 5v6.5C4 16.5 7.4 21 12 22c4.6-1 8-5.5 8-10.5V5l-8-3z"></path>
+          <line x1="12" y1="8" x2="12" y2="16"></line>
+          <line x1="8" y1="12" x2="16" y2="12"></line>
+        </svg>
+      </div>
+      <span class="bottom-nav-label">Bio-Profile</span>
     </button>
   </nav>
 
