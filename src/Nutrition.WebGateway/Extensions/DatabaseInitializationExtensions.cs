@@ -276,7 +276,9 @@ public static partial class DatabaseInitializationExtensions
                 ""FatGrams"" REAL NOT NULL,
                 ""MealType"" TEXT NOT NULL,
                 ""CreatedAtUtc"" TEXT NOT NULL,
-                ""FrequencyCount"" INTEGER NOT NULL
+                ""FrequencyCount"" INTEGER NOT NULL,
+                ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
+                ""DeletedAtUtc"" TEXT NULL
             );");
 
         await EnsureColumnExistsAsync(db, "Meals", "TotalCalories", "REAL NOT NULL DEFAULT 0");
@@ -297,6 +299,7 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
+        await EnsureSoftDeleteColumnsAsync(db);
 
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""ProgressPhotos"" (
@@ -307,7 +310,9 @@ public static partial class DatabaseInitializationExtensions
                 ""PhotoType"" INTEGER NOT NULL,
                 ""PhotoUri"" TEXT NOT NULL,
                 ""IsBaseline"" INTEGER NOT NULL,
-                ""Notes"" TEXT NULL
+                ""Notes"" TEXT NULL,
+                ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
+                ""DeletedAtUtc"" TEXT NULL
             );
             CREATE INDEX IF NOT EXISTS ""IX_ProgressPhotos_UserId_CapturedAtUtc"" ON ""ProgressPhotos"" (""UserId"", ""CapturedAtUtc"");
             CREATE INDEX IF NOT EXISTS ""IX_ProgressPhotos_UserId_PhotoType"" ON ""ProgressPhotos"" (""UserId"", ""PhotoType"");
@@ -324,7 +329,9 @@ public static partial class DatabaseInitializationExtensions
                 ""IdentifiedItemsSummary"" TEXT NULL,
                 ""RetrainingTriggered"" INTEGER NOT NULL,
                 ""RetrainingOutcome"" TEXT NULL,
-                ""CreatedAtUtc"" TEXT NOT NULL
+                ""CreatedAtUtc"" TEXT NOT NULL,
+                ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
+                ""DeletedAtUtc"" TEXT NULL
             );
             CREATE INDEX IF NOT EXISTS ""IX_AiFeedbacks_UserId_CreatedAtUtc"" ON ""AiFeedbacks"" (""UserId"", ""CreatedAtUtc"");
             CREATE INDEX IF NOT EXISTS ""IX_AiFeedbacks_Rating"" ON ""AiFeedbacks"" (""Rating"");
@@ -349,7 +356,9 @@ public static partial class DatabaseInitializationExtensions
                 ""ConsentIpAddress"" TEXT NULL,
                 ""ConsentUserAgent"" TEXT NULL,
                 ""CreatedAtUtc"" TEXT NOT NULL,
-                ""LastLoginAtUtc"" TEXT NULL
+                ""LastLoginAtUtc"" TEXT NULL,
+                ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
+                ""DeletedAtUtc"" TEXT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS ""IX_Users_NormalizedEmail"" ON ""Users"" (""NormalizedEmail"");
             CREATE INDEX IF NOT EXISTS ""IX_Users_NormalizedMobileNumber"" ON ""Users"" (""NormalizedMobileNumber"");
@@ -564,7 +573,9 @@ public static partial class DatabaseInitializationExtensions
                     [FatGrams] FLOAT NOT NULL,
                     [MealType] NVARCHAR(MAX) NOT NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL,
-                    [FrequencyCount] INT NOT NULL
+                    [FrequencyCount] INT NOT NULL,
+                    [IsDeleted] BIT NOT NULL DEFAULT 0,
+                    [DeletedAtUtc] DATETIME2 NULL
                 );");
             await EnsureIndexExistsAsync(db, "Corrections", "IX_Corrections_UserId_OriginalDetectedItem", "[UserId], [OriginalDetectedItem]");
         }
@@ -580,7 +591,9 @@ public static partial class DatabaseInitializationExtensions
                     [PhotoType] INT NOT NULL,
                     [PhotoUri] NVARCHAR(MAX) NOT NULL,
                     [IsBaseline] BIT NOT NULL,
-                    [Notes] NVARCHAR(MAX) NULL
+                    [Notes] NVARCHAR(MAX) NULL,
+                    [IsDeleted] BIT NOT NULL DEFAULT 0,
+                    [DeletedAtUtc] DATETIME2 NULL
                 );");
             await EnsureIndexExistsAsync(db, "ProgressPhotos", "IX_ProgressPhotos_UserId_CapturedAtUtc", "[UserId], [CapturedAtUtc]");
             await EnsureIndexExistsAsync(db, "ProgressPhotos", "IX_ProgressPhotos_UserId_PhotoType", "[UserId], [PhotoType]");
@@ -601,7 +614,9 @@ public static partial class DatabaseInitializationExtensions
                     [IdentifiedItemsSummary] NVARCHAR(MAX) NULL,
                     [RetrainingTriggered] BIT NOT NULL,
                     [RetrainingOutcome] NVARCHAR(MAX) NULL,
-                    [CreatedAtUtc] DATETIME2 NOT NULL
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [IsDeleted] BIT NOT NULL DEFAULT 0,
+                    [DeletedAtUtc] DATETIME2 NULL
                 );");
             await EnsureIndexExistsAsync(db, "AiFeedbacks", "IX_AiFeedbacks_UserId_CreatedAtUtc", "[UserId], [CreatedAtUtc]");
             await EnsureIndexExistsAsync(db, "AiFeedbacks", "IX_AiFeedbacks_Rating", "[Rating]");
@@ -630,7 +645,9 @@ public static partial class DatabaseInitializationExtensions
                     [ConsentIpAddress] NVARCHAR(MAX) NULL,
                     [ConsentUserAgent] NVARCHAR(MAX) NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL,
-                    [LastLoginAtUtc] DATETIME2 NULL
+                    [LastLoginAtUtc] DATETIME2 NULL,
+                    [IsDeleted] BIT NOT NULL DEFAULT 0,
+                    [DeletedAtUtc] DATETIME2 NULL
                 );");
             await EnsureIndexExistsAsync(db, "Users", "IX_Users_NormalizedEmail", "[NormalizedEmail]");
             await EnsureIndexExistsAsync(db, "Users", "IX_Users_NormalizedMobileNumber", "[NormalizedMobileNumber]");
@@ -724,10 +741,24 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
+        await EnsureSoftDeleteColumnsAsync(db);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation("[INIT] Azure SQL Database incremental schema and columns verified successfully.");
+        }
+    }
+
+    private static async Task EnsureSoftDeleteColumnsAsync(DietTrackerDbContext db)
+    {
+        string boolDef = db.Database.IsSqlServer() ? "BIT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
+        string dateDef = db.Database.IsSqlServer() ? "DATETIME2 NULL" : "TEXT NULL";
+
+        string[] softDeletableTables = ["Meals", "ProgressPhotos", "Users", "Profiles", "Corrections", "Ledgers", "AiFeedbacks"];
+        foreach (var table in softDeletableTables)
+        {
+            await EnsureColumnExistsAsync(db, table, "IsDeleted", boolDef);
+            await EnsureColumnExistsAsync(db, table, "DeletedAtUtc", dateDef);
         }
     }
 

@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -29,7 +29,12 @@ public class EfRepository<T> : IRepository<T> where T : class
     {
         try
         {
-            return await _dbSet.FindAsync(new object[] { id }, ct);
+            var entity = await _dbSet.FindAsync(new object[] { id }, ct);
+            if (entity is Nutrition.Domain.Common.ISoftDeletable { IsDeleted: true })
+            {
+                return null;
+            }
+            return entity;
         }
         catch (Exception ex)
         {
@@ -111,6 +116,30 @@ public class EfRepository<T> : IRepository<T> where T : class
             _logger.LogError(ex,
                 "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
                 nameof(CountAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<T>> FindDeletedAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+    {
+        try
+        {
+            var query = _dbSet.IgnoreQueryFilters();
+            if (typeof(Nutrition.Domain.Common.ISoftDeletable).IsAssignableFrom(typeof(T)))
+            {
+                query = query.Where(e => EF.Property<bool>(e, "IsDeleted"));
+            }
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+            return await query.ToListAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
+                nameof(FindDeletedAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
             throw;
         }
     }

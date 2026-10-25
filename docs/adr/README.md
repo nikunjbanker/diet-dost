@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 99 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 100 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **26** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **27** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **21** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **27** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **12** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -72,6 +72,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-130** | Azure SQL Redirect NSG Outbound Ports and Workflow Summary Synchronization | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261024-130-azure-sql-redirect-nsg-ports-and-workflow-summaries.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-130-azure-sql-redirect-nsg-ports-and-workflow-summaries.md) |
 | **ADR-132** | SQLite to Azure SQL Data Migration Tool & Data Conversion Engine | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261025-132-sqlite-to-azuresql-migration-tool.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-132-sqlite-to-azuresql-migration-tool.md) |
 | **ADR-134** | Azure SQL Serverless Pre-Warming, Resilient Startup, and Biometric Media Asset Redesign | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md) |
+| **ADR-135** | User-Scoped Upload Directories, Root-Relative URI Normalization, Logical Soft Delete, and SuperAdmin Deleted Audit Mode | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*

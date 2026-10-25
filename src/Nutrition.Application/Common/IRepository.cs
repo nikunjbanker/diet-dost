@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -21,6 +21,7 @@ public interface IRepository<T> where T : class
     Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default);
     Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default);
     Task<int> CountAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default);
+    Task<List<T>> FindDeletedAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default);
     IQueryable<T> Query();
     Task AddAsync(T entity, CancellationToken ct = default);
     Task UpdateAsync(T entity, CancellationToken ct = default);

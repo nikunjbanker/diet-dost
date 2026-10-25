@@ -11,6 +11,7 @@ using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Features.Admin.Commands.TierConfiguration;
 using Nutrition.Application.Features.Admin.Commands.UserManagement;
 using Nutrition.Application.Features.Admin.Queries.GetAdminUsers;
+using Nutrition.Application.Features.Admin.Queries.GetDeletedRecords;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.WebGateway.Extensions;
 
@@ -291,4 +292,21 @@ public class AdminController : ControllerBase
 
         return Ok(result.Data);
     }
+
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpGet("deleted-records")]
+    public async Task<IActionResult> GetDeletedRecords(
+        [FromQuery] string? recordType = "all",
+        [FromQuery] string? userId = null,
+        CancellationToken ct = default)
+    {
+        var result = await _dispatcher.QueryAsync(new GetDeletedRecordsQuery(recordType, userId), ct);
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+
+        return Ok(result.Data);
+    }
 }
+

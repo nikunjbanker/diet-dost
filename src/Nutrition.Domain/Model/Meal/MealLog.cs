@@ -5,6 +5,8 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Domain.Common;
+
 namespace Nutrition.Domain.Model.Meal;
 
 public enum MealType
@@ -36,7 +38,7 @@ public class FoodItemRecord
     public double ConfidenceScore { get; set; } = 0.85;
 }
 
-public class MealLog
+public class MealLog : ISoftDeletable
 {
     public const double ConfidenceThreshold = 0.70; // Mandatory >= 70% threshold
 
@@ -47,6 +49,9 @@ public class MealLog
     public string DishName { get; set; } = string.Empty;
     public string? PhotoUri { get; set; }
     public double OverallConfidenceScore { get; set; } = 0.85;
+
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAtUtc { get; set; }
 
     public bool IsConfidencePassed => OverallConfidenceScore >= ConfidenceThreshold;
 

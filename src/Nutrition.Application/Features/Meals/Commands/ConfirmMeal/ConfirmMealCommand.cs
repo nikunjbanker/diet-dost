@@ -8,6 +8,7 @@
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Common.Security;
 using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Meal;
@@ -68,6 +69,10 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
 
         meal.IsVerifiedByUser = true;
         meal.LoggedAt = meal.LoggedAt != default ? meal.LoggedAt.ToUniversalTime() : DateTime.UtcNow;
+        if (!string.IsNullOrWhiteSpace(meal.PhotoUri))
+        {
+            meal.PhotoUri = PhotoPathSanitizer.NormalizeToRelativePath(meal.PhotoUri);
+        }
 
         // Continuous Model Re-Training & Adaptive Learning
         var learnedNotes = new List<string>();

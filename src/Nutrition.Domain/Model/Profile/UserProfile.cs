@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -6,6 +6,7 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Text.Json.Serialization;
+using Nutrition.Domain.Common;
 
 namespace Nutrition.Domain.Model.Profile;
 
@@ -40,7 +41,7 @@ public class MedicationEntry
     public string? TimingNotes { get; set; }
 }
 
-public class UserProfile
+public class UserProfile : ISoftDeletable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = string.Empty;
@@ -48,6 +49,8 @@ public class UserProfile
     public int Age { get; set; }
     public double HeightCm { get; set; }
     public double CurrentWeightKg { get; set; }
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAtUtc { get; set; }
 
     /// <summary>
     /// Sets HeightCm from feet and inches (e.g. 5 ft 9 in).

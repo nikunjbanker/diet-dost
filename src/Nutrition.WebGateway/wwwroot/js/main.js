@@ -16,7 +16,7 @@ import { appState } from './core/state.js';
 
 import { apiClient } from './services/api.js?v=1.5.0';
 import { AuthService } from './services/auth-service.js?v=1.5.0';
-import { AdminService } from './services/admin-service.js?v=1.5.0';
+import { AdminService } from './services/admin-service.js?v=1.9.0';
 import { MealsService } from './services/meals-service.js?v=1.5.0';
 import { ProfileService } from './services/profile-service.js?v=1.5.0';
 import { AnalyticsService } from './services/analytics-service.js?v=1.5.0';
@@ -34,7 +34,7 @@ import { ProfileModalController } from './ui/profile-modal.js?v=1.5.0';
 import { TransparencyModalController } from './ui/transparency-modal.js?v=1.5.0';
 import { ProgressModalController } from './ui/progress-modal.js?v=1.5.0';
 import { AuthGateController } from './ui/auth-gate.js?v=1.5.0';
-import { AdminModalController } from './ui/admin-modal.js?v=1.5.0';
+import { AdminModalController } from './ui/admin-modal.js?v=1.9.0';
 import { QuotaModalController } from './ui/quota-modal.js?v=1.5.0';
 
 // ============================================================================

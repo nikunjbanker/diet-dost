@@ -443,3 +443,15 @@ Per ADR-113 and CNCF OpenTelemetry GenAI standards, `NutritionTelemetry.cs` expo
 - `gen_ai.usage.input_tokens` & `gen_ai.usage.output_tokens`: Real-time prompt and completion token accounting.
 - `gen_ai.usage.total_tokens`: Total token consumption for cost attribution and quota enforcement.
 - `gen_ai.response.finish_reasons`: Execution completion state (`STOP`, `MAX_TOKENS`, `SAFETY`).
+
+---
+
+### 2.12 User-Scoped Upload Architecture, Root-Relative Paths & Soft-Delete Governance (ADR-135)
+
+To streamline troubleshooting, preserve multi-tenant asset isolation, and enforce strict regulatory data retention:
+1. **User-Scoped Directory Structure**: Media uploads are dynamically routed into user-isolated directories (`uploads/users/{userId}/meals/` and `uploads/users/{userId}/progress/`), replacing flat folder sprawl while maintaining backward compatibility with legacy assets.
+2. **Root-Relative URI Invariant**: Inbound photo paths are defensively sanitized against path traversal (`PhotoPathSanitizer.SanitizeUserId`) and normalized to root-relative paths (`/uploads/...`), eliminating host binding and enabling seamless CDN/custom domain migration.
+3. **Logical Soft-Delete Contract (`ISoftDeletable`)**: Implemented across domain entities (`MealLog`, `ProgressPhoto`, `ApplicationUser`, `UserProfile`, `UserCorrectionRecord`, `DailyCalorieLedger`, `AiDetectionFeedbackRecord`). Physical image files are strictly preserved on disk for clinical auditability and dispute resolution.
+4. **EF Core Global Query Filters**: Transparently applied at `DbContext` level (`HasQueryFilter(e => !e.IsDeleted)`), ensuring soft-deleted entities are completely excluded from user queries, ledger totals, and UI views.
+5. **SuperAdmin Audit Mode**: SuperAdmin operators can inspect, search, and audit soft-deleted assets across all entities via `GetDeletedRecordsQuery` (`IgnoreQueryFilters()`) and the dedicated `🗑️ Deleted Audit` tab in the governance console.
+

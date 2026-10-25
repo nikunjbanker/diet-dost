@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -11,6 +11,7 @@ using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Common.Security;
 using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
@@ -103,7 +104,8 @@ public class UploadAndAnalyzeMealCommandHandler : ICommandHandler<UploadAndAnaly
         try
         {
             request.ImageStream.Position = 0;
-            photoUrl = await _photoStorageService.SaveMealPhotoAsync(request.ImageStream, request.FileName, request.MimeType, ct);
+            photoUrl = await _photoStorageService.SaveMealPhotoAsync(request.UserId, request.ImageStream, request.FileName, request.MimeType, ct);
+            photoUrl = PhotoPathSanitizer.NormalizeToRelativePath(photoUrl);
             analysis.PhotoUri = photoUrl;
         }
         catch (Exception ex)

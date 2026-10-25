@@ -66,6 +66,52 @@ public sealed class PhotoStorageAndStaticFileServingTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveMealPhotoAsync_WithUserId_StoresInUserScopedSubfolder()
+    {
+        var customWebRoot = Path.Combine(_tempRoot, "data", "wwwroot");
+        var options = Options.Create(new StorageOptions { WebRootPath = customWebRoot });
+        var service = new LocalPhotoStorageService(options, NullLogger<LocalPhotoStorageService>.Instance);
+
+        var sampleBytes = Encoding.UTF8.GetBytes("fake_user_meal_photo_bytes");
+        using var stream = new MemoryStream(sampleBytes);
+
+        var resultUrl = await service.SaveMealPhotoAsync("user-demo-42", stream, "paneer_tikka.jpg", "image/jpeg");
+
+        Assert.NotNull(resultUrl);
+        Assert.StartsWith("/uploads/users/user-demo-42/meals/", resultUrl);
+
+        var relativePath = resultUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var expectedPhysicalPath = Path.Combine(customWebRoot, relativePath);
+
+        Assert.True(File.Exists(expectedPhysicalPath), $"Physical file must exist at {expectedPhysicalPath}");
+        var savedContent = await File.ReadAllBytesAsync(expectedPhysicalPath);
+        Assert.Equal(sampleBytes, savedContent);
+    }
+
+    [Fact]
+    public async Task SaveProgressPhotoAsync_WithUserId_StoresInUserScopedProgressSubfolder()
+    {
+        var customWebRoot = Path.Combine(_tempRoot, "data", "wwwroot");
+        var options = Options.Create(new StorageOptions { WebRootPath = customWebRoot });
+        var service = new LocalPhotoStorageService(options, NullLogger<LocalPhotoStorageService>.Instance);
+
+        var sampleBytes = Encoding.UTF8.GetBytes("fake_user_progress_photo_bytes");
+        using var stream = new MemoryStream(sampleBytes);
+
+        var resultUrl = await service.SaveProgressPhotoAsync("user-demo-42", stream, "face_checkin.jpg", "image/jpeg");
+
+        Assert.NotNull(resultUrl);
+        Assert.StartsWith("/uploads/users/user-demo-42/progress/", resultUrl);
+
+        var relativePath = resultUrl.TrimStart('/').Replace('/', Path.DirectorySeparatorChar);
+        var expectedPhysicalPath = Path.Combine(customWebRoot, relativePath);
+
+        Assert.True(File.Exists(expectedPhysicalPath), $"Physical file must exist at {expectedPhysicalPath}");
+        var savedContent = await File.ReadAllBytesAsync(expectedPhysicalPath);
+        Assert.Equal(sampleBytes, savedContent);
+    }
+
+    [Fact]
     public async Task PhysicalFileProvider_TargetingUploadsDirectory_LocatesUploadedPhotos()
     {
         // Simulates ASP.NET Core PhysicalFileProvider pointing to /app/data/wwwroot/uploads

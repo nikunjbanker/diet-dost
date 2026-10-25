@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-25T14:01:30.117314+00:00",
-  "totalAdrs": 99,
+  "generatedAt": "2026-10-25T14:43:49.161497+00:00",
+  "totalAdrs": 100,
   "categoryCounts": {
-    "architecture": 26,
+    "architecture": 27,
     "security": 21,
     "devops": 27,
     "presentation": 12,
@@ -1197,6 +1197,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md",
       "relativePath": "docs/adr/architecture/ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md"
+    },
+    {
+      "id": "ADR-135",
+      "number": 135,
+      "title": "User-Scoped Upload Directories, Root-Relative URI Normalization, Logical Soft Delete, and SuperAdmin Deleted Audit Mode",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-25",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md",
+      "relativePath": "docs/adr/architecture/ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md"
     }
   ]
 }

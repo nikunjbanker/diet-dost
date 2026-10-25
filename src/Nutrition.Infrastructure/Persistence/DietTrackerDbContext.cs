@@ -54,10 +54,11 @@ public class DietTrackerDbContext : DbContext
             c => c != null ? JsonSerializer.Serialize(c, (JsonSerializerOptions?)null).GetHashCode() : 0,
             c => c != null ? JsonSerializer.Deserialize<List<MedicationEntry>>(JsonSerializer.Serialize(c, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null) ?? new List<MedicationEntry>() : new List<MedicationEntry>());
 
-        // UserProfile JSON converters with ValueComparers
+        // UserProfile JSON converters with ValueComparers and Soft Delete Global Query Filter
         modelBuilder.Entity<UserProfile>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(e => e.DiagnosedConditions)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
@@ -71,10 +72,11 @@ public class DietTrackerDbContext : DbContext
                     medicationListComparer);
         });
 
-        // MealLog configuration with AutoInclude for Items and ValueComparers
+        // MealLog configuration with AutoInclude for Items, ValueComparers and Soft Delete Filter
         modelBuilder.Entity<MealLog>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(e => new { e.UserId, e.ClientMutationId });
             entity.HasMany(e => e.Items)
                   .WithOne()
@@ -106,13 +108,15 @@ public class DietTrackerDbContext : DbContext
         modelBuilder.Entity<UserCorrectionRecord>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(e => new { e.UserId, e.OriginalDetectedItem });
         });
 
-        // DailyCalorieLedger JSON converters with ValueComparer
+        // DailyCalorieLedger JSON converters with ValueComparer and Soft Delete Filter
         modelBuilder.Entity<DailyCalorieLedger>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.Property(e => e.EarnedBadges)
                 .HasConversion(
                     v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
@@ -124,6 +128,7 @@ public class DietTrackerDbContext : DbContext
         modelBuilder.Entity<ProgressPhoto>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(e => new { e.UserId, e.CapturedAtUtc });
             entity.HasIndex(e => new { e.UserId, e.PhotoType });
         });
@@ -132,6 +137,7 @@ public class DietTrackerDbContext : DbContext
         modelBuilder.Entity<AiDetectionFeedbackRecord>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(e => new { e.UserId, e.CreatedAtUtc });
             entity.HasIndex(e => e.Rating);
         });
@@ -140,6 +146,7 @@ public class DietTrackerDbContext : DbContext
         modelBuilder.Entity<ApplicationUser>(entity =>
         {
             entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
             entity.HasIndex(e => e.NormalizedEmail).IsUnique();
             entity.HasIndex(e => e.NormalizedMobileNumber);
             entity.HasIndex(e => e.Role);

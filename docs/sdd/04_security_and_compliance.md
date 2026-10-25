@@ -174,4 +174,14 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 - **Stage 1 Fail-Fast Pre-Deployment Gate (`azure-app-deploy.yml`)**: Pre-deployment validation executes Trivy base image scanning in Step 4b (<15 seconds). Deployments abort immediately upon detecting upstream base image CVEs, preventing unnecessary cloud resource provisioning or secret synchronization.
 - **Release-Aligned Image Tagging (`Containerfile`)**: Pinned strictly to official patched release / release-candidate images (`mcr.microsoft.com/dotnet/sdk:11.0` and `mcr.microsoft.com/dotnet/aspnet:11.0`), preventing exposure to known vulnerabilities in stale preview milestones (ADR-108).
 
+---
+
+## 10. Medical Data Retention, Path Traversal Defense & Zero-Physical-Deletion Policy (ADR-135)
+
+- **Sanitized User Scoping (`PhotoPathSanitizer`)**: Media uploads are isolated in `uploads/users/{userId}/`. All user IDs are sanitized using strict alphanumeric whitelisting (`^[a-zA-Z0-9_\-]+$`) before resolving filesystem paths, preventing directory traversal attacks (`../`, `..\`).
+- **Root-Relative Path Storage**: Stored URIs are normalized to root-relative paths (`/uploads/...`) to decouple database persistence from host domains or protocols, preventing CORS mismatches, mixed content warnings, and CDN routing failures.
+- **DPDPA 2023 Clinical Soft Delete Governance**: Deletion requests for meals, progress photos, or user accounts perform only logical soft deletion (`IsDeleted = true`, `DeletedAtUtc = DateTime.UtcNow`). Physical photo assets are retained on secure server storage to satisfy medical record auditability, dispute resolution, and regulatory retention mandates.
+- **EF Core Global Query Filter Enforcement**: Standard queries automatically filter out soft-deleted data (`HasQueryFilter(e => !e.IsDeleted)`). Soft-deleted records are only retrievable by authorized SuperAdmins via `IgnoreQueryFilters()`.
+
+
 

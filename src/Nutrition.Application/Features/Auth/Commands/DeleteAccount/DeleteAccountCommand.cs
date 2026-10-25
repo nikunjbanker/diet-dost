@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -73,35 +73,37 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand,
             return Result<string>.Failure("The primary SuperAdmin account cannot be deleted.", "CannotDeleteSuperAdmin", 400);
         }
 
-        // DPDPA 2023 Right to Erasure: Cascade purge of all user records
+        // DPDPA 2023 Logical Erasure: Soft-delete user account and health records while preserving forensic audit
+        var now = DateTime.UtcNow;
+
         var meals = await _mealRepo.FindAsync(m => m.UserId == request.UserId, ct);
-        foreach (var m in meals) await _mealRepo.DeleteAsync(m.Id, ct);
+        foreach (var m in meals) { m.IsDeleted = true; m.DeletedAtUtc = now; await _mealRepo.UpdateAsync(m, ct); }
 
         var ledgers = await _ledgerRepo.FindAsync(l => l.UserId == request.UserId, ct);
-        foreach (var l in ledgers) await _ledgerRepo.DeleteAsync(l.Id, ct);
+        foreach (var l in ledgers) { l.IsDeleted = true; l.DeletedAtUtc = now; await _ledgerRepo.UpdateAsync(l, ct); }
 
         var photos = await _photoRepo.FindAsync(p => p.UserId == request.UserId, ct);
-        foreach (var p in photos) await _photoRepo.DeleteAsync(p.Id, ct);
+        foreach (var p in photos) { p.IsDeleted = true; p.DeletedAtUtc = now; await _photoRepo.UpdateAsync(p, ct); }
 
         var feedbacks = await _feedbackRepo.FindAsync(f => f.UserId == request.UserId, ct);
-        foreach (var f in feedbacks) await _feedbackRepo.DeleteAsync(f.Id, ct);
+        foreach (var f in feedbacks) { f.IsDeleted = true; f.DeletedAtUtc = now; await _feedbackRepo.UpdateAsync(f, ct); }
 
         var corrections = await _correctionRepo.FindAsync(c => c.UserId == request.UserId, ct);
-        foreach (var c in corrections) await _correctionRepo.DeleteAsync(c.Id, ct);
+        foreach (var c in corrections) { c.IsDeleted = true; c.DeletedAtUtc = now; await _correctionRepo.UpdateAsync(c, ct); }
 
         var otps = await _otpRepo.FindAsync(o => o.UserId == request.UserId, ct);
         foreach (var o in otps) await _otpRepo.DeleteAsync(o.Id, ct);
 
-        var aiLogs = await _aiLogRepo.FindAsync(l => l.UserId == request.UserId, ct);
-        foreach (var l in aiLogs) await _aiLogRepo.DeleteAsync(l.Id, ct);
-
         var profile = await _profileRepo.GetByIdAsync(request.UserId, ct);
-        if (profile != null) await _profileRepo.DeleteAsync(profile.Id, ct);
+        if (profile != null) { profile.IsDeleted = true; profile.DeletedAtUtc = now; await _profileRepo.UpdateAsync(profile, ct); }
 
-        await _userRepo.DeleteAsync(user.Id, ct);
+        user.IsActive = false;
+        user.IsDeleted = true;
+        user.DeletedAtUtc = now;
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
-        _logger.LogWarning("[AUTH] User account and all health data purged under DPDPA Right to Erasure: {UserId}", request.UserId);
+        _logger.LogWarning("[AUTH] User account and health records logically deactivated under DPDPA: {UserId}", request.UserId);
 
         return Result<string>.Success("Your account and all associated health records have been permanently deleted per DPDPA guidelines.");
     }

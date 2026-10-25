@@ -46,16 +46,24 @@ export class AdminModalController {
     this.tabUsers = document.getElementById('btn-admin-tab-users');
     this.tabTiers = document.getElementById('btn-admin-tab-tiers');
     this.tabLogs = document.getElementById('btn-admin-tab-logs');
+    this.tabDeleted = document.getElementById('btn-admin-tab-deleted');
 
     this.paneUsers = document.getElementById('admin-pane-users');
     this.paneTiers = document.getElementById('admin-pane-tiers');
     this.paneLogs = document.getElementById('admin-pane-logs');
+    this.paneDeleted = document.getElementById('admin-pane-deleted');
 
     this.searchUsers = document.getElementById('admin-search-users');
     this.filterTier = document.getElementById('admin-filter-tier');
     this.btnRefreshUsers = document.getElementById('btn-admin-refresh-users');
     this.btnCreateUser = document.getElementById('btn-admin-create-user');
     this.usersTableBody = document.getElementById('admin-users-table-body');
+
+    // Deleted Audit Controls
+    this.filterDeletedType = document.getElementById('admin-filter-deleted-type');
+    this.searchDeletedUser = document.getElementById('admin-search-deleted-user');
+    this.btnRefreshDeleted = document.getElementById('btn-admin-refresh-deleted');
+    this.deletedTableBody = document.getElementById('admin-deleted-table-body');
 
     // Create User Modal Elements
     this.createUserModal = document.getElementById('admin-create-user-modal');
@@ -84,12 +92,16 @@ export class AdminModalController {
     this.tabUsers?.addEventListener('click', () => this.switchTab('users'));
     this.tabTiers?.addEventListener('click', () => this.switchTab('tiers'));
     this.tabLogs?.addEventListener('click', () => this.switchTab('logs'));
+    this.tabDeleted?.addEventListener('click', () => this.switchTab('deleted'));
 
     this.btnRefreshUsers?.addEventListener('click', () => this.loadUsers());
     this.searchUsers?.addEventListener('input', () => this.debounceLoadUsers());
     this.filterTier?.addEventListener('change', () => this.loadUsers());
 
     this.btnRefreshLogs?.addEventListener('click', () => this.loadLogs());
+    this.btnRefreshDeleted?.addEventListener('click', () => this.loadDeletedRecords());
+    this.filterDeletedType?.addEventListener('change', () => this.loadDeletedRecords());
+    this.searchDeletedUser?.addEventListener('input', () => this.debounceLoadDeleted());
 
     // Create User Modal Wiring
     this.btnCreateUser?.addEventListener('click', () => this.openCreateUserModal());
@@ -107,6 +119,9 @@ export class AdminModalController {
     if (this.modal) {
       modalStack.push(this.modal);
       this.modal.style.display = 'flex';
+      if (this.tabDeleted) {
+        this.tabDeleted.style.display = this.isSuperAdmin() ? 'inline-block' : 'none';
+      }
       this.switchTab('users');
     }
   }
@@ -122,14 +137,17 @@ export class AdminModalController {
     this.tabUsers?.classList.toggle('active', tab === 'users');
     this.tabTiers?.classList.toggle('active', tab === 'tiers');
     this.tabLogs?.classList.toggle('active', tab === 'logs');
+    this.tabDeleted?.classList.toggle('active', tab === 'deleted');
 
     if (this.paneUsers) this.paneUsers.style.display = tab === 'users' ? 'block' : 'none';
     if (this.paneTiers) this.paneTiers.style.display = tab === 'tiers' ? 'block' : 'none';
     if (this.paneLogs) this.paneLogs.style.display = tab === 'logs' ? 'block' : 'none';
+    if (this.paneDeleted) this.paneDeleted.style.display = tab === 'deleted' ? 'block' : 'none';
 
     if (tab === 'users') this.loadUsers();
     if (tab === 'tiers') this.loadTiers();
     if (tab === 'logs') this.loadLogs();
+    if (tab === 'deleted') this.loadDeletedRecords();
   }
 
   debounceLoadUsers() {
@@ -607,4 +625,73 @@ export class AdminModalController {
       }
     }
   }
+
+  debounceLoadDeleted() {
+    clearTimeout(this.searchDeletedTimer);
+    this.searchDeletedTimer = setTimeout(() => this.loadDeletedRecords(), 300);
+  }
+
+  async loadDeletedRecords() {
+    if (!this.deletedTableBody) return;
+    this.deletedTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading deleted records...</td></tr>`;
+
+    try {
+      const type = this.filterDeletedType?.value || 'all';
+      const userId = this.searchDeletedUser?.value.trim() || null;
+      const records = await this.adminService.getDeletedRecords(type, userId);
+
+      if (!records || records.length === 0) {
+        this.deletedTableBody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No soft-deleted records found.</td></tr>`;
+        return;
+      }
+
+      this.deletedTableBody.innerHTML = records.map(r => {
+        const deletedTime = r.deletedAtUtc ? new Date(r.deletedAtUtc).toLocaleString() : 'N/A';
+        const photoCell = r.photoUri
+          ? `<img src="${this.escapeHtml(r.photoUri)}" alt="Deleted thumbnail" style="width: 44px; height: 44px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-subtle);" onerror="this.style.display='none'" />`
+          : `<span style="color: var(--text-muted); font-size: 0.75rem;">None</span>`;
+
+        return `
+          <tr style="border-bottom: 1px solid var(--border-subtle); font-size: 0.8rem;">
+            <td style="padding: 8px 10px;">
+              <span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(239, 68, 68, 0.15); color: #f87171;">
+                ${this.escapeHtml(r.recordType)}
+              </span>
+            </td>
+            <td style="padding: 8px 10px; font-family: monospace; font-size: 0.75rem;">
+              ${this.escapeHtml(r.userId || 'N/A')}
+            </td>
+            <td style="padding: 8px 10px; font-weight: 500;">
+              ${this.escapeHtml(r.title || 'Untitled')}
+            </td>
+            <td style="padding: 8px 10px;">
+              ${photoCell}
+            </td>
+            <td style="padding: 8px 10px; color: var(--text-secondary); font-size: 0.75rem;">
+              ${this.escapeHtml(r.extraDetails || '')}
+            </td>
+            <td style="padding: 8px 10px; font-family: monospace; font-size: 0.75rem;">
+              ${deletedTime}
+            </td>
+            <td style="padding: 8px 10px;">
+              <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(239, 68, 68, 0.2); color: #f87171;">
+                🗑️ DELETED
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    } catch (err) {
+      if (this.deletedTableBody) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.style.cssText = 'text-align: center; color: #f87171; padding: 2rem;';
+        cell.textContent = `Failed to load deleted records: ${err?.message || 'Access Denied (SuperAdmin only)'}`;
+        row.appendChild(cell);
+        this.deletedTableBody.replaceChildren(row);
+      }
+    }
+  }
 }
+

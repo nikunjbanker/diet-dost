@@ -57,21 +57,16 @@ public class DeleteProgressPhotoCommandHandler : ICommandHandler<DeleteProgressP
             return Result.Forbidden();
         }
 
-        try
-        {
-            await _photoStorageService.DeletePhotoAsync(photo.PhotoUri, ct);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Could not delete physical photo file {Uri}", photo.PhotoUri);
-        }
+        // Zero physical deletion policy: Physical image is preserved in uploads/users/{userId}/progress/ for audit and troubleshooting
+        photo.IsDeleted = true;
+        photo.DeletedAtUtc = DateTime.UtcNow;
 
-        await _photoRepo.DeleteAsync(photo.Id, ct);
+        await _photoRepo.UpdateAsync(photo, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))
         {
-            _logger.LogInformation("Deleted progress photo {PhotoId} for user {UserId}", photo.Id, photo.UserId);
+            _logger.LogInformation("Soft-deleted progress photo {PhotoId} for user {UserId}", photo.Id, photo.UserId);
         }
 
         return Result.Ok();
