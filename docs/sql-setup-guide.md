@@ -212,3 +212,51 @@ When running against Azure SQL, [`DatabaseInitializationExtensions.cs`](file:///
   - `superadmin@dietdost.app` (Root system governance)
   - Password: `DietDost@Demo2026!`
 - **Cross-Platform Parity**: Web PWA, Android, and iOS clients operate against identical REST endpoints with zero platform-specific divergence.
+
+---
+
+## 8. Migrating Data from Local SQLite to Azure SQL
+
+Diet-Dost provides an automated .NET 11 CLI tool (`Nutrition.Tools.DataMigrator`) and PowerShell wrapper (`scripts/migrate-sqlite-to-azuresql.ps1`) to copy data from a local SQLite database (`.db`) to Azure SQL Database.
+
+### 8.1 Key Features
+- **Automatic Data Type Conversions**:
+  - Timestamps normalized to universal UTC `DateTime` and clamped to valid `DATETIME2` ranges.
+  - SQLite integer/text booleans converted to SQL Server `BIT`.
+  - JSON collection columns (`DiagnosedConditions`, `Medications`, `WhoComplianceFlags`, `MedicationWarnings`, `EarnedBadges`) validated and repaired to prevent EF Core deserialization errors.
+  - Invariant float parsing with NaN / Infinity handling.
+  - String GUID preservation maintaining all foreign key relationships across users, meals, food items, and ledgers.
+- **Foreign Key Constraint Safety**: Temporarily deactivates foreign key constraints during batch ingestion (`NOCHECK CONSTRAINT ALL`) and re-enables and validates integrity after (`WITH CHECK CHECK CONSTRAINT ALL`).
+- **Conflict Strategies**:
+  - `Upsert` (Default): Updates existing records by Primary Key, inserts new records.
+  - `CleanInsert`: Clears target table before inserting.
+  - `SkipExisting`: Inserts new records only, preserving existing Azure SQL records.
+- **Reporting**: Prints rich per-table metrics in the terminal and generates a timestamped Markdown report in `docs/migration-reports/migration_report_<timestamp>.md`.
+
+### 8.2 Execution Examples
+
+#### 1. Dry-Run Validation (Zero Write / Safe Preview)
+```powershell
+pwsh -File scripts/migrate-sqlite-to-azuresql.ps1 `
+  -SqliteDbPath "src/Nutrition.WebGateway/diettracker.db" `
+  -DryRun
+```
+
+#### 2. Live Migration with Auto-Retrieved Connection String
+If logged into Azure CLI, the script automatically retrieves the connection string from Azure Key Vault:
+```powershell
+pwsh -File scripts/migrate-sqlite-to-azuresql.ps1 `
+  -SqliteDbPath "C:\path\to\my_local.db" `
+  -Mode Upsert `
+  -EnsureSchema
+```
+
+#### 3. Direct .NET 11 CLI Command
+```powershell
+dotnet run --project src/Nutrition.Tools.DataMigrator -- `
+  --sqlite "src/Nutrition.WebGateway/diettracker.db" `
+  --azure-sql "$env:AZURE_SQL_CONNECTION_STRING" `
+  --mode Upsert `
+  --ensure-schema
+```
+

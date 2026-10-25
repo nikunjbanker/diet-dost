@@ -491,3 +491,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Diet-Dost Migration Reports
+docs/migration-reports/*.md
+!docs/migration-reports/.gitkeep
+
