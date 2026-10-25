@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-25T13:45:04.801372+00:00",
-  "totalAdrs": 98,
+  "generatedAt": "2026-10-25T13:59:49.970844+00:00",
+  "totalAdrs": 99,
   "categoryCounts": {
-    "architecture": 25,
+    "architecture": 26,
     "security": 21,
     "devops": 27,
     "presentation": 12,
@@ -1185,6 +1185,18 @@
       "subsystem": "WebGateway | Presentation (",
       "filename": "ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md",
       "relativePath": "docs/adr/presentation/ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md"
+    },
+    {
+      "id": "ADR-134",
+      "number": 134,
+      "title": "Azure SQL Serverless Pre-Warming, Resilient Startup, and Biometric Media Asset Redesign",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-25",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md",
+      "relativePath": "docs/adr/architecture/ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md"
     }
   ]
 }

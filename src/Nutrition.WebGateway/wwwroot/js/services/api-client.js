@@ -65,6 +65,27 @@ export class ApiClient {
   }
 
   /**
+   * Pings the system warm-up endpoint to wake cold-paused cloud database instances (e.g. Azure SQL Serverless).
+   * Dispatches asynchronously without blocking the user interface.
+   * @returns {Promise<{isOnline: boolean, databaseProvider: string, latencyMs: number}>}
+   */
+  async warmupDatabase() {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/system/warmup`, {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data || json;
+      }
+    } catch (err) {
+      console.warn('[ApiClient] Database warm-up ping dispatched; wake-up in progress.', err);
+    }
+    return { isOnline: false, latencyMs: 0 };
+  }
+
+  /**
    * Perform HTTP POST request (JSON).
    * @param {string} url
    * @param {Object} body

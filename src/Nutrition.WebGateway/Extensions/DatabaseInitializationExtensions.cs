@@ -6,6 +6,7 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Polly;
@@ -73,6 +74,37 @@ public static partial class DatabaseInitializationExtensions
                     .Build();
 
                 await sqliteRetryPipeline.ExecuteAsync(async _ => await EnsureDatabaseCreatedAndMigratedAsync(db, logger));
+            }
+            else if (db.Database.IsSqlServer())
+            {
+                var sqlServerRetryPipeline = new ResiliencePipelineBuilder()
+                    .AddRetry(new RetryStrategyOptions
+                    {
+                        ShouldHandle = new PredicateBuilder()
+                            .Handle<SqlException>(ex =>
+                                ex.Number == 40613 ||
+                                ex.Number == 258 ||
+                                ex.Number == -2 ||
+                                ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+                                ex.Message.Contains("available", StringComparison.OrdinalIgnoreCase))
+                            .Handle<TimeoutException>(),
+                        MaxRetryAttempts = 6,
+                        BackoffType = DelayBackoffType.Constant,
+                        Delay = TimeSpan.FromSeconds(10),
+                        OnRetry = args =>
+                        {
+                            if (logger.IsEnabled(LogLevel.Warning))
+                            {
+                                var attempt = args.AttemptNumber + 1;
+                                var delaySeconds = (int)args.RetryDelay.TotalSeconds;
+                                logger.LogWarning(args.Outcome.Exception, "[WARMUP] Azure SQL Serverless database is auto-resuming from cold pause (attempt {Attempt}/6). Waiting {DelaySeconds}s for instance to become online...", attempt, delaySeconds);
+                            }
+                            return ValueTask.CompletedTask;
+                        }
+                    })
+                    .Build();
+
+                await sqlServerRetryPipeline.ExecuteAsync(async _ => await EnsureDatabaseCreatedAndMigratedAsync(db, logger));
             }
             else
             {

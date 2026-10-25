@@ -54,13 +54,40 @@ public class AzureSqlTargetWriter : IDisposable
     {
         var builder = new SqlConnectionStringBuilder(_connectionString)
         {
-            ConnectTimeout = 30,
+            ConnectTimeout = 120,
+            ConnectRetryCount = 3,
+            ConnectRetryInterval = 10,
             Encrypt = true,
             TrustServerCertificate = false
         };
 
         _connection = new SqlConnection(builder.ConnectionString);
         await _connection.OpenAsync();
+    }
+
+    /// <summary>
+    /// Probes the Azure SQL Serverless database with SELECT 1 to ensure it is awake and online.
+    /// Retries gracefully if the instance is auto-resuming from cold pause.
+    /// </summary>
+    public async Task WarmupAndVerifyAsync()
+    {
+        EnsureConnected();
+        for (int attempt = 1; attempt <= 4; attempt++)
+        {
+            try
+            {
+                using var cmd = _connection!.CreateCommand();
+                cmd.CommandText = "SELECT 1;";
+                cmd.CommandTimeout = 90;
+                await cmd.ExecuteScalarAsync();
+                return;
+            }
+            catch (SqlException ex) when (attempt < 4 && (ex.Number == 40613 || ex.Number == 258 || ex.Number == -2))
+            {
+                Console.WriteLine($"[WARMUP] Azure SQL database is auto-resuming from serverless pause (attempt {attempt}/4). Waiting 15s...");
+                await Task.Delay(TimeSpan.FromSeconds(15));
+            }
+        }
     }
 
     public async Task<bool> TableExistsAsync(string tableName)
