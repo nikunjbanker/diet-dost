@@ -197,4 +197,29 @@ public class AzureSqlPersistenceTests
         Assert.Equal("sqladmin", builder.UserID);
         Assert.Equal("dietdost", builder.InitialCatalog);
     }
+
+    [Fact]
+    public void AddStorageInfrastructure_NoProviderConfigured_DefaultsToAzureSql()
+    {
+        var configData = new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:AzureSqlConnection"] = SampleAzureSqlConnection
+        };
+
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(configData)
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddStorageInfrastructure(configuration);
+
+        var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+
+        Assert.NotNull(db);
+        Assert.True(db.Database.IsSqlServer(), "Expected default unconfigured provider to default to AzureSql.");
+        Assert.Equal("Microsoft.EntityFrameworkCore.SqlServer", db.Database.ProviderName);
+    }
 }

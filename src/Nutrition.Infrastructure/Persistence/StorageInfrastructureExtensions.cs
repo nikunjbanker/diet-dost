@@ -32,7 +32,7 @@ public static class StorageInfrastructureExtensions
     public static IServiceCollection AddStorageInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var dbOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>() ?? new DatabaseOptions();
-        var provider = !string.IsNullOrWhiteSpace(dbOptions.Provider) ? dbOptions.Provider : "Sqlite";
+        var provider = !string.IsNullOrWhiteSpace(dbOptions.Provider) ? dbOptions.Provider : "AzureSql";
         var defaultConnStr = configuration.GetConnectionString("DefaultConnection");
         var connectionString = !string.IsNullOrWhiteSpace(defaultConnStr)
             ? defaultConnStr

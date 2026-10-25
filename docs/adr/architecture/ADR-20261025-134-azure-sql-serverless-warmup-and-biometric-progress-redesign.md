@@ -50,6 +50,10 @@
 - **`body_current.svg`**: Athletic V-taper silhouette, emerald alignment calipers, Day 30 check-in metrics (Weight: 81.5 kg / -3.5 kg lost, Waist: 35.5" / -2.5" waist reduction, V-taper index 1.20).
 - **`placeholder-progress.svg`**: Eliminated emoji icons; replaced with high-tech AI Biometric Sensor Viewfinder with corner framing reticles and status pill.
 
+### E. Default Persistence Provider Alignment
+- Configured `AzureSql` as the default persistence provider across `appsettings.json`, `DatabaseOptions`, and `StorageInfrastructureExtensions`.
+- Establishes Azure SQL Serverless as the authoritative default provider while retaining local SQLite support when explicitly configured.
+
 ---
 
 ## 3. Consequences and Verification
