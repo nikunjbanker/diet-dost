@@ -141,6 +141,20 @@
       </ul>
     </section>
 
+    <!-- Section 6 -->
+    <section class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--status-emerald);">6.</span> Pseudonymous &amp; Anonymous Health Data Processing (Zero-PII Mode)
+      </h2>
+      <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+        Under India DPDPA 2023 §6 and international privacy standards, Data Principals may choose to process dietary and biometric data in zero-PII anonymous mode:
+      </p>
+      <ul class="legal-content-list">
+        <li><strong>Zero Linkage to Personal Identifiers:</strong> Anonymous accounts contain no email address, telephone number, or government identity tokens. All clinical telemetry, meal estimations, and biometric markers are indexed exclusively under a pseudonymous GUID and public <code>RecoveryLookupId</code> derived via RFC 5869 HKDF-Expand.</li>
+        <li><strong>Exercise of Statutory Rights:</strong> Because Diet Dost retains zero personal contact information for anonymous users, any request for data portability, summary, or erasure under DPDPA 2023 §11–12 requires cryptographic proof of custodianship (presentation of the 12-word BIP-39 mnemonic phrase or valid JSON Disaster Recovery Kit).</li>
+      </ul>
+    </section>
+
     <!-- Navigation Quick Links -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle);">
       <a href="/" class="btn btn-primary" style="text-decoration: none;">

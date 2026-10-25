@@ -668,3 +668,23 @@ Agents or engineers must execute validation through either:
    - Log in sequentially as each of the 5 demo accounts.
    - Inspect DOM, user menu badge, quota modal, and paywall trigger on locked features.
    - Confirm **0 console errors** and **0 unhandled runtime exceptions**.
+
+---
+
+## 18. Cross-Device QR Authentication & Zero-PII Anonymous Disaster Recovery Standard
+
+> [!IMPORTANT]
+> **NIST SP 800-63B & DPDPA 2023 Compliance**: Cross-device QR login bridges desktop browsers and native mobile applications with zero passwords, phone numbers, or email addresses, adhering strictly to Authenticator Assurance Level 3 (AAL3) guidelines.
+
+### 18.1 Cryptographic Protocol & Dual-Token Handshake
+1. **Desktop Ephemeral Secret**: Desktop generates a 256-bit random secret (`BrowserSecretToken`) in volatile `sessionStorage`. Only its SHA-256 hash (`BrowserSecretHash`) is transmitted to `POST /api/auth/qr/initiate`.
+2. **Ephemeral QR Session**: Server provisions `QrLoginSession` with 90-second TTL, generating a 32-byte cryptographic challenge nonce and visual match HUD (`[ 73 ] 🟢 Emerald Falcon`).
+3. **Mobile Biometric Approval**: Mobile scans the QR code, displays the visual confirmation code to prevent QRLJacking, and submits `POST /api/auth/qr/approve` with `ChallengeNonce` and authenticated `UserId`.
+4. **Single-Use Ticket Exchange**: Desktop receives `ExchangeTicket` via SSE/adaptive polling and calls `POST /api/auth/qr/exchange` presenting both the ticket and genuine `BrowserSecretToken`. If hash matches, server issues JWT session claims and marks session `Consumed`.
+
+### 18.2 Zero-PII Anonymous Onboarding & Disaster Recovery Kit
+1. **Zero Personal Identifiers**: Anonymous accounts require zero email or mobile numbers (`POST /api/auth/register-anonymous`).
+2. **Deterministic $O(1)$ Recovery Lookup**: Uses RFC 5869 HKDF-Expand over master entropy to derive a public 24-hex-character `RecoveryLookupId`, preventing $O(N)$ PBKDF2 denial-of-service lookups.
+3. **BIP-39 Standard 12-Word Mnemonic**: Generates 128-bit master entropy with 4-bit SHA-256 checksum encoded via official English wordlist.
+4. **Zero-Knowledge Password Replacement**: User master entropy is hashed via PBKDF2-HMAC-SHA512 (250,000 iterations) with 128-bit random salt. Server holds zero plaintext words or keys.
+5. **Forward Secrecy Key Rotation**: Successful account recovery (`POST /api/auth/recover`) automatically regenerates and rotates a fresh 12-word mnemonic phrase and updates DB credentials.

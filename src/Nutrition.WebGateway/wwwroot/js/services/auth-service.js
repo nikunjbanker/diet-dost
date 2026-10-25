@@ -102,6 +102,54 @@ export class AuthService {
     });
   }
 
+  async registerAnonymous(displayName, acceptTerms, acceptHealthConsent) {
+    const res = await this.api.post('/api/auth/register-anonymous', {
+      displayName,
+      acceptTerms,
+      acceptHealthConsent
+    });
+    if (res.token) {
+      localStorage.setItem('dd_jwt_token', res.token);
+    }
+    this.currentUser = res.user;
+    return res;
+  }
+
+  async initiateQrSession(browserSecretHash, desktopPublicKey = null) {
+    return await this.api.post('/api/auth/qr/initiate', {
+      browserSecretHash,
+      desktopPublicKey
+    });
+  }
+
+  async getQrStatus(sessionId) {
+    return await this.api.get(`/api/auth/qr/status/${sessionId}`);
+  }
+
+  async exchangeQrTicket(sessionId, exchangeTicket, browserSecretToken) {
+    const res = await this.api.post('/api/auth/qr/exchange', {
+      sessionId,
+      exchangeTicket,
+      browserSecretToken
+    });
+    if (res.token) {
+      localStorage.setItem('dd_jwt_token', res.token);
+    }
+    this.currentUser = res.user;
+    return res;
+  }
+
+  async recoverAccount(recoveryKeyOrMnemonic) {
+    const res = await this.api.post('/api/auth/recover', {
+      recoveryKeyOrMnemonic
+    });
+    if (res.token) {
+      localStorage.setItem('dd_jwt_token', res.token);
+    }
+    this.currentUser = res.user;
+    return res;
+  }
+
 
   getToken() {
     return localStorage.getItem('dd_jwt_token');

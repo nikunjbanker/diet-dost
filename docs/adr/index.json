@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-25T14:43:49.161497+00:00",
-  "totalAdrs": 100,
+  "generatedAt": "2026-10-25T19:53:29.473738+00:00",
+  "totalAdrs": 101,
   "categoryCounts": {
     "architecture": 27,
-    "security": 21,
+    "security": 22,
     "devops": 27,
     "presentation": 12,
     "governance": 13
@@ -1209,6 +1209,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md",
       "relativePath": "docs/adr/architecture/ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md"
+    },
+    {
+      "id": "ADR-136",
+      "number": 136,
+      "title": "Cross-Device QR Authentication, Zero-PII Anonymous Onboarding, and BIP-39 Disaster Recovery Architecture",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-26",
+      "subsystem": "Security",
+      "filename": "ADR-20261026-136-cross-device-qr-auth-and-zero-pii-recovery.md",
+      "relativePath": "docs/adr/security/ADR-20261026-136-cross-device-qr-auth-and-zero-pii-recovery.md"
     }
   ]
 }

@@ -34,6 +34,7 @@ public class DietTrackerDbContext : DbContext
     public DbSet<TierFeatureConfiguration> TierConfigurations => Set<TierFeatureConfiguration>();
     public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
     public DbSet<AppSecret> AppSecrets => Set<AppSecret>();
+    public DbSet<QrLoginSession> QrSessions => Set<QrLoginSession>();
 
     public DietTrackerDbContext(DbContextOptions<DietTrackerDbContext> options) : base(options)
     {
@@ -151,6 +152,25 @@ public class DietTrackerDbContext : DbContext
             entity.HasIndex(e => e.NormalizedMobileNumber);
             entity.HasIndex(e => e.Role);
             entity.HasIndex(e => e.Tier);
+            entity.HasIndex(e => e.RecoveryLookupId);
+            entity.Property(e => e.RecoveryLookupId).HasMaxLength(64);
+            entity.Property(e => e.RecoveryKeyHash).HasMaxLength(256);
+            entity.Property(e => e.RecoverySalt).HasMaxLength(64);
+        });
+
+        // QrLoginSession entity configuration
+        modelBuilder.Entity<QrLoginSession>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ExpiresAtUtc);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.ExchangeTicket);
+            entity.Property(e => e.Id).HasMaxLength(64);
+            entity.Property(e => e.ChallengeNonce).HasMaxLength(128);
+            entity.Property(e => e.BrowserSecretHash).HasMaxLength(128);
+            entity.Property(e => e.ConfirmationCode).HasMaxLength(16);
+            entity.Property(e => e.ConfirmationGlyph).HasMaxLength(64);
+            entity.Property(e => e.ExchangeTicket).HasMaxLength(64);
         });
 
         // VerificationOtp entity configuration

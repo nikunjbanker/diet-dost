@@ -6647,6 +6647,128 @@ h2 {
   }
 }
 
+/* ==========================================================================
+   Cross-Device QR Authentication & Disaster Recovery Kit (Obsidian Surface)
+   ========================================================================== */
+.qr-stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.25rem 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin: 1rem 0;
+  position: relative;
+}
+
+.qr-canvas-wrapper {
+  position: relative;
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.qr-canvas-wrapper svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.qr-match-hud {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 20px;
+  margin: 0.5rem 0 0.75rem 0;
+}
+
+.qr-code-pill {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #10b981;
+  letter-spacing: 2px;
+}
+
+.qr-glyph-pill {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+.qr-timer-pill {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mnemonic-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 1rem 0;
+}
+
+@media (max-width: 540px) {
+  .mnemonic-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.mnemonic-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  user-select: all;
+}
+
+.mnemonic-num {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.mnemonic-word {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.recovery-dropzone {
+  border: 2px dashed rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 1rem;
+}
+
+.recovery-dropzone:hover,
+.recovery-dropzone.dragover {
+  border-color: #5e6ad2;
+  background: rgba(94, 106, 210, 0.08);
+}
+
 
 
 

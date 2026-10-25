@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -45,4 +45,53 @@ public record VerifyOtpResultDto(
 public record ForgotPasswordResultDto(
     string Message,
     string? DevOtpCode
+);
+
+public record RegisterAnonymousResultDto(
+    string UserId,
+    string DisplayName,
+    string Token,
+    string RecoveryKeyHex,
+    string MnemonicPhrase,
+    string RecoveryLookupId,
+    string JsonBackupPayload,
+    CurrentUserResponseDto User,
+    ClaimsPrincipal Principal
+);
+
+public record InitiateQrSessionResultDto(
+    string SessionId,
+    string ChallengeNonce,
+    string ConfirmationCode,
+    string ConfirmationGlyph,
+    string QrPayloadUri,
+    DateTime ExpiresAtUtc,
+    int TtlSeconds
+);
+
+public record QrSessionStatusDto(
+    string SessionId,
+    QrSessionStatus Status,
+    bool IsExpired,
+    string? ExchangeTicket,
+    string? MobilePublicKey,
+    string? EncryptedApprovalPayload,
+    string? ClientIpAddress,
+    string? ClientUserAgent
+);
+
+public record ExchangeQrTicketResultDto(
+    string Token,
+    CurrentUserResponseDto User,
+    ClaimsPrincipal Principal
+);
+
+public record RecoverAccountResultDto(
+    string Token,
+    CurrentUserResponseDto User,
+    ClaimsPrincipal Principal,
+    string NewRecoveryKeyHex,
+    string NewMnemonicPhrase,
+    string NewRecoveryLookupId,
+    string NewJsonBackupPayload
 );
