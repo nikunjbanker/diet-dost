@@ -48,24 +48,28 @@ public sealed class SoftDeleteAndSuperAdminTests : IDisposable
     [Fact]
     public void DomainEntities_Implement_ISoftDeletable_Interface()
     {
-        var meal = new MealLog();
-        var photo = new ProgressPhoto();
-        var user = new ApplicationUser();
-        var profile = new UserProfile();
-        var correction = new UserCorrectionRecord();
-        var ledger = new DailyCalorieLedger();
-        var feedback = new AiDetectionFeedbackRecord();
-
-        Assert.IsAssignableFrom<ISoftDeletable>(meal);
-        Assert.IsAssignableFrom<ISoftDeletable>(photo);
-        Assert.IsAssignableFrom<ISoftDeletable>(user);
-        Assert.IsAssignableFrom<ISoftDeletable>(profile);
-        Assert.IsAssignableFrom<ISoftDeletable>(correction);
-        Assert.IsAssignableFrom<ISoftDeletable>(ledger);
-        Assert.IsAssignableFrom<ISoftDeletable>(feedback);
+        ISoftDeletable meal = new MealLog();
+        ISoftDeletable photo = new ProgressPhoto();
+        ISoftDeletable user = new ApplicationUser();
+        ISoftDeletable profile = new UserProfile();
+        ISoftDeletable correction = new UserCorrectionRecord();
+        ISoftDeletable ledger = new DailyCalorieLedger();
+        ISoftDeletable feedback = new AiDetectionFeedbackRecord();
 
         Assert.False(meal.IsDeleted);
         Assert.Null(meal.DeletedAtUtc);
+        Assert.False(photo.IsDeleted);
+        Assert.Null(photo.DeletedAtUtc);
+        Assert.False(user.IsDeleted);
+        Assert.Null(user.DeletedAtUtc);
+        Assert.False(profile.IsDeleted);
+        Assert.Null(profile.DeletedAtUtc);
+        Assert.False(correction.IsDeleted);
+        Assert.Null(correction.DeletedAtUtc);
+        Assert.False(ledger.IsDeleted);
+        Assert.Null(ledger.DeletedAtUtc);
+        Assert.False(feedback.IsDeleted);
+        Assert.Null(feedback.DeletedAtUtc);
     }
 
     [Fact]
