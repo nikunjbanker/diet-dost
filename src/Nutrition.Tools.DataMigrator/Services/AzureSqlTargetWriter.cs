@@ -56,7 +56,7 @@ public class AzureSqlTargetWriter : IDisposable
         {
             ConnectTimeout = 30,
             Encrypt = true,
-            TrustServerCertificate = true // Allows both cloud certs and dev local certs
+            TrustServerCertificate = false
         };
 
         _connection = new SqlConnection(builder.ConnectionString);
