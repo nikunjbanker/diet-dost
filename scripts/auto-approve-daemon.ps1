@@ -15,7 +15,7 @@ Write-Host "Auto-approval daemon started for GitHub Actions deployments (Polling
 
 while ((Get-Date) -lt $endTime) {
     try {
-        $runsRaw = gh run list --limit 10 --json databaseId, workflowName, status
+        $runsRaw = gh run list --limit 10 --json databaseId,workflowName,status
         if ($runsRaw) {
             $runs = $runsRaw | ConvertFrom-Json
             $activeRuns = $runs | Where-Object { $_.status -in @('in_progress', 'queued', 'waiting') }
