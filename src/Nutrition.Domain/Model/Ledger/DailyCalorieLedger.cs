@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -6,14 +6,17 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using Nutrition.Domain.Clinical;
+using Nutrition.Domain.Common;
 
 namespace Nutrition.Domain.Model.Ledger;
 
-public class DailyCalorieLedger
+public class DailyCalorieLedger : ISoftDeletable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string UserId { get; set; } = string.Empty;
     public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAtUtc { get; set; }
 
     public double BudgetedCalories { get; set; } = 1600.0;
     public double ConsumedCalories { get; set; } = 0.0;

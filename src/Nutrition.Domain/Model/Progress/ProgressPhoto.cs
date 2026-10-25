@@ -1,10 +1,12 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Domain.Common;
+
 namespace Nutrition.Domain.Model.Progress;
 
 public enum ProgressPhotoType
@@ -14,7 +16,7 @@ public enum ProgressPhotoType
     FullBodySide
 }
 
-public class ProgressPhoto
+public class ProgressPhoto : ISoftDeletable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string UserId { get; set; } = string.Empty;
@@ -24,4 +26,6 @@ public class ProgressPhoto
     public string PhotoUri { get; set; } = string.Empty;
     public bool IsBaseline { get; set; }
     public string? Notes { get; set; }
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAtUtc { get; set; }
 }

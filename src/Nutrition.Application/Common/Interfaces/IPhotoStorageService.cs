@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -13,7 +13,13 @@ namespace Nutrition.Application.Common.Interfaces;
 /// </summary>
 public interface IPhotoStorageService
 {
-    Task<string> SaveMealPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default);
-    Task<string> SaveProgressPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default);
+    Task<string> SaveMealPhotoAsync(string? userId, Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default);
+    Task<string> SaveMealPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)
+        => SaveMealPhotoAsync(null, fileStream, originalFileName, contentType, ct);
+
+    Task<string> SaveProgressPhotoAsync(string? userId, Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default);
+    Task<string> SaveProgressPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)
+        => SaveProgressPhotoAsync(null, fileStream, originalFileName, contentType, ct);
+
     Task<bool> DeletePhotoAsync(string relativePathOrUrl, CancellationToken ct = default);
 }

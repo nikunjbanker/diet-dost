@@ -1,13 +1,15 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Domain.Common;
+
 namespace Nutrition.Domain.Model.Meal;
 
-public class AiDetectionFeedbackRecord
+public class AiDetectionFeedbackRecord : ISoftDeletable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
     public string UserId { get; set; } = string.Empty;
@@ -21,4 +23,6 @@ public class AiDetectionFeedbackRecord
     public bool RetrainingTriggered { get; set; } = false;
     public string? RetrainingOutcome { get; set; }
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public bool IsDeleted { get; set; } = false;
+    public DateTime? DeletedAtUtc { get; set; }
 }

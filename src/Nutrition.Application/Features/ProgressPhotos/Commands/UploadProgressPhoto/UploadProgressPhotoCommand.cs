@@ -10,6 +10,7 @@ using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Common.Security;
 using Nutrition.Application.Features.ProgressPhotos.DTOs;
 using Nutrition.Domain.Model.Progress;
 
@@ -54,10 +55,12 @@ public class UploadProgressPhotoCommandHandler : ICommandHandler<UploadProgressP
         }
 
         var photoUri = await _photoStorageService.SaveProgressPhotoAsync(
+            request.UserId,
             request.ImageStream,
             request.FileName,
             request.MimeType,
             ct);
+        photoUri = PhotoPathSanitizer.NormalizeToRelativePath(photoUri);
 
         var capturedAt = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(request.CapturedDate) && DateTime.TryParse(request.CapturedDate, out var parsedDate))

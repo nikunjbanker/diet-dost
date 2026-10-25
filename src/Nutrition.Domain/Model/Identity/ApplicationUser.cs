@@ -7,13 +7,15 @@
  */
 using System.Text.RegularExpressions;
 
+using Nutrition.Domain.Common;
+
 namespace Nutrition.Domain.Model.Identity;
 
 /// <summary>
 /// Root aggregate entity representing an authenticated, registered application user.
 /// Maintains identity credentials, roles, subscription tier, and forensic legal consent audit records.
 /// </summary>
-public partial class ApplicationUser
+public partial class ApplicationUser : ISoftDeletable
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
 
@@ -72,6 +74,16 @@ public partial class ApplicationUser
     /// Whether this user account is active. Inactive/locked users cannot log in.
     /// </summary>
     public bool IsActive { get; set; } = true;
+
+    /// <summary>
+    /// Whether this user account has been soft-deleted. Soft-deleted accounts cannot log in.
+    /// </summary>
+    public bool IsDeleted { get; set; } = false;
+
+    /// <summary>
+    /// Timestamp in UTC when this user account was soft-deleted.
+    /// </summary>
+    public DateTime? DeletedAtUtc { get; set; }
 
     // =========================================================================
     // Legal Compliance & Forensic Audit Properties (India DPDPA 2023 & GDPR)
@@ -163,7 +175,7 @@ public partial class ApplicationUser
     /// </summary>
     public bool CanLogin(out string? rejectionReason)
     {
-        if (!IsActive)
+        if (IsDeleted || !IsActive)
         {
             rejectionReason = "This account has been deactivated. Please contact support.";
             return false;

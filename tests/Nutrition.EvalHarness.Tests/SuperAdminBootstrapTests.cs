@@ -76,6 +76,20 @@ public class SuperAdminBootstrapTests
         public Task<int> CountAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default) =>
             Task.FromResult(_items.AsQueryable().Count(predicate));
 
+        public Task<List<T>> FindDeletedAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+        {
+            var query = _items.AsQueryable();
+            if (typeof(Nutrition.Domain.Common.ISoftDeletable).IsAssignableFrom(typeof(T)))
+            {
+                query = query.Where(x => ((Nutrition.Domain.Common.ISoftDeletable)x).IsDeleted);
+            }
+            if (predicate != null)
+            {
+                query = query.Where(predicate);
+            }
+            return Task.FromResult(query.ToList());
+        }
+
         public IQueryable<T> Query() => _items.AsQueryable();
 
         public Task AddAsync(T entity, CancellationToken ct = default)

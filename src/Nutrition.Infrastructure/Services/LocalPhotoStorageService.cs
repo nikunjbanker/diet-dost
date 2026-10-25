@@ -9,12 +9,15 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
+using Nutrition.Application.Common.Security;
 
 namespace Nutrition.Infrastructure.Services;
 
 /// <summary>
 /// Infrastructure adapter implementing IPhotoStorageService for local disk / wwwroot persistence.
 /// Pure BCL implementation decoupled from ASP.NET Core presentation contracts.
+/// Persists user uploads in user-scoped subdirectories (uploads/users/{userId}/meals and uploads/users/{userId}/progress)
+/// and enforces zero physical deletion policy for operational auditability and troubleshooting.
 /// </summary>
 public class LocalPhotoStorageService : IPhotoStorageService
 {
@@ -32,14 +35,24 @@ public class LocalPhotoStorageService : IPhotoStorageService
             : Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
     }
 
+    public async Task<string> SaveMealPhotoAsync(string? userId, Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)
+    {
+        return await SavePhotoInternalAsync(userId, "meals", fileStream, originalFileName, contentType, ct);
+    }
+
     public async Task<string> SaveMealPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)
     {
-        return await SavePhotoInternalAsync("meals", fileStream, originalFileName, contentType, ct);
+        return await SaveMealPhotoAsync(null, fileStream, originalFileName, contentType, ct);
+    }
+
+    public async Task<string> SaveProgressPhotoAsync(string? userId, Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)
+    {
+        return await SavePhotoInternalAsync(userId, "progress", fileStream, originalFileName, contentType, ct);
     }
 
     public async Task<string> SaveProgressPhotoAsync(Stream fileStream, string originalFileName, string contentType, CancellationToken ct = default)
     {
-        return await SavePhotoInternalAsync("progress", fileStream, originalFileName, contentType, ct);
+        return await SaveProgressPhotoAsync(null, fileStream, originalFileName, contentType, ct);
     }
 
     public Task<bool> DeletePhotoAsync(string relativePathOrUrl, CancellationToken ct = default)
@@ -47,27 +60,13 @@ public class LocalPhotoStorageService : IPhotoStorageService
         if (string.IsNullOrWhiteSpace(relativePathOrUrl))
             return Task.FromResult(false);
 
-        try
-        {
-            var trimmedPath = relativePathOrUrl.TrimStart('/', '\\').Replace('/', Path.DirectorySeparatorChar);
-            var fullPath = Path.Combine(_webRootPath, trimmedPath);
-
-            if (File.Exists(fullPath))
-            {
-                File.Delete(fullPath);
-                return Task.FromResult(true);
-            }
-
-            return Task.FromResult(false);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Failed to delete photo at path: {Path}", relativePathOrUrl);
-            return Task.FromResult(false);
-        }
+        // Zero Physical Deletion Policy: Physical assets are strictly preserved for troubleshooting & forensic audit
+        _logger.LogInformation("[STORAGE] Bypassing physical deletion per zero-physical-delete retention policy: {Path}", relativePathOrUrl);
+        return Task.FromResult(true);
     }
 
     private async Task<string> SavePhotoInternalAsync(
+        string? userId,
         string subFolder,
         Stream fileStream,
         string originalFileName,
@@ -76,7 +75,21 @@ public class LocalPhotoStorageService : IPhotoStorageService
     {
         ArgumentNullException.ThrowIfNull(fileStream);
 
-        var destinationFolder = Path.Combine(_webRootPath, "uploads", subFolder);
+        string destinationFolder;
+        string returnBaseUrl;
+
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            var sanitizedUser = PhotoPathSanitizer.SanitizeUserId(userId);
+            destinationFolder = Path.Combine(_webRootPath, "uploads", "users", sanitizedUser, subFolder);
+            returnBaseUrl = $"/uploads/users/{sanitizedUser}/{subFolder}/";
+        }
+        else
+        {
+            destinationFolder = Path.Combine(_webRootPath, "uploads", subFolder);
+            returnBaseUrl = $"/uploads/{subFolder}/";
+        }
+
         if (!Directory.Exists(destinationFolder))
         {
             Directory.CreateDirectory(destinationFolder);
@@ -104,6 +117,6 @@ public class LocalPhotoStorageService : IPhotoStorageService
         using var fileOutput = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
         await fileStream.CopyToAsync(fileOutput, ct);
 
-        return $"/uploads/{subFolder}/{uniqueFileName}";
+        return PhotoPathSanitizer.NormalizeToRelativePath(returnBaseUrl + uniqueFileName);
     }
 }

@@ -14,6 +14,7 @@
       <button type="button" id="btn-admin-tab-users" class="mode-btn active">👥 User Directory</button>
       <button type="button" id="btn-admin-tab-tiers" class="mode-btn">⚙️ Tier Configurations</button>
       <button type="button" id="btn-admin-tab-logs" class="mode-btn">📡 AI Usage Telemetry</button>
+      <button type="button" id="btn-admin-tab-deleted" class="mode-btn">🗑️ Deleted Audit</button>
     </div>
 
     <!-- Pane 1: User Directory -->
@@ -82,6 +83,42 @@
           <tbody id="admin-logs-table-body">
             <tr>
               <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading telemetry...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pane 4: Deleted Records Audit (SuperAdmin) -->
+    <div id="admin-pane-deleted" class="admin-pane" style="display: none; flex: 1; overflow-y: auto; min-height: 0;">
+      <div style="display: flex; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <select id="admin-filter-deleted-type" class="text-input" style="width: auto;">
+            <option value="all">All Types</option>
+            <option value="meals">Meals</option>
+            <option value="progress">Progress Photos</option>
+            <option value="users">Users</option>
+          </select>
+          <input type="text" id="admin-search-deleted-user" class="text-input" placeholder="Filter by User ID..." style="min-width: 200px;">
+        </div>
+        <button type="button" id="btn-admin-refresh-deleted" class="btn btn-sm btn-outline">🔄 Refresh Deleted Records</button>
+      </div>
+      <div class="table-responsive">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>User ID</th>
+              <th>Item / Title</th>
+              <th>Photo</th>
+              <th>Details</th>
+              <th>Deleted At (UTC)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="admin-deleted-table-body">
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading deleted records...</td>
             </tr>
           </tbody>
         </table>

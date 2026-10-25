@@ -370,19 +370,14 @@ public class ClinicalDietitianService
         var userTz = GetUserTimeZoneInfo(profile?.Timezone);
         var mealLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(meal.LoggedAt, userTz));
 
-        // Delete child items explicitly
-        if (meal.Items != null && meal.Items.Count > 0)
-        {
-            foreach (var item in meal.Items)
-            {
-                await _foodItemRepo.DeleteAsync(item.Id, ct);
-            }
-        }
+        // Soft delete meal and preserve physical photo assets on storage for audit & troubleshooting
+        meal.IsDeleted = true;
+        meal.DeletedAtUtc = DateTime.UtcNow;
 
-        await _mealRepo.DeleteAsync(meal.Id, ct);
+        await _mealRepo.UpdateAsync(meal, ct);
         await _uow.SaveChangesAsync(ct);
 
-        // Recalculate daily ledger for this date
+        // Recalculate daily ledger for this date (excluding soft-deleted meal)
         await GetOrCreateDailyLedgerAsync(userId, mealLocalDate, ct);
         return true;
     }

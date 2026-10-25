@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -60,4 +60,11 @@ export class AdminService {
     if (userId) url += `&userId=${encodeURIComponent(userId)}`;
     return await this.api.get(url);
   }
+
+  async getDeletedRecords(recordType = 'all', userId = null) {
+    let url = `/api/admin/deleted-records?recordType=${encodeURIComponent(recordType)}`;
+    if (userId) url += `&userId=${encodeURIComponent(userId)}`;
+    return await this.api.get(url);
+  }
 }
+
