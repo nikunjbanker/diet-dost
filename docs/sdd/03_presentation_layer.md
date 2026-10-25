@@ -122,13 +122,14 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
    - Desktop placement: Docked at `bottom: 24px; right: 24px;`.
    - Mobile placement: Elevated at `bottom: calc(64px + env(safe-area-inset-bottom, 0px) + 12px); right: 12px;` to guarantee 0 touch collisions with `.mobile-bottom-nav` or the meal logging FAB.
    - Features animated `@keyframes heartBeat` pulse, brand icon, Alpha version chip, and direct GitHub repo pill.
-8. **Dussehra (Vijayadashami) Festival Launch Dynamic Carousel (`partials/dussehra-launch-banner.html`)**:
-   - Dynamic 4-concept launch banner carousel with auto-rotation (7.5s), concept tabs, indicator dots, and collapse/expand ticker:
-     - *Concept 1 (Metabolic Victory)*: Vanquish the 10 Metabolic Foes with AI Precision.
-     - *Concept 2 (Auspicious Beginning)*: Shubh Aarambh — Gift Yourself the Gold of True Health.
-     - *Concept 3 (Mindful Celebration)*: Celebrate Festive Delicacies with Pure Joy & Mindful Balance.
-     - *Concept 4 (Founder's Dedication)*: Dussehra Dedication — Created with ❤️ by Nikunj Banker.
-   - Interactive *Shubh Sankalp* health pledge button triggers celebratory confetti burst (`ConfettiService`) and empowering launch toast.
+8. **Diwali (Deepavali) Festival Celebration Banner & Smart Mithai Calibrator (`partials/diwali-celebration-banner.html`)**:
+   - Dynamic 4-concept festival celebration carousel with auto-rotation (7.5s), concept tabs, indicator dots, interactive Panch-Deep Diya lighting system, and collapse/expand ticker:
+     - *Concept 1 (Deepotsav of Metabolic Vitality)*: Light the Lamp of Inner Vitality & Dispel Metabolic Shadows (ICMR-NIN 2024 guidance, zero crash diets).
+     - *Concept 2 (Smart Mithai & Farsan Calibrator)*: Savor Traditional Mithai with Mindful Joy & AI Portion Calibration (interactive chips for Kaju Katli, Besan Laddoo, Crispy Chakli, and Ghughra/Mathiya with dynamic balance advice, calorie breakdowns, and compensatory 15-minute post-puja walking calibration).
+     - *Concept 3 (Gujarati New Year • Bestu Varas)*: Saal Mubarak: Auspicious New Year Resolutions for Lifelong Vitality (Vikram Samvat Nutan Varsh, "સાલ મુબારક" greetings, Annakut mindful eating guidance, and golden New Year Health Pledge).
+     - *Concept 4 (Founder's Dedication)*: Shubh Deepavali & Saal Mubarak — Created with ❤️ by Nikunj Banker with health & happy diet food.
+   - **Interactive Panch-Deep 5-Day Diya Lighting System**: An interactive row of 5 festive clay lamps representing Dhanteras, Naraka Chaturdashi (Kali Chaudas), Deepavali Lakshmi Puja, Bestu Varas (Gujarati New Year), and Bhai Dooj. Tapping each diya ignites a glowing `@keyframes diyaFlicker` flame animation, reveals festive clinical wisdom toasts, persists state in `localStorage` (`diet_dost_diwali_diyas_lit`), and triggers a grand particle explosion upon lighting all five lamps.
+   - **Sleek Ticker Mode**: Collapse toggle saves state in `localStorage` (`diet_dost_diwali_minimized`) and displays an elegant golden ticker bar with the `🪔 Shubh Deepavali • Saal Mubarak` badge and instant expansion.
 9. **Mobile Ergonomics & Single Fluid Vertical Scroll Architecture (`styles.css`, `partials/review-modal.html`, `partials/auth-gate.html`)**:
    - **Auth Gate Mobile Ergonomics**: Decouples `.auth-gate-overlay` from desktop bottom-sheet positioning on screens `<640px` (`align-items: flex-start !important;`), eliminating the 250px dead top void and framing `.auth-gate-card` as an immersive, full-height mobile sheet with `env(safe-area-inset-top)` and `env(safe-area-inset-bottom)` support.
    - **Form-Group Input Standardization**: Enforces `.form-group` (`display: flex; flex-direction: column; gap: 0.35rem; width: 100%;`) and `.form-label-row` (`display: flex; justify-content: space-between; align-items: center;`), guaranteeing that `<label>` elements sit consistently directly above `<input>` fields without awkward side-by-side distortions.

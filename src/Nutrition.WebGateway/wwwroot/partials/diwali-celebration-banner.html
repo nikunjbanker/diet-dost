@@ -1,0 +1,297 @@
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+
+<!-- Diwali (Deepavali) Festival Celebration Banner: All-in-One Deepotsav & Saal Mubarak Experience -->
+<section class="diwali-banner-card" id="diwali-celebration-banner" aria-label="Diwali Festival Celebration Carousel">
+  <div class="diwali-banner-glow-halo halo-amber" aria-hidden="true"></div>
+  <div class="diwali-banner-glow-halo halo-saffron" aria-hidden="true"></div>
+
+  <!-- Collapsed Slim Ticker View (Shown when banner is minimized) -->
+  <div class="diwali-ticker-bar" id="diwali-ticker-bar" style="display: none;">
+    <div class="diwali-ticker-content">
+      <span class="diwali-ticker-badge">🪔 Shubh Deepavali &bull; Saal Mubarak</span>
+      <span class="diwali-ticker-text">
+        Light up your health with Diet-Dost &bull; Created with ❤️ by <strong>Nikunj Banker</strong> with health &amp; happy diet food.
+      </span>
+    </div>
+    <button type="button" class="diwali-expand-btn" id="btn-diwali-expand" aria-label="Expand Diwali Celebration Banner">
+      <span>✨ View Festive Celebration</span>
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Expanded Carousel View -->
+  <div class="diwali-carousel-wrapper" id="diwali-carousel-wrapper">
+    <!-- Top Bar: Festive Tag, Concept Tabs & Collapse Toggle -->
+    <div class="diwali-banner-header">
+      <div class="diwali-header-left">
+        <span class="diwali-festival-badge">
+          <span class="diwali-badge-sparkle">✨</span>
+          <span>Deepotsav &amp; Saal Mubarak Special &bull; Milestone 1.5.0</span>
+        </span>
+      </div>
+
+      <!-- Navigation Tabs for the 4 Concepts -->
+      <div class="diwali-tabs-nav" role="tablist" aria-label="Diwali Concept Tabs">
+        <button type="button" role="tab" class="diwali-tab-btn active" data-slide="0" id="tab-diwali-0" aria-selected="true" aria-controls="slide-diwali-0">
+          <span class="tab-emoji">🪔</span>
+          <span class="tab-title">Deepotsav</span>
+        </button>
+        <button type="button" role="tab" class="diwali-tab-btn" data-slide="1" id="tab-diwali-1" aria-selected="false" aria-controls="slide-diwali-1">
+          <span class="tab-emoji">🍬</span>
+          <span class="tab-title">Mithai Calibrator</span>
+        </button>
+        <button type="button" role="tab" class="diwali-tab-btn" data-slide="2" id="tab-diwali-2" aria-selected="false" aria-controls="slide-diwali-2">
+          <span class="tab-emoji">🌅</span>
+          <span class="tab-title">Saal Mubarak</span>
+        </button>
+        <button type="button" role="tab" class="diwali-tab-btn" data-slide="3" id="tab-diwali-3" aria-selected="false" aria-controls="slide-diwali-3">
+          <span class="tab-emoji">👑</span>
+          <span class="tab-title">Founder's Wish</span>
+        </button>
+      </div>
+
+      <!-- Collapse / Dismiss Button -->
+      <div class="diwali-header-right">
+        <button type="button" class="diwali-minimize-btn" id="btn-diwali-minimize" aria-label="Minimize Diwali Celebration Banner" title="Minimize festive banner">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Panch-Deep 5-Day Diya Lighting Bar -->
+    <div class="diwali-panch-deep" id="diwali-panch-deep" role="region" aria-label="Panch-Deep 5 Days of Deepotsav Diya Lighting">
+      <div class="panch-deep-header">
+        <span class="panch-deep-title">🪔 Panch-Deep Arogya Jyoti: Tap each Diya to light auspicious clinical wisdom</span>
+        <span class="panch-deep-status" id="panch-deep-status">0 of 5 Diyas Lit</span>
+      </div>
+      <div class="panch-deep-diyas-track">
+        <button type="button" class="diwali-diya-btn" data-diya="0" id="btn-diya-0" aria-label="Light Diya 1: Dhanteras (Arogyam Wealth)" title="Dhanteras: Eternal Health Wealth">
+          <span class="diya-flame-wrapper" aria-hidden="true">
+            <span class="diya-flame">🔥</span>
+          </span>
+          <span class="diya-lamp-body">🪔</span>
+          <span class="diya-name">Dhanteras</span>
+        </button>
+        <button type="button" class="diwali-diya-btn" data-diya="1" id="btn-diya-1" aria-label="Light Diya 2: Naraka Chaturdashi (Toxin Defense)" title="Naraka Chaturdashi: Eliminate Metabolic Sluggishness">
+          <span class="diya-flame-wrapper" aria-hidden="true">
+            <span class="diya-flame">🔥</span>
+          </span>
+          <span class="diya-lamp-body">🪔</span>
+          <span class="diya-name">Kali Chaudas</span>
+        </button>
+        <button type="button" class="diwali-diya-btn" data-diya="2" id="btn-diya-2" aria-label="Light Diya 3: Deepavali (Lakshmi & Light)" title="Deepavali: Radiance of Mindful Vitality">
+          <span class="diya-flame-wrapper" aria-hidden="true">
+            <span class="diya-flame">🔥</span>
+          </span>
+          <span class="diya-lamp-body">🪔</span>
+          <span class="diya-name">Deepavali</span>
+        </button>
+        <button type="button" class="diwali-diya-btn" data-diya="3" id="btn-diya-3" aria-label="Light Diya 4: Bestu Varas (Gujarati New Year • Saal Mubarak)" title="Bestu Varas: Saal Mubarak & Fresh Health Resolutions">
+          <span class="diya-flame-wrapper" aria-hidden="true">
+            <span class="diya-flame">🔥</span>
+          </span>
+          <span class="diya-lamp-body">🪔</span>
+          <span class="diya-name">Bestu Varas</span>
+        </button>
+        <button type="button" class="diwali-diya-btn" data-diya="4" id="btn-diya-4" aria-label="Light Diya 5: Bhai Dooj (Harmony & Joy)" title="Bhai Dooj: Family Harmony & Mindful Sweet Moments">
+          <span class="diya-flame-wrapper" aria-hidden="true">
+            <span class="diya-flame">🔥</span>
+          </span>
+          <span class="diya-lamp-body">🪔</span>
+          <span class="diya-name">Bhai Dooj</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Carousel Slides Viewport -->
+    <div class="diwali-slides-viewport">
+      <!-- Slide 0: Concept 1: Deepotsav of Metabolic Vitality -->
+      <article class="diwali-slide active" id="slide-diwali-0" role="tabpanel" aria-labelledby="tab-diwali-0">
+        <div class="slide-grid">
+          <div class="slide-visual-col">
+            <div class="visual-halo-ring amber-accent">
+              <span class="visual-main-icon">🪔</span>
+            </div>
+            <div class="visual-sub-badge">Deepotsav Vitality</div>
+          </div>
+          <div class="slide-content-col">
+            <div class="slide-eyebrow">Deepavali Clinical Illumination</div>
+            <h2 class="slide-title">Light the Lamp of Inner Vitality &amp; Dispel Metabolic Shadows</h2>
+            <p class="slide-desc">
+              Celebrate the divine triumph of mindful clinical discipline over confusing fad diets and sluggish metabolism. Real-time macro defense against glucose crashes, late-night snacking, and metabolic fatigue.
+            </p>
+            <div class="slide-pills-row">
+              <span class="slide-pill">🪔 Diya of Vitality</span>
+              <span class="slide-pill">📐 ICMR-NIN 2024 Precision</span>
+              <span class="slide-pill">🛡️ Zero Crash Diets</span>
+            </div>
+            <div class="slide-actions-row">
+              <button type="button" class="diwali-cta-btn amber-glow" onclick="document.getElementById('meal-input-prompt')?.focus() || document.getElementById('btn-nav-log-meal')?.click()">
+                <span>🪔 Light Festive Lamp &bull; Log Meal</span>
+              </button>
+              <a href="https://github.com/nikunjbanker/diet-dost" target="_blank" rel="noopener noreferrer" class="diwali-cta-btn ghost">
+                <span>View Open Source Repo</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Slide 1: Concept 2: Smart Diwali Mithai & Farsan Calibrator -->
+      <article class="diwali-slide" id="slide-diwali-1" role="tabpanel" aria-labelledby="tab-diwali-1">
+        <div class="slide-grid">
+          <div class="slide-visual-col">
+            <div class="visual-halo-ring saffron-accent">
+              <span class="visual-main-icon">🍬</span>
+            </div>
+            <div class="visual-sub-badge">Mindful Sweets</div>
+          </div>
+          <div class="slide-content-col">
+            <div class="slide-eyebrow">Mindful Festive Sweets</div>
+            <h2 class="slide-title">Savor Traditional Mithai with Mindful Joy &amp; AI Portion Calibration</h2>
+            <p class="slide-desc">
+              Celebrate festival delicacies with zero deprivation! Diet-Dost balances your festive treats with intelligent portion calibration and joyful compensatory movement.
+            </p>
+
+            <!-- Delicacy Interactive Chips -->
+            <div class="mithai-chips-container" role="group" aria-label="Diwali Treat Selection">
+              <span class="mithai-chips-label">Select Delicacy:</span>
+              <div class="mithai-chips-row">
+                <button type="button" class="mithai-chip active" data-sweet="kaju-katli" id="chip-kaju-katli">
+                  <span>🍬 Kaju Katli (1 pc ~55 kcal)</span>
+                </button>
+                <button type="button" class="mithai-chip" data-sweet="besan-laddoo" id="chip-besan-laddoo">
+                  <span>🟡 Besan Laddoo (1 pc ~180 kcal)</span>
+                </button>
+                <button type="button" class="mithai-chip" data-sweet="crispy-chakli" id="chip-crispy-chakli">
+                  <span>🌀 Crispy Chakli (2 pcs ~150 kcal)</span>
+                </button>
+                <button type="button" class="mithai-chip" data-sweet="ghughra-mathiya" id="chip-ghughra-mathiya">
+                  <span>🥟 Ghughra / Mathiya (1 pc ~140 kcal)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dynamic Advice Callout -->
+            <div class="mithai-dynamic-card" id="mithai-dynamic-card">
+              <div class="mithai-card-badge" id="mithai-card-badge">✨ Kaju Katli Balance Tip</div>
+              <p class="mithai-card-text" id="mithai-card-text">
+                Rich in cashew heart-healthy fats and plant protein. Pair with warm spiced green tea and enjoy a brisk 12-minute post-puja stroll. Zero guilt, pure celebration!
+              </p>
+            </div>
+
+            <div class="slide-pills-row">
+              <span class="slide-pill">🍬 Smart Sweet Portioning</span>
+              <span class="slide-pill">🚶 Celebratory Activity Balance</span>
+              <span class="slide-pill">💚 100% Guilt-Free Joy</span>
+            </div>
+            <div class="slide-actions-row">
+              <button type="button" class="diwali-cta-btn saffron-glow" onclick="document.getElementById('meal-photo-input')?.click() || document.getElementById('btn-nav-log-meal')?.click()">
+                <span>📸 Scan Diwali Plate with AI</span>
+              </button>
+              <button type="button" class="diwali-cta-btn ghost" id="btn-log-festive-treat">
+                <span>⚡ Log Festive Treat</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Slide 2: Concept 3: Gujarati New Year (Bestu Varas) & Annakut Balance -->
+      <article class="diwali-slide" id="slide-diwali-2" role="tabpanel" aria-labelledby="tab-diwali-2">
+        <div class="slide-grid">
+          <div class="slide-visual-col">
+            <div class="visual-halo-ring gold-accent">
+              <span class="visual-main-icon">🌅</span>
+            </div>
+            <div class="visual-sub-badge">Nutan Varsh</div>
+          </div>
+          <div class="slide-content-col">
+            <div class="slide-eyebrow">Vikram Samvat Nutan Varsh &bull; Bestu Varas</div>
+            <h2 class="slide-title">Saal Mubarak: Auspicious New Year Resolutions for Lifelong Vitality</h2>
+            <p class="slide-desc">
+              સાલ મુબારક &amp; Nutan Varshabhinandan! On this holy dawn of Bestu Varas, open your auspicious new ledger of vibrant health, mindful nutrition, and daily vitality. Savor festive Annakut with balance and embrace a fresh beginning with Diet-Dost.
+            </p>
+            <div class="slide-pills-row">
+              <span class="slide-pill">🌅 Saal Mubarak</span>
+              <span class="slide-pill">🥗 Annakut Mindful Eating</span>
+              <span class="slide-pill">✨ Fresh Health Resolutions</span>
+            </div>
+            <div class="slide-actions-row">
+              <button type="button" class="diwali-cta-btn gold-glow" id="btn-diwali-pledge">
+                <span>✨ Take Nutan Varsh Health Pledge</span>
+              </button>
+              <button type="button" class="diwali-cta-btn ghost" onclick="window.openTransparencyModal ? window.openTransparencyModal() : null">
+                <span>Clinical Transparency</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Slide 3: Concept 4: Founder's Diwali Dedication -->
+      <article class="diwali-slide" id="slide-diwali-3" role="tabpanel" aria-labelledby="tab-diwali-3">
+        <div class="slide-grid">
+          <div class="slide-visual-col">
+            <div class="visual-halo-ring emerald-accent">
+              <span class="visual-main-icon">👑</span>
+            </div>
+            <div class="visual-sub-badge">Nikunj Banker</div>
+          </div>
+          <div class="slide-content-col">
+            <div class="slide-eyebrow">Founder's Festival Greeting</div>
+            <h2 class="slide-title">Shubh Deepavali &amp; Saal Mubarak &bull; Created with ❤️ by Nikunj Banker</h2>
+            <p class="slide-desc">
+              Heartfelt Diwali and Nutan Varsh greetings to everyone! Diet-Dost is built with love, health, and happy diet food. Engineered with medical-grade precision and modern open-source technology. Join our community journey on GitHub!
+            </p>
+            <div class="slide-pills-row">
+              <span class="slide-pill">❤️ Built by Nikunj Banker</span>
+              <span class="slide-pill">⭐ Open Source on GitHub</span>
+              <span class="slide-pill">🛡️ Dual AGPLv3 &amp; SSPL v1</span>
+            </div>
+            <div class="slide-actions-row">
+              <a href="https://github.com/nikunjbanker/diet-dost" target="_blank" rel="noopener noreferrer" class="diwali-cta-btn emerald-glow">
+                <span>⭐ Star on GitHub &amp; Explore Code</span>
+              </a>
+              <a href="#app-global-footer" class="diwali-cta-btn ghost">
+                <span>About Diet Dost</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- Carousel Footer Controls: Prev/Next, Dots Indicator -->
+    <div class="diwali-carousel-controls">
+      <button type="button" class="diwali-nav-arrow" id="btn-diwali-prev" aria-label="Previous Slide">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="diwali-dots-track" role="tablist" aria-label="Slide Dots">
+        <button type="button" class="diwali-dot active" data-slide="0" id="dot-diwali-0" aria-label="Go to Slide 1 (Deepotsav)"></button>
+        <button type="button" class="diwali-dot" data-slide="1" id="dot-diwali-1" aria-label="Go to Slide 2 (Mithai Calibrator)"></button>
+        <button type="button" class="diwali-dot" data-slide="2" id="dot-diwali-2" aria-label="Go to Slide 3 (Saal Mubarak)"></button>
+        <button type="button" class="diwali-dot" data-slide="3" id="dot-diwali-3" aria-label="Go to Slide 4 (Founder's Wish)"></button>
+      </div>
+
+      <button type="button" class="diwali-nav-arrow" id="btn-diwali-next" aria-label="Next Slide">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+</section>

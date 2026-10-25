@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 95 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 96 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -34,7 +34,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **24** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **21** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **27** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
-| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **10** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
+| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **11** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
 ---
@@ -146,6 +146,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-124** | Full Photo Uncut Aspect-Ratio Display, High-Resolution Lightbox Inspection, and GitHub Actions Dispatch Options Audit Summary | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-124-full-photo-uncut-aspect-ratio-and-workflow-dispatch-summary.md) |
 | **ADR-125** | Mobile Dashboard Unobscured Face Photo Presentation, External Metadata Chip Architecture, and Mobile Static Asset Cache Invalidation | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-125-mobile-dashboard-photo-unobscured-metadata-and-cache-busting.md) |
 | **ADR-127** | Mobile Edit Review Modal Save Button Isolation, Asynchronous AI Debounce Flush Synchronization, and Modal Layering Immunity | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md) |
+| **ADR-131** | Interactive Diwali (Deepavali) Celebration Banner, Panch-Deep Diya Lighting, Smart Mithai Calibrator, and Gujarati New Year (Bestu Varas) Integration | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md) |
 
 ### ⚖️ Governance, Standards & Agentic Workflows (`docs/adr/governance/`)
 > *Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing.*

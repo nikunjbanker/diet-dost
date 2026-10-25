@@ -173,22 +173,22 @@ async function loadPartials() {
 }
 
 // ============================================================================
-// 2. Dussehra Festival Launch Dynamic Carousel & Ticker Controller
+// 2. Diwali (Deepavali) Festival Celebration Carousel, Panch-Deep & Calibrator
 // ============================================================================
-function setupDussehraBanner(toastService, confettiService) {
-  const banner = document.getElementById('dussehra-launch-banner');
+function setupDiwaliBanner(toastService, confettiService) {
+  const banner = document.getElementById('diwali-celebration-banner');
   if (!banner) return;
 
-  const tickerBar = document.getElementById('dussehra-ticker-bar');
-  const carouselWrapper = document.getElementById('dussehra-carousel-wrapper');
-  const btnMinimize = document.getElementById('btn-dussehra-minimize');
-  const btnExpand = document.getElementById('btn-dussehra-expand');
-  const tabBtns = banner.querySelectorAll('.dussehra-tab-btn');
-  const slides = banner.querySelectorAll('.dussehra-slide');
-  const dotBtns = banner.querySelectorAll('.dussehra-dot');
-  const prevBtn = document.getElementById('btn-dussehra-prev');
-  const nextBtn = document.getElementById('btn-dussehra-next');
-  const pledgeBtn = document.getElementById('btn-shubh-pledge');
+  const tickerBar = document.getElementById('diwali-ticker-bar');
+  const carouselWrapper = document.getElementById('diwali-carousel-wrapper');
+  const btnMinimize = document.getElementById('btn-diwali-minimize');
+  const btnExpand = document.getElementById('btn-diwali-expand');
+  const tabBtns = banner.querySelectorAll('.diwali-tab-btn');
+  const slides = banner.querySelectorAll('.diwali-slide');
+  const dotBtns = banner.querySelectorAll('.diwali-dot');
+  const prevBtn = document.getElementById('btn-diwali-prev');
+  const nextBtn = document.getElementById('btn-diwali-next');
+  const pledgeBtn = document.getElementById('btn-diwali-pledge');
 
   let currentSlide = 0;
   const totalSlides = slides.length;
@@ -196,7 +196,7 @@ function setupDussehraBanner(toastService, confettiService) {
   let isHovered = false;
 
   // Restore saved minimize preference
-  const isMinimized = localStorage.getItem('diet_dost_dussehra_minimized') === 'true';
+  const isMinimized = localStorage.getItem('diet_dost_diwali_minimized') === 'true';
   if (isMinimized && tickerBar && carouselWrapper) {
     carouselWrapper.style.display = 'none';
     tickerBar.style.display = 'flex';
@@ -238,7 +238,7 @@ function setupDussehraBanner(toastService, confettiService) {
     btnMinimize.addEventListener('click', () => {
       carouselWrapper.style.display = 'none';
       tickerBar.style.display = 'flex';
-      localStorage.setItem('diet_dost_dussehra_minimized', 'true');
+      localStorage.setItem('diet_dost_diwali_minimized', 'true');
     });
   }
 
@@ -246,7 +246,7 @@ function setupDussehraBanner(toastService, confettiService) {
     btnExpand.addEventListener('click', () => {
       tickerBar.style.display = 'none';
       carouselWrapper.style.display = 'block';
-      localStorage.setItem('diet_dost_dussehra_minimized', 'false');
+      localStorage.setItem('diet_dost_diwali_minimized', 'false');
     });
   }
 
@@ -264,14 +264,165 @@ function setupDussehraBanner(toastService, confettiService) {
   banner.addEventListener('mouseleave', () => { isHovered = false; });
   startAutoAdvance();
 
-  // Shubh Aarambh Pledge Celebration Action
+  // --------------------------------------------------------------------------
+  // 2.1 Interactive Panch-Deep 5-Day Diya Lighting Controller
+  // --------------------------------------------------------------------------
+  const diyaWisdom = [
+    { name: "Dhanteras", toast: "✨ Dhanteras / Dhanvantari Jayanti: Invest in the eternal wealth of ICMR-NIN 2024 balanced nutrition!" },
+    { name: "Kali Chaudas", toast: "🛡️ Naraka Chaturdashi / Kali Chaudas: Eliminate metabolic fatigue and sluggishness with joyful, clean foods!" },
+    { name: "Deepavali", toast: "🪔 Deepavali Lakshmi Puja: May the divine light of Deepavali illuminate your home with health and joy!" },
+    { name: "Bestu Varas", toast: "🌅 સાલ મુબારક & Bestu Varas: Fresh health resolutions and Annakut balance for Nutan Varsh!" },
+    { name: "Bhai Dooj", toast: "🍯 Bhai Dooj: Cherish family bonds and savor festive sweet moments with mindful portion balance!" }
+  ];
+
+  let litDiyas = [];
+  try {
+    const saved = localStorage.getItem('diet_dost_diwali_diyas_lit');
+    if (saved) litDiyas = JSON.parse(saved);
+    if (!Array.isArray(litDiyas)) litDiyas = [];
+  } catch (e) {
+    litDiyas = [];
+  }
+
+  const diyaBtns = banner.querySelectorAll('.diwali-diya-btn');
+  const statusEl = document.getElementById('panch-deep-status');
+
+  function updateDiyaUI() {
+    diyaBtns.forEach((btn) => {
+      const idx = parseInt(btn.getAttribute('data-diya') || '0', 10);
+      const isLit = litDiyas.includes(idx);
+      btn.classList.toggle('lit', isLit);
+      btn.setAttribute('aria-pressed', isLit ? 'true' : 'false');
+    });
+
+    if (statusEl) {
+      if (litDiyas.length === 5) {
+        statusEl.textContent = '🌟 All 5 Deepotsav Lamps Lit — Arogya Jyoti Activated!';
+        statusEl.style.color = '#fef08a';
+      } else {
+        statusEl.textContent = `${litDiyas.length} of 5 Diyas Lit`;
+        statusEl.style.color = '#cbd5e1';
+      }
+    }
+  }
+
+  updateDiyaUI();
+
+  diyaBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-diya') || '0', 10);
+      const alreadyLit = litDiyas.includes(idx);
+
+      if (!alreadyLit) {
+        litDiyas.push(idx);
+        localStorage.setItem('diet_dost_diwali_diyas_lit', JSON.stringify(litDiyas));
+        updateDiyaUI();
+        confettiService?.burst?.();
+
+        const info = diyaWisdom[idx] || { name: 'Diwali', toast: 'Happy Deepavali from Diet-Dost!' };
+        toastService?.show?.({
+          type: 'success',
+          title: `🪔 ${info.name} Jyoti Lit!`,
+          message: info.toast,
+          icon: '✨'
+        });
+
+        if (litDiyas.length === 5) {
+          setTimeout(() => {
+            confettiService?.burst?.();
+            toastService?.show?.({
+              type: 'success',
+              title: '🌟 Deepotsav Panch-Deep Complete!',
+              message: 'All 5 auspicious lamps are illuminated! May your year shine with lifelong health, vitality, and happiness.',
+              icon: '🪔'
+            });
+          }, 350);
+        }
+      } else {
+        // Toggle off if already lit to allow playful interaction
+        litDiyas = litDiyas.filter((d) => d !== idx);
+        localStorage.setItem('diet_dost_diwali_diyas_lit', JSON.stringify(litDiyas));
+        updateDiyaUI();
+      }
+    });
+  });
+
+  // --------------------------------------------------------------------------
+  // 2.2 Smart Mithai & Farsan Calibrator Controller
+  // --------------------------------------------------------------------------
+  const mithaiData = {
+    'kaju-katli': {
+      badge: '✨ Kaju Katli Balance Tip',
+      text: 'Rich in cashew heart-healthy fats and plant protein (~55 kcal/pc). Pair with warm spiced green tea and enjoy a brisk 12-minute post-puja stroll. Zero guilt, pure celebration!',
+      prompt: '1 pc Kaju Katli'
+    },
+    'besan-laddoo': {
+      badge: '🟡 Besan Laddoo Balance Tip',
+      text: 'Gram flour provides fiber and protein (~180 kcal/pc). Savor slowly with family; a 20-minute celebratory walk or light evening meal balances daily energy perfectly.',
+      prompt: '1 pc Besan Laddoo'
+    },
+    'crispy-chakli': {
+      badge: '🌀 Crispy Chakli Balance Tip',
+      text: 'Crunchy festive savory treat (~150 kcal for 2 pcs). Balance with a bowl of sprouted moong salad and hydration for optimal electrolyte and sodium harmony.',
+      prompt: '2 pcs Crispy Chakli'
+    },
+    'ghughra-mathiya': {
+      badge: '🥟 Ghughra / Mathiya Balance Tip',
+      text: 'Traditional Gujarati festive delicacy (~140 kcal/pc). Enjoy mindfully as an afternoon treat alongside cardamom herbal tea. 100% joyful, zero crash diets!',
+      prompt: '1 pc Ghughra'
+    }
+  };
+
+  let activeMithaiKey = 'kaju-katli';
+  const mithaiChips = banner.querySelectorAll('.mithai-chip');
+  const mithaiBadge = document.getElementById('mithai-card-badge');
+  const mithaiText = document.getElementById('mithai-card-text');
+  const btnLogFestiveTreat = document.getElementById('btn-log-festive-treat');
+
+  mithaiChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const sweetKey = chip.getAttribute('data-sweet');
+      if (!sweetKey || !mithaiData[sweetKey]) return;
+
+      activeMithaiKey = sweetKey;
+      mithaiChips.forEach((c) => c.classList.toggle('active', c === chip));
+
+      const entry = mithaiData[sweetKey];
+      if (mithaiBadge) mithaiBadge.textContent = entry.badge;
+      if (mithaiText) mithaiText.textContent = entry.text;
+    });
+  });
+
+  if (btnLogFestiveTreat) {
+    btnLogFestiveTreat.addEventListener('click', () => {
+      const entry = mithaiData[activeMithaiKey] || mithaiData['kaju-katli'];
+      const mealPrompt = document.getElementById('meal-input-prompt');
+      if (mealPrompt) {
+        mealPrompt.value = entry.prompt;
+        mealPrompt.focus();
+      } else {
+        document.getElementById('btn-nav-log-meal')?.click();
+      }
+
+      toastService?.show?.({
+        type: 'info',
+        title: '⚡ Festive Treat Selected',
+        message: `Ready to log "${entry.prompt}". Adjust serving or add companions!`,
+        icon: '🍬'
+      });
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 2.3 Gujarati New Year (Bestu Varas / Saal Mubarak) Health Pledge
+  // --------------------------------------------------------------------------
   if (pledgeBtn) {
     pledgeBtn.addEventListener('click', () => {
       confettiService?.burst?.();
       toastService?.show?.({
         type: 'success',
-        title: '✨ Shubh Sankalp Registered!',
-        message: 'Happy Dussehra from Nikunj Banker & Diet-Dost! May this Vijayadashami bring lifelong vitality, health, and joyful nutrition.',
+        title: '🌅 સાલ મુબારક • Nutan Varsh Sankalp!',
+        message: 'Happy Diwali & Saal Mubarak from Nikunj Banker & Diet-Dost! May Vikram Samvat bring boundless vitality, health, and joyful nutrition.',
         icon: '🌟'
       });
     });
@@ -333,8 +484,8 @@ async function initApp() {
   const toastService = container.resolve('toastService');
   const confettiService = container.resolve('confettiService');
 
-  // Initialize Dussehra festival launch banner carousel & ticker
-  setupDussehraBanner(toastService, confettiService);
+  // Initialize Diwali festival celebration banner carousel, Panch-Deep & ticker
+  setupDiwaliBanner(toastService, confettiService);
 
   // Initialize mobile viewport laptop recommendation advisory strip
   setupMobileViewportNotice();
