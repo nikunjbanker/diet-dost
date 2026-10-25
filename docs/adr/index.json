@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-25T11:02:35.658764+00:00",
-  "totalAdrs": 96,
+  "generatedAt": "2026-10-25T12:06:27.484262+00:00",
+  "totalAdrs": 97,
   "categoryCounts": {
-    "architecture": 24,
+    "architecture": 25,
     "security": 21,
     "devops": 27,
     "presentation": 11,
@@ -1161,6 +1161,18 @@
       "subsystem": "WebGateway | Presentation (",
       "filename": "ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md",
       "relativePath": "docs/adr/presentation/ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md"
+    },
+    {
+      "id": "ADR-132",
+      "number": 132,
+      "title": "SQLite to Azure SQL Data Migration Tool & Data Conversion Engine",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-25",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261025-132-sqlite-to-azuresql-migration-tool.md",
+      "relativePath": "docs/adr/architecture/ADR-20261025-132-sqlite-to-azuresql-migration-tool.md"
     }
   ]
 }

@@ -28,6 +28,7 @@
     <ProjectReference Include="..\..\src\Nutrition.Application\Nutrition.Application.csproj" />
     <ProjectReference Include="..\..\src\Nutrition.Infrastructure\Nutrition.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Nutrition.WebGateway\Nutrition.WebGateway.csproj" />
+    <ProjectReference Include="..\..\src\Nutrition.Tools.DataMigrator\Nutrition.Tools.DataMigrator.csproj" />
   </ItemGroup>
 
 </Project>
