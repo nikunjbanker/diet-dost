@@ -17,6 +17,8 @@ using Nutrition.Application.Features.Auth.Commands.ExchangeQrTicket;
 using Nutrition.Application.Features.Auth.Commands.InitiateQrSession;
 using Nutrition.Application.Features.Auth.Commands.RecoverAccount;
 using Nutrition.Application.Features.Auth.Commands.RegisterAnonymous;
+using Nutrition.Application.Features.Auth.Commands.RejectQrSession;
+using Nutrition.Application.Features.Auth.Commands.SimulateQrApproval;
 using Nutrition.Application.Features.Auth.Queries.GetQrSessionStatus;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.WebGateway.Extensions;
@@ -40,6 +42,15 @@ public record ApproveQrRequest(
     string? MobilePublicKey,
     string? EncryptedApprovalPayload);
 
+public record SimulateQrApprovalRequest(
+    string SessionId,
+    string ChallengeNonce,
+    string? DemoEmail = null);
+
+public record RejectQrRequest(
+    string SessionId,
+    string ChallengeNonce);
+
 public record ExchangeQrRequest(
     string SessionId,
     string ExchangeTicket,
@@ -58,17 +69,20 @@ public class QrAuthController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
     private readonly IConfiguration _configuration;
+    private readonly IQrCodeGenerator _qrGenerator;
     private readonly ILogger<QrAuthController> _logger;
     private readonly ResiliencePipeline _rateLimiter;
 
     public QrAuthController(
         IDispatcher dispatcher,
         IConfiguration configuration,
+        IQrCodeGenerator qrGenerator,
         ILogger<QrAuthController> logger,
         ResiliencePipeline rateLimiter)
     {
         _dispatcher = dispatcher;
         _configuration = configuration;
+        _qrGenerator = qrGenerator;
         _logger = logger;
         _rateLimiter = rateLimiter;
     }
@@ -150,11 +164,13 @@ public class QrAuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
             var command = new InitiateQrSessionCommand(
                 request.BrowserSecretHash,
                 request.DesktopPublicKey,
                 HttpContext.Connection.RemoteIpAddress?.ToString(),
-                Request.Headers.UserAgent.ToString()
+                Request.Headers.UserAgent.ToString(),
+                baseUrl
             );
 
             var result = await _dispatcher.SendAsync(command, ct);
@@ -176,10 +192,31 @@ public class QrAuthController : ControllerBase
                 confirmationCode = result.Data.ConfirmationCode,
                 confirmationGlyph = result.Data.ConfirmationGlyph,
                 qrPayloadUri = result.Data.QrPayloadUri,
+                deepLinkUri = result.Data.DeepLinkUri,
+                qrSvg = result.Data.QrSvg,
+                dataUri = result.Data.DataUri,
                 expiresAtUtc = result.Data.ExpiresAtUtc,
                 ttlSeconds = result.Data.TtlSeconds
             });
         });
+    }
+
+    [HttpGet("qr/code/{sessionId}")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<IActionResult> GetQrSvg(string sessionId, CancellationToken ct)
+    {
+        var query = new GetQrSessionStatusQuery(sessionId);
+        var result = await _dispatcher.QueryAsync(query, ct);
+        if (!result.Succeeded || result.Data == null)
+        {
+            return NotFound();
+        }
+
+        var baseUri = $"{Request.Scheme}://{Request.Host}";
+        var qrUri = $"{baseUri}/qr-approve.html?sid={result.Data.SessionId}";
+        var svg = _qrGenerator.GenerateSvg(qrUri, size: 200, margin: 4);
+
+        return Content(svg, "image/svg+xml");
     }
 
     [HttpGet("qr/status/{sessionId}")]
@@ -315,6 +352,68 @@ public class QrAuthController : ControllerBase
                 message = "QR Session successfully approved.",
                 sessionId = request.SessionId,
                 exchangeTicket = result.Data
+            });
+        });
+    }
+
+    [HttpPost("qr/simulate-approval")]
+    public async Task<IActionResult> SimulateApproval([FromBody] SimulateQrApprovalRequest request, CancellationToken ct)
+    {
+        return await ExecuteWithRateLimitAsync(async () =>
+        {
+            var command = new SimulateQrApprovalCommand(
+                request.SessionId,
+                request.ChallengeNonce,
+                request.DemoEmail
+            );
+
+            var result = await _dispatcher.SendAsync(command, ct);
+            if (!result.Succeeded)
+            {
+                return StatusCode(result.StatusCode, new ProblemDetails
+                {
+                    Type = "https://dietdost.app/errors/qr-simulate-failed",
+                    Title = result.ErrorCode ?? "Simulated Approval Failed",
+                    Status = result.StatusCode,
+                    Detail = result.Error
+                });
+            }
+
+            return Ok(new
+            {
+                message = "Simulated mobile approval succeeded.",
+                sessionId = request.SessionId,
+                exchangeTicket = result.Data
+            });
+        });
+    }
+
+    [HttpPost("qr/reject")]
+    public async Task<IActionResult> RejectQr([FromBody] RejectQrRequest request, CancellationToken ct)
+    {
+        return await ExecuteWithRateLimitAsync(async () =>
+        {
+            var command = new RejectQrSessionCommand(
+                request.SessionId,
+                request.ChallengeNonce
+            );
+
+            var result = await _dispatcher.SendAsync(command, ct);
+            if (!result.Succeeded)
+            {
+                return StatusCode(result.StatusCode, new ProblemDetails
+                {
+                    Type = "https://dietdost.app/errors/qr-reject-failed",
+                    Title = result.ErrorCode ?? "Rejection Failed",
+                    Status = result.StatusCode,
+                    Detail = result.Error
+                });
+            }
+
+            return Ok(new
+            {
+                message = "QR Session successfully rejected.",
+                sessionId = request.SessionId
             });
         });
     }

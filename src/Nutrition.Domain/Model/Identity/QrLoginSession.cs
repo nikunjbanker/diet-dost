@@ -171,4 +171,18 @@ public class QrLoginSession
 
         Status = QrSessionStatus.Consumed;
     }
+
+    /// <summary>
+    /// Explicitly declines or rejects the pending QR login session from a mobile device.
+    /// </summary>
+    public void Reject()
+    {
+        if (IsExpired)
+        {
+            Status = QrSessionStatus.Expired;
+            throw new InvalidOperationException("Cannot reject an expired QR session.");
+        }
+
+        Status = QrSessionStatus.Rejected;
+    }
 }

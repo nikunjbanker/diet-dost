@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 102 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 104 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,10 +31,10 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **28** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **29** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **22** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **27** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
-| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **12** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
+| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **13** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
 ---
@@ -74,6 +74,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-134** | Azure SQL Serverless Pre-Warming, Resilient Startup, and Biometric Media Asset Redesign | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-134-azure-sql-serverless-warmup-and-biometric-progress-redesign.md) |
 | **ADR-135** | User-Scoped Upload Directories, Root-Relative URI Normalization, Logical Soft Delete, and SuperAdmin Deleted Audit Mode | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md) |
 | **ADR-137** | Dual-Database Schema Reconciliation & Error 207 Prevention Standard | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261026-137-dual-database-schema-reconciliation-standard.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261026-137-dual-database-schema-reconciliation-standard.md) |
+| **ADR-138** | ISO/IEC 18004 Standard QR Code Generation & Mobile Approval Architecture | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261026-138-iso18004-qr-code-and-mobile-web-approval.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261026-138-iso18004-qr-code-and-mobile-web-approval.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*
@@ -153,6 +154,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-127** | Mobile Edit Review Modal Save Button Isolation, Asynchronous AI Debounce Flush Synchronization, and Modal Layering Immunity | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-127-mobile-review-modal-save-ai-debounce-isolation.md) |
 | **ADR-131** | Interactive Diwali (Deepavali) Celebration Banner, Panch-Deep Diya Lighting, Smart Mithai Calibrator, and Gujarati New Year (Bestu Varas) Integration | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261024-131-diwali-celebration-banner-and-mithai-calibrator.md) |
 | **ADR-133** | Futuristic Bio-Telemetry Mobile Bottom Navigation Dock and Biometric Face & Body Composition Visualizations | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md) |
+| **ADR-139** | Mobile Web QR Approval View & Camera Scanner UX | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261026-139-mobile-qr-approval-view-and-camera-scanner.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261026-139-mobile-qr-approval-view-and-camera-scanner.md) |
 
 ### ⚖️ Governance, Standards & Agentic Workflows (`docs/adr/governance/`)
 > *Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing.*

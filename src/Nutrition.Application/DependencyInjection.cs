@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -7,6 +7,8 @@
  */
 using Microsoft.Extensions.DependencyInjection;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Services;
 
 namespace Nutrition.Application;
 
@@ -19,6 +21,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IDispatcher, NativeDispatcher>();
+        services.AddSingleton<IQrCodeGenerator, QrCodeGenerator>();
 
         var assembly = typeof(DependencyInjection).Assembly;
 

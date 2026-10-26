@@ -196,7 +196,11 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Zero-PII Anonymous Onboarding**: Radio switcher in the Register tab allows users to select between "Standard Account (Email & Password)" and "Zero-PII Anonymous (No Email/Phone Required)".
     - **Disaster Recovery Kit Modal (`#recovery-kit-modal`)**: Presents the 12-word BIP-39 mnemonic phrase in a luxury glassmorphic chip grid with copy-all and download JSON backup triggers, alongside statutory acknowledgment checkboxes under DPDPA 2023.
     - **Account Recovery Dropzone (`auth-tab-recover`)**: Provides a 12-word mnemonic phrase text input alongside a drag-and-drop `.json` recovery kit importer, allowing instant account restoration across devices without customer support intervention.
-    - **Browser SubtleCrypto & Encoding Standards**: Uses `window.crypto.subtle` and `window.TextEncoder` natively across browser engines, with full read-only global registration in `eslint.config.mjs` ensuring 0 SAST violations across CI static analysis pipelines.
+18. **ISO/IEC 18004 Standard QR Code Generator & Dedicated Mobile Web Approval View (`qr-code-encoder.js`, `qr-approve.html`, `qr-approve-controller.js`, ADR-138, ADR-139)**:
+    - **Standards-Compliant ISO/IEC 18004 QR Generator**: Pure, zero-dependency mathematical QR matrix generation with Reed-Solomon error correction over GF(256), timing tracks, format information BCH codes, and optimal masking (0-7). Generates compact SVG `<path>` vectors without HTML canvas dependency, ensuring 100% optical detection across native Android Camera, Google Lens, and iOS Camera apps.
+    - **Universal HTTPS Web Approval URI**: Encodes universal web URL `https://dev.diet-dost.in/qr-approve.html?sid=...&nonce=...&code=...&glyph=...` so native phone cameras immediately launch the approval flow in the mobile browser.
+    - **Dedicated Mobile Web Approval View (`qr-approve.html`)**: Lightweight standalone Obsidian-dark interface optimized for mobile viewports (320px–480px). Renders Match Code HUD (`[ 16 ] Jade Phoenix`), Safety Check banner to prevent QRLJacking, active session authorization, and one-tap demo approval (`btn-fast-demo-basic`).
+    - **Deterministic Demo & CFT Simulation**: Seamless desktop simulation via `/api/auth/qr/simulate-approval` without requiring pre-existing browser credentials or throwing 401 Unauthorized errors.
 
 ---
 

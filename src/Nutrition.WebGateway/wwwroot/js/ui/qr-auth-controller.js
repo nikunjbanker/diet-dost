@@ -5,93 +5,8 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+import { encodeQrSvg } from './qr-code-encoder.js?v=1.9.1';
 
-/**
- * Lightweight vanilla SVG QR Code Generator (Zero Dependencies).
- * Implements ISO/IEC 18004 QR generation with Reed-Solomon error correction
- * to render crisp vector SVG barcodes directly in the browser DOM.
- */
-function generateQrSvg(text, size = 180) {
-  // Simple, deterministic 25x25 matrix pattern for QR payload representation
-  // embedding position detection patterns, alignment patterns, and visual barcode cells
-  const moduleCount = 25;
-  const matrix = Array.from({ length: moduleCount }, () => new Uint8Array(moduleCount));
-
-  function setFinderPattern(r, c) {
-    for (let i = -1; i <= 7; i++) {
-      for (let j = -1; j <= 7; j++) {
-        const row = r + i, col = c + j;
-        if (row >= 0 && row < moduleCount && col >= 0 && col < moduleCount) {
-          if ((i >= 0 && i <= 6 && (j === 0 || j === 6)) ||
-              (j >= 0 && j <= 6 && (i === 0 || i === 6)) ||
-              (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
-            matrix[row][col] = 1;
-          } else if (i >= -1 && i <= 7 && j >= -1 && j <= 7) {
-            matrix[row][col] = 0;
-          }
-        }
-      }
-    }
-  }
-
-  // Set standard finder patterns in top-left, top-right, bottom-left
-  setFinderPattern(0, 0);
-  setFinderPattern(0, moduleCount - 7);
-  setFinderPattern(moduleCount - 7, 0);
-
-  // Timing patterns
-  for (let i = 8; i < moduleCount - 8; i++) {
-    matrix[6][i] = (i % 2 === 0) ? 1 : 0;
-    matrix[i][6] = (i % 2 === 0) ? 1 : 0;
-  }
-
-  // Alignment pattern at (16, 16)
-  for (let i = -2; i <= 2; i++) {
-    for (let j = -2; j <= 2; j++) {
-      if (Math.abs(i) === 2 || Math.abs(j) === 2 || (i === 0 && j === 0)) {
-        matrix[16 + i][16 + j] = 1;
-      }
-    }
-  }
-
-  // Hash-based data distribution to visually encode the unique payload
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-
-  for (let r = 0; r < moduleCount; r++) {
-    for (let c = 0; c < moduleCount; c++) {
-      // Skip finder and timing patterns
-      if ((r <= 8 && (c <= 8 || c >= moduleCount - 8)) ||
-          (r >= moduleCount - 8 && c <= 8) ||
-          (r === 6 || c === 6) ||
-          (r >= 14 && r <= 18 && c >= 14 && c <= 18)) {
-        continue;
-      }
-      hash ^= (r * 31 + c * 17);
-      hash = Math.imul(hash, 0x01000193);
-      matrix[r][c] = (hash & 1) ? 1 : 0;
-    }
-  }
-
-  // Render SVG string
-  const cellSize = size / moduleCount;
-  let rects = '';
-  for (let r = 0; r < moduleCount; r++) {
-    for (let c = 0; c < moduleCount; c++) {
-      if (matrix[r][c] === 1) {
-        rects += `<rect x="${(c * cellSize).toFixed(2)}" y="${(r * cellSize).toFixed(2)}" width="${(cellSize + 0.1).toFixed(2)}" height="${(cellSize + 0.1).toFixed(2)}" fill="#010102"/>`;
-      }
-    }
-  }
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" shape-rendering="crispEdges">
-    <rect width="${size}" height="${size}" fill="#ffffff"/>
-    ${rects}
-  </svg>`;
-}
 
 export class QrAuthController {
   constructor({ authService, toastService, onAuthSuccess }) {
@@ -249,10 +164,15 @@ export class QrAuthController {
       this.currentChallengeNonce = res.challengeNonce;
       this.remainingSeconds = res.ttlSeconds || 90;
 
-      // 4. Render QR vector SVG
-      const svg = generateQrSvg(res.qrPayloadUri, 180);
-      if (this.canvasContainer) {
-        this.canvasContainer.innerHTML = svg;
+      // 4. Render Authoritative Server-Generated ISO/IEC 18004 Vector SVG
+      if (res.qrSvg && this.canvasContainer) {
+        this.canvasContainer.innerHTML = res.qrSvg;
+      } else {
+        const webApprovalUrl = `${window.location.origin}/qr-approve.html?sid=${encodeURIComponent(res.sessionId)}&nonce=${encodeURIComponent(res.challengeNonce)}&code=${encodeURIComponent(res.confirmationCode)}&glyph=${encodeURIComponent(res.confirmationGlyph)}`;
+        const svg = encodeQrSvg(webApprovalUrl, { size: 190, eccLevel: 'M', border: 4 });
+        if (this.canvasContainer) {
+          this.canvasContainer.innerHTML = svg;
+        }
       }
 
       // 5. Update Visual Match Code HUD
@@ -321,12 +241,17 @@ export class QrAuthController {
 
   async completeTicketExchange(exchangeTicket) {
     try {
+      const secret = this.currentBrowserSecret || sessionStorage.getItem('dd_qr_browser_secret');
+      if (!secret) {
+        throw new Error('Browser secret token missing from memory or session storage.');
+      }
       const exchangeResult = await this.auth.exchangeQrTicket(
         this.currentSessionId,
         exchangeTicket,
-        this.currentBrowserSecret
+        secret
       );
 
+      this.stopPolling();
       this.toast?.show('⚡ Cross-device authentication successful! Welcome to Diet-Dost.', 'success');
       this.onAuthSuccess(exchangeResult.user);
     } catch (err) {
@@ -343,12 +268,50 @@ export class QrAuthController {
     try {
       this.toast?.show('Simulating mobile scan and biometric approval...', 'info');
 
-      // Call the gateway approval endpoint simulating mobile app
+      // 1. First attempt dedicated simulation endpoint on gateway
+      const simRes = await fetch('/api/auth/qr/simulate-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: this.currentSessionId,
+          challengeNonce: this.currentChallengeNonce,
+          demoEmail: 'basic@dietdost.app'
+        })
+      });
+
+      if (simRes.ok) {
+        const simData = await simRes.json();
+        this.toast?.show('Mobile approval simulated! Exchanging ticket...', 'success');
+        if (simData.exchangeTicket) {
+          await this.completeTicketExchange(simData.exchangeTicket);
+        }
+        return;
+      }
+
+      // 2. Fallback: Authenticate as demo user in background to simulate an active mobile session
+      let token = this.auth.getToken();
+      if (!token) {
+        const demoLoginRes = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            identifier: 'basic@dietdost.app',
+            password: 'DietDost@Demo2026!'
+          })
+        });
+
+        if (demoLoginRes.ok) {
+          const demoData = await demoLoginRes.json();
+          token = demoData.token;
+        }
+      }
+
+      // 3. Call standard mobile approval endpoint
       const response = await fetch('/api/auth/qr/approve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${this.auth.getToken() || ''}`
+          'Authorization': `Bearer ${token || ''}`
         },
         body: JSON.stringify({
           sessionId: this.currentSessionId,
@@ -364,7 +327,7 @@ export class QrAuthController {
 
       this.toast?.show('Mobile approval simulated! Waiting for ticket exchange...', 'success');
     } catch (err) {
-      this.showError(err.message || 'Simulation requires an authenticated demo session.');
+      this.showError(err.message || 'Simulation requires an active demo session.');
     }
   }
 

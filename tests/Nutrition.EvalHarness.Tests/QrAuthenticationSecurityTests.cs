@@ -21,6 +21,8 @@ using Nutrition.Application.Features.Auth.Commands.ExchangeQrTicket;
 using Nutrition.Application.Features.Auth.Commands.InitiateQrSession;
 using Nutrition.Application.Features.Auth.Commands.RecoverAccount;
 using Nutrition.Application.Features.Auth.Commands.RegisterAnonymous;
+using Nutrition.Application.Features.Auth.Commands.RejectQrSession;
+using Nutrition.Application.Features.Auth.Commands.SimulateQrApproval;
 using Nutrition.Application.Features.Auth.Queries.GetQrSessionStatus;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
@@ -154,7 +156,12 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         Assert.NotEmpty(result.Data.ChallengeNonce);
         Assert.Equal(2, result.Data.ConfirmationCode.Length);
         Assert.NotEmpty(result.Data.ConfirmationGlyph);
-        Assert.StartsWith("dietdost://auth/qr?", result.Data.QrPayloadUri);
+        Assert.Contains("/qr-approve.html?", result.Data.QrPayloadUri);
+        Assert.StartsWith("dietdost://auth/qr?", result.Data.DeepLinkUri);
+        Assert.NotEmpty(result.Data.QrSvg!);
+        Assert.StartsWith("<svg", result.Data.QrSvg);
+        Assert.NotEmpty(result.Data.DataUri!);
+        Assert.StartsWith("data:image/svg+xml;base64,", result.Data.DataUri);
     }
 
     [Fact]
@@ -294,4 +301,64 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         Assert.Equal(403, approveResult.StatusCode);
         Assert.Equal("UserInactive", approveResult.ErrorCode);
     }
+
+    [Fact]
+    public async Task SimulateQrApproval_Succeeds_AndApproves_PendingSession()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        // 1. Seed demo user
+        var regCmd = new RegisterAnonymousCommand("Demo User", AcceptTerms: true, AcceptHealthConsent: true);
+        var regResult = await dispatcher.SendAsync(regCmd);
+        Assert.True(regResult.Succeeded);
+
+        // 2. Initiate QR
+        var secret = "demo-secret-1234567890123456789012345";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
+        var initResult = await dispatcher.SendAsync(new InitiateQrSessionCommand(hash));
+        Assert.True(initResult.Succeeded);
+
+        var sessionId = initResult.Data!.SessionId;
+        var challengeNonce = initResult.Data.ChallengeNonce;
+
+        // 3. Simulate approval
+        var simCmd = new SimulateQrApprovalCommand(sessionId, challengeNonce, DemoEmail: "basic@dietdost.app");
+        var simResult = await dispatcher.SendAsync(simCmd);
+
+        Assert.True(simResult.Succeeded, simResult.Error);
+        Assert.NotEmpty(simResult.Data!);
+
+        // 4. Verify session transitioned to Approved
+        var status = await dispatcher.QueryAsync(new GetQrSessionStatusQuery(sessionId));
+        Assert.Equal(QrSessionStatus.Approved, status.Data!.Status);
+        Assert.Equal(simResult.Data, status.Data.ExchangeTicket);
+    }
+
+    [Fact]
+    public async Task RejectQrSession_TransitionsTo_RejectedStatus()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        // 1. Initiate QR
+        var secret = "demo-secret-reject-123456789012345";
+        var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(secret)));
+        var initResult = await dispatcher.SendAsync(new InitiateQrSessionCommand(hash));
+        Assert.True(initResult.Succeeded);
+
+        var sessionId = initResult.Data!.SessionId;
+        var challengeNonce = initResult.Data.ChallengeNonce;
+
+        // 2. Reject QR session
+        var rejectCmd = new RejectQrSessionCommand(sessionId, challengeNonce);
+        var rejectResult = await dispatcher.SendAsync(rejectCmd);
+
+        Assert.True(rejectResult.Succeeded, rejectResult.Error);
+
+        // 3. Verify session transitioned to Rejected
+        var status = await dispatcher.QueryAsync(new GetQrSessionStatusQuery(sessionId));
+        Assert.Equal(QrSessionStatus.Rejected, status.Data!.Status);
+    }
 }
+

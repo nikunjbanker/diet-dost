@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Auth.DTOs;
 using Nutrition.Domain.Model.Identity;
@@ -19,13 +20,15 @@ public record InitiateQrSessionCommand(
     string BrowserSecretHash,
     string? DesktopPublicKey = null,
     string? ClientIp = null,
-    string? UserAgent = null
+    string? UserAgent = null,
+    string? BaseUrl = null
 ) : ICommand<Result<InitiateQrSessionResultDto>>;
 
 public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSessionCommand, Result<InitiateQrSessionResultDto>>
 {
     private readonly IRepository<QrLoginSession> _qrRepo;
     private readonly IUnitOfWork _uow;
+    private readonly IQrCodeGenerator _qrGenerator;
     private readonly ILogger<InitiateQrSessionCommandHandler> _logger;
 
     private static readonly string[] ConfirmationGlyphs = new[]
@@ -45,10 +48,12 @@ public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSession
     public InitiateQrSessionCommandHandler(
         IRepository<QrLoginSession> qrRepo,
         IUnitOfWork uow,
+        IQrCodeGenerator qrGenerator,
         ILogger<InitiateQrSessionCommandHandler> logger)
     {
         _qrRepo = qrRepo;
         _uow = uow;
+        _qrGenerator = qrGenerator;
         _logger = logger;
     }
 
@@ -86,11 +91,20 @@ public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSession
         await _qrRepo.AddAsync(session, ct);
         await _uow.SaveChangesAsync(ct);
 
-        var qrUri = $"dietdost://auth/qr?session={session.Id}&nonce={session.ChallengeNonce}&code={session.ConfirmationCode}&glyph={Uri.EscapeDataString(session.ConfirmationGlyph)}";
+        var baseUri = string.IsNullOrWhiteSpace(request.BaseUrl)
+            ? "https://dev.diet-dost.in"
+            : request.BaseUrl.TrimEnd('/');
+
+        var qrUri = $"{baseUri}/qr-approve.html?sid={session.Id}&nonce={session.ChallengeNonce}&code={session.ConfirmationCode}&glyph={Uri.EscapeDataString(session.ConfirmationGlyph)}";
+        var deepLinkUri = $"dietdost://auth/qr?session={session.Id}&nonce={session.ChallengeNonce}&code={session.ConfirmationCode}&glyph={Uri.EscapeDataString(session.ConfirmationGlyph)}";
         if (!string.IsNullOrWhiteSpace(session.DesktopPublicKey))
         {
             qrUri += $"&pk={Uri.EscapeDataString(session.DesktopPublicKey)}";
+            deepLinkUri += $"&pk={Uri.EscapeDataString(session.DesktopPublicKey)}";
         }
+
+        var qrSvg = _qrGenerator.GenerateSvg(qrUri, size: 200, margin: 4);
+        var dataUri = _qrGenerator.GenerateDataUri(qrUri, size: 200, margin: 4);
 
         if (_logger.IsEnabled(LogLevel.Information))
         {
@@ -104,7 +118,10 @@ public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSession
             session.ConfirmationGlyph,
             qrUri,
             session.ExpiresAtUtc,
-            ttlSeconds
+            ttlSeconds,
+            deepLinkUri,
+            qrSvg,
+            dataUri
         ));
     }
 }

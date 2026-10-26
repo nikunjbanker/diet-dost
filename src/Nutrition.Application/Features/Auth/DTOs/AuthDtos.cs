@@ -66,7 +66,10 @@ public record InitiateQrSessionResultDto(
     string ConfirmationGlyph,
     string QrPayloadUri,
     DateTime ExpiresAtUtc,
-    int TtlSeconds
+    int TtlSeconds,
+    string? DeepLinkUri = null,
+    string? QrSvg = null,
+    string? DataUri = null
 );
 
 public record QrSessionStatusDto(
