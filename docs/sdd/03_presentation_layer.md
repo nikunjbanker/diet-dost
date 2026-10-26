@@ -190,6 +190,14 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Visual Thumbnail Inspection**: Displays photo previews for deleted meals and progress photos, with fallback handling and link integrity.
     - **Application-Level Invisibility**: Confirmed that soft-deleted meals, progress photos, and users are completely omitted from regular user endpoints, timeline summaries, and calorie ledger cards via EF Core Global Query Filters (`HasQueryFilter(e => !e.IsDeleted)`).
 
+17. **Obsidian Auth Gate Cross-Device QR Delegation & Zero-PII Anonymous Recovery UI (`auth-gate.html`, `qr-auth-controller.js`, `auth-service.js`, `styles.css`, ADR-136)**:
+    - **Cross-Device QR Login Tab (`auth-tab-qr`)**: Prominently integrated into the Obsidian Auth Gate modal (`#auth-modal`). Renders a crisp vector SVG QR code with embedded Diet-Dost branding icon and 90-second countdown pill.
+    - **2-Digit Match Code HUD (`#qr-match-code-display`)**: Renders a high-contrast visual pairing chip (e.g., `[ 73 ] 🟢 Emerald Falcon`) that matches the mobile scanner confirmation display, neutralizing shoulder-surfing and cross-session hijacking.
+    - **Zero-PII Anonymous Onboarding**: Radio switcher in the Register tab allows users to select between "Standard Account (Email & Password)" and "Zero-PII Anonymous (No Email/Phone Required)".
+    - **Disaster Recovery Kit Modal (`#recovery-kit-modal`)**: Presents the 12-word BIP-39 mnemonic phrase in a luxury glassmorphic chip grid with copy-all and download JSON backup triggers, alongside statutory acknowledgment checkboxes under DPDPA 2023.
+    - **Account Recovery Dropzone (`auth-tab-recover`)**: Provides a 12-word mnemonic phrase text input alongside a drag-and-drop `.json` recovery kit importer, allowing instant account restoration across devices without customer support intervention.
+    - **Browser SubtleCrypto & Encoding Standards**: Uses `window.crypto.subtle` and `window.TextEncoder` natively across browser engines, with full read-only global registration in `eslint.config.mjs` ensuring 0 SAST violations across CI static analysis pipelines.
+
 ---
 
 ## 5. Verification & Quality Gates
@@ -197,6 +205,7 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 * **Zero Console Errors**: All script dependencies, favicons, and assets resolve with HTTP 200.
 * **Responsive Breakpoints**: Seamless scaling across Mobile (<640px), Tablet (640px–1024px), Desktop (1024px–1440px), and Ultra-wide (>1440px).
 * **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`, and `tests/Nutrition.EvalHarness.Tests/DatabaseWarmupTests.cs`.
+
 
 
 

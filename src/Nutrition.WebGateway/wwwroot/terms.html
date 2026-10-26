@@ -138,6 +138,35 @@
       </p>
     </section>
 
+    <!-- Section 6 -->
+    <section class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--accent-brand-hover);">6.</span> Anonymous Custodianship & Disaster Recovery Kit (Zero-PII Mode)
+      </h2>
+      <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+        Diet Dost offers a zero-PII anonymous onboarding mode that requires no email address or telephone number:
+      </p>
+      <ul class="legal-content-list">
+        <li><strong>Sole Custodianship:</strong> You are granted sole cryptographic custody of your account via a 12-word BIP-39 mnemonic phrase and downloadable JSON Disaster Recovery Kit generated client-side at registration.</li>
+        <li><strong>Irrecoverable Data Loss Notice:</strong> Diet Dost operates on zero-knowledge cryptographic recovery principles. We do NOT store your plaintext recovery key, master entropy, or mnemonic words. In the event of device theft, loss, hardware failure, or browser storage wipe without a saved Disaster Recovery Kit, account recovery is mathematically impossible. Diet Dost accepts zero liability for permanent data loss resulting from failure to safeguard the recovery phrase.</li>
+        <li><strong>Prohibition of Third-Party Key Sharing:</strong> Never disclose your 12-word recovery phrase or JSON recovery file to any person or third-party service. Anyone in possession of your recovery phrase possesses irrevocable, total authority to claim and rotate your account.</li>
+      </ul>
+    </section>
+
+    <!-- Section 7 -->
+    <section class="card" style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+        <span style="color: var(--accent-brand-hover);">7.</span> Cross-Device QR Session Delegation & Ephemeral Authorization
+      </h2>
+      <p style="font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1rem;">
+        When using Cross-Device QR Login to authenticate across desktop and mobile devices:
+      </p>
+      <ul class="legal-content-list">
+        <li><strong>Visual Match Code Verification:</strong> You must verify that the 2-digit confirmation code and glyph HUD displayed on your desktop screen matches identically on your mobile approval screen before authorizing the session. Authorizing unmatched sessions is a security violation and risks credential hijacking (QRLJacking).</li>
+        <li><strong>Ephemeral Delegation:</strong> QR authentication sessions expire strictly within 90 seconds. Approving a QR session grants the initiating browser an independent, authenticated session subject to standard session idle timeouts and revocations.</li>
+      </ul>
+    </section>
+
     <!-- Navigation Quick Links -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle);">
       <a href="/" class="btn btn-primary" style="text-decoration: none;">

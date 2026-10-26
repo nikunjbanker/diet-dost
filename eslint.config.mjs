@@ -56,7 +56,10 @@ export default [
         alert: "readonly",
         confirm: "readonly",
         Response: "readonly",
-        Headers: "readonly"
+        Headers: "readonly",
+        TextEncoder: "readonly",
+        TextDecoder: "readonly",
+        crypto: "readonly"
       }
     },
     rules: {

@@ -16,6 +16,7 @@
  *  – Forgot-Password OTP flow (2 steps: email → OTP + new password)
  */
 import { modalStack } from './modal-stack-manager.js';
+import { QrAuthController } from './qr-auth-controller.js?v=1.5.0';
 
 export class AuthGateController {
   constructor({ authService, toastService, eventBus }) {
@@ -32,6 +33,15 @@ export class AuthGateController {
     this.resetResendSeconds = 0;
     this.allowRegistration = true;
 
+    this.qrController = new QrAuthController({
+      authService: this.authService,
+      toastService: this.toastService,
+      onAuthSuccess: (user) => {
+        this.hide();
+        this.eventBus?.emit('auth:success', user);
+      }
+    });
+
     this.initElements();
     this.bindEvents();
   }
@@ -39,12 +49,16 @@ export class AuthGateController {
   initElements() {
     this.modal = document.getElementById('auth-gate-modal');
     this.tabSignIn = document.getElementById('btn-tab-signin');
+    this.tabQr = document.getElementById('btn-tab-qr');
     this.tabRegister = document.getElementById('btn-tab-register');
+    this.tabRecover = document.getElementById('btn-tab-recover');
     this.tabVerify = document.getElementById('btn-tab-verify');
     this.tabReset = document.getElementById('btn-tab-reset');
 
     this.formSignIn = document.getElementById('form-signin');
+    this.formQr = document.getElementById('form-qr');
     this.formRegister = document.getElementById('form-register');
+    this.formRecover = document.getElementById('form-recover');
     this.formVerify = document.getElementById('form-verify-otp');
     this.formReset = document.getElementById('form-reset-password');
 
@@ -69,7 +83,9 @@ export class AuthGateController {
 
   bindEvents() {
     this.tabSignIn?.addEventListener('click', () => this.switchTab('signin'));
+    this.tabQr?.addEventListener('click', () => this.switchTab('qr'));
     this.tabRegister?.addEventListener('click', () => this.switchTab('register'));
+    this.tabRecover?.addEventListener('click', () => this.switchTab('recover'));
     this.tabVerify?.addEventListener('click', () => this.switchTab('verify'));
     this.tabReset?.addEventListener('click', () => this.switchTab('reset'));
 
@@ -77,6 +93,8 @@ export class AuthGateController {
     document.getElementById('link-goto-signin')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('link-goto-forgot-password')?.addEventListener('click', () => this.switchTab('reset'));
     document.getElementById('link-back-to-signin-from-reset')?.addEventListener('click', () => this.switchTab('signin'));
+    document.getElementById('link-goto-recover-from-qr')?.addEventListener('click', () => this.switchTab('recover'));
+    document.getElementById('link-goto-signin-from-recover')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('btn-goto-signin-from-disabled')?.addEventListener('click', () => this.switchTab('signin'));
 
     // Bind Alpha Preview demo credentials quick-fill buttons
@@ -195,17 +213,27 @@ export class AuthGateController {
     }
 
     this.tabSignIn?.classList.toggle('active', tab === 'signin');
+    this.tabQr?.classList.toggle('active', tab === 'qr');
     this.tabRegister?.classList.toggle('active', tab === 'register');
+    this.tabRecover?.classList.toggle('active', tab === 'recover');
     this.tabVerify?.classList.toggle('active', tab === 'verify');
     this.tabReset?.classList.toggle('active', tab === 'reset');
 
     if (this.formSignIn) this.formSignIn.style.display = tab === 'signin' ? 'block' : 'none';
+    if (this.formQr) this.formQr.style.display = tab === 'qr' ? 'block' : 'none';
     if (this.formRegister) this.formRegister.style.display = tab === 'register' ? 'block' : 'none';
+    if (this.formRecover) this.formRecover.style.display = tab === 'recover' ? 'block' : 'none';
     if (this.formVerify) this.formVerify.style.display = tab === 'verify' ? 'block' : 'none';
     if (this.formReset) this.formReset.style.display = tab === 'reset' ? 'block' : 'none';
 
     if (tab === 'verify' && this.tabVerify) this.tabVerify.style.display = 'inline-block';
     if (tab === 'reset' && this.tabReset) this.tabReset.style.display = 'inline-block';
+
+    if (tab === 'qr') {
+      this.qrController?.startNewQrSession();
+    } else {
+      this.qrController?.stopPolling();
+    }
   }
 
   bindDemoAccountButtons() {
@@ -439,6 +467,23 @@ export class AuthGateController {
       this.showError(this.registerError, 'You must accept both legal agreements to proceed.');
       return;
     }
+
+    // ── Anonymous Zero-PII Registration Path ───────────────────────────────
+    if (this.qrController?.isAnonymousMode) {
+      const displayName = document.getElementById('reg-anon-displayname')?.value.trim();
+      this.setButtonLoading(submitBtn, true);
+      try {
+        const res = await this.authService.registerAnonymous(displayName, acceptTerms, acceptHealthConsent);
+        this.toastService?.success('🛡️ Anonymous account created! Safeguard your Disaster Recovery Kit.');
+        this.qrController.showRecoveryModal(res);
+      } catch (err) {
+        this.showError(this.registerError, err.data?.error || err.message || 'Anonymous registration failed.');
+      } finally {
+        this.setButtonLoading(submitBtn, false);
+      }
+      return;
+    }
+
     if (password !== confirmPassword) {
       this.showError(this.registerError, 'Password and Confirm Password do not match.');
       return;

@@ -1,0 +1,110 @@
+/*
+ * Copyright (c) 2026 diet-dost and/or its contributors.
+ * Licensed under the "GNU Affero General Public License v3.0 only" and
+ * the "Server Side Public License, v 1"; you may not use this file except
+ * in compliance with, at your election, the "GNU Affero General Public
+ * License v3.0 only" or the "Server Side Public License, v 1".
+ */
+using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
+using Nutrition.Application.Common;
+using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Auth.DTOs;
+using Nutrition.Domain.Model.Identity;
+
+namespace Nutrition.Application.Features.Auth.Commands.InitiateQrSession;
+
+public record InitiateQrSessionCommand(
+    string BrowserSecretHash,
+    string? DesktopPublicKey = null,
+    string? ClientIp = null,
+    string? UserAgent = null
+) : ICommand<Result<InitiateQrSessionResultDto>>;
+
+public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSessionCommand, Result<InitiateQrSessionResultDto>>
+{
+    private readonly IRepository<QrLoginSession> _qrRepo;
+    private readonly IUnitOfWork _uow;
+    private readonly ILogger<InitiateQrSessionCommandHandler> _logger;
+
+    private static readonly string[] ConfirmationGlyphs = new[]
+    {
+        "Emerald Falcon",
+        "Sapphire Tiger",
+        "Ruby Dragon",
+        "Golden Eagle",
+        "Amethyst Wolf",
+        "Diamond Leopard",
+        "Amber Cheetah",
+        "Topaz Cobra",
+        "Jade Phoenix",
+        "Onyx Panther"
+    };
+
+    public InitiateQrSessionCommandHandler(
+        IRepository<QrLoginSession> qrRepo,
+        IUnitOfWork uow,
+        ILogger<InitiateQrSessionCommandHandler> logger)
+    {
+        _qrRepo = qrRepo;
+        _uow = uow;
+        _logger = logger;
+    }
+
+    public async Task<Result<InitiateQrSessionResultDto>> HandleAsync(InitiateQrSessionCommand request, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(request.BrowserSecretHash))
+        {
+            return Result<InitiateQrSessionResultDto>.Failure(
+                "Browser memory secret hash is required for dual-token cryptographic handshake.",
+                "BrowserSecretHashRequired",
+                400);
+        }
+
+        var nonceBytes = new byte[16];
+        RandomNumberGenerator.Fill(nonceBytes);
+        var challengeNonce = Convert.ToHexString(nonceBytes).ToLowerInvariant();
+
+        // 2-digit confirmation code 10..99
+        var confirmationCode = RandomNumberGenerator.GetInt32(10, 100).ToString();
+        var glyphIndex = RandomNumberGenerator.GetInt32(0, ConfirmationGlyphs.Length);
+        var confirmationGlyph = ConfirmationGlyphs[glyphIndex];
+
+        const int ttlSeconds = 90;
+        var session = QrLoginSession.CreateNew(
+            challengeNonce,
+            request.BrowserSecretHash.Trim().ToLowerInvariant(),
+            confirmationCode,
+            confirmationGlyph,
+            ttlSeconds,
+            request.DesktopPublicKey,
+            request.ClientIp,
+            request.UserAgent
+        );
+
+        await _qrRepo.AddAsync(session, ct);
+        await _uow.SaveChangesAsync(ct);
+
+        var qrUri = $"dietdost://auth/qr?session={session.Id}&nonce={session.ChallengeNonce}&code={session.ConfirmationCode}&glyph={Uri.EscapeDataString(session.ConfirmationGlyph)}";
+        if (!string.IsNullOrWhiteSpace(session.DesktopPublicKey))
+        {
+            qrUri += $"&pk={Uri.EscapeDataString(session.DesktopPublicKey)}";
+        }
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[QR-AUTH] Initiated QR session {SessionId} with MatchCode {Code} [{Glyph}]", session.Id, session.ConfirmationCode, session.ConfirmationGlyph);
+        }
+
+        return Result<InitiateQrSessionResultDto>.Success(new InitiateQrSessionResultDto(
+            session.Id,
+            session.ChallengeNonce,
+            session.ConfirmationCode,
+            session.ConfirmationGlyph,
+            qrUri,
+            session.ExpiresAtUtc,
+            ttlSeconds
+        ));
+    }
+}

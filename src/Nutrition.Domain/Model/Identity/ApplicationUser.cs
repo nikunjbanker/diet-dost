@@ -85,6 +85,36 @@ public partial class ApplicationUser : ISoftDeletable
     /// </summary>
     public DateTime? DeletedAtUtc { get; set; }
 
+    /// <summary>
+    /// Whether this user registered anonymously without email or phone number (zero-PII mode).
+    /// </summary>
+    public bool IsAnonymous { get; set; }
+
+    /// <summary>
+    /// Optional user display name chosen during anonymous or standard onboarding.
+    /// </summary>
+    public string? DisplayName { get; set; }
+
+    /// <summary>
+    /// Deterministic 24-character public lookup index derived via RFC 5869 HKDF-Expand for O(1) disaster recovery indexing.
+    /// </summary>
+    public string? RecoveryLookupId { get; set; }
+
+    /// <summary>
+    /// PBKDF2-HMAC-SHA512 (250,000 iterations) hash of the 128-bit master recovery entropy.
+    /// </summary>
+    public string? RecoveryKeyHash { get; set; }
+
+    /// <summary>
+    /// Cryptographic 128-bit salt for recovery key PBKDF2 hashing.
+    /// </summary>
+    public string? RecoverySalt { get; set; }
+
+    /// <summary>
+    /// Timestamp in UTC when the current emergency recovery key was issued.
+    /// </summary>
+    public DateTime? RecoveryKeyCreatedAtUtc { get; set; }
+
     // =========================================================================
     // Legal Compliance & Forensic Audit Properties (India DPDPA 2023 & GDPR)
     // =========================================================================
@@ -154,6 +184,20 @@ public partial class ApplicationUser : ISoftDeletable
     /// </summary>
     public void ValidateRegistration()
     {
+        if (IsAnonymous)
+        {
+            if (string.IsNullOrWhiteSpace(RecoveryLookupId) || string.IsNullOrWhiteSpace(RecoveryKeyHash))
+                throw new InvalidOperationException("An Emergency Recovery Key and Lookup ID must be generated for anonymous registration.");
+
+            if (!TermsAcceptedAtUtc.HasValue || string.IsNullOrWhiteSpace(TermsVersionAccepted))
+                throw new InvalidOperationException("DPDPA Compliance Violation: Terms of Service & AI Model Training Agreement must be accepted.");
+
+            if (!HealthConsentAcceptedAtUtc.HasValue || string.IsNullOrWhiteSpace(HealthConsentVersionAccepted))
+                throw new InvalidOperationException("DPDPA Compliance Violation: Explicit Sensitive Health Data Consent must be granted.");
+
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(Email) || !Email.Contains('@') || !Email.Contains('.'))
             throw new InvalidOperationException("A valid email address is mandatory for registration.");
 

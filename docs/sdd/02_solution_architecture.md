@@ -455,3 +455,36 @@ To streamline troubleshooting, preserve multi-tenant asset isolation, and enforc
 4. **EF Core Global Query Filters**: Transparently applied at `DbContext` level (`HasQueryFilter(e => !e.IsDeleted)`), ensuring soft-deleted entities are completely excluded from user queries, ledger totals, and UI views.
 5. **SuperAdmin Audit Mode**: SuperAdmin operators can inspect, search, and audit soft-deleted assets across all entities via `GetDeletedRecordsQuery` (`IgnoreQueryFilters()`) and the dedicated `🗑️ Deleted Audit` tab in the governance console.
 
+---
+
+### 2.13 Cross-Device QR Authentication & Zero-PII Anonymous Disaster Recovery (ADR-136)
+
+Per ADR-136 and NIST SP 800-63B AAL3, Diet-Dost provides an ephemeral QR pairing and Zero-PII anonymous onboarding flow that eliminates emails, phone numbers, and centralized password vulnerability:
+
+1. **Dual-Token Ephemeral Memory Handshake**:
+   - The desktop browser generates a 256-bit cryptographic random secret in `sessionStorage` (`BrowserSecretToken`). Only its SHA-256 hash (`BrowserSecretHash`) is transmitted to the server when creating a session via `InitiateQrSessionCommand`.
+   - The QR code contains an ephemeral `SessionId` (90s TTL) and a 128-bit `SessionPublicKey`.
+   - Upon scanning via authenticated mobile app, `ApproveQrSessionCommand` validates the user and transitions the session state to `Approved`, issuing a single-use `ExchangeTicket`.
+   - `ExchangeQrTicketCommand` requires the initiating browser to present both `ExchangeTicket` and raw `BrowserSecretToken`. If `SHA256(BrowserSecretToken) != BrowserSecretHash`, exchange fails with `401 Unauthorized`, neutralizing shoulder-surfing and photo-replay attacks.
+
+2. **Visual 2-Digit Match Code HUD**:
+   - Every session generates a deterministic 2-digit confirmation code (`00-99`) paired with a localized color/animal glyph (e.g. `[ 73 ] 🟢 Emerald Falcon`).
+   - The desktop displays this code; the mobile scanning app prompts the user to verify the exact matching code before approving the delegation, preventing accidental or coerced authorization.
+
+3. **BIP-39 Mnemonic Disaster Recovery Kit ($O(1)$ RFC 5869 HKDF-Expand)**:
+   - Anonymous zero-PII users register without email/phone via `RegisterAnonymousCommand`, generating 128 bits of CSPRNG entropy encoded as 12 BIP-39 words with a 4-bit SHA-256 checksum.
+   - **$O(1)$ Recovery Lookup**: To prevent computational DoS during recovery over PBKDF2 iterations, an $O(1)$ public identifier `RecoveryLookupId` (24 hex characters) is derived via RFC 5869 HKDF-Expand:
+     $$\text{RecoveryLookupId} = \text{Hex}(\text{HKDF-Expand}(\text{Entropy}, \text{"diet-dost-recovery-lookup-v1"}, 12))$$
+     The server indexes `RecoveryLookupId` with a unique index.
+   - **PBKDF2-HMAC-SHA512 Password Hash**:
+     $$\text{MasterKey} = \text{HKDF-Expand}(\text{Entropy}, \text{"diet-dost-recovery-master-key-v1"}, 32)$$
+     $$\text{RecoveryKeyHash} = \text{PBKDF2-HMAC-SHA512}(\text{MasterKey}, \text{Salt}, 250\,000, 32)$$
+   - Zero master entropy is stored on the server. `RecoverAccountCommand` validates the BIP-39 checksum, derives the lookup ID, verifies the PBKDF2 hash, and rotates credentials with forward secrecy.
+
+4. **Zero-Allocation SAST Logging Guardrails (Roslyn CA1873 Compliance)**:
+   - All structured logging invocations across `RegisterAnonymousCommandHandler`, `InitiateQrSessionCommandHandler`, `ApproveQrSessionCommandHandler`, `ExchangeQrTicketCommandHandler`, and `RecoverAccountCommandHandler` are strictly guarded by `if (_logger.IsEnabled(LogLevel.*))`.
+   - Prevents `params object[]` array creation and heap boxing allocations when diagnostic logging levels are disabled in high-throughput cloud environments.
+   - `Bip39EnglishWordList` is maintained as a public immutable dictionary mapping to ensure consistent client, domain, and unit test verification.
+
+
+
