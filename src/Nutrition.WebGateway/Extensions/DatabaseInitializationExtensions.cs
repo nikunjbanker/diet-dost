@@ -158,7 +158,7 @@ public static partial class DatabaseInitializationExtensions
         }
     }
 
-    private static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db, ILogger logger)
+    public static async Task EnsureDatabaseCreatedAndMigratedAsync(DietTrackerDbContext db, ILogger logger)
     {
         if (db.Database.IsSqlServer())
         {
@@ -301,6 +301,22 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
         await EnsureSoftDeleteColumnsAsync(db);
 
+        // Reconcile Users table columns for legacy SQLite installations
+        await EnsureColumnExistsAsync(db, "Users", "IsAnonymous", "INTEGER NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Users", "DisplayName", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoveryLookupId", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyHash", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoverySalt", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyCreatedAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "TermsAcceptedAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "TermsVersionAccepted", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "HealthConsentAcceptedAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "HealthConsentVersionAccepted", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "ConsentIpAddress", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "ConsentUserAgent", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "LastLoginAtUtc", "TEXT NULL");
+        await EnsureIndexExistsAsync(db, "Users", "IX_Users_RecoveryLookupId", "\"RecoveryLookupId\"");
+
         await db.Database.ExecuteSqlRawAsync(@"
             CREATE TABLE IF NOT EXISTS ""ProgressPhotos"" (
                 ""Id"" TEXT NOT NULL CONSTRAINT ""PK_ProgressPhotos"" PRIMARY KEY,
@@ -357,6 +373,12 @@ public static partial class DatabaseInitializationExtensions
                 ""ConsentUserAgent"" TEXT NULL,
                 ""CreatedAtUtc"" TEXT NOT NULL,
                 ""LastLoginAtUtc"" TEXT NULL,
+                ""IsAnonymous"" INTEGER NOT NULL DEFAULT 0,
+                ""DisplayName"" TEXT NULL,
+                ""RecoveryLookupId"" TEXT NULL,
+                ""RecoveryKeyHash"" TEXT NULL,
+                ""RecoverySalt"" TEXT NULL,
+                ""RecoveryKeyCreatedAtUtc"" TEXT NULL,
                 ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
                 ""DeletedAtUtc"" TEXT NULL
             );
@@ -364,6 +386,7 @@ public static partial class DatabaseInitializationExtensions
             CREATE INDEX IF NOT EXISTS ""IX_Users_NormalizedMobileNumber"" ON ""Users"" (""NormalizedMobileNumber"");
             CREATE INDEX IF NOT EXISTS ""IX_Users_Role"" ON ""Users"" (""Role"");
             CREATE INDEX IF NOT EXISTS ""IX_Users_Tier"" ON ""Users"" (""Tier"");
+            CREATE INDEX IF NOT EXISTS ""IX_Users_RecoveryLookupId"" ON ""Users"" (""RecoveryLookupId"");
 
             CREATE TABLE IF NOT EXISTS ""VerificationOtps"" (
                 ""Id"" TEXT NOT NULL CONSTRAINT ""PK_VerificationOtps"" PRIMARY KEY,
@@ -414,6 +437,29 @@ public static partial class DatabaseInitializationExtensions
                 ""CreatedAtUtc"" TEXT NOT NULL,
                 ""UpdatedAtUtc"" TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS ""QrSessions"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_QrSessions"" PRIMARY KEY,
+                ""ChallengeNonce"" TEXT NOT NULL,
+                ""BrowserSecretHash"" TEXT NOT NULL,
+                ""DesktopPublicKey"" TEXT NULL,
+                ""MobilePublicKey"" TEXT NULL,
+                ""EncryptedApprovalPayload"" TEXT NULL,
+                ""ConfirmationCode"" TEXT NOT NULL,
+                ""ConfirmationGlyph"" TEXT NOT NULL,
+                ""ExchangeTicket"" TEXT NULL,
+                ""Status"" INTEGER NOT NULL,
+                ""CreatedAtUtc"" TEXT NOT NULL,
+                ""ExpiresAtUtc"" TEXT NOT NULL,
+                ""AuthorizedUserId"" TEXT NULL,
+                ""ClientIpAddress"" TEXT NULL,
+                ""ClientUserAgent"" TEXT NULL,
+                ""ApprovedAtUtc"" TEXT NULL,
+                ""ConsumedAtUtc"" TEXT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_QrSessions_ExpiresAtUtc"" ON ""QrSessions"" (""ExpiresAtUtc"");
+            CREATE INDEX IF NOT EXISTS ""IX_QrSessions_Status"" ON ""QrSessions"" (""Status"");
+            CREATE INDEX IF NOT EXISTS ""IX_QrSessions_ExchangeTicket"" ON ""QrSessions"" (""ExchangeTicket"");
         ");
     }
 
@@ -543,7 +589,7 @@ public static partial class DatabaseInitializationExtensions
         await cmd.ExecuteNonQueryAsync();
     }
 
-    private static async Task EnsureSqlServerDatabaseMigratedAsync(DietTrackerDbContext db, ILogger logger)
+    public static async Task EnsureSqlServerDatabaseMigratedAsync(DietTrackerDbContext db, ILogger logger)
     {
         var mealsExist = await TableExistsAsync(db, "Meals");
         if (!mealsExist)
@@ -646,6 +692,12 @@ public static partial class DatabaseInitializationExtensions
                     [ConsentUserAgent] NVARCHAR(MAX) NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL,
                     [LastLoginAtUtc] DATETIME2 NULL,
+                    [IsAnonymous] BIT NOT NULL DEFAULT 0,
+                    [DisplayName] NVARCHAR(MAX) NULL,
+                    [RecoveryLookupId] NVARCHAR(64) NULL,
+                    [RecoveryKeyHash] NVARCHAR(256) NULL,
+                    [RecoverySalt] NVARCHAR(64) NULL,
+                    [RecoveryKeyCreatedAtUtc] DATETIME2 NULL,
                     [IsDeleted] BIT NOT NULL DEFAULT 0,
                     [DeletedAtUtc] DATETIME2 NULL
                 );");
@@ -653,6 +705,7 @@ public static partial class DatabaseInitializationExtensions
             await EnsureIndexExistsAsync(db, "Users", "IX_Users_NormalizedMobileNumber", "[NormalizedMobileNumber]");
             await EnsureIndexExistsAsync(db, "Users", "IX_Users_Role", "[Role]");
             await EnsureIndexExistsAsync(db, "Users", "IX_Users_Tier", "[Tier]");
+            await EnsureIndexExistsAsync(db, "Users", "IX_Users_RecoveryLookupId", "[RecoveryLookupId]");
         }
 
         if (!await TableExistsAsync(db, "VerificationOtps"))
@@ -721,6 +774,33 @@ public static partial class DatabaseInitializationExtensions
                 );");
         }
 
+        if (!await TableExistsAsync(db, "QrSessions"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [QrSessions] (
+                    [Id] NVARCHAR(64) NOT NULL CONSTRAINT [PK_QrSessions] PRIMARY KEY,
+                    [ChallengeNonce] NVARCHAR(128) NOT NULL,
+                    [BrowserSecretHash] NVARCHAR(128) NOT NULL,
+                    [DesktopPublicKey] NVARCHAR(MAX) NULL,
+                    [MobilePublicKey] NVARCHAR(MAX) NULL,
+                    [EncryptedApprovalPayload] NVARCHAR(MAX) NULL,
+                    [ConfirmationCode] NVARCHAR(16) NOT NULL,
+                    [ConfirmationGlyph] NVARCHAR(64) NOT NULL,
+                    [ExchangeTicket] NVARCHAR(64) NULL,
+                    [Status] INT NOT NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [ExpiresAtUtc] DATETIME2 NOT NULL,
+                    [AuthorizedUserId] NVARCHAR(MAX) NULL,
+                    [ClientIpAddress] NVARCHAR(MAX) NULL,
+                    [ClientUserAgent] NVARCHAR(MAX) NULL,
+                    [ApprovedAtUtc] DATETIME2 NULL,
+                    [ConsumedAtUtc] DATETIME2 NULL
+                );");
+            await EnsureIndexExistsAsync(db, "QrSessions", "IX_QrSessions_ExpiresAtUtc", "[ExpiresAtUtc]");
+            await EnsureIndexExistsAsync(db, "QrSessions", "IX_QrSessions_Status", "[Status]");
+            await EnsureIndexExistsAsync(db, "QrSessions", "IX_QrSessions_ExchangeTicket", "[ExchangeTicket]");
+        }
+
         // Reconcile all incremental columns on existing tables
         await EnsureColumnExistsAsync(db, "Meals", "TotalCalories", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(db, "Meals", "TotalProteinGrams", "REAL NOT NULL DEFAULT 0");
@@ -731,8 +811,17 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Meals", "TotalSodiumMg", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(db, "Meals", "AiFeedbackRating", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Meals", "AiFeedbackRemarks", "TEXT NULL");
-        await EnsureColumnExistsAsync(db, "Meals", "ClientMutationId", "TEXT NULL");
+        string clientMutationIdDef = db.Database.IsSqlServer() ? "NVARCHAR(128) NULL" : "TEXT NULL";
+        await EnsureColumnExistsAsync(db, "Meals", "ClientMutationId", clientMutationIdDef);
         await EnsureColumnExistsAsync(db, "Meals", "ClientTimestampUtc", "TEXT NULL");
+        if (db.Database.IsSqlServer())
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'Meals' AND COLUMN_NAME = 'ClientMutationId' AND DATA_TYPE = 'nvarchar' AND CHARACTER_MAXIMUM_LENGTH = -1)
+                BEGIN
+                    ALTER TABLE [Meals] ALTER COLUMN [ClientMutationId] NVARCHAR(128) NULL;
+                END");
+        }
         await EnsureIndexExistsAsync(db, "Meals", "IX_Meals_UserId_ClientMutationId", "[UserId], [ClientMutationId]");
 
         await EnsureColumnExistsAsync(db, "FoodItems", "OriginalDetection", "TEXT NOT NULL DEFAULT ''");
@@ -742,6 +831,22 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
         await EnsureSoftDeleteColumnsAsync(db);
+
+        // Reconcile Users table columns for legacy Azure SQL installations
+        await EnsureColumnExistsAsync(db, "Users", "IsAnonymous", "BIT NOT NULL DEFAULT 0");
+        await EnsureColumnExistsAsync(db, "Users", "DisplayName", "NVARCHAR(MAX) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoveryLookupId", "NVARCHAR(64) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyHash", "NVARCHAR(256) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoverySalt", "NVARCHAR(64) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyCreatedAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "TermsAcceptedAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "TermsVersionAccepted", "NVARCHAR(MAX) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "HealthConsentAcceptedAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "HealthConsentVersionAccepted", "NVARCHAR(MAX) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "ConsentIpAddress", "NVARCHAR(MAX) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "ConsentUserAgent", "NVARCHAR(MAX) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "LastLoginAtUtc", "DATETIME2 NULL");
+        await EnsureIndexExistsAsync(db, "Users", "IX_Users_RecoveryLookupId", "[RecoveryLookupId]");
 
         if (logger.IsEnabled(LogLevel.Information))
         {

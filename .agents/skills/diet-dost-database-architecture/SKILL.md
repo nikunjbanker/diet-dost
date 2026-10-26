@@ -501,3 +501,18 @@ Before migrating any environment from SQLite to Azure Cloud persistence:
 - [ ] **Quota & Feature Gating Enforcement**: Assert daily AI scan limits and photo comparison paywalls behave identically.
 - [ ] **Passwordless Connectivity**: Validate Microsoft Entra ID managed identity connection with zero hardcoded credentials.
 - [ ] **Living ADR Log**: Register the implementation fragment in `docs/adr/architecture/ADR-*.md` and run `pwsh -File scripts/sync-adr-index.ps1`.
+
+---
+
+## 9. Mandatory Dual-Provider Schema Reconciliation Standard (Zero Error 207)
+
+Whenever introducing new database entities, columns, or indexes to Diet-Dost:
+1. **Synchronize Both Initialization Paths**:
+   - In `DatabaseInitializationExtensions.cs`, update BOTH SQLite (`EnsureDatabaseCreatedAndMigratedAsync`) and Azure SQL (`EnsureSqlServerDatabaseMigratedAsync`).
+   - Every new table MUST be checked with `TableExistsAsync` and created with appropriate types (`TEXT` vs `NVARCHAR`, `INTEGER` vs `INT/BIT`, `DATETIME2`).
+   - Every new column MUST be reconciled via `EnsureColumnExistsAsync` on existing tables to handle migrations on live production/development databases.
+2. **Index Key Column Types in SQL Server**:
+   - Never use `TEXT` or `NVARCHAR(MAX)` for index key columns in SQL Server (causes Error 1919 / Error 207). Always specify bounded types like `NVARCHAR(128)`.
+3. **Automated Dual-Provider Test Gate**:
+   - `DualDatabaseSchemaMigrationTests` executes real SQLite file and SQL Server LocalDB migrations, asserting that legacy databases migrate cleanly without throwing missing column or syntax errors.
+

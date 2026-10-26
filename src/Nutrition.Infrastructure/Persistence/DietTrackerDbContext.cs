@@ -161,6 +161,7 @@ public class DietTrackerDbContext : DbContext
         // QrLoginSession entity configuration
         modelBuilder.Entity<QrLoginSession>(entity =>
         {
+            entity.ToTable("QrSessions");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => e.ExpiresAtUtc);
             entity.HasIndex(e => e.Status);
