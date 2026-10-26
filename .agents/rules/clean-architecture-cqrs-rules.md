@@ -36,3 +36,9 @@
 - Connection string: `Data Source=/app/data/diet_dost.db`.
 - At startup, execute `PRAGMA journal_mode = DELETE;` (eliminates SMB network file lock corruption).
 - Azure Container Apps invariant: `minReplicas: 1, maxReplicas: 1`.
+
+## 6. Mandatory Dual-Provider Database Validation Standard (SQLite & Azure SQL)
+- **Zero-Assumption Dual-Provider Parity**: The system operates with SQLite locally and Azure SQL Serverless in cloud deployments.
+- **Incremental Schema Reconciliation**: When adding or altering entities, properties, or tables, both `EnsureDatabaseCreatedAndMigratedAsync` (SQLite) and `EnsureSqlServerDatabaseMigratedAsync` (Azure SQL) must be updated in `DatabaseInitializationExtensions.cs`.
+- **Pre-PR Guardrail**: Run `DualDatabaseSchemaMigrationTests` against both providers to assert that legacy existing databases upgrade seamlessly without column missing errors (Error 207) or unindexed column key errors.
+

@@ -271,6 +271,12 @@ This solution-level instruction file defines mandatory engineering and Git workf
     - **Automated PR Evidence & Reporting**: The `quality-gate-summary` job publishes the comprehensive multi-tier quality scorecard directly as a PR comment (`gh pr comment`), ensuring complete visibility for engineering and maintainers.
     - **Supply Chain Cryptographic Pinning**: All GitHub Actions used in `quality-test-gate.yml` MUST be pinned to full 40-character commit hashes.
     - **Automated CI Regression Assertion**: Test suites (`SecurityEnvironmentAndHeaderTests.cs`) must continuously assert that all deployment workflows gate on `quality-test-gate.yml` and enforce the 44%, 40%, 75%, and 70% thresholds.
+24. **Mandatory Dual-Provider Database Validation Standard (SQLite & Azure SQL)**:
+    - **Dual-Database Parity Mandate**: The Diet-Dost solution actively supports both **SQLite** (local development and offline-first mobile sync) and **Azure SQL Serverless** (cloud production deployment on Azure Container Apps).
+    - **Zero-Error-207 & Zero-Assumption Policy**: Whenever ANY change touches database entities, EF Core models, or schema definitions:
+      1. Both pristine schema creation AND incremental reconciliation for existing legacy databases MUST be implemented in `DatabaseInitializationExtensions.cs` across BOTH SQLite (`EnsureDatabaseCreatedAndMigratedAsync`) and Azure SQL (`EnsureSqlServerDatabaseMigratedAsync`).
+      2. Column definitions for SQL Server index keys MUST avoid `NVARCHAR(MAX)` (which SQL Server rejects as invalid index key columns with Error 1919/207) and use bounded types such as `NVARCHAR(128)`.
+      3. **Pre-PR Verification**: Every PR modifying database models or migrations MUST execute automated dual-provider tests (`DualDatabaseSchemaMigrationTests`) verifying that both SQLite and SQL Server reconcile existing databases cleanly without throwing column missing exceptions or schema violations. Raising a PR without validating against both SQLite and Azure SQL is strictly prohibited.
 
 
 
