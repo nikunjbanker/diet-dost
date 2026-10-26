@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-26T04:26:54.123354+00:00",
-  "totalAdrs": 102,
+  "generatedAt": "2026-10-26T06:34:58.234062+00:00",
+  "totalAdrs": 104,
   "categoryCounts": {
-    "architecture": 28,
+    "architecture": 29,
     "security": 22,
     "devops": 27,
-    "presentation": 12,
+    "presentation": 13,
     "governance": 13
   },
   "records": [
@@ -1233,6 +1233,30 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261026-137-dual-database-schema-reconciliation-standard.md",
       "relativePath": "docs/adr/architecture/ADR-20261026-137-dual-database-schema-reconciliation-standard.md"
+    },
+    {
+      "id": "ADR-138",
+      "number": 138,
+      "title": "ISO/IEC 18004 Standard QR Code Generation & Mobile Approval Architecture",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-26",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261026-138-iso18004-qr-code-and-mobile-web-approval.md",
+      "relativePath": "docs/adr/architecture/ADR-20261026-138-iso18004-qr-code-and-mobile-web-approval.md"
+    },
+    {
+      "id": "ADR-139",
+      "number": 139,
+      "title": "Mobile Web QR Approval View & Camera Scanner UX",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-26",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261026-139-mobile-qr-approval-view-and-camera-scanner.md",
+      "relativePath": "docs/adr/presentation/ADR-20261026-139-mobile-qr-approval-view-and-camera-scanner.md"
     }
   ]
 }

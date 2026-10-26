@@ -486,5 +486,24 @@ Per ADR-136 and NIST SP 800-63B AAL3, Diet-Dost provides an ephemeral QR pairing
    - Prevents `params object[]` array creation and heap boxing allocations when diagnostic logging levels are disabled in high-throughput cloud environments.
    - `Bip39EnglishWordList` is maintained as a public immutable dictionary mapping to ensure consistent client, domain, and unit test verification.
 
+---
+
+### 2.14 Standards-Compliant ISO/IEC 18004 QR Generation & Universal Mobile Web Approval (ADR-138)
+
+Per ADR-138 and industry standard cross-device authentication:
+
+1. **Mathematical ISO/IEC 18004 Vector Encoder**:
+   - Replaced mock SVG generators with a pure JavaScript ISO/IEC 18004 QR matrix encoder implementing Galois Field GF(256) Reed-Solomon error correction, alignment patterns, and optimal masking patterns (0-7).
+   - Generates compact SVG `<path>` vectors without HTML canvas dependencies, guaranteeing 100% scannability across native Android Camera, Google Lens, and iOS Camera apps.
+
+2. **Universal HTTPS Approval URLs**:
+   - Encodes universal web URL `https://dev.diet-dost.in/qr-approve.html?sid=...&nonce=...&code=...&glyph=...` as primary `QrPayloadUri`, while preserving `DeepLinkUri` (`dietdost://auth/qr?...`) for native applications.
+   - Native camera viewfinders immediately prompt users to open the mobile approval view without requiring a pre-installed app.
+
+3. **Simulated Mobile Approval & Rejection Commands (Native CQRS)**:
+   - Implemented `SimulateQrApprovalCommand` and `SimulateQrApprovalCommandHandler` enabling preview testing and demo verification with `basic@dietdost.app`.
+   - Implemented `RejectQrSessionCommand` and `RejectQrSessionCommandHandler` enabling mobile users to explicitly decline pending sessions.
+
+
 
 
