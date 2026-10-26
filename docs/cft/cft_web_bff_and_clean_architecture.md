@@ -147,4 +147,18 @@
 >>> VERDICT: ALL CORE DIET DOST FUNCTIONALITIES VALIDATED END-TO-END! <<<
 ```
 
+---
+
+## 6. Test Suite 5: Cross-Device QR Camera Scannability & Zero-PII Disaster Recovery (ADR-140)
+- [x] **Step 5.1**: Server-Side QRCoder Vector Generation:
+  - [x] **Assert**: `GET /api/auth/qr/initiate` returns 240px x 240px vector SVG with `shape-rendering="crispEdges"`, `#000000` pitch black on `#FFFFFF` background.
+  - [x] **Assert**: Computer vision optical decodability (`pyzbar`) achieves 100% decode fidelity matching `qrPayloadUri`.
+- [x] **Step 5.2**: Disaster Recovery JSON Dual-Casing Import:
+  - [x] **Assert**: Uploading `diet-dost-recovery-kit-*.json` parses camelCase properties (`mnemonicPhrase`, `recoveryKey`) without `"Invalid Disaster Recovery JSON file"` error.
+  - [x] **Assert**: File selection or drop triggers automatic 1-click credential recovery and session establishment.
+- [x] **Step 5.3**: Zero-PII Account Tier Limits:
+  - [x] **Assert**: Anonymous users register strictly into `UserTier.Free` with `DailyAiDetectionLimit = 1`.
+  - [x] **Assert**: Multi-tier CFT asserts 100% pass across all 5 user tiers.
+
+
 

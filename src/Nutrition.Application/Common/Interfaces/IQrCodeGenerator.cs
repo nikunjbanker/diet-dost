@@ -20,10 +20,10 @@ public interface IQrCodeGenerator
     /// <param name="size">Target viewBox pixel width and height.</param>
     /// <param name="margin">Quiet zone border width in modules (default 4 per ISO spec).</param>
     /// <returns>A standalone, tamper-evident SVG XML string.</returns>
-    string GenerateSvg(string content, int size = 200, int margin = 4);
+    string GenerateSvg(string content, int size = 240, int margin = 4);
 
     /// <summary>
     /// Generates a data URI string (data:image/svg+xml;base64,...) for direct use in &lt;img src&gt;.
     /// </summary>
-    string GenerateDataUri(string content, int size = 200, int margin = 4);
+    string GenerateDataUri(string content, int size = 240, int margin = 4);
 }

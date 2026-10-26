@@ -14,28 +14,28 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { apiClient } from './services/api.js?v=1.9.1';
-import { AuthService } from './services/auth-service.js?v=1.9.1';
-import { AdminService } from './services/admin-service.js?v=1.9.1';
-import { MealsService } from './services/meals-service.js?v=1.9.1';
-import { ProfileService } from './services/profile-service.js?v=1.9.1';
-import { AnalyticsService } from './services/analytics-service.js?v=1.9.1';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.9.1';
-import { MedicationService } from './services/medication-service.js?v=1.9.1';
+import { apiClient } from './services/api.js?v=1.9.2';
+import { AuthService } from './services/auth-service.js?v=1.9.2';
+import { AdminService } from './services/admin-service.js?v=1.9.2';
+import { MealsService } from './services/meals-service.js?v=1.9.2';
+import { ProfileService } from './services/profile-service.js?v=1.9.2';
+import { AnalyticsService } from './services/analytics-service.js?v=1.9.2';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.9.2';
+import { MedicationService } from './services/medication-service.js?v=1.9.2';
 
-import { toastService } from './ui/toast.js?v=1.9.1';
-import { confettiService } from './ui/confetti.js?v=1.9.1';
-import { DailyHudController } from './ui/daily-hud.js?v=1.9.1';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.9.1';
-import { ReviewModalController } from './ui/review-modal.js?v=1.9.1';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.1';
-import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.1';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.9.1';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.1';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.9.1';
-import { AuthGateController } from './ui/auth-gate.js?v=1.9.1';
-import { AdminModalController } from './ui/admin-modal.js?v=1.9.1';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.9.1';
+import { toastService } from './ui/toast.js?v=1.9.2';
+import { confettiService } from './ui/confetti.js?v=1.9.2';
+import { DailyHudController } from './ui/daily-hud.js?v=1.9.2';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.9.2';
+import { ReviewModalController } from './ui/review-modal.js?v=1.9.2';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.2';
+import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.2';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.9.2';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.2';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.9.2';
+import { AuthGateController } from './ui/auth-gate.js?v=1.9.2';
+import { AdminModalController } from './ui/admin-modal.js?v=1.9.2';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.9.2';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)

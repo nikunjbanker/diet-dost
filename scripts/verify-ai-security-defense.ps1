@@ -81,7 +81,8 @@ $allowedPackagePrefixes = @(
     "coverlet.",
     "FluentAssertions",
     "Moq",
-    "MessagePack"
+    "MessagePack",
+    "QRCoder"
 )
 
 $csprojFiles = Get-FilesToScan -Extensions @(".csproj")

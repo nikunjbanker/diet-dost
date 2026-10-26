@@ -26,7 +26,7 @@
       <button type="button" id="btn-tab-signin" class="auth-tab-btn active">Sign In</button>
       <button type="button" id="btn-tab-qr" class="auth-tab-btn">⚡ QR Login</button>
       <button type="button" id="btn-tab-register" class="auth-tab-btn">Create Account</button>
-      <button type="button" id="btn-tab-recover" class="auth-tab-btn">🔑 Recover</button>
+      <button type="button" id="btn-tab-recover" class="auth-tab-btn" title="Sign in using your 12-word recovery mnemonic phrase or JSON file">🔑 Phrase / Key</button>
       <button type="button" id="btn-tab-verify" class="auth-tab-btn" style="display: none;">Verify OTP</button>
       <button type="button" id="btn-tab-reset" class="auth-tab-btn" style="display: none;">Reset Password</button>
     </div>
@@ -79,6 +79,9 @@
             <span class="demo-role">admin.demo@dietdost.app</span>
           </button>
         </div>
+        <div class="auth-footer-prompt" style="margin-top: 1rem;">
+          Using a Zero-PII account? <a href="javascript:void(0)" id="link-goto-recover-from-signin">Sign in with 12-Word Phrase or JSON Key ➔</a>
+        </div>
       </div>
     </form>
 
@@ -89,14 +92,17 @@
       <div class="otp-instruction-box">
         <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📱</div>
         <div style="font-weight: 600; font-size: 0.95rem;">Cross-Device QR Sign In</div>
-        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
-          Scan with your Diet-Dost mobile app. Instant zero-password login.
+        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
+          Point your phone camera or Google Lens at this code to approve login on mobile.
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: center; font-size: 0.72rem; color: var(--accent-emerald); margin-top: 6px; font-weight: 500;">
+          <span>1. Open Camera</span> • <span>2. Point at QR</span> • <span>3. Tap Link to Approve</span>
         </div>
       </div>
 
       <div class="qr-stage-card">
         <div class="qr-canvas-wrapper" id="qr-canvas-container">
-          <div id="qr-placeholder" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.8rem;">
+          <div id="qr-placeholder" style="width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; color: #555; font-size: 0.8rem;">
             Loading QR Code...
           </div>
         </div>
@@ -226,9 +232,9 @@
 
       <div class="otp-instruction-box">
         <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔑</div>
-        <div style="font-weight: 600; font-size: 0.95rem;">Emergency Disaster Recovery</div>
+        <div style="font-weight: 600; font-size: 0.95rem;">Zero-PII &amp; Disaster Recovery Sign In</div>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
-          Enter your 12-word BIP-39 recovery mnemonic or upload your Disaster Recovery JSON file.
+          Sign in or restore your account using your 12-word BIP-39 mnemonic phrase or Recovery JSON file.
         </div>
       </div>
 
@@ -245,7 +251,7 @@
       </div>
 
       <button type="submit" id="btn-submit-recover" class="btn btn-primary auth-submit-btn">
-        <span class="btn-text">Recover Account &amp; Sign In ➔</span>
+        <span class="btn-text">Sign In with Phrase or Key ➔</span>
         <span class="btn-spinner" style="display: none;">⏳ Verifying Mnemonic...</span>
       </button>
 

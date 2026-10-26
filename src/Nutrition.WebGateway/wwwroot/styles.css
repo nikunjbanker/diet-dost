@@ -6666,13 +6666,15 @@ h2 {
 .qr-canvas-wrapper {
   position: relative;
   background: #ffffff;
-  padding: 12px;
-  border-radius: 12px;
+  padding: 16px;
+  border-radius: 16px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.75rem;
+  min-width: 240px;
+  min-height: 240px;
 }
 
 .qr-canvas-wrapper svg {
