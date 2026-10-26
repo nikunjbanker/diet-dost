@@ -141,7 +141,10 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
             tierConfig
         );
 
-        _logger.LogInformation("[QR-AUTH] Session {SessionId} successfully exchanged for JWT for user {UserId}", session.Id, user.Id);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[QR-AUTH] Session {SessionId} successfully exchanged for JWT for user {UserId}", session.Id, user.Id);
+        }
 
         return Result<ExchangeQrTicketResultDto>.Success(new ExchangeQrTicketResultDto(
             token,

@@ -235,7 +235,7 @@ export class QrAuthController {
       sessionStorage.setItem('dd_qr_browser_secret', this.currentBrowserSecret);
 
       // 2. Compute SHA-256 hash of the browser secret
-      const encoded = new TextEncoder().encode(this.currentBrowserSecret);
+      const encoded = new window.TextEncoder().encode(this.currentBrowserSecret);
       const hashBuffer = await window.crypto.subtle.digest('SHA-256', encoded);
       const browserSecretHash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 

@@ -247,9 +247,10 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         Assert.NotEqual(originalLookupId, recoverResult.Data.NewRecoveryLookupId); // Forward secrecy key rotation
         Assert.NotEmpty(recoverResult.Data.Token);
 
-        // 3. Adversarial test: Corrupted mnemonic (tampered 12th word) fails validation
+        // 3. Adversarial test: Corrupted mnemonic (tampered 12th word checksum bit) fails validation
         var words = mnemonic.Split(' ').ToArray();
-        words[11] = words[11] == "abandon" ? "ability" : "abandon"; // Alter checksum word
+        int lastIdx = Array.IndexOf(Bip39EnglishWordList.Words, words[11]);
+        words[11] = Bip39EnglishWordList.Words[lastIdx ^ 1]; // Flips checksum bit while keeping entropy identical
         var tamperedMnemonic = string.Join(' ', words);
 
         var badRecoverCmd = new RecoverAccountCommand(tamperedMnemonic);

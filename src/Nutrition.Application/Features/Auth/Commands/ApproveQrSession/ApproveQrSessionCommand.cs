@@ -74,7 +74,10 @@ public class ApproveQrSessionCommandHandler : ICommandHandler<ApproveQrSessionCo
             var exchangeTicket = session.Approve(user.Id, request.MobilePublicKey, request.EncryptedApprovalPayload);
             await _uow.SaveChangesAsync(ct);
 
-            _logger.LogInformation("[QR-AUTH] User {UserId} successfully approved QR session {SessionId}", user.Id, session.Id);
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                _logger.LogInformation("[QR-AUTH] User {UserId} successfully approved QR session {SessionId}", user.Id, session.Id);
+            }
 
             return Result<string>.Success(exchangeTicket);
         }

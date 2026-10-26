@@ -88,13 +88,19 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
 
         if (user == null)
         {
-            _logger.LogWarning("[DISASTER-RECOVERY] Recovery attempt with unmapped lookup ID: {LookupId}", lookupId);
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("[DISASTER-RECOVERY] Recovery attempt with unmapped lookup ID: {LookupId}", lookupId);
+            }
             return Result<RecoverAccountResultDto>.Failure("No active account matches the provided emergency recovery credentials.", "AccountNotFound", 401);
         }
 
         if (user.IsDeleted)
         {
-            _logger.LogWarning("[DISASTER-RECOVERY] Recovery attempted on soft-deleted account {UserId}", user.Id);
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("[DISASTER-RECOVERY] Recovery attempted on soft-deleted account {UserId}", user.Id);
+            }
             return Result<RecoverAccountResultDto>.Failure(
                 "This account was permanently destroyed pursuant to India DPDPA 2023 Section 12 Right to Erasure and cannot be recovered.",
                 "AccountPermanentlyDeleted",
@@ -114,7 +120,10 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
         var salt = Convert.FromHexString(user.RecoverySalt);
         if (!RecoveryKit.VerifyKey(entropy, salt, user.RecoveryKeyHash))
         {
-            _logger.LogWarning("[DISASTER-RECOVERY] Constant-time PBKDF2 hash verification failed for user {UserId}", user.Id);
+            if (_logger.IsEnabled(LogLevel.Warning))
+            {
+                _logger.LogWarning("[DISASTER-RECOVERY] Constant-time PBKDF2 hash verification failed for user {UserId}", user.Id);
+            }
             return Result<RecoverAccountResultDto>.Failure("Invalid recovery credentials.", "InvalidCredentials", 401);
         }
 
@@ -160,7 +169,10 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
             tierConfig
         );
 
-        _logger.LogInformation("[DISASTER-RECOVERY] Successfully recovered account {UserId} with rotated recovery key and security stamp", user.Id);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[DISASTER-RECOVERY] Successfully recovered account {UserId} with rotated recovery key and security stamp", user.Id);
+        }
 
         return Result<RecoverAccountResultDto>.Success(new RecoverAccountResultDto(
             token,

@@ -92,7 +92,10 @@ public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSession
             qrUri += $"&pk={Uri.EscapeDataString(session.DesktopPublicKey)}";
         }
 
-        _logger.LogInformation("[QR-AUTH] Initiated QR session {SessionId} with MatchCode {Code} [{Glyph}]", session.Id, session.ConfirmationCode, session.ConfirmationGlyph);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[QR-AUTH] Initiated QR session {SessionId} with MatchCode {Code} [{Glyph}]", session.Id, session.ConfirmationCode, session.ConfirmationGlyph);
+        }
 
         return Result<InitiateQrSessionResultDto>.Success(new InitiateQrSessionResultDto(
             session.Id,

@@ -10,7 +10,7 @@ namespace Nutrition.Domain.Model.Identity;
 /// <summary>
 /// Authoritative BIP-39 English Word List (2048 words).
 /// </summary>
-internal static class Bip39EnglishWordList
+public static class Bip39EnglishWordList
 {
     public static readonly string[] Words = new string[]
     {

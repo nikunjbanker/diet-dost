@@ -481,4 +481,10 @@ Per ADR-136 and NIST SP 800-63B AAL3, Diet-Dost provides an ephemeral QR pairing
      $$\text{RecoveryKeyHash} = \text{PBKDF2-HMAC-SHA512}(\text{MasterKey}, \text{Salt}, 250\,000, 32)$$
    - Zero master entropy is stored on the server. `RecoverAccountCommand` validates the BIP-39 checksum, derives the lookup ID, verifies the PBKDF2 hash, and rotates credentials with forward secrecy.
 
+4. **Zero-Allocation SAST Logging Guardrails (Roslyn CA1873 Compliance)**:
+   - All structured logging invocations across `RegisterAnonymousCommandHandler`, `InitiateQrSessionCommandHandler`, `ApproveQrSessionCommandHandler`, `ExchangeQrTicketCommandHandler`, and `RecoverAccountCommandHandler` are strictly guarded by `if (_logger.IsEnabled(LogLevel.*))`.
+   - Prevents `params object[]` array creation and heap boxing allocations when diagnostic logging levels are disabled in high-throughput cloud environments.
+   - `Bip39EnglishWordList` is maintained as a public immutable dictionary mapping to ensure consistent client, domain, and unit test verification.
+
+
 

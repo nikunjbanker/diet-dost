@@ -154,7 +154,10 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
             tierConfig
         );
 
-        _logger.LogInformation("[AUTH] Successfully registered anonymous user {UserId} with O(1) RecoveryLookupId {LookupId}", user.Id, user.RecoveryLookupId);
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("[AUTH] Successfully registered anonymous user {UserId} with O(1) RecoveryLookupId {LookupId}", user.Id, user.RecoveryLookupId);
+        }
 
         return Result<RegisterAnonymousResultDto>.Success(new RegisterAnonymousResultDto(
             user.Id,

@@ -39,14 +39,21 @@ public class Bip39MnemonicTests
         Assert.True(Bip39Mnemonic.ValidateMnemonic(kit.MnemonicPhrase, out var entropy));
         Assert.Equal(kit.MasterEntropyHex, Convert.ToHexString(entropy).ToLowerInvariant());
 
-        // Alter 1 word
+        // 1. Alter 12th word by flipping checksum bit (bits 3..0) while keeping entropy identical
         var words = kit.MnemonicPhrase.Split(' ');
-        words[0] = words[0] == "abandon" ? "ability" : "abandon";
-        var corrupted = string.Join(' ', words);
+        var lastWord = words[11];
+        int lastIdx = Array.IndexOf(Bip39EnglishWordList.Words, lastWord);
+        // XOR with 1 flips the last checksum bit, keeping top 7 entropy bits identical
+        int corruptedLastIdx = lastIdx ^ 1;
+        words[11] = Bip39EnglishWordList.Words[corruptedLastIdx];
+        var corruptedChecksum = string.Join(' ', words);
 
-        // May fail either checksum or word check
-        var isValid = Bip39Mnemonic.ValidateMnemonic(corrupted, out _);
-        Assert.False(isValid, "Corrupted mnemonic must fail BIP-39 validation");
+        Assert.False(Bip39Mnemonic.ValidateMnemonic(corruptedChecksum, out _), "Corrupted checksum must fail BIP-39 validation");
+
+        // 2. Invalid word not in dictionary must also fail
+        words[0] = "xyznotaword";
+        var invalidWordPhrase = string.Join(' ', words);
+        Assert.False(Bip39Mnemonic.ValidateMnemonic(invalidWordPhrase, out _), "Invalid dictionary word must fail validation");
     }
 
     [Fact]

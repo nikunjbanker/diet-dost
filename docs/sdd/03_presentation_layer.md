@@ -196,6 +196,7 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Zero-PII Anonymous Onboarding**: Radio switcher in the Register tab allows users to select between "Standard Account (Email & Password)" and "Zero-PII Anonymous (No Email/Phone Required)".
     - **Disaster Recovery Kit Modal (`#recovery-kit-modal`)**: Presents the 12-word BIP-39 mnemonic phrase in a luxury glassmorphic chip grid with copy-all and download JSON backup triggers, alongside statutory acknowledgment checkboxes under DPDPA 2023.
     - **Account Recovery Dropzone (`auth-tab-recover`)**: Provides a 12-word mnemonic phrase text input alongside a drag-and-drop `.json` recovery kit importer, allowing instant account restoration across devices without customer support intervention.
+    - **Browser SubtleCrypto & Encoding Standards**: Uses `window.crypto.subtle` and `window.TextEncoder` natively across browser engines, with full read-only global registration in `eslint.config.mjs` ensuring 0 SAST violations across CI static analysis pipelines.
 
 ---
 
