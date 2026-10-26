@@ -37,6 +37,8 @@ When scanning the QR login barcode from an Android or iOS device, mobile users n
    - Transitions UI seamlessly into success state upon desktop ticket generation.
 3. **Cache Invalidation & Version Bump**:
    - Updated asset cache busting queries (`?v=1.9.1`) across `main.js`, `api.js`, `auth-gate.js`, and `qr-auth-controller.js` to ensure mobile devices load fresh un-cached ES modules immediately.
+4. **ESLint SAST Hygiene**:
+   - Applied strict parameter naming conventions (`_c`, `_r`) for unused lambda arguments in optimal QR masking algorithms.
 
 ---
 
