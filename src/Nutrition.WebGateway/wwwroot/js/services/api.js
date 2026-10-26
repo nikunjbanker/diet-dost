@@ -9,7 +9,7 @@
  * API Service & Web BFF Client Facade
  * Provides high-level typed API calls, including single-roundtrip Web BFF dashboard hydration.
  */
-import { apiClient, ApiClient } from './api-client.js?v=1.9.1';
+import { apiClient, ApiClient } from './api-client.js?v=1.9.2';
 
 export { ApiClient, apiClient };
 

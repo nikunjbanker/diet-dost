@@ -16,7 +16,7 @@
  *  – Forgot-Password OTP flow (2 steps: email → OTP + new password)
  */
 import { modalStack } from './modal-stack-manager.js';
-import { QrAuthController } from './qr-auth-controller.js?v=1.9.1';
+import { QrAuthController } from './qr-auth-controller.js?v=1.9.2';
 
 export class AuthGateController {
   constructor({ authService, toastService, eventBus }) {
@@ -94,6 +94,7 @@ export class AuthGateController {
     document.getElementById('link-goto-forgot-password')?.addEventListener('click', () => this.switchTab('reset'));
     document.getElementById('link-back-to-signin-from-reset')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('link-goto-recover-from-qr')?.addEventListener('click', () => this.switchTab('recover'));
+    document.getElementById('link-goto-recover-from-signin')?.addEventListener('click', () => this.switchTab('recover'));
     document.getElementById('link-goto-signin-from-recover')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('btn-goto-signin-from-disabled')?.addEventListener('click', () => this.switchTab('signin'));
 

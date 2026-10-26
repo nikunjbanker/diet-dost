@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-26T06:34:58.234062+00:00",
-  "totalAdrs": 104,
+  "generatedAt": "2026-10-26T10:20:38.884763+00:00",
+  "totalAdrs": 105,
   "categoryCounts": {
-    "architecture": 29,
+    "architecture": 30,
     "security": 22,
     "devops": 27,
     "presentation": 13,
@@ -1257,6 +1257,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261026-139-mobile-qr-approval-view-and-camera-scanner.md",
       "relativePath": "docs/adr/presentation/ADR-20261026-139-mobile-qr-approval-view-and-camera-scanner.md"
+    },
+    {
+      "id": "ADR-140",
+      "number": 140,
+      "title": "QRCoder Server-Side Camera Detection, Recovery JSON CamelCase Parsing, and Zero-PII Login UX",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-26",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261026-140-qrcoder-camera-detection-and-zeropii-json-recovery.md",
+      "relativePath": "docs/adr/architecture/ADR-20261026-140-qrcoder-camera-detection-and-zeropii-json-recovery.md"
     }
   ]
 }

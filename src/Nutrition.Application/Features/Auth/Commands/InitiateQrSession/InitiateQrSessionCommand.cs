@@ -103,8 +103,8 @@ public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSession
             deepLinkUri += $"&pk={Uri.EscapeDataString(session.DesktopPublicKey)}";
         }
 
-        var qrSvg = _qrGenerator.GenerateSvg(qrUri, size: 200, margin: 4);
-        var dataUri = _qrGenerator.GenerateDataUri(qrUri, size: 200, margin: 4);
+        var qrSvg = _qrGenerator.GenerateSvg(qrUri, size: 240, margin: 4);
+        var dataUri = _qrGenerator.GenerateDataUri(qrUri, size: 240, margin: 4);
 
         if (_logger.IsEnabled(LogLevel.Information))
         {

@@ -39,6 +39,9 @@ class QrApproveController {
     this.inpPassword = document.getElementById('inp-password');
     this.btnFastDemoBasic = document.getElementById('btn-fast-demo-basic');
     this.btnFastDemoPremium = document.getElementById('btn-fast-demo-premium');
+    this.formMobileRecover = document.getElementById('form-mobile-recover');
+    this.inpMobileMnemonic = document.getElementById('inp-mobile-mnemonic');
+    this.btnRecoverAndApprove = document.getElementById('btn-recover-and-approve');
 
     this.sectionSuccess = document.getElementById('section-success');
     this.sectionDenied = document.getElementById('section-denied');
@@ -89,6 +92,7 @@ class QrApproveController {
 
     this.btnFastDemoBasic?.addEventListener('click', () => this.fastDemoApprove('basic@dietdost.app'));
     this.btnFastDemoPremium?.addEventListener('click', () => this.fastDemoApprove('premium@dietdost.app'));
+    this.formMobileRecover?.addEventListener('submit', (e) => this.handleRecoverAndApprove(e));
   }
 
   async checkSessionState() {
@@ -178,7 +182,7 @@ class QrApproveController {
       const loginRes = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier: email, password: password })
+        body: JSON.stringify({ identifier: email, emailOrMobile: email, password: password })
       });
 
       if (!loginRes.ok) {
@@ -237,7 +241,7 @@ class QrApproveController {
         const loginRes = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: demoEmail, password: 'DietDost@Demo2026!' })
+          body: JSON.stringify({ identifier: demoEmail, emailOrMobile: demoEmail, password: 'DietDost@Demo2026!' })
         });
 
         if (loginRes.ok) {
@@ -272,6 +276,57 @@ class QrApproveController {
     } catch (err) {
       alert(err.message);
       this.setLoading(btn, false, `⚡ Demo Approval (${demoEmail})`);
+    }
+  }
+
+  async handleRecoverAndApprove(e) {
+    e.preventDefault();
+    const mnemonic = this.inpMobileMnemonic?.value?.trim();
+    if (!mnemonic) {
+      alert('Please enter your 12-word recovery mnemonic phrase.');
+      return;
+    }
+
+    this.setLoading(this.btnRecoverAndApprove, true, 'Recovering & Authorizing...');
+    try {
+      const recRes = await fetch('/api/auth/recover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recoveryKeyOrMnemonic: mnemonic })
+      });
+
+      if (!recRes.ok) {
+        const err = await recRes.json().catch(() => ({}));
+        throw new Error(err.detail || err.title || 'Recovery credentials invalid.');
+      }
+
+      const recData = await recRes.json();
+      this.activeToken = recData.token;
+      localStorage.setItem('auth_token', recData.token);
+
+      // Approve desktop session
+      const approveRes = await fetch('/api/auth/qr/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.activeToken}`
+        },
+        body: JSON.stringify({
+          sessionId: this.sessionId,
+          challengeNonce: this.challengeNonce,
+          mobilePublicKey: 'web-mobile-scan'
+        })
+      });
+
+      if (!approveRes.ok) {
+        const err = await approveRes.json().catch(() => ({}));
+        throw new Error(err.detail || err.title || 'Failed to approve session.');
+      }
+
+      this.showSuccess();
+    } catch (err) {
+      alert(err.message);
+      this.setLoading(this.btnRecoverAndApprove, false, 'Authorize via Recovery Phrase ➔');
     }
   }
 

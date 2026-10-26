@@ -5,7 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-import { encodeQrSvg } from './qr-code-encoder.js?v=1.9.1';
+import { encodeQrSvg } from './qr-code-encoder.js?v=1.9.2';
 
 
 export class QrAuthController {
@@ -413,17 +413,30 @@ export class QrAuthController {
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target.result);
-        if (json.mnemonic_phrase && this.recoverMnemonicInput) {
-          this.recoverMnemonicInput.value = json.mnemonic_phrase;
-          this.toast?.show('Loaded recovery phrase from JSON file!', 'success');
-        } else if (json.master_recovery_key_hex && this.recoverMnemonicInput) {
-          this.recoverMnemonicInput.value = json.master_recovery_key_hex;
-          this.toast?.show('Loaded master recovery key from JSON file!', 'success');
+        const mnemonic = json.mnemonicPhrase || json.mnemonic_phrase || json.mnemonic || json.phrase;
+        const key = json.recoveryKey || json.master_recovery_key_hex || json.recovery_key || json.masterKey;
+
+        if (mnemonic && this.recoverMnemonicInput) {
+          this.recoverMnemonicInput.value = mnemonic;
+          this.toast?.show('Loaded 12-word recovery phrase from JSON file!', 'success');
+          if (typeof this.recoverForm?.requestSubmit === 'function') {
+            this.recoverForm.requestSubmit();
+          } else {
+            this.handleRecoverSubmit(new Event('submit'));
+          }
+        } else if (key && this.recoverMnemonicInput) {
+          this.recoverMnemonicInput.value = key;
+          this.toast?.show('Loaded recovery key from JSON file!', 'success');
+          if (typeof this.recoverForm?.requestSubmit === 'function') {
+            this.recoverForm.requestSubmit();
+          } else {
+            this.handleRecoverSubmit(new Event('submit'));
+          }
         } else {
           throw new Error('Unrecognized recovery file structure.');
         }
-      } catch (err) {
-        this.showRecoverError('Invalid Disaster Recovery JSON file.');
+      } catch {
+        this.showRecoverError('Invalid Disaster Recovery JSON file. Please ensure it is a valid Diet-Dost recovery kit.');
       }
     };
     reader.readAsText(file);

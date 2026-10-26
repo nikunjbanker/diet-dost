@@ -26,14 +26,17 @@ public sealed class ServerSideQrGeneratorTests
         var svg = _generator.GenerateSvg(text, size: 200, margin: 4);
 
         Assert.NotNull(svg);
-        Assert.StartsWith("<svg xmlns=\"http://www.w3.org/2000/svg\"", svg);
-        Assert.Contains("viewBox=\"0 0 ", svg);
+        Assert.StartsWith("<svg ", svg);
+        Assert.Contains("viewBox=\"", svg);
         Assert.Contains("width=\"200\"", svg);
         Assert.Contains("height=\"200\"", svg);
         Assert.Contains("shape-rendering=\"crispEdges\"", svg);
-        Assert.Contains("<rect width=\"100%\" height=\"100%\" fill=\"#FFFFFF\"", svg);
-        Assert.Contains("<path fill=\"#0F172A\" d=\"", svg);
+        Assert.Contains("#000000", svg);
+        Assert.Contains("#FFFFFF", svg);
         Assert.EndsWith("</svg>", svg);
+
+        var svgDefault = _generator.GenerateSvg(text);
+        Assert.Contains("width=\"240\"", svgDefault);
     }
 
     [Fact]

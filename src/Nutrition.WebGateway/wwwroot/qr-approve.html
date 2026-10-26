@@ -369,6 +369,17 @@
       <button type="button" class="btn btn-demo" id="btn-fast-demo-premium">
         👑 Demo Approval (premium@dietdost.app)
       </button>
+
+      <div class="auth-divider">Or Zero-PII Phrase Approval</div>
+      <form id="form-mobile-recover" style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="auth-input-group">
+          <label for="inp-mobile-mnemonic">12-Word Recovery Phrase</label>
+          <textarea id="inp-mobile-mnemonic" rows="2" placeholder="e.g. apple banana cat dog..." style="background: var(--bg-elevated); border: 1px solid var(--border-hairline); border-radius: var(--radius-sm); padding: 8px; color: var(--text-primary); font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;"></textarea>
+        </div>
+        <button type="submit" class="btn btn-demo" id="btn-recover-and-approve">
+          Authorize via Recovery Phrase ➔
+        </button>
+      </form>
     </div>
 
     <!-- Success Screen (After Approval) -->

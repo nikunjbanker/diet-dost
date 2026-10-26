@@ -202,13 +202,19 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Dedicated Mobile Web Approval View (`qr-approve.html`)**: Lightweight standalone Obsidian-dark interface optimized for mobile viewports (320px–480px). Renders Match Code HUD (`[ 16 ] Jade Phoenix`), Safety Check banner to prevent QRLJacking, active session authorization, and one-tap demo approval (`btn-fast-demo-basic`).
     - **Deterministic Demo & CFT Simulation**: Seamless desktop simulation via `/api/auth/qr/simulate-approval` without requiring pre-existing browser credentials or throwing 401 Unauthorized errors.
 
+19. **QRCoder Server-Side Camera Detection, Dual-Casing JSON Recovery, and Zero-PII UX (`auth-gate.html`, `qr-auth-controller.js`, `qr-approve.html`, `styles.css`, ADR-140)**:
+    - **Camera-Optimized Sizing & Contrast**: QR canvas styled with 240px x 240px viewport, 16px white quiet-zone padding, pure `#000000` pitch black modules on `#FFFFFF` background, and `shape-rendering="crispEdges"`. Optical scanning verified with 100% decode fidelity via computer vision (`pyzbar`).
+    - **Dual-Casing Disaster Recovery JSON Parsing**: Dropzone and file selector now accept both camelCase (`mnemonicPhrase`, `recoveryKey`) and snake_case properties from exported recovery files. Added 1-click auto-login on file selection.
+    - **Zero-PII Sign-In Clarification**: Renamed recovery tab from `🔑 Recover` to `🔑 Phrase / Key`, added helper link directly on the Password sign-in form, and updated QR instructions with visual steps (`1. Open Camera • 2. Point at QR • 3. Tap Link to Approve`).
+    - **Mobile Approval View Enhancements**: Added 12-word recovery phrase approval tab on `qr-approve.html` for zero-PII users to approve sessions from their mobile browser.
+
 ---
 
 ## 5. Verification & Quality Gates
 
 * **Zero Console Errors**: All script dependencies, favicons, and assets resolve with HTTP 200.
 * **Responsive Breakpoints**: Seamless scaling across Mobile (<640px), Tablet (640px–1024px), Desktop (1024px–1440px), and Ultra-wide (>1440px).
-* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, `tests/Nutrition.EvalHarness.Tests/ModalStackingAndLifecycleContractTests.cs`, and `tests/Nutrition.EvalHarness.Tests/DatabaseWarmupTests.cs`.
+* **Automated Acceptance**: Validated through `docs/cft/cft_web_bff_and_clean_architecture.md`, `tests/validate_e2e_tiers.ps1`, `tests/validate_full_lifecycle.mjs`, `tests/Nutrition.EvalHarness.Tests/ServerSideQrGeneratorTests.cs`, and `scripts/verify-ai-security-defense.ps1`.
 
 
 

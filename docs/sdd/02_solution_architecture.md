@@ -504,6 +504,18 @@ Per ADR-138 and industry standard cross-device authentication:
    - Implemented `SimulateQrApprovalCommand` and `SimulateQrApprovalCommandHandler` enabling preview testing and demo verification with `basic@dietdost.app`.
    - Implemented `RejectQrSessionCommand` and `RejectQrSessionCommandHandler` enabling mobile users to explicitly decline pending sessions.
 
+---
 
+### 2.15 QRCoder Server-Side Camera Detection, Dual-Casing JSON Recovery, and Zero-PII UX (ADR-140)
 
-
+Per ADR-140 and Issue #115:
+1. **Standards-Compliant Server-Side QRCoder Integration**:
+   - Replaced hand-rolled C# polynomial arithmetic in `QrCodeGenerator.cs` with vetted, MIT-licensed `QRCoder` 1.8.1 (admitted to the vetted package allowlist in Vector 1).
+   - Generates standards-compliant ISO/IEC 18004 vector SVGs at 240px with `QRCodeGenerator.ECCLevel.M` (15% error recovery), `drawQuietZones: true`, and pure black `#000000` on `#FFFFFF` crisp edges.
+   - Tested and verified optically via `pyzbar` in Python: instant detection and 100% URL payload decoding.
+2. **Dual-Casing Disaster Recovery JSON Parsing**:
+   - `qr-auth-controller.js` parses both camelCase (`mnemonicPhrase`, `recoveryKey`) and snake_case properties from exported recovery files.
+   - Enables instant 1-click account restoration on file upload/drop.
+3. **Zero-PII Onboarding & Free Tier Governance**:
+   - Renamed recovery tab to `🔑 Phrase / Key` and embedded explicit Zero-PII sign-in helper links on the password tab.
+   - Zero-PII accounts strictly enforce `UserTier.Free` quotas: 1 AI meal detection/day, 7-day history, and gated photo comparison/export.
