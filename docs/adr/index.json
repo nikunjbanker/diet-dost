@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-31T13:08:22.121977+00:00",
-  "totalAdrs": 108,
+  "generatedAt": "2026-10-31T15:54:49.023984+00:00",
+  "totalAdrs": 109,
   "categoryCounts": {
     "architecture": 32,
     "security": 22,
     "devops": 27,
-    "presentation": 14,
+    "presentation": 15,
     "governance": 13
   },
   "records": [
@@ -1305,6 +1305,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261031-143-demo-account-recovery-credential-reconciliation-and-sql-bicep-metered-support.md",
       "relativePath": "docs/adr/architecture/ADR-20261031-143-demo-account-recovery-credential-reconciliation-and-sql-bicep-metered-support.md"
+    },
+    {
+      "id": "ADR-144",
+      "number": 144,
+      "title": "Mobile Web Camera Viewfinder, Optical/Digital Zoom HUD, and Touch-Friendly Interactive Cropper",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-31",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261031-144-mobile-web-camera-zoom-and-crop.md",
+      "relativePath": "docs/adr/presentation/ADR-20261031-144-mobile-web-camera-zoom-and-crop.md"
     }
   ]
 }
