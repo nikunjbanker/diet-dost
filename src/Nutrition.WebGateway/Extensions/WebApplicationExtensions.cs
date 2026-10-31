@@ -69,7 +69,18 @@ public static class WebApplicationExtensions
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(persistentUploadsDir),
-            RequestPath = "/uploads"
+            RequestPath = "/uploads",
+            OnPrepareResponse = ctx =>
+            {
+                var reqPath = ctx.Context.Request.Path.Value ?? string.Empty;
+                // GAP-05: Block unauthenticated direct access to progress photos via static file server
+                if (reqPath.Contains("/progress/", StringComparison.OrdinalIgnoreCase))
+                {
+                    ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                    ctx.Context.Response.ContentLength = 0;
+                    ctx.Context.Response.Body = Stream.Null;
+                }
+            }
         });
 
         app.UseAuthentication();

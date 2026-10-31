@@ -192,3 +192,29 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 * **Zero-Leak MediaStream Lifecycle Guard**:
   - `CameraService.stopStream()` terminates all active `MediaStreamTrack` instances upon modal close, cancellation, tab backgrounding (`visibilitychange`), or window unload (`beforeunload`).
   - Ensures hardware camera sensors and physical privacy indicator LEDs turn off immediately, eliminating background eavesdropping risks.
+
+## 11. Adversarial Security Hardening, Identity Lifecycle & Media Sanitization (`ADR-147`)
+
+* **Cloud Perimeter & Secret Governance**:
+  - Removed `0.0.0.0` wildcard firewall rule from `sql.bicep` (GAP-16) and eliminated plaintext connection string ARM outputs (GAP-17).
+  - Enforced Azure Key Vault sole authority, preventing plaintext copying to database `AppSecrets` in production (GAP-18).
+  - Bypassed OpenTelemetry payload capture on `/api/auth/`, `/api/profile`, and `/api/admin/users`, applying regex redaction to credentials and health data (GAP-02).
+  - Strengthened Content-Security-Policy with `object-src 'none'; base-uri 'self'; frame-ancestors 'none';` in `SecurityHeadersMiddleware.cs` (GAP-13).
+  - Sanitized `BaseUrl` in `InitiateQrSessionCommandHandler` against host header spoofing (GAP-45).
+  - Restricted `POST /api/auth/qr/simulate-approval` to demo environments and blocked administrative accounts (GAP-39).
+* **Identity Lifecycle & Token Revocation (DPDPA 2023)**:
+  - Rotated `SecurityStamp = Guid.NewGuid().ToString("N")` on account soft-deletion to immediately revoke active JWTs and session cookies (GAP-24).
+  - Anonymized `NormalizedEmail`, `NormalizedMobileNumber`, and `DisplayName` on deletion to enable re-registration without unique index collision (GAP-22).
+  - Enforced soft-delete across `EfRepository<T>.DeleteAsync` for all `ISoftDeletable` domain entities (GAP-23, GAP-34).
+  - Blocked non-SuperAdmin users from elevating accounts to `UserTier.SuperAdmin` in `AdminUserCommands.cs` (GAP-11).
+  - Masked disaster recovery mnemonics with `type="password"` and wiped backup JSON from client memory upon submission (GAP-42).
+* **Media Protection & Privacy**:
+  - Implemented `ImageSanitizer.cs` with SkiaSharp two-phase header probing against decompression bombs (16 MP limit) and EXIF stripping (GAP-10, GAP-35).
+  - Restricted progress photo streaming to authenticated owners/admins via `GET /api/media/progress/{id}` and blocked direct static file access (GAP-05).
+  - Attached `pagehide` and `popstate` listeners to force-stop camera hardware tracks on mobile back button gestures (GAP-43).
+  - Added `Content-Disposition: inline; filename="qr.svg"` to QR SVG responses (GAP-44).
+  - Added visual prompt injection defenses to `MicrosoftAgentFoodVisionService.cs` (GAP-14).
+* **Serverless Reliability & Ephemeral Lifecycle**:
+  - Extended `/ready` probe timeout to 10s with 6 failure thresholds in `app.bicep` for serverless pause/resume (GAP-19).
+  - Implemented `QrSessionCleanupService` background worker purging expired QR sessions older than 24h (GAP-41).
+  - Validated table identifiers with regex and bracket escaping in `AzureSqlTargetWriter.cs` (GAP-31).

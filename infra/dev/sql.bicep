@@ -111,15 +111,6 @@ resource sqlVnetRule 'Microsoft.Sql/servers/virtualNetworkRules@2023-08-01-previ
 // ------------------------------------------------------------------------------
 // 4. Firewall Rules
 // ------------------------------------------------------------------------------
-// Allow internal Azure Services (0.0.0.0 - 0.0.0.0)
-resource allowAzureIps 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = {
-  parent: sqlServer
-  name: 'AllowAllWindowsAzureIps'
-  properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
-  }
-}
 
 // Allow Local Developer Workstation IP (if provided)
 resource allowDeveloperIp 'Microsoft.Sql/servers/firewallRules@2023-08-01-preview' = if (!empty(allowedClientIp)) {
@@ -166,4 +157,3 @@ output sqlServerName string = sqlServer.name
 output sqlServerFqdn string = sqlServer.properties.fullyQualifiedDomainName
 output sqlDatabaseName string = sqlDatabase.name
 output connectionStringSecretName string = 'azure-sql-connection-string'
-output serverlessConnectionString string = formattedConnectionString

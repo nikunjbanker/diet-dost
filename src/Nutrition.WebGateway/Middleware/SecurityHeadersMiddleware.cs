@@ -28,7 +28,7 @@ public class SecurityHeadersMiddleware
         context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
         context.Response.Headers["Permissions-Policy"] = "geolocation=(self), camera=(self), microphone=()";
         context.Response.Headers.ContentSecurityPolicy =
-            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://dev.diet-dost.in https://diet-dost.in http://diet-dost.in;";
+            "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://dev.diet-dost.in https://diet-dost.in http://diet-dost.in; object-src 'none'; base-uri 'self'; frame-ancestors 'none';";
 
         await _next(context);
     }

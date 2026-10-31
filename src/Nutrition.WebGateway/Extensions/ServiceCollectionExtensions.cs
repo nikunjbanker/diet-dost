@@ -52,6 +52,7 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(120);
         });
         services.AddScoped<IFoodVisionAgent, MicrosoftAgentFoodVisionService>();
+        services.AddHostedService<Nutrition.Infrastructure.Services.QrSessionCleanupService>();
 
         // Native .NET 11 Clean Architecture Application Services & CQRS Dispatcher
         services.AddApplicationServices();

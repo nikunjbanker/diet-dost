@@ -70,7 +70,8 @@ public static class Program
         var azureSqlConn = parsed.AzureSqlConn;
         if (string.IsNullOrWhiteSpace(azureSqlConn))
         {
-            azureSqlConn = Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING")
+            azureSqlConn = Environment.GetEnvironmentVariable("TARGET_AZURE_SQL_CONNECTION_STRING")
+                           ?? Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING")
                            ?? Environment.GetEnvironmentVariable("ConnectionStrings__AzureSqlConnection");
         }
 

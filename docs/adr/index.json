@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-31T16:57:58.194682+00:00",
-  "totalAdrs": 111,
+  "generatedAt": "2026-10-31T18:01:09.863777+00:00",
+  "totalAdrs": 112,
   "categoryCounts": {
     "architecture": 32,
-    "security": 22,
+    "security": 23,
     "devops": 28,
     "presentation": 16,
     "governance": 13
@@ -1341,6 +1341,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261031-146-gallery-photo-region-crop-selection.md",
       "relativePath": "docs/adr/presentation/ADR-20261031-146-gallery-photo-region-crop-selection.md"
+    },
+    {
+      "id": "ADR-147",
+      "number": 147,
+      "title": "Adversarial Security Remediation, Identity Lifecycle & Cloud Infrastructure Hardening",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-10-31",
+      "subsystem": "Security",
+      "filename": "ADR-20261031-147-adversarial-security-remediation-and-infrastructure-hardening.md",
+      "relativePath": "docs/adr/security/ADR-20261031-147-adversarial-security-remediation-and-infrastructure-hardening.md"
     }
   ]
 }

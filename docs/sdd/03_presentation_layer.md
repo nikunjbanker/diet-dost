@@ -257,3 +257,14 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 
 
 
+
+## 15. Presentation Layer Privacy & Credential Masking (`ADR-147`)
+
+* **Hardware Camera Privacy Lifecycle**:
+  - `camera-modal.js`: Added `pagehide` and `popstate` event listeners to immediately stop camera hardware tracks when users navigate via browser back gestures or bfcache (GAP-43).
+* **Credential Masking & Memory Wiping**:
+  - `qr-auth-controller.js`: Sets `type="password"` on disaster recovery phrase and key inputs to shield against shoulder-surfing (GAP-42).
+  - Clears parsed recovery backup JSON payloads and form inputs from client memory immediately following submission.
+* **Content Security & Media Protection**:
+  - `SecurityHeadersMiddleware.cs`: Added `object-src 'none'; base-uri 'self'; frame-ancestors 'none';` to CSP (GAP-13).
+  - `QrAuthController.cs`: Appends `Content-Disposition: inline; filename="qr.svg"` on QR SVG responses (GAP-44).

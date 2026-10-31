@@ -217,6 +217,7 @@ public class QrAuthController : ControllerBase
         var qrUri = $"{baseUri}/qr-approve.html?sid={result.Data.SessionId}";
         var svg = _qrGenerator.GenerateSvg(qrUri, size: 240, margin: 4);
 
+        Response.Headers.ContentDisposition = "inline; filename=\"qr.svg\"";
         return Content(svg, "image/svg+xml");
     }
 

@@ -191,7 +191,16 @@ public class EfRepository<T> : IRepository<T> where T : class
             var entity = await GetByIdAsync(id, ct);
             if (entity != null)
             {
-                _dbSet.Remove(entity);
+                if (entity is Nutrition.Domain.Common.ISoftDeletable soft)
+                {
+                    soft.IsDeleted = true;
+                    soft.DeletedAtUtc = DateTime.UtcNow;
+                    await UpdateAsync(entity, ct);
+                }
+                else
+                {
+                    _dbSet.Remove(entity);
+                }
             }
         }
         catch (Exception ex)

@@ -417,6 +417,7 @@ export class QrAuthController {
         const key = json.recoveryKey || json.master_recovery_key_hex || json.recovery_key || json.masterKey;
 
         if (mnemonic && this.recoverMnemonicInput) {
+          this.recoverMnemonicInput.type = 'password';
           this.recoverMnemonicInput.value = mnemonic;
           this.toast?.show('Loaded 12-word recovery phrase from JSON file!', 'success');
           if (typeof this.recoverForm?.requestSubmit === 'function') {
@@ -425,6 +426,7 @@ export class QrAuthController {
             this.handleRecoverSubmit(new Event('submit'));
           }
         } else if (key && this.recoverMnemonicInput) {
+          this.recoverMnemonicInput.type = 'password';
           this.recoverMnemonicInput.value = key;
           this.toast?.show('Loaded recovery key from JSON file!', 'success');
           if (typeof this.recoverForm?.requestSubmit === 'function') {

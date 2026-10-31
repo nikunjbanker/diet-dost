@@ -54,6 +54,18 @@ public class UpdateUserTierCommandHandler : ICommandHandler<UpdateUserTierComman
             return Result<UpdateUserTierResultDto>.Failure("Cannot demote the SuperAdmin tier.", "CannotDemoteSuperAdmin", 400);
         }
 
+        if (request.NewTier == UserTier.SuperAdmin)
+        {
+            var adminUser = await _userRepo.GetByIdAsync(request.AdminUserId, ct);
+            if (adminUser?.Role != UserRole.SuperAdmin)
+            {
+                return Result<UpdateUserTierResultDto>.Failure(
+                    "Only the root SuperAdmin can assign the SuperAdmin tier.",
+                    "ForbiddenSuperAdminElevation",
+                    403);
+            }
+        }
+
         targetUser.Tier = request.NewTier;
         await _uow.SaveChangesAsync(ct);
 
