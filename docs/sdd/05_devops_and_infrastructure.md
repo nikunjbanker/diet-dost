@@ -458,3 +458,15 @@ The full architectural blueprint is codified in the following repository visual 
   2. **Infrastructure Deployment Workflow Alignment**: In `.github/workflows/azure-infra-deploy.yml`, updated default input and execution parameters so that `deployAzureSql` defaults to `true`.
   3. **Bicep Template Parameter Convergence**: Updated `infra/dev/main.bicep` and `infra/dev/infra.bicep` to default `databaseProvider string = 'AzureSql'` and `deployAzureSql bool = true`, aligning Infrastructure as Code with the application's default persistence configuration.
   4. **CI Test Runner Isolation**: In `.github/workflows/quality-test-gate.yml`, injected `Database__Provider: Sqlite` into the runner environment variables for Job 3 (`system-tests`) and Job 4 (`e2e-tests`). Similarly, updated `scripts/verify-quality-test-gates.ps1` to explicitly append `--Database:Provider Sqlite` to the local WebGateway startup command. This ensures fast, hermetic, 100% offline-isolated test execution on CI runners without requiring Azure SQL firewall traversal or credentials.
+
+### 8.17 Autonomous Deployment & Environment Approval Daemon (`scripts/auto-approve-daemon.ps1`, ADR-145)
+- **Problem**:
+  1. **Deployment Pipeline Block on Environment Gates**: In `azure-app-deploy.yml`, jobs targeting environment `dev` (e.g. `validate`, `deploy-app`) require CODEOWNER approval under GitHub environment protection rules, leaving automated deployments blocked indefinitely unless manually approved in the GitHub web UI.
+  2. **GitHub API HTTP 422 Payload Incompatibility**: Previous CLI invocation scripts passed `-F "environment_ids[]=$envId"` as form-urlencoded strings, causing GitHub Actions REST API to reject with HTTP 422 (`"23365127839" is not an integer`).
+  3. **Absence of Automated Post-Deployment Verification**: Workflows completed without automated verification of live production endpoints.
+- **Architectural Solution**:
+  1. **Canonical Autonomous Daemon (`scripts/auto-approve-daemon.ps1`)**:
+     - Consolidates approval and monitoring into a single unified script supporting both targeted run mode (`-RunId <id>`) and automatic discovery of active deployment runs.
+     - Formats `environment_ids` as a numeric 64-bit integer JSON array piped via stdin to `gh api ... --input -`, resolving the HTTP 422 error.
+     - Real-time job telemetry reporting active stages, completed/total job ratios, and statuses.
+     - Automated post-deployment validation asserting HTTP 200 responses across `https://dev.diet-dost.in/health`, `/index.html`, and component partials upon deployment success.

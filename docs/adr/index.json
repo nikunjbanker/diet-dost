@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-31T15:54:49.023984+00:00",
-  "totalAdrs": 109,
+  "generatedAt": "2026-10-31T16:25:42.053491+00:00",
+  "totalAdrs": 110,
   "categoryCounts": {
     "architecture": 32,
     "security": 22,
-    "devops": 27,
+    "devops": 28,
     "presentation": 15,
     "governance": 13
   },
@@ -1317,6 +1317,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261031-144-mobile-web-camera-zoom-and-crop.md",
       "relativePath": "docs/adr/presentation/ADR-20261031-144-mobile-web-camera-zoom-and-crop.md"
+    },
+    {
+      "id": "ADR-145",
+      "number": 145,
+      "title": "Unified Auto-Approve & Deployment Daemon Architecture",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-10-31",
+      "subsystem": "Devops",
+      "filename": "ADR-20261031-145-unified-auto-approve-and-deploy-daemon.md",
+      "relativePath": "docs/adr/devops/ADR-20261031-145-unified-auto-approve-and-deploy-daemon.md"
     }
   ]
 }
