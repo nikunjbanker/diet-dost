@@ -192,18 +192,19 @@ export class ApiClient {
     }
 
     if (!res.ok) {
-      const errorMsg = data?.error || data?.message || `HTTP ${res.status}: ${res.statusText}`;
+      const errorMsg = data?.detail || data?.error || data?.message || (typeof data === 'string' && data ? data : `HTTP ${res.status}: ${res.statusText}`);
       const error = new Error(errorMsg);
       error.status = res.status;
       error.data = data;
 
       // Handle session expiry or unauthorized request (OWASP token lifecycle)
+      const isAuthEndpoint = res.url && res.url.includes('/api/auth/');
       const isTokenExpired = res.headers.get('Token-Expired') === 'true' || res.headers.get('token-expired') === 'true';
       if (isTokenExpired) {
         localStorage.removeItem('dd_jwt_token');
         window.dispatchEvent(new CustomEvent('auth:token_expired', { detail: { reason: 'TokenExpired', status: res.status } }));
         window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { reason: 'TokenExpired' } }));
-      } else if (res.status === 401) {
+      } else if (res.status === 401 && !isAuthEndpoint) {
         localStorage.removeItem('dd_jwt_token');
         window.dispatchEvent(new CustomEvent('auth:unauthorized', { detail: { reason: 'Unauthorized' } }));
       } else if (res.status === 403) {

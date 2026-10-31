@@ -149,4 +149,25 @@ public class Bip39MnemonicTests
         var ex = Assert.Throws<InvalidOperationException>(() => user.ValidateRegistration());
         Assert.Contains("DPDPA Compliance Violation", ex.Message);
     }
+
+    [Fact]
+    public void UserUploadedKit_DecodesToExactHexAndMnemonic()
+    {
+        var phrase = "suspect vintage animal morning require leader genre youth very home trust jump";
+        var expectedHex = "dade842447fb70fd1847fbf2eda3a6bc";
+        Assert.True(Bip39Mnemonic.ValidateMnemonic(phrase, out var entropy));
+        Assert.Equal(expectedHex, Convert.ToHexString(entropy).ToLowerInvariant());
+
+        var encodedPhrase = Bip39Mnemonic.Encode(entropy);
+        Assert.Equal(phrase, encodedPhrase);
+
+        var lookupId = RecoveryKit.DeriveLookupId(entropy);
+        Assert.Equal("ff4dca8410f4187add5a0478", lookupId);
+
+        var saltHex = "a1b2c3d4e5f67890123456789abcdef0";
+        var salt = Convert.FromHexString(saltHex);
+        var keyHash = RecoveryKit.ComputeKeyHash(entropy, salt);
+        Assert.Equal("f22c3a7164a9f7d69ee72a2a9139d2cf3c9f25ca3b0dd02ee79dc58e6d956463bb5694b88732e28c3326b2213ae61391f319ee78120fd6139832c9adcbcd984e", keyHash);
+        Assert.True(RecoveryKit.VerifyKey(entropy, salt, keyHash));
+    }
 }

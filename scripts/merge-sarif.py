@@ -68,6 +68,13 @@ def normalize_run(run: dict) -> dict:
         if any(isinstance(s, dict) and (s.get("status") == "accepted" or s.get("kind") == "inSource") for s in res.get("suppressions", [])):
             continue
 
+        # Security SAST Gate: Filter strictly to Roslyn Security rules (CA21xx, CA23xx, CA30xx, CA53xx, CA54xx),
+        # SecurityCodeScan rules (SCSxxxx), and DevSkim security rules (DSxxxxx).
+        rule_id = res.get("ruleId", "")
+        is_security_rule = any(rule_id.startswith(pfx) for pfx in ("CA21", "CA23", "CA30", "CA53", "CA54", "SCS", "DS"))
+        if not is_security_rule:
+            continue
+
         # Map level
         lvl = res.get("level")
         if lvl == "info":
