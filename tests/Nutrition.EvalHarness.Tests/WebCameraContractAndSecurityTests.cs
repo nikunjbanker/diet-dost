@@ -75,6 +75,7 @@ public class WebCameraContractAndSecurityTests
         // Post-capture crop & region selection contracts
         Assert.Contains("id=\"camera-crop-container\"", content);
         Assert.Contains("id=\"btn-crop-preset-square\"", content);
+        Assert.Contains("id=\"btn-crop-preset-standard\"", content);
         Assert.Contains("id=\"btn-crop-preset-full\"", content);
         Assert.Contains("id=\"btn-confirm-use-photo\"", content);
         Assert.Contains("id=\"btn-retake-photo\"", content);
@@ -122,5 +123,24 @@ public class WebCameraContractAndSecurityTests
 
         // Must declare camera-modal.html include
         Assert.Contains("data-include=\"partials/camera-modal.html\"", content);
+    }
+
+    [Fact]
+    public void CameraModalAndCallers_MustSupportGalleryCroppingContract()
+    {
+        var cameraModalJs = Path.Combine(_wwwroot, "js", "ui", "camera-modal.js");
+        Assert.True(File.Exists(cameraModalJs));
+        var cameraJsContent = File.ReadAllText(cameraModalJs);
+        Assert.Contains("openCrop(", cameraJsContent);
+
+        var mealLoggerJs = Path.Combine(_wwwroot, "js", "ui", "meal-logger.js");
+        Assert.True(File.Exists(mealLoggerJs));
+        var mealLoggerContent = File.ReadAllText(mealLoggerJs);
+        Assert.Contains("openCrop(", mealLoggerContent);
+
+        var progressModalJs = Path.Combine(_wwwroot, "js", "ui", "progress-modal.js");
+        Assert.True(File.Exists(progressModalJs));
+        var progressContent = File.ReadAllText(progressModalJs);
+        Assert.Contains("openCrop(", progressContent);
     }
 }

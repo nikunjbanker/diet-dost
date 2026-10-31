@@ -9,8 +9,8 @@
 /**
  * ImageCropper
  * Lightweight, zero-dependency interactive canvas-based image region selector.
- * Provides touch-friendly drag handles, dark scrim overlay, aspect-ratio presets (1:1, full, freeform),
- * bounds clamping, and native-resolution sub-rectangle extraction.
+ * Provides touch-friendly drag handles, dark scrim overlay, aspect-ratio presets (1:1, 4:3, full, freeform),
+ * bounds clamping, mouse-wheel / pinch zooming, and native-resolution sub-rectangle extraction.
  */
 export class ImageCropper {
   /**
@@ -32,9 +32,15 @@ export class ImageCropper {
     this._handleRadius = 14; // Touch-friendly radius (28px diameter visual, 44px hit test)
     this._minBoxSize = 48;
 
+    this._lastPinchDistance = 0;
+
     this._boundOnPointerDown = this._onPointerDown.bind(this);
     this._boundOnPointerMove = this._onPointerMove.bind(this);
     this._boundOnPointerUp = this._onPointerUp.bind(this);
+    this._boundOnWheel = this._onWheel.bind(this);
+    this._boundOnTouchStart = this._onTouchStart.bind(this);
+    this._boundOnTouchMove = this._onTouchMove.bind(this);
+    this._boundOnTouchEnd = this._onTouchEnd.bind(this);
 
     if (this._canvas) {
       this._bindEvents();
@@ -64,6 +70,25 @@ export class ImageCropper {
   }
 
   /**
+   * Scales a bounding box smoothly around its current center point and clamps to bounds.
+   * @param {{ x: number, y: number, width: number, height: number }} box
+   * @param {number} scaleFactor
+   * @param {number} boundW
+   * @param {number} boundH
+   * @param {number} [minSize=48]
+   * @returns {{ x: number, y: number, width: number, height: number }}
+   */
+  scaleBoxAroundCenter(box, scaleFactor, boundW, boundH, minSize = this._minBoxSize) {
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const targetW = Math.max(minSize, Math.min(box.width * scaleFactor, boundW));
+    const targetH = Math.max(minSize, Math.min(box.height * scaleFactor, boundH));
+    const newX = cx - targetW / 2;
+    const newY = cy - targetH / 2;
+    return this.clampBox({ x: newX, y: newY, width: targetW, height: targetH }, boundW, boundH, minSize);
+  }
+
+  /**
    * Calculates a centered 1:1 square crop box for given bounds.
    * @param {number} boundW
    * @param {number} boundH
@@ -74,6 +99,30 @@ export class ImageCropper {
     const x = Math.round((boundW - size) / 2);
     const y = Math.round((boundH - size) / 2);
     return { x, y, width: size, height: size };
+  }
+
+  /**
+   * Calculates a centered 4:3 standard aspect ratio crop box for given bounds.
+   * @param {number} boundW
+   * @param {number} boundH
+   * @returns {{ x: number, y: number, width: number, height: number }}
+   */
+  calculateStandardPreset(boundW, boundH) {
+    const targetAspect = 4 / 3;
+    let width = boundW * 0.9;
+    let height = width / targetAspect;
+    if (height > boundH * 0.9) {
+      height = boundH * 0.9;
+      width = height * targetAspect;
+    }
+    const x = Math.round((boundW - width) / 2);
+    const y = Math.round((boundH - height) / 2);
+    return {
+      x: Math.max(0, x),
+      y: Math.max(0, y),
+      width: Math.round(width),
+      height: Math.round(height)
+    };
   }
 
   /**
@@ -117,12 +166,18 @@ export class ImageCropper {
   /**
    * Initializes the cropper with an image and mounts to canvas.
    * @param {HTMLImageElement} image
+   * @param {'square'|'standard'|'full'} [defaultPreset='square']
    */
-  init(image) {
+  init(image, defaultPreset = 'square') {
     this._image = image;
     this.resizeCanvas();
-    // Default to 1:1 plate preset initially for food photography
-    this._box = this.calculateSquarePreset(this._canvas.width, this._canvas.height);
+    if (defaultPreset === 'standard') {
+      this._box = this.calculateStandardPreset(this._canvas.width, this._canvas.height);
+    } else if (defaultPreset === 'full') {
+      this._box = this.calculateFullPreset(this._canvas.width, this._canvas.height);
+    } else {
+      this._box = this.calculateSquarePreset(this._canvas.width, this._canvas.height);
+    }
     this.render();
   }
 
@@ -148,6 +203,12 @@ export class ImageCropper {
   applySquarePreset() {
     if (!this._canvas) return;
     this._box = this.calculateSquarePreset(this._canvas.width, this._canvas.height);
+    this.render();
+  }
+
+  applyStandardPreset() {
+    if (!this._canvas) return;
+    this._box = this.calculateStandardPreset(this._canvas.width, this._canvas.height);
     this.render();
   }
 
@@ -226,9 +287,50 @@ export class ImageCropper {
 
   _bindEvents() {
     this._canvas.addEventListener('pointerdown', this._boundOnPointerDown);
+    this._canvas.addEventListener('wheel', this._boundOnWheel, { passive: false });
+    this._canvas.addEventListener('touchstart', this._boundOnTouchStart, { passive: true });
+    this._canvas.addEventListener('touchmove', this._boundOnTouchMove, { passive: false });
+    this._canvas.addEventListener('touchend', this._boundOnTouchEnd, { passive: true });
     window.addEventListener('pointermove', this._boundOnPointerMove);
     window.addEventListener('pointerup', this._boundOnPointerUp);
     window.addEventListener('pointercancel', this._boundOnPointerUp);
+  }
+
+  _onWheel(e) {
+    if (!this._canvas || !this._image) return;
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.08 : 0.92;
+    this._box = this.scaleBoxAroundCenter(this._box, factor, this._canvas.width, this._canvas.height);
+    this.render();
+  }
+
+  _onTouchStart(e) {
+    if (e.touches && e.touches.length === 2) {
+      this._lastPinchDistance = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+    }
+  }
+
+  _onTouchMove(e) {
+    if (e.touches && e.touches.length === 2 && this._lastPinchDistance > 0) {
+      e.preventDefault();
+      const currentDist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const ratio = currentDist / this._lastPinchDistance;
+      if (Math.abs(ratio - 1.0) > 0.02) {
+        this._box = this.scaleBoxAroundCenter(this._box, ratio, this._canvas.width, this._canvas.height);
+        this._lastPinchDistance = currentDist;
+        this.render();
+      }
+    }
+  }
+
+  _onTouchEnd() {
+    this._lastPinchDistance = 0;
   }
 
   _getCanvasPoint(e) {
@@ -374,6 +476,10 @@ export class ImageCropper {
   destroy() {
     if (this._canvas) {
       this._canvas.removeEventListener('pointerdown', this._boundOnPointerDown);
+      this._canvas.removeEventListener('wheel', this._boundOnWheel);
+      this._canvas.removeEventListener('touchstart', this._boundOnTouchStart);
+      this._canvas.removeEventListener('touchmove', this._boundOnTouchMove);
+      this._canvas.removeEventListener('touchend', this._boundOnTouchEnd);
     }
     window.removeEventListener('pointermove', this._boundOnPointerMove);
     window.removeEventListener('pointerup', this._boundOnPointerUp);

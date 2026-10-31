@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -91,7 +91,7 @@ export class MealLoggerController {
         if (e.target.files && e.target.files.length > 0) {
           const file = e.target.files[0];
           e.target.value = '';
-          this.handleImageUpload(file);
+          this.selectPhotoAreaAndUpload(file);
         }
       });
     }
@@ -117,14 +117,14 @@ export class MealLoggerController {
         e.preventDefault();
         el.dropzone.classList.remove('dragover');
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-          this.handleImageUpload(e.dataTransfer.files[0]);
+          this.selectPhotoAreaAndUpload(e.dataTransfer.files[0]);
         }
       });
       el.fileInput.addEventListener('change', (e) => {
         if (e.target.files && e.target.files.length > 0) {
           const file = e.target.files[0];
           e.target.value = '';
-          this.handleImageUpload(file);
+          this.selectPhotoAreaAndUpload(file);
         }
       });
     }
@@ -459,6 +459,41 @@ export class MealLoggerController {
     } else {
       const fallbackInput = document.getElementById('camera-file-fallback') || document.getElementById('file-input');
       fallbackInput?.click();
+    }
+  }
+
+  /**
+   * Opens the interactive photo region cropper for a selected gallery file before AI analysis.
+   * @param {File} file
+   */
+  selectPhotoAreaAndUpload(file) {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      this._toast?.show({
+        title: 'Invalid File',
+        message: 'Please select a valid image file (JPEG, PNG, or WebP).'
+      });
+      return;
+    }
+
+    const modal = this._cameraModal;
+    const reselectFn = () => this.elements.fileInput?.click();
+
+    if (modal && typeof modal.openCrop === 'function') {
+      modal.openCrop({
+        file,
+        mode: 'meal',
+        onConfirm: (croppedFile) => this.handleImageUpload(croppedFile),
+        onReselect: reselectFn
+      });
+    } else if (typeof window.openCropModal === 'function') {
+      window.openCropModal({
+        file,
+        mode: 'meal',
+        onConfirm: (croppedFile) => this.handleImageUpload(croppedFile),
+        onReselect: reselectFn
+      });
+    } else {
+      this.handleImageUpload(file);
     }
   }
 

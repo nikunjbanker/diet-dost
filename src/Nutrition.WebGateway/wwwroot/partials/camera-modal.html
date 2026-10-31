@@ -69,7 +69,7 @@
       <div class="camera-crop-container" id="camera-crop-container" style="display: none;">
         <canvas id="camera-crop-canvas" class="camera-crop-canvas"></canvas>
         <div class="crop-guidance-pill">
-          <span>✂️ Drag corners to select specific food plate or bowl</span>
+          <span>✂️ Drag corners or scroll/pinch to select food plate or bowl</span>
         </div>
       </div>
 
@@ -116,11 +116,14 @@
       <!-- Post-Capture Region Selection (Crop) Bottom Controls -->
       <div class="crop-controls-row" id="crop-controls-row" style="display: none;">
         <div class="crop-presets-group">
-          <button type="button" class="btn btn-sm btn-secondary" id="btn-retake-photo" title="Retake Photo">
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-retake-photo" title="Retake Photo or Choose Another">
             🔄 Retake
           </button>
           <button type="button" class="btn btn-sm btn-secondary active" id="btn-crop-preset-square" title="1:1 Plate Crop">
             📐 1:1 Plate
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-crop-preset-standard" title="4:3 Standard Photo">
+            📐 4:3 Photo
           </button>
           <button type="button" class="btn btn-sm btn-secondary" id="btn-crop-preset-full" title="Full Uncropped Photo">
             🖼️ Full Photo

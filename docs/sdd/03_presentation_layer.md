@@ -231,6 +231,21 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
       - Aspect ratio presets: `1:1 Plate` (centered square) and `Full Photo` (reset selection).
       - Strict coordinate clamping preventing negative dimensions or out-of-bounds selection, extracting pristine sub-rectangle blobs matching source resolution.
 
+22. **Gallery Photo Region Selection, Smooth Pinch/Wheel Crop Zoom, and Multi-Preset Storage (image-cropper.js, camera-modal.js, meal-logger.js, progress-modal.js, ADR-146)**:
+    - **Zero-Hardware Gallery Crop Interception**:
+      - Intercepts file picker selections (<input type="file">), fallback camera inputs, and drag-and-drop dropzones in both the **Instant Meal Logger** and **DEXA Progress Check-In**.
+      - Directly routes gallery files through cameraModal.openCrop({ file, mode, onConfirm, onCancel, onReselect }).
+      - **Zero Hardware & Battery Footprint**: The gallery cropping workflow completely bypasses getUserMedia(), requests zero camera permissions, and consumes zero camera hardware/battery power.
+    - **Interactive Cropper Controls & Aspect Ratio Presets**:
+      - Expands the cropping interface with a standard 4:3 Photo preset (tn-crop-preset-standard) alongside 1:1 Plate and Full Photo, utilizing calculateStandardPreset(boundW, boundH).
+      - Adds smooth desktop mouse wheel zooming (_onWheel) and mobile two-finger touch pinch-to-zoom (_onTouchStart, _onTouchMove, _onTouchEnd) scaling the crop box around its visual center (scaleBoxAroundCenter) with strict bounding box clamping.
+      - Includes guidance indicator pills educating users on drag handle manipulation, scroll/pinch zoom, and preset selection.
+    - **Contextual Reselect Integration**:
+      - Dynamically replaces the camera "🔄 Retake" button with "🔄 Choose Another" (tn-retake-photo), allowing users to trigger the underlying file selector directly without having to close the modal.
+    - **Native Resolution Blob Storage**:
+      - Maps canvas-space crop coordinates to source image natural dimensions via mapDisplayToSourceCoords().
+      - Delivers high-fidelity cropped File blobs to downstream image optimizers and vision analysis endpoints for both food logging and DEXA body tracking.
+
 ---
 
 ## 5. Verification & Quality Gates

@@ -43,4 +43,33 @@ test('ImageCropper coordinate calculations and bounds clamping', async (t) => {
     assert.equal(sourceCoords.width, Math.round(200 * (1920 / 400)));
     assert.equal(sourceCoords.height, Math.round(150 * (1080 / 300)));
   });
+
+  await t.test('calculateStandardPreset produces a 4:3 centered bounding box', () => {
+    const cropper = new ImageCropper();
+    // bounds 1600x1200 (exact 4:3)
+    const standard = cropper.calculateStandardPreset(1600, 1200);
+    assert.equal(Math.abs((standard.width / standard.height) - (4 / 3)) < 0.05, true);
+    assert.equal(standard.x >= 0, true);
+    assert.equal(standard.y >= 0, true);
+    assert.equal(standard.x + standard.width <= 1600, true);
+    assert.equal(standard.y + standard.height <= 1200, true);
+  });
+
+  await t.test('scaleBoxAroundCenter scales box smoothly and clamps strictly within bounds', () => {
+    const cropper = new ImageCropper();
+    const box = { x: 200, y: 150, width: 400, height: 300 }; // Center: (400, 300)
+    // Scale down by 0.5 -> width: 200, height: 150, Center remains (400, 300) -> x: 300, y: 225
+    const scaledDown = cropper.scaleBoxAroundCenter(box, 0.5, 1000, 800);
+    assert.equal(scaledDown.width, 200);
+    assert.equal(scaledDown.height, 150);
+    assert.equal(scaledDown.x, 300);
+    assert.equal(scaledDown.y, 225);
+
+    // Scale up beyond boundaries (scale factor 5.0) -> must clamp within boundW/boundH
+    const scaledUpClamped = cropper.scaleBoxAroundCenter(box, 5.0, 1000, 800);
+    assert.equal(scaledUpClamped.x >= 0, true);
+    assert.equal(scaledUpClamped.y >= 0, true);
+    assert.equal(scaledUpClamped.x + scaledUpClamped.width <= 1000, true);
+    assert.equal(scaledUpClamped.y + scaledUpClamped.height <= 800, true);
+  });
 });
