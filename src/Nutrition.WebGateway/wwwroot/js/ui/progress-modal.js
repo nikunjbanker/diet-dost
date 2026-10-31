@@ -21,6 +21,7 @@ export class ProgressModalController {
    * @param {import('../services/auth-service.js').AuthService} [options.authService]
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
+   * @param {import('./camera-modal.js').CameraModalController} [options.cameraModal]
    */
   constructor({ progressService, toastService, confettiService, authService, appState, eventBus, cameraModal = null }) {
     this._cameraModal = cameraModal;
@@ -146,16 +147,22 @@ export class ProgressModalController {
         if (e.target.closest('#btn-progress-take-photo') || e.target.closest('#btn-progress-choose-gallery') || e.target === el.fileInput) return;
         this.openCamera();
       });
+      el.dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        el.dropzone.classList.add('dragover');
+      });
+      el.dropzone.addEventListener('dragleave', () => el.dropzone.classList.remove('dragover'));
+      el.dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        el.dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          this.selectPhotoAreaAndPreview(e.dataTransfer.files[0]);
+        }
+      });
       el.fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
           const file = e.target.files[0];
-          const reader = new FileReader();
-          reader.onload = (re) => {
-            if (el.imgPreview) el.imgPreview.src = re.target.result;
-            if (el.dropzonePrompt) el.dropzonePrompt.style.display = 'none';
-            if (el.dropzonePreview) el.dropzonePreview.style.display = 'block';
-          };
-          reader.readAsDataURL(file);
+          this.selectPhotoAreaAndPreview(file);
         }
       });
     }
@@ -276,6 +283,55 @@ export class ProgressModalController {
       window.openCameraModal({ mode, onCapture });
     } else {
       el.fileInput?.click();
+    }
+  }
+
+  /**
+   * Opens the interactive photo region cropper for a selected gallery file before DEXA staging.
+   * @param {File} file
+   */
+  selectPhotoAreaAndPreview(file) {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+      this._toast?.show({
+        title: 'Invalid File',
+        message: 'Please select a valid image file (JPEG, PNG, or WebP).'
+      });
+      return;
+    }
+
+    const el = this.elements;
+    const photoType = el.inpType?.value || '0';
+    const mode = photoType === '0' ? 'face' : 'body';
+
+    const onConfirm = (croppedFile) => {
+      this._capturedFile = croppedFile;
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        if (el.imgPreview) el.imgPreview.src = re.target.result;
+        if (el.dropzonePrompt) el.dropzonePrompt.style.display = 'none';
+        if (el.dropzonePreview) el.dropzonePreview.style.display = 'block';
+      };
+      reader.readAsDataURL(croppedFile);
+    };
+
+    const reselectFn = () => el.fileInput?.click();
+
+    if (this._cameraModal && typeof this._cameraModal.openCrop === 'function') {
+      this._cameraModal.openCrop({
+        file,
+        mode,
+        onConfirm,
+        onReselect: reselectFn
+      });
+    } else if (typeof window.openCropModal === 'function') {
+      window.openCropModal({
+        file,
+        mode,
+        onConfirm,
+        onReselect: reselectFn
+      });
+    } else {
+      onConfirm(file);
     }
   }
 

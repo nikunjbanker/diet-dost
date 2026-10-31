@@ -11,7 +11,8 @@ import { ImageCropper } from './image-cropper.js';
 /**
  * CameraModalController
  * Manages the live WebRTC camera viewfinder, hardware optical zoom / digital zoom,
- * torch/flashlight, camera switching, shutter snap, and interactive post-capture region cropping.
+ * torch/flashlight, camera switching, shutter snap, and interactive region cropping
+ * for both camera frames and gallery image selection.
  */
 export class CameraModalController {
   /**
@@ -26,8 +27,10 @@ export class CameraModalController {
     this._toast = toastService;
 
     this._mode = 'meal'; // 'meal' | 'face' | 'body'
+    this._cropSource = 'camera'; // 'camera' | 'gallery'
     this._onCaptureCallback = null;
     this._onCancelCallback = null;
+    this._onReselectCallback = null;
 
     this._capturedRawFile = null;
     this._cropper = null;
@@ -65,6 +68,7 @@ export class CameraModalController {
       btnCancel: document.getElementById('btn-cancel-camera'),
       btnRetake: document.getElementById('btn-retake-photo'),
       btnPresetSquare: document.getElementById('btn-crop-preset-square'),
+      btnPresetStandard: document.getElementById('btn-crop-preset-standard'),
       btnPresetFull: document.getElementById('btn-crop-preset-full'),
       btnConfirmPhoto: document.getElementById('btn-confirm-use-photo')
     };
@@ -127,17 +131,36 @@ export class CameraModalController {
     });
 
     // Crop Controls
-    el.btnRetake?.addEventListener('click', () => this._resumeLiveStream());
+    el.btnRetake?.addEventListener('click', () => {
+      if (this._cropSource === 'gallery') {
+        const reselect = this._onReselectCallback;
+        this.close();
+        if (typeof reselect === 'function') {
+          reselect();
+        }
+      } else {
+        this._resumeLiveStream();
+      }
+    });
 
     el.btnPresetSquare?.addEventListener('click', () => {
       el.btnPresetSquare?.classList.add('active');
+      el.btnPresetStandard?.classList.remove('active');
       el.btnPresetFull?.classList.remove('active');
       this._cropper?.applySquarePreset();
+    });
+
+    el.btnPresetStandard?.addEventListener('click', () => {
+      el.btnPresetStandard?.classList.add('active');
+      el.btnPresetSquare?.classList.remove('active');
+      el.btnPresetFull?.classList.remove('active');
+      this._cropper?.applyStandardPreset();
     });
 
     el.btnPresetFull?.addEventListener('click', () => {
       el.btnPresetFull?.classList.add('active');
       el.btnPresetSquare?.classList.remove('active');
+      el.btnPresetStandard?.classList.remove('active');
       this._cropper?.applyFullPreset();
     });
 
@@ -150,7 +173,7 @@ export class CameraModalController {
       if (document.hidden && this._camera.isActive) {
         console.log('[CameraModal] Tab hidden: stopping camera stream for privacy and battery conservation.');
         this._camera.stopStream();
-      } else if (!document.hidden && this.isOpen && !this._cropper) {
+      } else if (!document.hidden && this.isOpen && !this._cropper && this._cropSource === 'camera') {
         // Resume stream when returning to tab
         this._startStreamForCurrentMode().catch(() => {});
       }
@@ -222,8 +245,10 @@ export class CameraModalController {
    */
   async open({ mode = 'meal', onCapture = null, onCancel = null } = {}) {
     this._mode = mode;
+    this._cropSource = 'camera';
     this._onCaptureCallback = onCapture;
     this._onCancelCallback = onCancel;
+    this._onReselectCallback = null;
     this._capturedRawFile = null;
     this._destroyCropper();
 
@@ -233,6 +258,12 @@ export class CameraModalController {
     // Reset layout
     this._showLiveViewfinderUI();
     this._updateModeLabels(mode);
+
+    if (el.statusDot) el.statusDot.style.display = 'inline-block';
+    if (el.btnRetake) {
+      el.btnRetake.textContent = '🔄 Retake';
+      el.btnRetake.title = 'Retake Photo';
+    }
 
     // Modal Stack Manager integration
     if (this._stack) {
@@ -261,6 +292,61 @@ export class CameraModalController {
         this._showError('Camera Unavailable', err.message || 'Unable to access the camera hardware. Please check your camera permissions.');
       }
     }
+  }
+
+  /**
+   * Opens the modal directly in crop/region selection mode for an existing image file (e.g. from gallery).
+   * Camera hardware is NOT accessed or activated.
+   * @param {Object} options
+   * @param {File} options.file
+   * @param {'meal'|'face'|'body'} [options.mode='meal']
+   * @param {(file: File) => void} [options.onConfirm]
+   * @param {() => void} [options.onCancel]
+   * @param {() => void} [options.onReselect]
+   */
+  async openCrop({ file, mode = 'meal', onConfirm = null, onCancel = null, onReselect = null } = {}) {
+    if (!file) return;
+    this._mode = mode;
+    this._cropSource = 'gallery';
+    this._onCaptureCallback = onConfirm;
+    this._onCancelCallback = onCancel;
+    this._onReselectCallback = onReselect;
+    this._capturedRawFile = file;
+
+    const el = this.elements;
+    if (!el.modal) return;
+
+    // Ensure any active camera stream is stopped
+    this._camera.stopStream();
+
+    // Modal stack integration
+    if (this._stack) {
+      this._stack.push(el.modal);
+    } else {
+      document.body.classList.add('modal-open');
+    }
+    el.modal.style.display = 'flex';
+
+    // Hide camera-specific UI
+    if (el.statusDot) el.statusDot.style.display = 'none';
+    if (el.btnTorch) el.btnTorch.style.display = 'none';
+    if (el.btnFlip) el.btnFlip.style.display = 'none';
+
+    if (mode === 'face') {
+      if (el.title) el.title.textContent = '✂️ Select Face Telemetry Area';
+    } else if (mode === 'body') {
+      if (el.title) el.title.textContent = '✂️ Select Body Composition Area';
+    } else {
+      if (el.title) el.title.textContent = '✂️ Select Food Area';
+    }
+
+    if (el.btnRetake) {
+      el.btnRetake.textContent = '🔄 Choose Another';
+      el.btnRetake.title = 'Choose a different photo from gallery';
+    }
+
+    const defaultPreset = (mode === 'body') ? 'standard' : 'square';
+    await this._initCropSelection(file, defaultPreset);
   }
 
   async _startStreamForCurrentMode() {
@@ -356,7 +442,8 @@ export class CameraModalController {
       this._camera.stopStream();
 
       // Transition to interactive crop & selection screen
-      await this._initCropSelection(file);
+      const defaultPreset = (this._mode === 'body') ? 'standard' : 'square';
+      await this._initCropSelection(file, defaultPreset);
     } catch (err) {
       console.warn('[CameraModal] Capture frame failed:', err);
       this._toast?.error('Failed to capture photo. Please try again.');
@@ -365,7 +452,7 @@ export class CameraModalController {
     }
   }
 
-  async _initCropSelection(file) {
+  async _initCropSelection(file, defaultPreset = 'square') {
     const el = this.elements;
     if (!el.cropCanvas) return;
 
@@ -374,9 +461,10 @@ export class CameraModalController {
     if (el.viewfinderControls) el.viewfinderControls.style.display = 'none';
     if (el.cropControls) el.cropControls.style.display = 'flex';
 
-    // Set 1:1 plate preset as default
-    el.btnPresetSquare?.classList.add('active');
-    el.btnPresetFull?.classList.remove('active');
+    // Set presets active state
+    el.btnPresetSquare?.classList.toggle('active', defaultPreset === 'square');
+    el.btnPresetStandard?.classList.toggle('active', defaultPreset === 'standard');
+    el.btnPresetFull?.classList.toggle('active', defaultPreset === 'full');
 
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -394,7 +482,7 @@ export class CameraModalController {
       canvas: el.cropCanvas,
       sourceImage: img
     });
-    this._cropper.init(img);
+    this._cropper.init(img, defaultPreset);
   }
 
   async _resumeLiveStream() {
@@ -477,5 +565,6 @@ export class CameraModalController {
     }
     this._onCaptureCallback = null;
     this._onCancelCallback = null;
+    this._onReselectCallback = null;
   }
 }

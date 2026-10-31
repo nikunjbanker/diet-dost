@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-31T16:25:42.053491+00:00",
-  "totalAdrs": 110,
+  "generatedAt": "2026-10-31T16:57:58.194682+00:00",
+  "totalAdrs": 111,
   "categoryCounts": {
     "architecture": 32,
     "security": 22,
     "devops": 28,
-    "presentation": 15,
+    "presentation": 16,
     "governance": 13
   },
   "records": [
@@ -1329,6 +1329,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261031-145-unified-auto-approve-and-deploy-daemon.md",
       "relativePath": "docs/adr/devops/ADR-20261031-145-unified-auto-approve-and-deploy-daemon.md"
+    },
+    {
+      "id": "ADR-146",
+      "number": 146,
+      "title": "Gallery Photo Area Selection, Smooth Pinch/Wheel Crop Zoom, and Multi-Preset Storage",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-31",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261031-146-gallery-photo-region-crop-selection.md",
+      "relativePath": "docs/adr/presentation/ADR-20261031-146-gallery-photo-region-crop-selection.md"
     }
   ]
 }

@@ -84,6 +84,7 @@ container.register('mealLogger', (c) => new MealLoggerController({
   mealsService: c.resolve('mealsService'),
   toastService: c.resolve('toastService'),
   appState: c.resolve('appState'),
+  cameraModal: c.resolve('cameraModal'),
   eventBus: c.resolve('eventBus')
 }));
 
@@ -133,6 +134,7 @@ container.register('progressModal', (c) => new ProgressModalController({
   confettiService: c.resolve('confettiService'),
   authService: c.resolve('authService'),
   appState: c.resolve('appState'),
+  cameraModal: c.resolve('cameraModal'),
   eventBus: c.resolve('eventBus')
 }));
 
@@ -753,6 +755,7 @@ async function initApp() {
   window.closeProfileModal = () => profileModal.close();
   window.openCameraModal = (options) => cameraModal.open(options);
   window.closeCameraModal = () => cameraModal.close();
+  window.openCropModal = (options) => cameraModal.openCrop(options);
   window.switchAnalyticsPeriod = (period) => analyticsChart.switchPeriod(period);
   window.quickAddSubzi = (name, kcal, p, c, f) => reviewModal.quickAddSubzi(name, kcal, p, c, f);
   window.updateItemName = (idx, name) => reviewModal.updateItemName(idx, name);
