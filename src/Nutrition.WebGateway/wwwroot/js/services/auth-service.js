@@ -139,9 +139,10 @@ export class AuthService {
     return res;
   }
 
-  async recoverAccount(recoveryKeyOrMnemonic) {
+  async recoverAccount(recoveryKeyOrMnemonic, rotateKey = false) {
     const res = await this.api.post('/api/auth/recover', {
-      recoveryKeyOrMnemonic
+      recoveryKeyOrMnemonic,
+      rotateKey
     });
     if (res.token) {
       localStorage.setItem('dd_jwt_token', res.token);

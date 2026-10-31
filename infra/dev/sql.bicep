@@ -38,6 +38,12 @@ param keyVaultName string
 @description('Optional client IP address of the local developer workstation to allow through SQL Server firewall.')
 param allowedClientIp string = ''
 
+@description('Enables Azure SQL Free Tier. Set to false if database has been upgraded or uses metered billing.')
+param useFreeLimit bool = false
+
+@description('Behavior when free quota is consumed (AutoPause, BillOverUsage).')
+param freeLimitExhaustionBehavior string = 'BillOverUsage'
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var actualSqlServerName = !empty(sqlServerName) ? toLower(sqlServerName) : take('sql-dietdost-${environment}-${uniqueSuffix}', 63)
 
@@ -80,8 +86,8 @@ resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
     maxSizeBytes: 34359738368 // 32 GB (Free Tier quota ceiling)
     autoPauseDelay: 60 // Auto-pause after 60 minutes of inactivity
     minCapacity: json('0.5') // Minimum serverless compute capacity
-    useFreeLimit: true // Enables Azure SQL Free Tier (1 free database per subscription)
-    freeLimitExhaustionBehavior: 'AutoPause' // Prevents unmetered billing when monthly free quota is consumed
+    useFreeLimit: useFreeLimit // Configurable Azure SQL Free Tier toggle
+    freeLimitExhaustionBehavior: freeLimitExhaustionBehavior // Configurable quota exhaustion behavior (AutoPause, BillOverUsage)
   }
   tags: {
     'aspire-resource-name': 'dietdost-sqldb'

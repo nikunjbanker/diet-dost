@@ -208,9 +208,10 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Zero-PII Sign-In Clarification**: Renamed recovery tab from `🔑 Recover` to `🔑 Phrase / Key`, added helper link directly on the Password sign-in form, and updated QR instructions with visual steps (`1. Open Camera • 2. Point at QR • 3. Tap Link to Approve`).
     - **Mobile Approval View Enhancements**: Added 12-word recovery phrase approval tab on `qr-approve.html` for zero-PII users to approve sessions from their mobile browser.
 
-20. **Zero-PII Direct Dashboard Entry, Error Preservation, and Unauthorized Loop Prevention (qr-auth-controller.js, pi-client.js, ADR-142)**:
+20. **Zero-PII Direct Dashboard Entry, Error Preservation, and Unauthorized Loop Prevention (`qr-auth-controller.js`, `api-client.js`, `auth-service.js`, ADR-142, ADR-143)**:
     - **Direct Dashboard Transition**: Returning Phrase/Key logins transition directly to user dashboard and hydrate composite state without showing the registration recovery kit modal.
     - **Selective `auth:unauthorized` Guard**: `ApiClient.request()` suppresses the global `auth:unauthorized` event for authentication endpoints (`/api/auth/*`), preventing modal tab resets and preserving detailed error feedback (`ProblemDetails.Detail`) on invalid credentials.
+    - **Credential Permanence & Explicit Non-Rotation**: `auth-service.js` explicitly passes `rotateKey: false` on account recovery requests, ensuring user mnemonic phrases and JSON recovery kits remain permanent access credentials.
     - **Cache Busters Bumped**: Updated frontend script versions to `v=1.9.3` across HTML and JavaScript entry points.
 
 ---
