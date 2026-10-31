@@ -1,0 +1,138 @@
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+<!-- Camera Viewfinder & Interactive Photo Region Selection Modal -->
+<div class="modal-overlay camera-modal-overlay" id="camera-modal" style="display: none;" role="dialog" aria-modal="true" aria-label="Camera Viewfinder and Photo Region Selection">
+  <div class="camera-card">
+    
+    <!-- Top HUD Bar: Close, Title, Flashlight, Flip -->
+    <div class="camera-top-hud">
+      <button type="button" class="camera-hud-btn" id="btn-close-camera" aria-label="Close Camera" title="Close Camera">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+      <div class="camera-title-badge">
+        <span class="camera-live-dot" id="camera-status-dot"></span>
+        <span id="camera-modal-title">📸 AI Food Camera</span>
+      </div>
+
+      <div class="camera-top-actions">
+        <button type="button" class="camera-hud-btn" id="btn-camera-torch" aria-label="Toggle Flashlight / Torch" title="Toggle Flashlight" style="display: none;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </button>
+
+        <button type="button" class="camera-hud-btn" id="btn-camera-flip" aria-label="Flip Camera (Front/Rear)" title="Flip Camera" style="display: none;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 10c0-4.418-3.582-8-8-8s-8 3.582-8 8c0 1.954.702 3.743 1.869 5.131L3 18h6v-6l-2.122 2.122C6.071 13.045 5.5 11.602 5.5 10c0-3.59 2.91-6.5 6.5-6.5s6.5 2.91 6.5 6.5c0 1.602-.571 3.045-1.378 4.122L15 12v6h6l-2.869-2.869C19.298 13.743 20 11.954 20 10z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Viewfinder / Canvas Viewport -->
+    <div class="camera-viewport-container" id="camera-viewport-container">
+      
+      <!-- Live Video Viewfinder -->
+      <div class="camera-stream-wrapper" id="camera-stream-wrapper">
+        <video id="camera-video-stream" class="camera-video" playsinline autoplay muted></video>
+        
+        <!-- Framing Reticle Overlay -->
+        <div class="camera-reticle" id="camera-reticle">
+          <div class="reticle-plate-circle"></div>
+          <div class="reticle-corners">
+            <span class="corner tl"></span>
+            <span class="corner tr"></span>
+            <span class="corner bl"></span>
+            <span class="corner br"></span>
+          </div>
+          <div class="reticle-hint" id="camera-reticle-hint">Center Indian meal plate inside guide</div>
+        </div>
+
+        <!-- Zoom Floating Pill Controls -->
+        <div class="camera-zoom-hud" id="camera-zoom-hud">
+          <button type="button" class="zoom-pill active" id="btn-zoom-1x" data-zoom="1.0">1x</button>
+          <button type="button" class="zoom-pill" id="btn-zoom-2x" data-zoom="2.0">2x</button>
+          <button type="button" class="zoom-pill" id="btn-zoom-3x" data-zoom="3.0">3x</button>
+        </div>
+      </div>
+
+      <!-- Post-Capture Interactive Region Selection (Crop) Screen -->
+      <div class="camera-crop-container" id="camera-crop-container" style="display: none;">
+        <canvas id="camera-crop-canvas" class="camera-crop-canvas"></canvas>
+        <div class="crop-guidance-pill">
+          <span>✂️ Drag corners to select specific food plate or bowl</span>
+        </div>
+      </div>
+
+      <!-- Permission / Hardware Error Fallback Screen -->
+      <div class="camera-error-screen" id="camera-error-screen" style="display: none;">
+        <div class="camera-error-icon">🔒</div>
+        <div class="camera-error-title" id="camera-error-title">Camera Permission Required</div>
+        <div class="camera-error-desc" id="camera-error-desc">
+          Your browser is blocking camera access. Please allow camera permissions in your browser address bar settings, or choose an existing photo from your gallery.
+        </div>
+        <button type="button" class="btn btn-primary" id="btn-camera-error-gallery">
+          🖼️ Choose from Gallery Instead
+        </button>
+      </div>
+
+      <!-- Camera Shutter Flash Animation Screen -->
+      <div class="camera-shutter-flash" id="camera-shutter-flash"></div>
+    </div>
+
+    <!-- Bottom Action Controls: Shutter / Gallery / Presets -->
+    <div class="camera-bottom-hud">
+      
+      <!-- Live Viewfinder Bottom Controls -->
+      <div class="shutter-controls-row" id="viewfinder-controls-row">
+        <!-- Choose from Gallery Shortcut -->
+        <button type="button" class="camera-action-btn" id="btn-camera-gallery-fallback" title="Choose from Photo Library" aria-label="Choose from Photo Library">
+          <span style="font-size: 1.25rem;">🖼️</span>
+          <span class="btn-subtext">Gallery</span>
+        </button>
+
+        <!-- Big Center Shutter Snap Button -->
+        <button type="button" class="shutter-snap-btn" id="btn-shutter-snap" aria-label="Take Photo" title="Take Photo">
+          <span class="shutter-inner-ring"></span>
+          <span class="shutter-inner-dot"></span>
+        </button>
+
+        <!-- Cancel / Dismiss Button -->
+        <button type="button" class="camera-action-btn" id="btn-cancel-camera" title="Cancel" aria-label="Cancel">
+          <span style="font-size: 1.25rem;">✕</span>
+          <span class="btn-subtext">Cancel</span>
+        </button>
+      </div>
+
+      <!-- Post-Capture Region Selection (Crop) Bottom Controls -->
+      <div class="crop-controls-row" id="crop-controls-row" style="display: none;">
+        <div class="crop-presets-group">
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-retake-photo" title="Retake Photo">
+            🔄 Retake
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary active" id="btn-crop-preset-square" title="1:1 Plate Crop">
+            📐 1:1 Plate
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-crop-preset-full" title="Full Uncropped Photo">
+            🖼️ Full Photo
+          </button>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-confirm-photo" id="btn-confirm-use-photo">
+          ✅ Use Selection
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</div>

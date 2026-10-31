@@ -214,6 +214,23 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Credential Permanence & Explicit Non-Rotation**: `auth-service.js` explicitly passes `rotateKey: false` on account recovery requests, ensuring user mnemonic phrases and JSON recovery kits remain permanent access credentials.
     - **Cache Busters Bumped**: Updated frontend script versions to `v=1.9.3` across HTML and JavaScript entry points.
 
+21. **Mobile Web Camera Viewfinder, Optical/Digital Zoom HUD, and Touch-Friendly Interactive Cropper (`camera-service.js`, `camera-modal.js`, `image-cropper.js`, `camera-modal.html`, `styles.css`, ADR-144)**:
+    - **In-Browser Hardware Camera Capture (`CameraService`)**:
+      - Requests user media via `navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } } })`.
+      - Proactively enumerates available video devices (`enumerateCameras()`), supporting seamless live front/rear camera flipping.
+      - Hardware capability detection: interrogates `track.getCapabilities()` to detect hardware zoom constraints and flashlight/torch controls.
+      - Safe teardown: terminates all `MediaStreamTrack` instances immediately upon modal dismissal, cancellation, or page visibility change, turning off camera hardware and privacy indicator LEDs with zero resource leakage.
+    - **Camera Viewfinder & Controls (`CameraModalController`)**:
+      - Obsidian-dark modal overlay with safe-area insets, plate framing reticle, and tactile feedback (`navigator.vibrate([40])`).
+      - Three-level zoom pills (`1x`, `2x`, `3x`) applying hardware optical zoom (`track.applyConstraints({ advanced: [{ zoom }] })`) when supported, with smooth CSS/canvas digital zoom fallback.
+      - Touch pinch-to-zoom gesture recognition on the live video feed.
+      - High-fidelity still capture using `ImageCapture.takePhoto()` when supported, falling back to full-resolution offscreen HTML5 `<canvas>` snapshot extraction.
+    - **Interactive Region-of-Interest Selection (`ImageCropper`)**:
+      - Post-capture crop screen allowing users to isolate individual plates or bowls from a multi-item table setting.
+      - Touch handles (minimum 44x44px target size) with 3x3 framing grid and dark scrim.
+      - Aspect ratio presets: `1:1 Plate` (centered square) and `Full Photo` (reset selection).
+      - Strict coordinate clamping preventing negative dimensions or out-of-bounds selection, extracting pristine sub-rectangle blobs matching source resolution.
+
 ---
 
 ## 5. Verification & Quality Gates

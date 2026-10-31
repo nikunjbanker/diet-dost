@@ -36,6 +36,8 @@ import { ProgressModalController } from './ui/progress-modal.js?v=1.9.3';
 import { AuthGateController } from './ui/auth-gate.js?v=1.9.3';
 import { AdminModalController } from './ui/admin-modal.js?v=1.9.3';
 import { QuotaModalController } from './ui/quota-modal.js?v=1.9.3';
+import { CameraService } from './services/camera-service.js?v=1.9.3';
+import { CameraModalController } from './ui/camera-modal.js?v=1.9.3';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -149,6 +151,13 @@ container.register('adminModal', (c) => new AdminModalController({
 
 container.register('quotaModal', (c) => new QuotaModalController({
   apiClient: c.resolve('apiClient'),
+  toastService: c.resolve('toastService'),
+  eventBus: c.resolve('eventBus')
+}));
+
+container.register('cameraService', () => new CameraService());
+container.register('cameraModal', (c) => new CameraModalController({
+  cameraService: c.resolve('cameraService'),
   toastService: c.resolve('toastService'),
   eventBus: c.resolve('eventBus')
 }));
@@ -485,6 +494,7 @@ async function initApp() {
   const profileModal = container.resolve('profileModal');
   const transparencyModal = container.resolve('transparencyModal');
   const progressModal = container.resolve('progressModal');
+  const cameraModal = container.resolve('cameraModal');
   const toastService = container.resolve('toastService');
   const confettiService = container.resolve('confettiService');
 
@@ -741,6 +751,8 @@ async function initApp() {
   window.closeTransparencyModal = () => transparencyModal.close();
   window.openProfileModal = () => profileModal.open();
   window.closeProfileModal = () => profileModal.close();
+  window.openCameraModal = (options) => cameraModal.open(options);
+  window.closeCameraModal = () => cameraModal.close();
   window.switchAnalyticsPeriod = (period) => analyticsChart.switchPeriod(period);
   window.quickAddSubzi = (name, kcal, p, c, f) => reviewModal.quickAddSubzi(name, kcal, p, c, f);
   window.updateItemName = (idx, name) => reviewModal.updateItemName(idx, name);

@@ -17,12 +17,19 @@
   <!-- Photo Dropzone -->
   <div class="dropzone" id="photo-dropzone">
     <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
+    <input type="file" id="camera-file-fallback" accept="image/*" capture="environment" style="display: none;">
     <span class="dropzone-icon">🍲</span>
     <div class="dropzone-text">Snap or Drag & Drop Indian Meal Photo</div>
     <div class="dropzone-sub">Microsoft Agent AI with Google AI Pro · Verified against ICMR-NIN standards (Confidence ≥ 70%)</div>
-    <div style="margin-top: 0.85rem;">
+    <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.65rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-primary btn-sm" id="btn-take-photo" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 6px 16px;">
+        📸 Take Photo
+      </button>
+      <button type="button" class="btn btn-secondary btn-sm" id="btn-choose-gallery" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 6px 14px;">
+        🖼️ Choose from Gallery
+      </button>
       <button type="button" class="btn btn-sm btn-sample-photo" id="btn-sample-thali" style="background: rgba(94, 106, 210, 0.15); border: 1px solid rgba(94, 106, 210, 0.35); color: #818cf8; font-size: 0.75rem; padding: 5px 14px; border-radius: var(--radius-pill); cursor: pointer; transition: all 0.15s ease;">
-        📸 Try Sample Indian Lunch Thali Photo
+        ✨ Try Sample Thali
       </button>
     </div>
   </div>

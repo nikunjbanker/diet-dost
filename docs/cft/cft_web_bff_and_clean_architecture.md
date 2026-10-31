@@ -160,5 +160,17 @@
   - [x] **Assert**: Anonymous users register strictly into `UserTier.Free` with `DailyAiDetectionLimit = 1`.
   - [x] **Assert**: Multi-tier CFT asserts 100% pass across all 5 user tiers.
 
+---
 
-
+## 7. Test Suite 6: Mobile Web Camera Viewfinder, Optical/Digital Zoom HUD, and Interactive Cropper (ADR-144)
+- [x] **Step 7.1**: Permissions-Policy & Hardware Enumeration:
+  - [x] **Assert**: `Permissions-Policy` header includes `camera=(self)` and `geolocation=(self)` while blocking `microphone=()`.
+  - [x] **Assert**: `CameraService.isSupported()` checks `navigator.mediaDevices.getUserMedia` and `isSecureContext`.
+- [x] **Step 7.2**: Viewfinder HUD & Multi-Level Zoom Controls:
+  - [x] **Assert**: Reticle overlay renders Indian meal plate guide.
+  - [x] **Assert**: Zoom HUD buttons (`1x`, `2x`, `3x`) apply hardware optical zoom or CSS digital scaling.
+- [x] **Step 7.3**: Interactive Region Selection (ImageCropper):
+  - [x] **Assert**: Interactive crop canvas provides 4 corner touch handles (min 44px).
+  - [x] **Assert**: Aspect ratio presets `1:1 Plate` and `Full Photo` clamp coordinates strictly within image bounds.
+- [x] **Step 7.4**: Zero-Leak Hardware Teardown:
+  - [x] **Assert**: Closing camera modal or hiding browser tab terminates all active `MediaStreamTrack` instances.

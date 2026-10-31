@@ -183,5 +183,12 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 - **DPDPA 2023 Clinical Soft Delete Governance**: Deletion requests for meals, progress photos, or user accounts perform only logical soft deletion (`IsDeleted = true`, `DeletedAtUtc = DateTime.UtcNow`). Physical photo assets are retained on secure server storage to satisfy medical record auditability, dispute resolution, and regulatory retention mandates.
 - **EF Core Global Query Filter Enforcement**: Standard queries automatically filter out soft-deleted data (`HasQueryFilter(e => !e.IsDeleted)`). Soft-deleted records are only retrievable by authorized SuperAdmins via `IgnoreQueryFilters()`.
 
+## 10. Browser Device Privacy & Permissions-Policy Isolation (`SecurityHeadersMiddleware.cs`, ADR-144)
 
-
+* **HTTP Permissions-Policy Isolation**:
+  - `SecurityHeadersMiddleware.cs` configures `Permissions-Policy: geolocation=(self), camera=(self), microphone=()`.
+  - Grants camera and geolocation access exclusively to first-party origin (`self`), eliminating unauthorized hardware access from embedded third-party iframes, advertisements, or tracking scripts.
+  - Keeps microphone hardware unconditionally disabled (`microphone=()`).
+* **Zero-Leak MediaStream Lifecycle Guard**:
+  - `CameraService.stopStream()` terminates all active `MediaStreamTrack` instances upon modal close, cancellation, tab backgrounding (`visibilitychange`), or window unload (`beforeunload`).
+  - Ensures hardware camera sensors and physical privacy indicator LEDs turn off immediately, eliminating background eavesdropping risks.

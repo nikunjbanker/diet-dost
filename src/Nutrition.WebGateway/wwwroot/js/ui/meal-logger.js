@@ -16,8 +16,10 @@ export class MealLoggerController {
    * @param {import('../ui/toast.js').ToastNotificationService} options.toastService
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
+   * @param {import('./camera-modal.js').CameraModalController} [options.cameraModal]
    */
-  constructor({ mealsService, toastService, appState, eventBus }) {
+  constructor({ mealsService, toastService, appState, eventBus, cameraModal = null }) {
+    this._cameraModal = cameraModal;
     this._meals = mealsService;
     this._toast = toastService;
     this._state = appState;
@@ -31,6 +33,9 @@ export class MealLoggerController {
     return {
       dropzone: document.getElementById('photo-dropzone'),
       fileInput: document.getElementById('file-input'),
+      cameraFallbackInput: document.getElementById('camera-file-fallback'),
+      btnTakePhoto: document.getElementById('btn-take-photo'),
+      btnChooseGallery: document.getElementById('btn-choose-gallery'),
       scanning: document.getElementById('scanning-state'),
       modeCamera: document.getElementById('btn-mode-camera'),
       modeText: document.getElementById('btn-mode-text'),
@@ -64,11 +69,44 @@ export class MealLoggerController {
       });
     }
 
+    // Take Photo Action
+    if (el.btnTakePhoto) {
+      el.btnTakePhoto.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openCamera();
+      });
+    }
+
+    // Choose from Gallery Action
+    if (el.btnChooseGallery && el.fileInput) {
+      el.btnChooseGallery.addEventListener('click', (e) => {
+        e.stopPropagation();
+        el.fileInput.click();
+      });
+    }
+
+    // Camera Fallback Input for older devices
+    if (el.cameraFallbackInput) {
+      el.cameraFallbackInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+          const file = e.target.files[0];
+          e.target.value = '';
+          this.handleImageUpload(file);
+        }
+      });
+    }
+
     // Dropzone Click & Drag/Drop
     if (el.dropzone && el.fileInput) {
       el.dropzone.addEventListener('click', (e) => {
-        if (e.target.closest('#btn-sample-thali') || e.target === el.fileInput) return;
-        el.fileInput.click();
+        if (
+          e.target.closest('#btn-sample-thali') ||
+          e.target.closest('#btn-take-photo') ||
+          e.target.closest('#btn-choose-gallery') ||
+          e.target === el.fileInput ||
+          e.target === el.cameraFallbackInput
+        ) return;
+        this.openCamera();
       });
       el.dropzone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -401,6 +439,26 @@ export class MealLoggerController {
         title: 'Parse Error',
         message: err.message || 'Failed to parse meal description.'
       });
+    }
+  }
+
+  /**
+   * Opens the in-app camera modal or triggers fallback file input.
+   */
+  openCamera() {
+    if (this._cameraModal) {
+      this._cameraModal.open({
+        mode: 'meal',
+        onCapture: (file) => this.handleImageUpload(file)
+      });
+    } else if (typeof window.openCameraModal === 'function') {
+      window.openCameraModal({
+        mode: 'meal',
+        onCapture: (file) => this.handleImageUpload(file)
+      });
+    } else {
+      const fallbackInput = document.getElementById('camera-file-fallback') || document.getElementById('file-input');
+      fallbackInput?.click();
     }
   }
 
