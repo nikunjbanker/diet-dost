@@ -479,7 +479,8 @@ Per ADR-136 and NIST SP 800-63B AAL3, Diet-Dost provides an ephemeral QR pairing
    - **PBKDF2-HMAC-SHA512 Password Hash**:
      $$\text{MasterKey} = \text{HKDF-Expand}(\text{Entropy}, \text{"diet-dost-recovery-master-key-v1"}, 32)$$
      $$\text{RecoveryKeyHash} = \text{PBKDF2-HMAC-SHA512}(\text{MasterKey}, \text{Salt}, 250\,000, 32)$$
-   - Zero master entropy is stored on the server. `RecoverAccountCommand` validates the BIP-39 checksum, derives the lookup ID, verifies the PBKDF2 hash, and rotates credentials with forward secrecy.
+   - Zero master entropy is stored on the server. `RecoverAccountCommand` validates the BIP-39 checksum, derives the lookup ID, and verifies the PBKDF2 hash. In standard login mode (`RotateKey = false`), recovery credentials (`RecoveryLookupId`, `RecoveryKeyHash`, `RecoverySalt`) are non-destructively preserved to ensure idempotent multi-session sign-ins with the user's permanent 12-word phrase or JSON key. When `RotateKey = true`, credentials rotate with forward secrecy (ADR-141).
+   - Startup health checks and Polly resilience pipelines intercept Azure SQL Error 42119 (`freeLimitExhaustionBehavior: AutoPause`), emitting actionable mitigation diagnostics for administrators (ADR-141).
 
 4. **Zero-Allocation SAST Logging Guardrails (Roslyn CA1873 Compliance)**:
    - All structured logging invocations across `RegisterAnonymousCommandHandler`, `InitiateQrSessionCommandHandler`, `ApproveQrSessionCommandHandler`, `ExchangeQrTicketCommandHandler`, and `RecoverAccountCommandHandler` are strictly guarded by `if (_logger.IsEnabled(LogLevel.*))`.

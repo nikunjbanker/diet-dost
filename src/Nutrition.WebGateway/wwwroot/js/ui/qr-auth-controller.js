@@ -5,7 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-import { encodeQrSvg } from './qr-code-encoder.js?v=1.9.2';
+import { encodeQrSvg } from './qr-code-encoder.js?v=1.9.3';
 
 
 export class QrAuthController {
@@ -463,15 +463,12 @@ export class QrAuthController {
 
       const res = await this.auth.recoverAccount(input);
 
-      this.toast?.show('🔑 Account successfully recovered! Forward-secrecy key rotated.', 'success');
+      this.toast?.show(`🔑 Welcome back, ${res.user?.displayName || 'User'}! Signed in successfully.`, 'success');
 
-      // Prompt user with newly rotated recovery kit
-      this.showRecoveryModal({
-        mnemonicPhrase: res.newMnemonicPhrase,
-        recoveryLookupId: res.newRecoveryLookupId,
-        jsonBackupPayload: res.newJsonBackupPayload,
-        user: res.user
-      });
+      // Dismiss auth gate and enter dashboard immediately
+      if (res.user) {
+        this.onAuthSuccess(res.user);
+      }
     } catch (err) {
       this.showRecoverError(err.message || 'Recovery failed. Invalid mnemonic checksum or phrase.');
     } finally {

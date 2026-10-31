@@ -19,7 +19,8 @@ using Nutrition.Domain.Model.Profile;
 namespace Nutrition.Application.Features.Auth.Commands.RecoverAccount;
 
 public record RecoverAccountCommand(
-    string RecoveryKeyOrMnemonic
+    string RecoveryKeyOrMnemonic,
+    bool RotateKey = false
 ) : ICommand<Result<RecoverAccountResultDto>>;
 
 public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountCommand, Result<RecoverAccountResultDto>>
@@ -131,12 +132,33 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
         user.SecurityStamp = Guid.NewGuid().ToString("N");
         user.LastLoginAtUtc = DateTime.UtcNow;
 
-        // 2. Mandatory Key Rotation: Issue brand new recovery key (prevents reuse of old backup file)
-        var newKit = RecoveryKit.GenerateNew(user.DisplayName, user.Id);
-        user.RecoveryLookupId = newKit.RecoveryLookupId;
-        user.RecoveryKeyHash = newKit.RecoveryKeyHash;
-        user.RecoverySalt = newKit.RecoverySalt;
-        user.RecoveryKeyCreatedAtUtc = DateTime.UtcNow;
+        string returnMnemonic;
+        string returnLookupId;
+        string returnKeyHex;
+        string returnJsonBackup;
+
+        if (request.RotateKey)
+        {
+            // Explicit Key Rotation: Issue brand new recovery key upon explicit user request
+            var newKit = RecoveryKit.GenerateNew(user.DisplayName, user.Id);
+            user.RecoveryLookupId = newKit.RecoveryLookupId;
+            user.RecoveryKeyHash = newKit.RecoveryKeyHash;
+            user.RecoverySalt = newKit.RecoverySalt;
+            user.RecoveryKeyCreatedAtUtc = DateTime.UtcNow;
+
+            returnMnemonic = newKit.MnemonicPhrase;
+            returnLookupId = newKit.RecoveryLookupId;
+            returnKeyHex = newKit.MasterEntropyHex;
+            returnJsonBackup = newKit.JsonBackupPayload;
+        }
+        else
+        {
+            // Standard Phrase / Key Login: Preserve existing recovery credentials for permanent repeated sign-ins
+            returnMnemonic = input.Contains(' ') ? input : Bip39Mnemonic.Encode(entropy);
+            returnLookupId = user.RecoveryLookupId ?? lookupId;
+            returnKeyHex = Convert.ToHexString(entropy).ToLowerInvariant();
+            returnJsonBackup = RecoveryKit.GenerateJsonBackup(user.Id, user.DisplayName, returnKeyHex, returnMnemonic, user.RecoveryKeyCreatedAtUtc ?? DateTime.UtcNow);
+        }
 
         await _uow.SaveChangesAsync(ct);
 
@@ -178,10 +200,10 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
             token,
             responseUser,
             principal,
-            newKit.MasterEntropyHex,
-            newKit.MnemonicPhrase,
-            newKit.RecoveryLookupId,
-            newKit.JsonBackupPayload
+            returnKeyHex,
+            returnMnemonic,
+            returnLookupId,
+            returnJsonBackup
         ));
     }
 }

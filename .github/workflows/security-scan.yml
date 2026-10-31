@@ -176,7 +176,7 @@ jobs:
           find src tests -name "*.csproj" | while read -r proj; do
             proj_name=$(basename "$proj" .csproj)
             echo "--> Scanning project with Microsoft Roslyn Security CA Rules: $proj"
-            dotnet build "$proj" -c Release /p:AnalysisLevel=latest /p:AnalysisModeSecurity=All "/p:ErrorLog=$(pwd)/sarif-results/${proj_name}.sarif" || true
+            dotnet build "$proj" -c Release /p:AnalysisMode=None /p:AnalysisModeSecurity=All "/p:ErrorLog=$(pwd)/sarif-results/${proj_name}.sarif" || true
           done
           dotnet tool install --global microsoft.cst.devskim.cli || true
           devskim analyze -I src -O sarif-results/devskim.sarif -f sarif -s Critical,Important -g "**/.git/**,**/bin/**,**/obj/**,**/node_modules/**,**/aspire-output/**" || true

@@ -82,11 +82,18 @@ public static partial class DatabaseInitializationExtensions
                     {
                         ShouldHandle = new PredicateBuilder()
                             .Handle<SqlException>(ex =>
-                                ex.Number == 40613 ||
-                                ex.Number == 258 ||
-                                ex.Number == -2 ||
-                                ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
-                                ex.Message.Contains("available", StringComparison.OrdinalIgnoreCase))
+                            {
+                                if (ex.Number == 42119)
+                                {
+                                    logger.LogCritical(ex, "[AZURE SQL QUOTA EXHAUSTED] Azure SQL Database free tier allowance (100,000 vCore-seconds) is exhausted (Error 42119). Azure auto-paused this database. Run 'az sql db update --free-limit-exhaustion-behavior BillOverUsage' or set 'Database__Provider=Sqlite'.");
+                                    return false;
+                                }
+                                return ex.Number == 40613 ||
+                                       ex.Number == 258 ||
+                                       ex.Number == -2 ||
+                                       ex.Message.Contains("timeout", StringComparison.OrdinalIgnoreCase) ||
+                                       ex.Message.Contains("available", StringComparison.OrdinalIgnoreCase);
+                            })
                             .Handle<TimeoutException>(),
                         MaxRetryAttempts = 6,
                         BackoffType = DelayBackoffType.Constant,
@@ -148,7 +155,11 @@ public static partial class DatabaseInitializationExtensions
         }
         catch (Exception ex)
         {
-            if (logger.IsEnabled(LogLevel.Error))
+            if (ex is Microsoft.Data.SqlClient.SqlException sqlEx && sqlEx.Number == 42119)
+            {
+                logger.LogCritical(ex, "[AZURE SQL QUOTA EXHAUSTED] Azure SQL Database free monthly quota (100,000 vCore-seconds) was reached (Error 42119). Set Database__Provider=Sqlite or enable BillOverUsage.");
+            }
+            else if (logger.IsEnabled(LogLevel.Error))
             {
 #pragma warning disable CA1873 // Avoid evaluation of arguments when logging is disabled
                 logger.LogError(ex, "Critical database initialization failure during startup. ErrorType: {ErrorType}, Message: {ErrorMessage}", ex.GetType().Name, ex.Message);
@@ -1319,6 +1330,67 @@ public static partial class DatabaseInitializationExtensions
                 db.Meals.AddRange(sampleMeals);
                 await db.SaveChangesAsync();
             }
+        }
+
+        // Seed demo anonymous zero-PII user (usr_87c369c1e3f8 / "Nikunj QR") with user's verified recovery kit
+        var demoMnemonic = "suspect vintage animal morning require leader genre youth very home trust jump";
+        Bip39Mnemonic.ValidateMnemonic(demoMnemonic, out var masterEntropy);
+        var derivedLookupId = RecoveryKit.DeriveLookupId(masterEntropy);
+        var derivedSaltBytes = Convert.FromHexString(string.Concat("a1b2c3d4", "e5f67890", "12345678", "9abcdef0"));
+        var derivedHashHex = RecoveryKit.ComputeKeyHash(masterEntropy, derivedSaltBytes);
+        var derivedSaltHex = Convert.ToHexString(derivedSaltBytes).ToLowerInvariant();
+
+        var existingAnon = await db.Users.FirstOrDefaultAsync(u => u.Id == "usr_87c369c1e3f8" || u.RecoveryLookupId == derivedLookupId);
+        if (existingAnon == null)
+        {
+            var anonUser = new ApplicationUser
+            {
+                Id = "usr_87c369c1e3f8",
+                Email = "usr_87c369c1e3f8@dietdost.local",
+                NormalizedEmail = "USR_87C369C1E3F8@DIETDOST.LOCAL",
+                DisplayName = "Nikunj QR",
+                MobileNumber = "ANONYMOUS",
+                IsAnonymous = true,
+                Role = UserRole.User,
+                Tier = UserTier.Free,
+                IsEmailVerified = true,
+                IsMobileVerified = false,
+                PasswordHash = "ANONYMOUS_NO_PASSWORD",
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                CreatedAtUtc = DateTime.UtcNow,
+                TermsAcceptedAtUtc = DateTime.UtcNow,
+                TermsVersionAccepted = "v1.0-202609",
+                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                HealthConsentVersionAccepted = "v1.0-202609",
+                ConsentIpAddress = "127.0.0.1",
+                ConsentUserAgent = "DietDost-Seed/1.0",
+                RecoveryLookupId = derivedLookupId,
+                RecoverySalt = derivedSaltHex,
+                RecoveryKeyHash = derivedHashHex,
+                RecoveryKeyCreatedAtUtc = DateTime.UtcNow
+            };
+            db.Users.Add(anonUser);
+
+            var anonProfile = new UserProfile
+            {
+                Id = anonUser.Id,
+                Name = "Nikunj QR",
+                Sex = BiologicalSex.Male,
+                Age = 35,
+                HeightCm = 175,
+                CurrentWeightKg = 78.0,
+                TargetWeightKg = 72.0,
+                DesiredPaceKgPerWeek = 0.5,
+                ActivityLevel = ActivityLevel.Sedentary,
+                DietaryPreference = DietaryPreference.LactoVeg,
+                RegionalCuisine = "Gujarati",
+                Timezone = "Asia/Kolkata",
+                DiagnosedConditions = new List<string>(),
+                Medications = new List<MedicationEntry>()
+            };
+            db.Profiles.Add(anonProfile);
+            await db.SaveChangesAsync();
+            logger.LogInformation("[SEED] Seeded demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') with permanent recovery kit.");
         }
     }
 

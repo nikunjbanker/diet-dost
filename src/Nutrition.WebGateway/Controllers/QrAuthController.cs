@@ -57,7 +57,8 @@ public record ExchangeQrRequest(
     string BrowserSecretToken);
 
 public record RecoverAccountRequest(
-    string RecoveryKeyOrMnemonic);
+    string RecoveryKeyOrMnemonic,
+    bool RotateKey = false);
 
 /// <summary>
 /// Thin Presentation Controller for Cross-Device QR Authentication, Zero-PII Anonymous Onboarding,
@@ -468,7 +469,7 @@ public class QrAuthController : ControllerBase
     {
         return await ExecuteWithRateLimitAsync(async () =>
         {
-            var command = new RecoverAccountCommand(request.RecoveryKeyOrMnemonic);
+            var command = new RecoverAccountCommand(request.RecoveryKeyOrMnemonic, request.RotateKey);
             var result = await _dispatcher.SendAsync(command, ct);
 
             if (!result.Succeeded)

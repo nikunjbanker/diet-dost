@@ -251,7 +251,7 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         Assert.NotNull(recoverResult.Data);
         Assert.Equal(originalUserId, recoverResult.Data!.User.Id);
         Assert.Equal(24, recoverResult.Data.NewRecoveryLookupId.Length);
-        Assert.NotEqual(originalLookupId, recoverResult.Data.NewRecoveryLookupId); // Forward secrecy key rotation
+        Assert.Equal(originalLookupId, recoverResult.Data.NewRecoveryLookupId); // Standard sign-in preserves credentials
         Assert.NotEmpty(recoverResult.Data.Token);
 
         // 3. Adversarial test: Corrupted mnemonic (tampered 12th word checksum bit) fails validation
@@ -265,6 +265,56 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         Assert.False(badResult.Succeeded);
         Assert.Equal(401, badResult.StatusCode);
         Assert.Equal("InvalidMnemonic", badResult.ErrorCode);
+    }
+
+    [Fact]
+    public async Task MnemonicAndJsonLogin_CanLoginRepeatedlyWithoutCredentialInvalidation()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+
+        // 1. Register anonymous user
+        var regCmd = new RegisterAnonymousCommand("Multi Login Persona", AcceptTerms: true, AcceptHealthConsent: true);
+        var regResult = await dispatcher.SendAsync(regCmd);
+        Assert.True(regResult.Succeeded);
+        var userId = regResult.Data!.UserId;
+        var mnemonic = regResult.Data.MnemonicPhrase;
+        var recoveryKey = regResult.Data.RecoveryKeyHex;
+        var lookupId = regResult.Data.RecoveryLookupId;
+        var jsonBackup = regResult.Data.JsonBackupPayload;
+
+        // 2. First login with 12-word mnemonic
+        var login1 = await dispatcher.SendAsync(new RecoverAccountCommand(mnemonic));
+        Assert.True(login1.Succeeded);
+        Assert.Equal(userId, login1.Data!.User.Id);
+        Assert.Equal(lookupId, login1.Data.NewRecoveryLookupId);
+
+        // 3. Second login with exact same 12-word mnemonic (MUST SUCCEED - credentials preserved)
+        var login2 = await dispatcher.SendAsync(new RecoverAccountCommand(mnemonic));
+        Assert.True(login2.Succeeded);
+        Assert.Equal(userId, login2.Data!.User.Id);
+        Assert.Equal(lookupId, login2.Data.NewRecoveryLookupId);
+
+        // 4. Third login with recovery key hex (MUST SUCCEED)
+        var login3 = await dispatcher.SendAsync(new RecoverAccountCommand(recoveryKey));
+        Assert.True(login3.Succeeded);
+        Assert.Equal(userId, login3.Data!.User.Id);
+
+        // 5. Explicit Key Rotation: rotateKey = true
+        var rotateLogin = await dispatcher.SendAsync(new RecoverAccountCommand(mnemonic, RotateKey: true));
+        Assert.True(rotateLogin.Succeeded);
+        Assert.NotEqual(lookupId, rotateLogin.Data!.NewRecoveryLookupId);
+        var newMnemonic = rotateLogin.Data.NewMnemonicPhrase;
+
+        // 6. Old mnemonic should now fail (401)
+        var oldFailLogin = await dispatcher.SendAsync(new RecoverAccountCommand(mnemonic));
+        Assert.False(oldFailLogin.Succeeded);
+        Assert.Equal(401, oldFailLogin.StatusCode);
+
+        // 7. New mnemonic succeeds
+        var newSuccessLogin = await dispatcher.SendAsync(new RecoverAccountCommand(newMnemonic));
+        Assert.True(newSuccessLogin.Succeeded);
+        Assert.Equal(userId, newSuccessLogin.Data!.User.Id);
     }
 
     [Fact]

@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-26T10:20:38.884763+00:00",
-  "totalAdrs": 105,
+  "generatedAt": "2026-10-31T12:08:25.237478+00:00",
+  "totalAdrs": 107,
   "categoryCounts": {
-    "architecture": 30,
+    "architecture": 31,
     "security": 22,
     "devops": 27,
-    "presentation": 13,
+    "presentation": 14,
     "governance": 13
   },
   "records": [
@@ -1269,6 +1269,30 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261026-140-qrcoder-camera-detection-and-zeropii-json-recovery.md",
       "relativePath": "docs/adr/architecture/ADR-20261026-140-qrcoder-camera-detection-and-zeropii-json-recovery.md"
+    },
+    {
+      "id": "ADR-141",
+      "number": 141,
+      "title": "Zero-PII Credential Preservation on Login and Azure SQL Free Quota Diagnostics",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-31",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261031-141-zero-pii-credential-preservation-and-azure-sql-quota-diagnostics.md",
+      "relativePath": "docs/adr/architecture/ADR-20261031-141-zero-pii-credential-preservation-and-azure-sql-quota-diagnostics.md"
+    },
+    {
+      "id": "ADR-142",
+      "number": 142,
+      "title": "Zero-PII Auth Gate Direct Entry, Error Preservation, and Unauthorized Loop Prevention",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-10-31",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261031-142-zero-pii-auth-gate-feedback-and-error-preservation.md",
+      "relativePath": "docs/adr/presentation/ADR-20261031-142-zero-pii-auth-gate-feedback-and-error-preservation.md"
     }
   ]
 }
