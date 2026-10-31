@@ -205,7 +205,9 @@ public class SecurityEnvironmentAndHeaderTests
         Assert.Equal("nosniff", context.Response.Headers.XContentTypeOptions);
         Assert.Equal("DENY", context.Response.Headers.XFrameOptions);
         Assert.Equal("strict-origin-when-cross-origin", context.Response.Headers["Referrer-Policy"]);
-        Assert.Contains("geolocation=()", context.Response.Headers["Permissions-Policy"].ToString());
+        Assert.Contains("geolocation=(self)", context.Response.Headers["Permissions-Policy"].ToString());
+        Assert.Contains("camera=(self)", context.Response.Headers["Permissions-Policy"].ToString());
+        Assert.Contains("microphone=()", context.Response.Headers["Permissions-Policy"].ToString());
         Assert.Contains("default-src 'self'", context.Response.Headers.ContentSecurityPolicy.ToString());
         Assert.Contains("dev.diet-dost.in", context.Response.Headers.ContentSecurityPolicy.ToString());
     }

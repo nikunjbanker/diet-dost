@@ -146,8 +146,12 @@
             <input type="file" id="progress-file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
             <div id="dropzone-prompt">
               <span style="font-size: 2rem;">📸</span>
-              <div style="font-weight: 600; margin-top: 6px;">Tap to Take Photo or Drag & Drop File</div>
+              <div style="font-weight: 600; margin-top: 6px;">Capture Check-In Photo or Choose File</div>
               <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">JPEG, PNG, WebP up to 8MB · Automatic EXIF telemetry stripping for privacy</div>
+              <div style="margin-top: 0.85rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-progress-take-photo" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 6px 14px;">📸 Take Photo</button>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-progress-choose-gallery" style="display: inline-flex; align-items: center; gap: 0.35rem; padding: 6px 14px;">📁 Choose File</button>
+              </div>
             </div>
             <div id="dropzone-preview" style="display: none;">
               <img id="progress-img-preview" src="" alt="Upload preview" style="max-height: 200px; max-width: 100%; object-fit: contain; border-radius: 8px; background: #080a0f;">
