@@ -22,7 +22,9 @@ export class ProgressModalController {
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
    */
-  constructor({ progressService, toastService, confettiService, authService, appState, eventBus }) {
+  constructor({ progressService, toastService, confettiService, authService, appState, eventBus, cameraModal = null }) {
+    this._cameraModal = cameraModal;
+    this._capturedFile = null;
     this._progress = progressService;
     this._toast = toastService;
     this._confetti = confettiService;
@@ -70,6 +72,8 @@ export class ProgressModalController {
       formUpload: document.getElementById('form-progress-upload'),
       dropzone: document.getElementById('progress-dropzone'),
       fileInput: document.getElementById('progress-file-input'),
+      btnProgressTakePhoto: document.getElementById('btn-progress-take-photo'),
+      btnProgressChooseGallery: document.getElementById('btn-progress-choose-gallery'),
       dropzonePrompt: document.getElementById('dropzone-prompt'),
       dropzonePreview: document.getElementById('dropzone-preview'),
       imgPreview: document.getElementById('progress-img-preview'),
@@ -121,9 +125,27 @@ export class ProgressModalController {
       });
     });
 
+    // Photo Dropzone Actions
+    if (el.btnProgressTakePhoto) {
+      el.btnProgressTakePhoto.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.openCamera();
+      });
+    }
+
+    if (el.btnProgressChooseGallery && el.fileInput) {
+      el.btnProgressChooseGallery.addEventListener('click', (e) => {
+        e.stopPropagation();
+        el.fileInput.click();
+      });
+    }
+
     // Photo Dropzone
     if (el.dropzone && el.fileInput) {
-      el.dropzone.addEventListener('click', () => el.fileInput.click());
+      el.dropzone.addEventListener('click', (e) => {
+        if (e.target.closest('#btn-progress-take-photo') || e.target.closest('#btn-progress-choose-gallery') || e.target === el.fileInput) return;
+        this.openCamera();
+      });
       el.fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
           const file = e.target.files[0];
@@ -226,6 +248,34 @@ export class ProgressModalController {
     if (el.modal) {
       el.modal.style.display = 'none';
       modalStack.pop(el.modal);
+    }
+  }
+
+  /**
+   * Opens the camera modal for face or body check-in.
+   */
+  openCamera() {
+    const el = this.elements;
+    const photoType = el.inpType?.value || '0';
+    const mode = photoType === '0' ? 'face' : 'body';
+
+    const onCapture = (file) => {
+      this._capturedFile = file;
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        if (el.imgPreview) el.imgPreview.src = re.target.result;
+        if (el.dropzonePrompt) el.dropzonePrompt.style.display = 'none';
+        if (el.dropzonePreview) el.dropzonePreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    };
+
+    if (this._cameraModal) {
+      this._cameraModal.open({ mode, onCapture });
+    } else if (typeof window.openCameraModal === 'function') {
+      window.openCameraModal({ mode, onCapture });
+    } else {
+      el.fileInput?.click();
     }
   }
 
@@ -430,13 +480,14 @@ export class ProgressModalController {
     e.preventDefault();
     const el = this.elements;
     const fileInput = el.fileInput;
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    const file = this._capturedFile || (fileInput?.files && fileInput.files[0]);
+    if (!file) {
       this._toast.show({ title: 'Photo Required', message: 'Please select or capture a photo before submitting.' });
       return;
     }
 
     const formData = new FormData();
-    formData.append('image', fileInput.files[0]);
+    formData.append('image', file);
     formData.append('userId', this._state.userId);
     formData.append('weightKg', parseFloat(el.inpWeight?.value) || 80.0);
     formData.append('photoType', parseInt(el.inpType?.value) || 0);
