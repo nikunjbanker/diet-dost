@@ -256,8 +256,7 @@ export class CameraService {
       const track = this._stream.getVideoTracks()[0];
       if (track && track.readyState === 'live') {
         try {
-          // @ts-ignore
-          const imageCapture = new this._window.ImageCapture(track);
+                    const imageCapture = new this._window.ImageCapture(track);
           const photoBlob = await imageCapture.takePhoto();
           if (photoBlob && photoBlob.size > 0) {
             return new File([photoBlob], fileName, { type: 'image/jpeg', lastModified: timestamp });
