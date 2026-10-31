@@ -114,7 +114,7 @@ $cliArgs = @(
 )
 
 if (-not [string]::IsNullOrWhiteSpace($TargetConnectionString)) {
-    $cliArgs += @("--azure-sql", $TargetConnectionString)
+    $env:TARGET_AZURE_SQL_CONNECTION_STRING = $TargetConnectionString
 }
 
 if ($DryRun) {

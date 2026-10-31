@@ -890,25 +890,19 @@ public static partial class DatabaseInitializationExtensions
         var aiOptions = configuration.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
         var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
 
-        if (appEnv.IsDevelopment)
+        if (!appEnv.IsDevelopment)
         {
-            var devJwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
-                ? jwtOptions.Key
-                : "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
+            // GAP-18: Sole Authority - Do not copy Key Vault secrets to database AppSecrets table in production
+            return;
+        }
 
-            defaultSecrets.Add(("Jwt:Key", devJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"));
-            defaultSecrets.Add(("AI:GoogleAI:ApiKey", aiOptions.GoogleAI?.ApiKey ?? string.Empty, "Google Gemini Vision API Key"));
-            defaultSecrets.Add(("AI:AzureOpenAI:ApiKey", aiOptions.AzureOpenAI?.ApiKey ?? string.Empty, "Azure OpenAI API Key"));
-        }
-        else
-        {
-            // In deployed / non-development environments, retrieve secrets exclusively from Azure Key Vault or environment
-            var configuredJwtKey = jwtOptions.Key;
-            if (!string.IsNullOrWhiteSpace(configuredJwtKey))
-            {
-                defaultSecrets.Add(("Jwt:Key", configuredJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (from Key Vault)"));
-            }
-        }
+        var devJwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+            ? jwtOptions.Key
+            : "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
+
+        defaultSecrets.Add(("Jwt:Key", devJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"));
+        defaultSecrets.Add(("AI:GoogleAI:ApiKey", aiOptions.GoogleAI?.ApiKey ?? string.Empty, "Google Gemini Vision API Key"));
+        defaultSecrets.Add(("AI:AzureOpenAI:ApiKey", aiOptions.AzureOpenAI?.ApiKey ?? string.Empty, "Azure OpenAI API Key"));
 
         if (appEnv.AllowsDemoUsers)
         {
@@ -1508,7 +1502,10 @@ public static partial class DatabaseInitializationExtensions
             superAdmin.MobileNumber = "+919999999990";
             superAdmin.NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999990");
             superAdmin.IsActive = true;
-            superAdmin.PasswordHash = passwordHasher.HashPassword(superAdminPassword);
+            if (string.IsNullOrWhiteSpace(superAdmin.PasswordHash))
+            {
+                superAdmin.PasswordHash = passwordHasher.HashPassword(superAdminPassword);
+            }
             await db.SaveChangesAsync();
             if (logger.IsEnabled(LogLevel.Information))
             {

@@ -470,3 +470,14 @@ The full architectural blueprint is codified in the following repository visual 
      - Formats `environment_ids` as a numeric 64-bit integer JSON array piped via stdin to `gh api ... --input -`, resolving the HTTP 422 error.
      - Real-time job telemetry reporting active stages, completed/total job ratios, and statuses.
      - Automated post-deployment validation asserting HTTP 200 responses across `https://dev.diet-dost.in/health`, `/index.html`, and component partials upon deployment success.
+
+## 12. Adversarial Infrastructure & Cloud Perimeter Hardening (`ADR-147`)
+
+* **Azure SQL Serverless Perimeter Hardening**:
+  - Removed `AllowAllWindowsAzureIps` (0.0.0.0 rule) from `infra/dev/sql.bicep` (GAP-16).
+  - Removed plaintext connection string output from `sql.bicep` to prevent credential exposure in ARM deployment history (GAP-17).
+  - Extended ACA `/ready` probe to `timeoutSeconds: 10` and `failureThreshold: 6` in `infra/dev/app.bicep` to accommodate serverless database resume without replica thrashing (GAP-19).
+* **Secure Migration & Script Governance**:
+  - Switched `migrate-sqlite-to-azuresql.ps1` from CLI arguments to `$env:TARGET_AZURE_SQL_CONNECTION_STRING` (GAP-30).
+  - Added branch (`main`) and job conclusion validation to `scripts/auto-approve-daemon.ps1` before approving deployment runs (GAP-32).
+  - Implemented `QrSessionCleanupService` background worker executing hourly TTL purges on expired QR sessions (GAP-41).

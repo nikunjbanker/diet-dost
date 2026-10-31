@@ -182,6 +182,16 @@ export class CameraModalController {
     window.addEventListener('beforeunload', () => {
       this._camera.stopStream();
     });
+
+    window.addEventListener('pagehide', () => {
+      this._camera.stopStream();
+    });
+
+    window.addEventListener('popstate', () => {
+      if (this.isOpen) {
+        this.close();
+      }
+    });
   }
 
   _initPinchToZoom() {

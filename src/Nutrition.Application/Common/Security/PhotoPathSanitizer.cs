@@ -53,8 +53,17 @@ public static partial class PhotoPathSanitizer
             trimmed = uri.AbsolutePath;
         }
 
-        // Prevent path traversal
-        trimmed = trimmed.Replace("..", "").Replace('\\', '/');
+        // Prevent path traversal with iterative normalization (GAP-33)
+        trimmed = trimmed.Replace('\\', '/');
+        while (trimmed.Contains(".."))
+        {
+            trimmed = trimmed.Replace("..", "");
+        }
+
+        while (trimmed.Contains("//"))
+        {
+            trimmed = trimmed.Replace("//", "/");
+        }
 
         if (!trimmed.StartsWith('/'))
         {

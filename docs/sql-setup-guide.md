@@ -81,10 +81,10 @@ flowchart TD
 
 | File | Subsystem Role | Key Parameters & Safe Defaults |
 | :--- | :--- | :--- |
-| [`infra/dev/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.worktrees/feat-azure-sql-free-tier/infra/dev/sql.bicep) | Dedicated SQL Serverless Free Tier Module | Provisions logical server, `GP_S_Gen5_1` free database (`useFreeLimit: true`), VNet rule, firewall rules, and Key Vault secrets. |
-| [`infra/dev/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.worktrees/feat-azure-sql-free-tier/infra/dev/infra.bicep) | Foundation Infrastructure | Adds `Microsoft.Sql` service endpoint to `acaSubnet`, `Allow-SQL-Outbound` NSG rule, and conditionally invokes `sql.bicep` when `deployAzureSql == true`. |
-| [`infra/dev/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.worktrees/feat-azure-sql-free-tier/infra/dev/app.bicep) | Workload Container App | Maps Key Vault secret reference `azure-sql-connection-string` into `ConnectionStrings__AzureSqlConnection`. |
-| [`infra/dev/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.worktrees/feat-azure-sql-free-tier/infra/dev/main.bicep) | Composite Deployment | Default `deployAzureSql = false`. Requires explicit parameter override to enable. |
+| [`infra/dev/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep) | Dedicated SQL Serverless Free Tier Module | Provisions logical server, `GP_S_Gen5_1` free database (`useFreeLimit: true`), VNet rule, firewall rules, and Key Vault secrets. |
+| [`infra/dev/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) | Foundation Infrastructure | Adds `Microsoft.Sql` service endpoint to `acaSubnet`, `Allow-SQL-Outbound` NSG rule, and conditionally invokes `sql.bicep` when `deployAzureSql == true`. |
+| [`infra/dev/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) | Workload Container App | Maps Key Vault secret reference `azure-sql-connection-string` into `ConnectionStrings__AzureSqlConnection`. |
+| [`infra/dev/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep) | Composite Deployment | Default `deployAzureSql = false`. Requires explicit parameter override to enable. |
 
 ---
 
@@ -201,7 +201,7 @@ When compute is paused after 60 minutes of inactivity, incoming connection attem
 
 ## 7. Multi-Tier Seeding & Functional Parity
 
-When running against Azure SQL, [`DatabaseInitializationExtensions.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.worktrees/feat-azure-sql-free-tier/src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs) guarantees:
+When running against Azure SQL, [`DatabaseInitializationExtensions.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.WebGateway/Extensions/DatabaseInitializationExtensions.cs) guarantees:
 - **Pristine Bootstrap**: On an empty database, EF Core `EnsureCreatedAsync()` creates all 12 model tables natively with primary keys, indexes, and T-SQL types.
 - **Incremental Reconciliation**: If tables already exist, `INFORMATION_SCHEMA.TABLES` and `INFORMATION_SCHEMA.COLUMNS` verify and safely add any missing tables or columns.
 - **5-Tier Demo Seeding**: Deterministically seeds accounts for all tiers:

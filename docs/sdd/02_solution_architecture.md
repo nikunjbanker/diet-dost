@@ -520,3 +520,17 @@ Per ADR-140 and Issue #115:
 3. **Zero-PII Onboarding & Free Tier Governance**:
    - Renamed recovery tab to `🔑 Phrase / Key` and embedded explicit Zero-PII sign-in helper links on the password tab.
    - Zero-PII accounts strictly enforce `UserTier.Free` quotas: 1 AI meal detection/day, 7-day history, and gated photo comparison/export.
+
+## 14. Adversarial Architecture Hardening & Identity Lifecycle (`ADR-147`)
+
+* **Application Layer Security Defenses**:
+  - `PhotoPathSanitizer.cs`: Iterative loop normalization for nested directory traversals (`....//`) and slash collapsing (GAP-33).
+  - `InitiateQrSessionCommandHandler`: Sanitizes `BaseUrl` against allowlisted domains to prevent host header poisoning (GAP-45).
+  - `SimulateQrApprovalCommandHandler`: Gated behind `IAppEnvironment.AllowsDemoUsers` with strict prohibition against SuperAdmin elevation (GAP-39).
+  - `DeleteAccountCommandHandler`: Security stamp rotation and identifier anonymization (`_DELETED_{id}`) under DPDPA 2023 (GAP-22, GAP-24).
+  - `AdminUserCommands`: Restricts `UserTier.SuperAdmin` promotion solely to callers with root SuperAdmin role (GAP-11).
+* **Infrastructure Layer Persistence & Media**:
+  - `EfRepository<T>.DeleteAsync`: Enforces soft-delete across all `ISoftDeletable` entities (GAP-23, GAP-34).
+  - `ImageSanitizer.cs`: Defensive SkiaSharp image header probing and EXIF stripping (GAP-10, GAP-35).
+  - `MediaController.cs`: User-scoped authorized media streaming (`GET /api/media/progress/{id}`) (GAP-05).
+  - `QrSessionCleanupService.cs`: Background worker for ephemeral session retention lifecycle (GAP-41).

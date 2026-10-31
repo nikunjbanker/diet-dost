@@ -27,6 +27,25 @@ Write-Host "==========================================================" -Foregro
 
 function Approve-PendingDeployment([string]$targetRunId, [string]$workflowTitle) {
     try {
+        # GAP-32 Security Guard: Verify run is on protected 'main' branch, event is push/workflow_dispatch, and all prior jobs succeeded
+        $runMetaRaw = gh run view $targetRunId --json headBranch,event,jobs 2>$null
+        if ($runMetaRaw) {
+            $runMeta = $runMetaRaw | ConvertFrom-Json
+            if ($runMeta.headBranch -ne "main") {
+                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] [GAP-32] Skipping auto-approval for run ${targetRunId}: branch '$($runMeta.headBranch)' is not protected 'main'." -ForegroundColor DarkYellow
+                return
+            }
+            if ($runMeta.event -notin @("push", "workflow_dispatch")) {
+                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] [GAP-32] Skipping auto-approval for run ${targetRunId}: event '$($runMeta.event)' is not push/workflow_dispatch." -ForegroundColor DarkYellow
+                return
+            }
+            $failedJobs = @($runMeta.jobs | Where-Object { $_.conclusion -eq "failure" })
+            if ($failedJobs.Count -gt 0) {
+                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] [GAP-32] Skipping auto-approval for run ${targetRunId}: one or more earlier jobs failed." -ForegroundColor Red
+                return
+            }
+        }
+
         $pendingRaw = gh api "repos/:owner/:repo/actions/runs/$targetRunId/pending_deployments" 2>$null
         if ($pendingRaw -and $pendingRaw.Trim() -ne "[]") {
             $pending = $pendingRaw | ConvertFrom-Json

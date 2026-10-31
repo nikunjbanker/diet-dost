@@ -42,6 +42,15 @@ public partial class HttpPayloadTelemetryMiddleware
             return;
         }
 
+        // GAP-02: Sensitive endpoint protection - bypass body capture on auth, profile, and user management endpoints
+        if (path.StartsWith("/api/auth/", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/profile", StringComparison.OrdinalIgnoreCase) ||
+            path.StartsWith("/api/admin/users", StringComparison.OrdinalIgnoreCase))
+        {
+            await _next(context);
+            return;
+        }
+
         var activity = Activity.Current;
         var sw = Stopwatch.StartNew();
         string requestPayload = string.Empty;

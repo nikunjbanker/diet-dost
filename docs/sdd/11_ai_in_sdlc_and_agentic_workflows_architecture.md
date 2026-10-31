@@ -634,3 +634,9 @@ This specification serves as the authoritative architectural blueprint for human
 | **Quality Test Gate Pipeline** | A reusable GitHub Actions workflow (`quality-test-gate.yml`) enforcing quantitative quality pass rates across four tiers before cloud deployments. |
 | **Four-Tier Pre-Deployment Gate** | Strict deployment blocker requiring Unit ($\ge 90\%$), Integration ($\ge 80\%$), System ($\ge 75\%$), and E2E ($\ge 70\%$) test thresholds to pass before rollout. |
 
+
+## 10. Visual Prompt Injection Defenses & Multimodal Guardrails (`ADR-147`)
+
+* **Visual Prompt Injection Isolation (OWASP LLM01)**:
+  - `MicrosoftAgentFoodVisionService.cs`: Injected explicit adversarial vision guardrails instructing vision models that text depicted inside meal photographs (napkins, menus, receipts, screens) must be treated strictly as passive visual objects, not executable system instructions (GAP-14).
+  - Pre-flight PromptShield validation remains strictly enforced before multimodal payloads reach Gemini or Azure OpenAI models.

@@ -91,9 +91,24 @@ public class InitiateQrSessionCommandHandler : ICommandHandler<InitiateQrSession
         await _qrRepo.AddAsync(session, ct);
         await _uow.SaveChangesAsync(ct);
 
-        var baseUri = string.IsNullOrWhiteSpace(request.BaseUrl)
-            ? "https://dev.diet-dost.in"
-            : request.BaseUrl.TrimEnd('/');
+        var baseUri = "https://dev.diet-dost.in";
+        if (!string.IsNullOrWhiteSpace(request.BaseUrl) &&
+            Uri.TryCreate(request.BaseUrl, UriKind.Absolute, out var parsedUri))
+        {
+            var host = parsedUri.Host.ToLowerInvariant();
+            if (host == "dev.diet-dost.in" ||
+                host == "diet-dost.in" ||
+                host.EndsWith(".diet-dost.in") ||
+                host == "localhost" ||
+                host == "127.0.0.1")
+            {
+                baseUri = $"{parsedUri.Scheme}://{parsedUri.Authority}";
+            }
+            else
+            {
+                _logger.LogWarning("[QR_AUTH] Host header / BaseUrl '{BaseUrl}' rejected as untrusted domain. Falling back to default: {DefaultBaseUri}", request.BaseUrl, baseUri);
+            }
+        }
 
         var qrUri = $"{baseUri}/qr-approve.html?sid={session.Id}&nonce={session.ChallengeNonce}&code={session.ConfirmationCode}&glyph={Uri.EscapeDataString(session.ConfirmationGlyph)}";
         var deepLinkUri = $"dietdost://auth/qr?session={session.Id}&nonce={session.ChallengeNonce}&code={session.ConfirmationCode}&glyph={Uri.EscapeDataString(session.ConfirmationGlyph)}";

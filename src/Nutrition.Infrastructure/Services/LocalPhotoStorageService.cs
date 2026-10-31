@@ -10,6 +10,7 @@ using Microsoft.Extensions.Options;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
 using Nutrition.Application.Common.Security;
+using Nutrition.Infrastructure.Security;
 
 namespace Nutrition.Infrastructure.Services;
 
@@ -109,13 +110,9 @@ public class LocalPhotoStorageService : IPhotoStorageService
         var uniqueFileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}{extension}";
         var destinationPath = Path.Combine(destinationFolder, uniqueFileName);
 
-        if (fileStream.CanSeek)
-        {
-            fileStream.Position = 0;
-        }
-
+        using var sanitizedStream = await ImageSanitizer.SanitizeAndStripExifAsync(fileStream, contentType, ct);
         using var fileOutput = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
-        await fileStream.CopyToAsync(fileOutput, ct);
+        await sanitizedStream.CopyToAsync(fileOutput, ct);
 
         return PhotoPathSanitizer.NormalizeToRelativePath(returnBaseUrl + uniqueFileName);
     }

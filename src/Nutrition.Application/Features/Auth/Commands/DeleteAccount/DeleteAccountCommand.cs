@@ -100,6 +100,18 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand,
         user.IsActive = false;
         user.IsDeleted = true;
         user.DeletedAtUtc = now;
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+        if (!string.IsNullOrWhiteSpace(user.NormalizedEmail))
+        {
+            user.NormalizedEmail = $"{user.NormalizedEmail}_DELETED_{user.Id}";
+            user.Email = $"deleted_{user.Id}@anonymized.local";
+        }
+        if (!string.IsNullOrWhiteSpace(user.NormalizedMobileNumber))
+        {
+            user.NormalizedMobileNumber = $"{user.NormalizedMobileNumber}_DEL_{user.Id}";
+            user.MobileNumber = "DELETED";
+        }
+        user.DisplayName = "Deleted User";
         await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
