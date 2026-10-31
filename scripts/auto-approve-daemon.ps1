@@ -104,7 +104,7 @@ while ((Get-Date) -lt $endTime) {
                 $completedCount = ($run.jobs | Where-Object { $_.status -eq "completed" }).Count
                 $totalCount = $run.jobs.Count
 
-                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] Run $RunId: $status | Conclusion: $conclusion | Progress: $completedCount/$totalCount jobs | Active: $($activeJobs -join ', ')" -ForegroundColor Cyan
+                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] Run ${RunId}: $status | Conclusion: $conclusion | Progress: $completedCount/$totalCount jobs | Active: $($activeJobs -join ', ')" -ForegroundColor Cyan
 
                 if ($status -eq "completed") {
                     if ($conclusion -eq "success") {
@@ -127,7 +127,7 @@ while ((Get-Date) -lt $endTime) {
                 $runs = $runsRaw | ConvertFrom-Json
                 $activeRuns = $runs | Where-Object { $_.status -in @('in_progress', 'queued', 'waiting') -and $_.workflowName -match 'Deploy' }
 
-                if (-not $activeRuns or $activeRuns.Count -eq 0) {
+                if (-not $activeRuns -or $activeRuns.Count -eq 0) {
                     # Also check any generic in_progress workflow
                     $activeRuns = $runs | Where-Object { $_.status -in @('in_progress', 'waiting') }
                 }
