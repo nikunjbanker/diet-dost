@@ -1392,6 +1392,21 @@ public static partial class DatabaseInitializationExtensions
             await db.SaveChangesAsync();
             logger.LogInformation("[SEED] Seeded demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') with permanent recovery kit.");
         }
+        else
+        {
+            // Reconcile credentials to guarantee the demo recovery mnemonic always matches
+            if (existingAnon.RecoveryLookupId != derivedLookupId ||
+                existingAnon.RecoveryKeyHash != derivedHashHex ||
+                existingAnon.RecoverySalt != derivedSaltHex)
+            {
+                existingAnon.RecoveryLookupId = derivedLookupId;
+                existingAnon.RecoveryKeyHash = derivedHashHex;
+                existingAnon.RecoverySalt = derivedSaltHex;
+                existingAnon.RecoveryKeyCreatedAtUtc = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+                logger.LogInformation("[SEED] Reconciled demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') credentials with permanent mnemonic.");
+            }
+        }
     }
 
     private static async Task MigrateLegacyDataAsync(DietTrackerDbContext db, ILogger logger)

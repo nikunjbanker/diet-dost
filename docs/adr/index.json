@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-31T12:08:25.237478+00:00",
-  "totalAdrs": 107,
+  "generatedAt": "2026-10-31T13:08:22.121977+00:00",
+  "totalAdrs": 108,
   "categoryCounts": {
-    "architecture": 31,
+    "architecture": 32,
     "security": 22,
     "devops": 27,
     "presentation": 14,
@@ -1293,6 +1293,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261031-142-zero-pii-auth-gate-feedback-and-error-preservation.md",
       "relativePath": "docs/adr/presentation/ADR-20261031-142-zero-pii-auth-gate-feedback-and-error-preservation.md"
+    },
+    {
+      "id": "ADR-143",
+      "number": 143,
+      "title": "Demo Account Recovery Credential Reconciliation and Azure SQL Metered Bicep Support",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-10-31",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261031-143-demo-account-recovery-credential-reconciliation-and-sql-bicep-metered-support.md",
+      "relativePath": "docs/adr/architecture/ADR-20261031-143-demo-account-recovery-credential-reconciliation-and-sql-bicep-metered-support.md"
     }
   ]
 }

@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 107 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 108 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **31** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **32** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **22** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **27** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **14** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -77,6 +77,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-138** | ISO/IEC 18004 Standard QR Code Generation & Mobile Approval Architecture | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261026-138-iso18004-qr-code-and-mobile-web-approval.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261026-138-iso18004-qr-code-and-mobile-web-approval.md) |
 | **ADR-140** | QRCoder Server-Side Camera Detection, Recovery JSON CamelCase Parsing, and Zero-PII Login UX | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261026-140-qrcoder-camera-detection-and-zeropii-json-recovery.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261026-140-qrcoder-camera-detection-and-zeropii-json-recovery.md) |
 | **ADR-141** | Zero-PII Credential Preservation on Login and Azure SQL Free Quota Diagnostics | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261031-141-zero-pii-credential-preservation-and-azure-sql-quota-diagnostics.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261031-141-zero-pii-credential-preservation-and-azure-sql-quota-diagnostics.md) |
+| **ADR-143** | Demo Account Recovery Credential Reconciliation and Azure SQL Metered Bicep Support | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261031-143-demo-account-recovery-credential-reconciliation-and-sql-bicep-metered-support.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261031-143-demo-account-recovery-credential-reconciliation-and-sql-bicep-metered-support.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*
