@@ -524,6 +524,16 @@ Per ADR-140 and Issue #115:
    - Renamed recovery tab to `🔑 Phrase / Key` and embedded explicit Zero-PII sign-in helper links on the password tab.
    - Zero-PII accounts strictly enforce `UserTier.Free` quotas: 1 AI meal detection/day, 7-day history, and gated photo comparison/export.
 
+---
+
+### 2.16 Idempotent Database Seeding & Soft-Delete Query Filter Bypass (ADR-153)
+
+To prevent startup container crashes and primary key constraint collisions (`PK_Users`, `PK_Profiles`):
+1. **Query Filter Bypass**: Bootstrap seeding lookups in `DatabaseInitializationExtensions` (`SeedDemoUsersAsync`, `EnsureSuperAdminAccountAsync`) explicitly invoke `.IgnoreQueryFilters()` on `Users` and `Profiles`.
+2. **Soft-Delete Resurrection**: If an existing demo user or root SuperAdmin account was soft-deleted (`IsDeleted == true`), bootstrap seeding reactivates it (`IsDeleted = false`, `DeletedAtUtc = null`, `IsActive = true`) and reconciles credentials without attempting duplicate primary key insertions.
+3. **Defensive Profile Upsert**: Checks for profile physical presence with `.IgnoreQueryFilters()` prior to creation, preventing collisions with orphan or soft-deleted profiles.
+4. **DDL Alignment**: The manual SQL Server `CREATE TABLE [Users]` definition script explicitly incorporates `[LastActiveUtc] DATETIME2 NULL`.
+
 ## 14. Adversarial Architecture Hardening & Identity Lifecycle (`ADR-147`)
 
 * **Application Layer Security Defenses**:
@@ -1037,6 +1047,16 @@ Per ADR-140 and Issue #115:
 3. **Zero-PII Onboarding & Free Tier Governance**:
    - Renamed recovery tab to `🔑 Phrase / Key` and embedded explicit Zero-PII sign-in helper links on the password tab.
    - Zero-PII accounts strictly enforce `UserTier.Free` quotas: 1 AI meal detection/day, 7-day history, and gated photo comparison/export.
+
+---
+
+### 2.16 Idempotent Database Seeding & Soft-Delete Query Filter Bypass (ADR-153)
+
+To prevent startup container crashes and primary key constraint collisions (`PK_Users`, `PK_Profiles`):
+1. **Query Filter Bypass**: Bootstrap seeding lookups in `DatabaseInitializationExtensions` (`SeedDemoUsersAsync`, `EnsureSuperAdminAccountAsync`) explicitly invoke `.IgnoreQueryFilters()` on `Users` and `Profiles`.
+2. **Soft-Delete Resurrection**: If an existing demo user or root SuperAdmin account was soft-deleted (`IsDeleted == true`), bootstrap seeding reactivates it (`IsDeleted = false`, `DeletedAtUtc = null`, `IsActive = true`) and reconciles credentials without attempting duplicate primary key insertions.
+3. **Defensive Profile Upsert**: Checks for profile physical presence with `.IgnoreQueryFilters()` prior to creation, preventing collisions with orphan or soft-deleted profiles.
+4. **DDL Alignment**: The manual SQL Server `CREATE TABLE [Users]` definition script explicitly incorporates `[LastActiveUtc] DATETIME2 NULL`.
 
 ## 14. Adversarial Architecture Hardening & Identity Lifecycle (`ADR-147`)
 
