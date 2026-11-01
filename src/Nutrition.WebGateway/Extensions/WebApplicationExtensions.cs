@@ -85,6 +85,7 @@ public static class WebApplicationExtensions
 
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseMiddleware<UserPresenceMiddleware>();
 
         // Enforce Per-IP Partitioned Rate Limiting on authentication endpoints (OWASP A04)
         app.UseAppRateLimiter();
@@ -109,3 +110,4 @@ public static class WebApplicationExtensions
         return app;
     }
 }
+

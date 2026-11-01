@@ -336,7 +336,9 @@ src/Nutrition.Application/
 │   ├── Interfaces/
 │   │   ├── IPhotoStorageService.cs
 │   │   ├── ICurrentUserService.cs
-│   │   └── IDateTimeProvider.cs
+│   │   ├── IDateTimeProvider.cs
+│   │   ├── IInAppNotificationService.cs
+│   │   └── IUserPresenceTracker.cs
 │   └── Models/
 │       └── Result.cs
 ├── Features/
@@ -352,8 +354,8 @@ src/Nutrition.Application/
 │   ├── Analytics/
 │   │   └── Queries/  (GetDailyLedger, GetProjections)
 │   └── Admin/
-│       ├── Commands/ (UpdateUserTier, UpdateUserRole, UpdateTierConfig)
-│       └── Queries/  (GetAdminUsers, GetAdminUserById)
+│       ├── Commands/ (UpdateUserTier, UpdateUserRole, UpdateTierConfig, ApproveAlphaUser)
+│       └── Queries/  (GetAdminUsers, GetAdminUserById, GetActiveUsers)
 ```
 
 ---

@@ -14,6 +14,10 @@ export class AdminService {
     this.api = apiClient;
   }
 
+  async getActiveUsers(windowMinutes = 15) {
+    return await this.api.get(`/api/admin/active-users?windowMinutes=${encodeURIComponent(windowMinutes)}`);
+  }
+
   async getUsers(search = '', tier = null, role = null) {
     let url = '/api/admin/users?';
     const params = new URLSearchParams();
@@ -71,4 +75,3 @@ export class AdminService {
     return await this.api.get(url);
   }
 }
-
