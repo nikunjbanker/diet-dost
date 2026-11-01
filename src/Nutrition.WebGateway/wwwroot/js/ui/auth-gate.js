@@ -19,10 +19,11 @@ import { modalStack } from './modal-stack-manager.js';
 import { QrAuthController } from './qr-auth-controller.js?v=1.9.3';
 
 export class AuthGateController {
-  constructor({ authService, toastService, eventBus }) {
+  constructor({ authService, toastService, eventBus, notificationService }) {
     this.authService = authService;
     this.toastService = toastService;
     this.eventBus = eventBus;
+    this.notificationService = notificationService;
 
     this.pendingEmail = null;
     this.pendingMobile = null;
@@ -61,6 +62,9 @@ export class AuthGateController {
     this.formRecover = document.getElementById('form-recover');
     this.formVerify = document.getElementById('form-verify-otp');
     this.formReset = document.getElementById('form-reset-password');
+    this.formPendingApproval = document.getElementById('form-pending-approval');
+    this.pendingEmailDisplay = document.getElementById('pending-user-email-display');
+    this.btnReturnToSignInFromPending = document.getElementById('btn-return-to-signin-from-pending');
 
     this.signinError = document.getElementById('signin-error');
     this.registerError = document.getElementById('register-error');
@@ -97,6 +101,7 @@ export class AuthGateController {
     document.getElementById('link-goto-recover-from-signin')?.addEventListener('click', () => this.switchTab('recover'));
     document.getElementById('link-goto-signin-from-recover')?.addEventListener('click', () => this.switchTab('signin'));
     document.getElementById('btn-goto-signin-from-disabled')?.addEventListener('click', () => this.switchTab('signin'));
+    this.btnReturnToSignInFromPending?.addEventListener('click', () => this.switchTab('signin'));
 
     // Bind Alpha Preview demo credentials quick-fill buttons
     this.bindDemoAccountButtons();
@@ -226,6 +231,7 @@ export class AuthGateController {
     if (this.formRecover) this.formRecover.style.display = tab === 'recover' ? 'block' : 'none';
     if (this.formVerify) this.formVerify.style.display = tab === 'verify' ? 'block' : 'none';
     if (this.formReset) this.formReset.style.display = tab === 'reset' ? 'block' : 'none';
+    if (this.formPendingApproval) this.formPendingApproval.style.display = tab === 'pending-approval' ? 'block' : 'none';
 
     if (tab === 'verify' && this.tabVerify) this.tabVerify.style.display = 'inline-block';
     if (tab === 'reset' && this.tabReset) this.tabReset.style.display = 'inline-block';
@@ -363,7 +369,10 @@ export class AuthGateController {
       try { this.toastService?.success(`Welcome back, ${res.user?.name || 'Friend'}! 🥑`); } catch { /* noop */ }
       this.eventBus?.emit('auth:success', res.user);
     } catch (err) {
-      if (err.status === 403 && err.data?.requireEmailVerification) {
+      if (err.status === 403 && (err.data?.code === 'AccountPendingApproval' || err.data?.error?.includes('pending review') || err.data?.error?.includes('not activated'))) {
+        this.showError(this.signinError, err.data?.error || 'Your account is pending review and activation by the application owner (nikunj_banker@hotmail.com). Please check back shortly.');
+        this.toastService?.warning('Account pending owner review.');
+      } else if (err.status === 403 && err.data?.requireEmailVerification) {
         this.pendingEmail = err.data.email || identifier;
         if (this.otpTargetDisplay) this.otpTargetDisplay.textContent = this.pendingEmail;
         this.switchTab('verify');
@@ -504,6 +513,34 @@ export class AuthGateController {
 
       this.pendingEmail = email;
       this.pendingMobile = mobileNumber;
+
+      if (res.requiresOwnerApproval) {
+        if (this.pendingEmailDisplay) {
+          this.pendingEmailDisplay.textContent = email;
+        }
+        this.switchTab('pending-approval');
+        this.toastService?.info('Registration submitted! Awaiting owner activation.');
+
+        if (this.notificationService) {
+          this.notificationService.connect();
+          if (res.registrationTicket) {
+            this.notificationService.joinApplicantChannel(res.registrationTicket);
+          }
+          this.notificationService.on('AccountApproved', () => {
+            this.toastService?.success('🎉 Your account has been approved by the application owner! You may now sign in.');
+            this.switchTab('signin');
+            const idInput = document.getElementById('signin-identifier');
+            const pwdInput = document.getElementById('signin-password');
+            if (idInput) idInput.value = email;
+            if (pwdInput) {
+              pwdInput.value = '';
+              pwdInput.focus();
+            }
+          });
+        }
+        return;
+      }
+
       if (this.otpTargetDisplay) this.otpTargetDisplay.textContent = email;
 
       if (res.devOtpCode && this.devOtpHolder && this.devOtpCode) {

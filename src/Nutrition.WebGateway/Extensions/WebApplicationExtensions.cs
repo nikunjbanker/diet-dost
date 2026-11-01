@@ -100,6 +100,9 @@ public static class WebApplicationExtensions
         });
 
         // Controller Endpoints & SPA Fallback
+        // Real-time In-App Notification SignalR Hub
+        app.MapHub<Hubs.NotificationHub>("/hubs/notifications");
+
         app.MapControllers();
         app.MapFallbackToFile("index.html");
 

@@ -35,6 +35,7 @@ public class DietTrackerDbContext : DbContext
     public DbSet<AiUsageLog> AiUsageLogs => Set<AiUsageLog>();
     public DbSet<AppSecret> AppSecrets => Set<AppSecret>();
     public DbSet<QrLoginSession> QrSessions => Set<QrLoginSession>();
+    public DbSet<AppNotification> Notifications => Set<AppNotification>();
 
     public DietTrackerDbContext(DbContextOptions<DietTrackerDbContext> options) : base(options)
     {
@@ -205,6 +206,15 @@ public class DietTrackerDbContext : DbContext
             entity.Property(e => e.Key).HasMaxLength(128).IsRequired();
             entity.Property(e => e.Value).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(512);
+        });
+
+        modelBuilder.Entity<AppNotification>(entity =>
+        {
+            entity.ToTable("AppNotifications");
+            entity.HasKey(e => e.Id);
+            entity.HasQueryFilter(e => !e.IsDeleted);
+            entity.HasIndex(e => new { e.RecipientRole, e.IsRead, e.CreatedAtUtc });
+            entity.HasIndex(e => new { e.RecipientUserId, e.IsRead, e.CreatedAtUtc });
         });
 
         // ============================================================================

@@ -12,14 +12,27 @@
 import { modalStack } from './modal-stack-manager.js';
 
 export class AdminModalController {
-  constructor({ adminService, authService, toastService, eventBus }) {
+  constructor({ adminService, authService, toastService, eventBus, notificationService }) {
     this.adminService = adminService;
     this.authService = authService;
     this.toastService = toastService;
     this.eventBus = eventBus;
+    this.notificationService = notificationService;
 
     this.initElements();
     this.bindEvents();
+    this.initNotificationListener();
+  }
+
+  initNotificationListener() {
+    if (!this.notificationService) return;
+    this.notificationService.on('NewRegistration', (data) => {
+      const email = data.email || 'Applicant';
+      this.toastService?.info(`🔔 New Alpha Registration: ${email} is awaiting activation!`);
+      if (this.modal && this.modal.style.display === 'flex' && this.paneUsers && this.paneUsers.style.display !== 'none') {
+        this.loadUsers();
+      }
+    });
   }
 
   isSuperAdmin() {
@@ -178,7 +191,7 @@ export class AdminModalController {
         const tierStr = typeof u.tier === 'number' ? (u.tier === 3 ? 'SuperAdmin' : u.tier === 2 ? 'Premium' : u.tier === 1 ? 'Basic' : 'Free') : u.tier;
         const statusBadge = u.isActive
           ? `<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px;">Active</span>`
-          : `<span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(239, 68, 68, 0.2); color: #f87171;">Locked</span>`;
+          : `<span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);">⏳ Pending Review</span>`;
 
         const emailBadge = u.isEmailVerified
           ? `<span title="Email Verified" style="color: var(--accent); margin-right: 4px;">✓ Email</span>`
@@ -226,8 +239,8 @@ export class AdminModalController {
                 ✏️ Edit
               </button>
               ${isSuper ? '<span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 4px;">Protected</span>' : `
-                <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-user-id="${u.id}" data-active="${u.isActive}">
-                  ${u.isActive ? '🔒 Lock' : '🔓 Unlock'}
+                <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-user-id="${u.id}" data-active="${u.isActive}" title="${u.isActive ? 'Deactivate Account' : 'Activate & Enable Account'}">
+                  ${u.isActive ? '🔒 Lock' : '🔓 Activate & Approve'}
                 </button>
               `}
             </td>

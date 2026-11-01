@@ -14,7 +14,9 @@ public record RegisterResultDto(
     string UserId,
     string Email,
     string Message,
-    string? DevOtpCode
+    string? DevOtpCode,
+    bool RequiresOwnerApproval = true,
+    string? RegistrationTicket = null
 );
 
 public record CurrentUserResponseDto(

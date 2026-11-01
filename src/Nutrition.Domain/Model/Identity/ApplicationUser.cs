@@ -221,7 +221,7 @@ public partial class ApplicationUser : ISoftDeletable
     {
         if (IsDeleted || !IsActive)
         {
-            rejectionReason = "This account has been deactivated. Please contact support.";
+            rejectionReason = "Your account is deactivated or pending review and activation by the application owner for this Alpha Preview. Please check back shortly.";
             return false;
         }
 

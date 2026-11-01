@@ -471,6 +471,23 @@ public static partial class DatabaseInitializationExtensions
             CREATE INDEX IF NOT EXISTS ""IX_QrSessions_ExpiresAtUtc"" ON ""QrSessions"" (""ExpiresAtUtc"");
             CREATE INDEX IF NOT EXISTS ""IX_QrSessions_Status"" ON ""QrSessions"" (""Status"");
             CREATE INDEX IF NOT EXISTS ""IX_QrSessions_ExchangeTicket"" ON ""QrSessions"" (""ExchangeTicket"");
+
+            CREATE TABLE IF NOT EXISTS ""AppNotifications"" (
+                ""Id"" TEXT NOT NULL CONSTRAINT ""PK_AppNotifications"" PRIMARY KEY,
+                ""RecipientUserId"" TEXT NULL,
+                ""RecipientRole"" TEXT NULL,
+                ""Title"" TEXT NOT NULL,
+                ""Message"" TEXT NOT NULL,
+                ""Type"" TEXT NOT NULL,
+                ""MetadataJson"" TEXT NULL,
+                ""IsRead"" INTEGER NOT NULL,
+                ""ReadAtUtc"" TEXT NULL,
+                ""CreatedAtUtc"" TEXT NOT NULL,
+                ""IsDeleted"" INTEGER NOT NULL,
+                ""DeletedAtUtc"" TEXT NULL
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_AppNotifications_RecipientRole_IsRead"" ON ""AppNotifications"" (""RecipientRole"", ""IsRead"");
+            CREATE INDEX IF NOT EXISTS ""IX_AppNotifications_RecipientUserId_IsRead"" ON ""AppNotifications"" (""RecipientUserId"", ""IsRead"");
         ");
     }
 
@@ -810,6 +827,27 @@ public static partial class DatabaseInitializationExtensions
             await EnsureIndexExistsAsync(db, "QrSessions", "IX_QrSessions_ExpiresAtUtc", "[ExpiresAtUtc]");
             await EnsureIndexExistsAsync(db, "QrSessions", "IX_QrSessions_Status", "[Status]");
             await EnsureIndexExistsAsync(db, "QrSessions", "IX_QrSessions_ExchangeTicket", "[ExchangeTicket]");
+        }
+
+        if (!await TableExistsAsync(db, "AppNotifications"))
+        {
+            await db.Database.ExecuteSqlRawAsync(@"
+                CREATE TABLE [AppNotifications] (
+                    [Id] NVARCHAR(64) NOT NULL CONSTRAINT [PK_AppNotifications] PRIMARY KEY,
+                    [RecipientUserId] NVARCHAR(64) NULL,
+                    [RecipientRole] NVARCHAR(64) NULL,
+                    [Title] NVARCHAR(256) NOT NULL,
+                    [Message] NVARCHAR(MAX) NOT NULL,
+                    [Type] NVARCHAR(64) NOT NULL,
+                    [MetadataJson] NVARCHAR(MAX) NULL,
+                    [IsRead] BIT NOT NULL,
+                    [ReadAtUtc] DATETIME2 NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [IsDeleted] BIT NOT NULL,
+                    [DeletedAtUtc] DATETIME2 NULL
+                );");
+            await EnsureIndexExistsAsync(db, "AppNotifications", "IX_AppNotifications_RecipientRole_IsRead", "[RecipientRole], [IsRead]");
+            await EnsureIndexExistsAsync(db, "AppNotifications", "IX_AppNotifications_RecipientUserId_IsRead", "[RecipientUserId], [IsRead]");
         }
 
         // Reconcile all incremental columns on existing tables

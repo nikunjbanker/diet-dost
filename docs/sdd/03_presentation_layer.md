@@ -268,3 +268,21 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 * **Content Security & Media Protection**:
   - `SecurityHeadersMiddleware.cs`: Added `object-src 'none'; base-uri 'self'; frame-ancestors 'none';` to CSP (GAP-13).
   - `QrAuthController.cs`: Appends `Content-Disposition: inline; filename="qr.svg"` on QR SVG responses (GAP-44).
+
+## 16. In-App Real-Time Notification Bell & Alpha Approval UX (`ADR-148`)
+
+* **Real-Time Notification Bell (`header.html`, `main.js`)**:
+  - Embedded Obsidian notification bell in the application header with unread badge counter (`#notification-badge-count`).
+  - Expandable dropdown list with real-time WebSocket hydration via `NotificationService` (`/hubs/notifications`).
+  - One-click "Mark all read" action synchronized via REST (`PUT /api/notifications/read-all`).
+* **Alpha Access Advisory & Email Purpose Clarity (`auth-gate.html`)**:
+  - Replaces misleading OTP verification labels with: `(Used for account notifications & activation)`.
+  - Prominent **Alpha Preview Access Notice** card informing users that the app owner (`nikunj_banker@hotmail.com`) reviews and activates accounts before login.
+* **Applicant Live Status Screen (`#form-pending-approval`, `auth-gate.js`)**:
+  - Redirects newly registered applicants to a real-time status card.
+  - Automatically joins private applicant channel via cryptographic 128-bit ticket over SignalR.
+  - Automatically transitions to the sign-in screen upon receiving `AccountApproved` event from the server.
+* **SuperAdmin Governance Console Integration (`admin-modal.js`)**:
+  - Displays `⏳ Pending Review` status badges on inactive accounts.
+  - Provides prominent `🔓 Activate & Approve` action buttons for instant one-click activation.
+  - Real-time `NewRegistration` SignalR events trigger instant directory refresh and toast notification alerts.

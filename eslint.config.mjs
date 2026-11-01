@@ -59,7 +59,8 @@ export default [
         Headers: "readonly",
         TextEncoder: "readonly",
         TextDecoder: "readonly",
-        crypto: "readonly"
+        crypto: "readonly",
+        WebSocket: "readonly"
       }
     },
     rules: {
