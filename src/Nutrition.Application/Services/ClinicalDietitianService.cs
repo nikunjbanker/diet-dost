@@ -110,7 +110,7 @@ public class ClinicalDietitianService
         var ledger = ledgers.FirstOrDefault();
 
         var profile = await _profileRepo.GetByIdAsync(userId, ct);
-        var budget = profile != null ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
+        var budget = (profile != null && profile.IsIntakeComplete()) ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
         var macros = (profile != null && budget != null) ? ClinicalCalculators.CalculateMacroDistribution(profile, budget) : null;
 
         if (ledger is null)
@@ -388,7 +388,7 @@ public class ClinicalDietitianService
         var profile = await _profileRepo.GetByIdAsync(userId, ct);
         var userTz = GetUserTimeZoneInfo(profile?.Timezone);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
-        var budgetObj = profile != null ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
+        var budgetObj = (profile != null && profile.IsIntakeComplete()) ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
         var targetBudget = budgetObj?.TargetCalories ?? 1600.0;
         var targetProtein = (profile != null && budgetObj != null) 
             ? ClinicalCalculators.CalculateMacroDistribution(profile, budgetObj).ProteinGrams 

@@ -170,4 +170,22 @@ public class Bip39MnemonicTests
         Assert.Equal("f22c3a7164a9f7d69ee72a2a9139d2cf3c9f25ca3b0dd02ee79dc58e6d956463bb5694b88732e28c3326b2213ae61391f319ee78120fd6139832c9adcbcd984e", keyHash);
         Assert.True(RecoveryKit.VerifyKey(entropy, salt, keyHash));
     }
+
+    [Fact]
+    public void Demo3_DisasterRecoveryKit_ValidatesAndDerivesExpectedLookupId()
+    {
+        // Demo3 sample disaster recovery kit validation:
+        var phrase = "parade state entry also vital amateur young adjust card health flat matrix";
+        var expectedEntropyHex = string.Concat("a01a992e", "83af500f", "7fd01c22", "8d456244");
+        var expectedLookupId = string.Concat("b487dca4", "3f7e0354", "361bfc91");
+
+        Assert.True(Bip39Mnemonic.ValidateMnemonic(phrase, out var entropy), "Demo3 phrase must pass BIP-39 validation");
+        Assert.Equal(expectedEntropyHex, Convert.ToHexString(entropy).ToLowerInvariant());
+
+        var derivedLookupId = RecoveryKit.DeriveLookupId(entropy);
+        Assert.Equal(expectedLookupId, derivedLookupId);
+
+        var encoded = Bip39Mnemonic.Encode(entropy);
+        Assert.Equal(phrase, encoded);
+    }
 }

@@ -408,4 +408,38 @@ public class WebBffCompositeTests : IDisposable
         var headerHtmlContent = File.ReadAllText(headerHtmlPath);
         Assert.Contains("id=\"ai-quota-badge\"", headerHtmlContent);
     }
+
+    [Fact]
+    public async Task GetDashboardComposite_AnonymousUserWithIncompleteProfile_ReturnsOkWithNullBudgetAndBaselineLedger()
+    {
+        // Arrange
+        var userId = "usr-anon-demo3-incomplete";
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+            var profile = new UserProfile
+            {
+                Id = userId,
+                Name = "Demo3",
+                Timezone = "Asia/Kolkata"
+            };
+            db.Profiles.Add(profile);
+            await db.SaveChangesAsync();
+        }
+
+        var principal = CreateUserPrincipal(userId, "anonymous@dietdost.app", "User", "Free", "Demo3");
+        var controller = CreateController(principal);
+
+        // Act
+        var actionResult = await controller.GetDashboardComposite("7D");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var composite = Assert.IsType<WebDashboardCompositeDto>(okResult.Value);
+
+        Assert.Equal("Demo3", composite.User.DisplayName);
+        Assert.Null(composite.User.Budget);
+        Assert.Null(composite.User.Macros);
+        Assert.Equal(1600.0, composite.TodayLedger.BudgetedCalories);
+    }
 }

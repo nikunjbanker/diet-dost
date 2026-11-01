@@ -14,31 +14,31 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { apiClient } from './services/api.js?v=1.9.3';
-import { AuthService } from './services/auth-service.js?v=1.9.3';
-import { AdminService } from './services/admin-service.js?v=1.9.3';
-import { MealsService } from './services/meals-service.js?v=1.9.3';
-import { ProfileService } from './services/profile-service.js?v=1.9.3';
-import { AnalyticsService } from './services/analytics-service.js?v=1.9.3';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.9.3';
-import { MedicationService } from './services/medication-service.js?v=1.9.3';
+import { apiClient } from './services/api.js?v=1.9.4';
+import { AuthService } from './services/auth-service.js?v=1.9.4';
+import { AdminService } from './services/admin-service.js?v=1.9.4';
+import { MealsService } from './services/meals-service.js?v=1.9.4';
+import { ProfileService } from './services/profile-service.js?v=1.9.4';
+import { AnalyticsService } from './services/analytics-service.js?v=1.9.4';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.9.4';
+import { MedicationService } from './services/medication-service.js?v=1.9.4';
 
-import { toastService } from './ui/toast.js?v=1.9.3';
-import { confettiService } from './ui/confetti.js?v=1.9.3';
-import { DailyHudController } from './ui/daily-hud.js?v=1.9.3';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.9.3';
-import { ReviewModalController } from './ui/review-modal.js?v=1.9.3';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.3';
-import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.3';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.9.3';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.3';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.9.3';
-import { AuthGateController } from './ui/auth-gate.js?v=1.9.3';
-import { AdminModalController } from './ui/admin-modal.js?v=1.9.3';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.9.3';
-import { CameraService } from './services/camera-service.js?v=1.9.3';
-import { CameraModalController } from './ui/camera-modal.js?v=1.9.3';
-import { NotificationService } from './services/notification-service.js?v=1.9.3';
+import { toastService } from './ui/toast.js?v=1.9.4';
+import { confettiService } from './ui/confetti.js?v=1.9.4';
+import { DailyHudController } from './ui/daily-hud.js?v=1.9.4';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.9.4';
+import { ReviewModalController } from './ui/review-modal.js?v=1.9.4';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.4';
+import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.4';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.9.4';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.4';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.9.4';
+import { AuthGateController } from './ui/auth-gate.js?v=1.9.4';
+import { AdminModalController } from './ui/admin-modal.js?v=1.9.4';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.9.4';
+import { CameraService } from './services/camera-service.js?v=1.9.4';
+import { CameraModalController } from './ui/camera-modal.js?v=1.9.4';
+import { NotificationService } from './services/notification-service.js?v=1.9.4';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -866,6 +866,24 @@ async function initApp() {
     analyticsChart.refresh(dashboard.projections, dashboard.recentMeals);
     quotaModal.hydrate(dashboard.quota);
     progressModal.refresh(dashboard.featureFlags);
+
+    // Clinical Intake Pending Check & Onboarding Flow
+    const isIntakePending = Boolean(dashboard.isIntakePending || dashboard.user?.isIntakePending);
+    const revisitBanner = document.getElementById('onboarding-revisit-banner');
+
+    if (isIntakePending) {
+      if (revisitBanner) revisitBanner.style.display = 'block';
+
+      // Auto-launch onboarding modal if not deferred in this session
+      const isDeferred = sessionStorage.getItem('dd_onboarding_deferred') === 'true';
+      if (!isDeferred) {
+        const userName = dashboard.user?.displayName || dashboard.user?.name || '';
+        profileModal.open({ isOnboarding: true, userName });
+      }
+    } else {
+      if (revisitBanner) revisitBanner.style.display = 'none';
+      sessionStorage.removeItem('dd_onboarding_deferred');
+    }
   }
 
   eventBus.on('auth:success', async (user) => {
@@ -883,6 +901,35 @@ async function initApp() {
         progressModal.refresh()
       ]);
     }
+  });
+
+
+  // Onboarding banner CTA button
+  const btnBannerComplete = document.getElementById('btn-banner-complete-profile');
+  if (btnBannerComplete) {
+    btnBannerComplete.addEventListener('click', () => {
+      const currentUserName = document.getElementById('header-user-name')?.textContent || '';
+      profileModal.open({ isOnboarding: true, userName: currentUserName });
+    });
+  }
+
+  // Event bus listeners for profile save / deferral
+  eventBus.on('profile:updated', async () => {
+    sessionStorage.removeItem('dd_onboarding_deferred');
+    const banner = document.getElementById('onboarding-revisit-banner');
+    if (banner) banner.style.display = 'none';
+    try {
+      const period = appState.activePeriod || '7D';
+      const dashboard = await apiClient.getWebDashboard(period);
+      hydrateFromDashboard(dashboard);
+    } catch (err) {
+      console.warn('[Main] Error re-hydrating dashboard after profile update:', err);
+    }
+  });
+
+  eventBus.on('profile:onboarding-deferred', () => {
+    const banner = document.getElementById('onboarding-revisit-banner');
+    if (banner) banner.style.display = 'block';
   });
 
   // ============================================================================

@@ -361,7 +361,8 @@ public class SharedCqrsQueryTests : IDisposable
         Assert.True(result.Succeeded);
         Assert.NotNull(result.Data);
         Assert.Equal("Rohan Verma", result.Data.Profile.Name);
-        Assert.True(result.Data.Budget.TargetCalories > 1000);
+        Assert.NotNull(result.Data.Budget);
+        Assert.True(result.Data.Budget!.TargetCalories > 1000);
     }
 
     [Fact]
