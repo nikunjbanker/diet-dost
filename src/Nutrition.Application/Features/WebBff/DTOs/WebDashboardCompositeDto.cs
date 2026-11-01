@@ -23,7 +23,8 @@ public record WebDashboardCompositeDto(
     IReadOnlyList<MealLog> RecentMeals,
     AiUsageStatsResult Quota,
     TierFeatureFlagsDto FeatureFlags,
-    bool IsIntakePending = false
+    bool IsIntakePending = false,
+    bool IsOnboarded = false
 );
 
 /// <summary>
@@ -37,7 +38,8 @@ public record WebUserProfileDto(
     string Role,
     BmrTdeeResult? Budget = null,
     MacroDistribution? Macros = null,
-    bool IsIntakePending = false
+    bool IsIntakePending = false,
+    bool IsOnboarded = false
 );
 
 /// <summary>

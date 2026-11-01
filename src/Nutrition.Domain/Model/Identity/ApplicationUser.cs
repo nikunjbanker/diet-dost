@@ -89,6 +89,12 @@ public partial class ApplicationUser : ISoftDeletable
     /// Whether this user registered anonymously without email or phone number (zero-PII mode).
     /// </summary>
     public bool IsAnonymous { get; set; }
+ 
+    /// <summary>
+    /// Whether this user account has completed initial clinical onboarding.
+    /// Default false on registration, marked true once clinical profile is saved.
+    /// </summary>
+    public bool IsOnboarded { get; set; } = false;
 
     /// <summary>
     /// Optional user display name chosen during anonymous or standard onboarding.

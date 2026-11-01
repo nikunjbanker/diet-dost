@@ -188,7 +188,8 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig
+            tierConfig,
+            user.IsOnboarded
         );
 
         if (_logger.IsEnabled(LogLevel.Information))

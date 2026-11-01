@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -54,7 +54,8 @@ public class GetCurrentUserQueryHandler : IQueryHandler<GetCurrentUserQuery, Res
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig
+            tierConfig,
+            user.IsOnboarded
         );
 
         return Result<CurrentUserResponseDto>.Success(responseDto);

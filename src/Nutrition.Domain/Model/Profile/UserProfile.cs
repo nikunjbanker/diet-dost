@@ -84,6 +84,12 @@ public class UserProfile : ISoftDeletable
     /// </summary>
     public string Timezone { get; set; } = "Asia/Kolkata";
 
+    /// <summary>
+    /// Explicit onboarding boolean flag. Default false on initial account creation, marked true when clinical intake is completed and saved.
+    /// Under Zero Assumption Rule, un-onboarded accounts default to a safe 1,600 kcal baseline.
+    /// </summary>
+    public bool IsOnboarded { get; set; } = false;
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
 
@@ -96,7 +102,8 @@ public class UserProfile : ISoftDeletable
     /// </summary>
     public bool IsIntakeComplete()
     {
-        return !string.IsNullOrWhiteSpace(Name)
+        return IsOnboarded
+            && !string.IsNullOrWhiteSpace(Name)
             && !string.IsNullOrWhiteSpace(Timezone)
             && Age > 0 && Age <= 120
             && HeightCm >= 80 && HeightCm <= 250

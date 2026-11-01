@@ -14,31 +14,31 @@ import { container } from './core/di-container.js';
 import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
-import { apiClient } from './services/api.js?v=1.9.4';
-import { AuthService } from './services/auth-service.js?v=1.9.4';
-import { AdminService } from './services/admin-service.js?v=1.9.4';
-import { MealsService } from './services/meals-service.js?v=1.9.4';
-import { ProfileService } from './services/profile-service.js?v=1.9.4';
-import { AnalyticsService } from './services/analytics-service.js?v=1.9.4';
-import { ProgressPhotosService } from './services/progress-service.js?v=1.9.4';
-import { MedicationService } from './services/medication-service.js?v=1.9.4';
+import { apiClient } from './services/api.js?v=1.9.5';
+import { AuthService } from './services/auth-service.js?v=1.9.5';
+import { AdminService } from './services/admin-service.js?v=1.9.5';
+import { MealsService } from './services/meals-service.js?v=1.9.5';
+import { ProfileService } from './services/profile-service.js?v=1.9.5';
+import { AnalyticsService } from './services/analytics-service.js?v=1.9.5';
+import { ProgressPhotosService } from './services/progress-service.js?v=1.9.5';
+import { MedicationService } from './services/medication-service.js?v=1.9.5';
 
-import { toastService } from './ui/toast.js?v=1.9.4';
-import { confettiService } from './ui/confetti.js?v=1.9.4';
-import { DailyHudController } from './ui/daily-hud.js?v=1.9.4';
-import { MealLoggerController } from './ui/meal-logger.js?v=1.9.4';
-import { ReviewModalController } from './ui/review-modal.js?v=1.9.4';
-import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.4';
-import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.4';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.9.4';
-import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.4';
-import { ProgressModalController } from './ui/progress-modal.js?v=1.9.4';
-import { AuthGateController } from './ui/auth-gate.js?v=1.9.4';
-import { AdminModalController } from './ui/admin-modal.js?v=1.9.4';
-import { QuotaModalController } from './ui/quota-modal.js?v=1.9.4';
-import { CameraService } from './services/camera-service.js?v=1.9.4';
-import { CameraModalController } from './ui/camera-modal.js?v=1.9.4';
-import { NotificationService } from './services/notification-service.js?v=1.9.4';
+import { toastService } from './ui/toast.js?v=1.9.5';
+import { confettiService } from './ui/confetti.js?v=1.9.5';
+import { DailyHudController } from './ui/daily-hud.js?v=1.9.5';
+import { MealLoggerController } from './ui/meal-logger.js?v=1.9.5';
+import { ReviewModalController } from './ui/review-modal.js?v=1.9.5';
+import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.5';
+import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.5';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.9.5';
+import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.5';
+import { ProgressModalController } from './ui/progress-modal.js?v=1.9.5';
+import { AuthGateController } from './ui/auth-gate.js?v=1.9.5';
+import { AdminModalController } from './ui/admin-modal.js?v=1.9.5';
+import { QuotaModalController } from './ui/quota-modal.js?v=1.9.5';
+import { CameraService } from './services/camera-service.js?v=1.9.5';
+import { CameraModalController } from './ui/camera-modal.js?v=1.9.5';
+import { NotificationService } from './services/notification-service.js?v=1.9.5';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -870,7 +870,7 @@ async function initApp() {
     progressModal.refresh(dashboard.featureFlags);
 
     // Clinical Intake Pending Check & Onboarding Flow
-    const isIntakePending = Boolean(dashboard.isIntakePending || dashboard.user?.isIntakePending);
+    const isIntakePending = Boolean(dashboard.isIntakePending || dashboard.user?.isIntakePending || (dashboard.user && dashboard.user.isOnboarded === false) || dashboard.isOnboarded === false);
     const revisitBanner = document.getElementById('onboarding-revisit-banner');
 
     if (isIntakePending) {

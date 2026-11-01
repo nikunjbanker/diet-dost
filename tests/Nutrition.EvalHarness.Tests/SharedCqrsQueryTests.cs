@@ -98,7 +98,8 @@ public class SharedCqrsQueryTests : IDisposable
             TargetWeightKg = 70,
             ActivityLevel = ActivityLevel.Moderate,
             DietaryPreference = DietaryPreference.PureVeg,
-            Timezone = "Asia/Kolkata"
+            Timezone = "Asia/Kolkata",
+            IsOnboarded = true
         };
         db.Profiles.Add(profile);
 

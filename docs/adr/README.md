@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 119 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 120 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **38** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **39** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **24** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **28** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **16** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -84,6 +84,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-152** | Mermaid Diagram Edge Label Quoting Invariant & GitHub Rich Display Parse Error Resolution | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-152-mermaid-edge-label-quote-invariant-and-syntax-repair.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-152-mermaid-edge-label-quote-invariant-and-syntax-repair.md) |
 | **ADR-153** | Idempotent Database Seeding, EF Core Global Query Filter Bypass, and Primary Key Conflict Defense | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md) |
 | **ADR-154** | Authorized Progress Media Streaming, DPDPA Biometric Isolation, and Dashboard Hydration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md) |
+| **ADR-155** | Explicit User Onboarding Boolean Flag & Zero-Assumption Intake Governance | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-155-explicit-user-onboarding-boolean-flag.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-155-explicit-user-onboarding-boolean-flag.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*

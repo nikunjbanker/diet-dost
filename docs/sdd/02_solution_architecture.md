@@ -1110,3 +1110,16 @@ To prevent startup container crashes and primary key constraint collisions (`PK_
   - Admins and SuperAdmins can view soft-deleted progress photos for regulatory audit trails; standard users receive HTTP 404 Not Found.
 * **CQRS URL Projection**:
   - All progress photo queries and commands (GetProgressPhotosQuery, CompareProgressPhotosQuery, UploadProgressPhotoCommand, GetDeletedRecordsQuery) project URLs dynamically to /api/media/progress/{id} rather than exposing internal disk storage structures.
+
+## 18. Explicit User Onboarding Boolean Flag & Zero-Assumption Intake Governance (`ADR-155`)
+
+* **Explicit Onboarding State Invariant**:
+  - Replaces fragile numeric heuristics with explicit `bool IsOnboarded` across `UserProfile` and `ApplicationUser`.
+  - Pre-populated registration dummy values (`Age: 30`, `HeightCm: 170`, `CurrentWeightKg: 70`, etc.) do NOT satisfy `UserProfile.IsIntakeComplete()` while `IsOnboarded == false`.
+  - Guarantees that newly registered accounts always report `IsIntakePending: true` across `CurrentUserResponseDto`, `WebDashboardCompositeDto`, and `WebUserProfileDto`.
+* **Zero-Assumption Degradation**:
+  - While `IsOnboarded == false`, personalized caloric targets and macro distributions are withheld (`Budget: null`, `Macros: null`), and the system safely falls back to the conservative 1,600 kcal baseline.
+  - Upon submitting clinical intake via `SaveProfileCommand`, `IsOnboarded` is set to `true` on both `UserProfile` and `ApplicationUser`, unlocking personalized clinical calculations (ICMR-NIN 2024 / WHO Asian-Indian standards).
+* **Idempotent Dual-Database Schema Reconciliation**:
+  - `DatabaseInitializationExtensions.cs` incrementally reconciles `IsOnboarded` (`INTEGER NOT NULL DEFAULT 0` for SQLite; `BIT NOT NULL DEFAULT 0` for Azure SQL) on existing `Users` and `Profiles` tables.
+  - Seeds all standard demo users (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`, and `usr_87c369c1e3f8`) with `IsOnboarded = true` to preserve automated CFT and E2E test suites.

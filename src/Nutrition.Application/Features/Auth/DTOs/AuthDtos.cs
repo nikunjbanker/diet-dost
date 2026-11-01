@@ -28,7 +28,8 @@ public record CurrentUserResponseDto(
     UserTier Tier,
     bool IsEmailVerified,
     bool IsMobileVerified,
-    TierFeatureConfiguration? Entitlements
+    TierFeatureConfiguration? Entitlements,
+    bool IsOnboarded = false
 );
 
 public record LoginResultDto(
