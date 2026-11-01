@@ -233,6 +233,25 @@ public class AdminController : ControllerBase
         });
     }
 
+    [Authorize(Roles = "SuperAdmin")]
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(
+        [FromRoute] string id,
+        CancellationToken ct = default)
+    {
+        var adminUserId = User.GetUserId() ?? string.Empty;
+        var currentRole = User.GetRole() ?? string.Empty;
+        var command = new AdminDeleteUserCommand(id, adminUserId, currentRole);
+        var result = await _dispatcher.SendAsync(command, ct);
+
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+
+        return Ok(result.Data);
+    }
+
     [HttpGet("tier-configs")]
     public async Task<IActionResult> GetTierConfigs(CancellationToken ct = default)
     {

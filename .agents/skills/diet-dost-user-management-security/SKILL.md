@@ -371,6 +371,7 @@ public class AiUsageLog
 | GET | `/api/admin/users` | Paginated users list with roles, tiers, consent timestamps, AI consumption. |
 | PUT | `/api/admin/users/{id}/tier` | Update user tier. |
 | PUT | `/api/admin/users/{id}/status` | Toggle active/locked status. SuperAdmin immune — reject with `403`. |
+| DELETE | `/api/admin/users/{id}` | `[Authorize(Roles = "SuperAdmin")]` Logical soft-delete user & profile (ADR-148). Immune: self-delete (`400`), root SuperAdmin `nikunj_banker@hotmail.com` (`403`), lower-tier deleting upper-tier (`403`). |
 | GET | `/api/admin/tier-configs` | View all dynamic tier configurations. |
 | PUT | `/api/admin/tier-configs/{tier}` | Update daily limits and feature toggles dynamically. |
 
@@ -572,6 +573,8 @@ public record QuotaStatus(
 2. SuperAdmin role **cannot be demoted** via the Admin API.
 3. SuperAdmin has **infinite AI quota** (`DailyAiDetectionLimit = -1`).
 4. Existing seed data (sample profiles, meals, progress photos keyed to `"user-default"`) is migrated to the configured SuperAdmin account at startup.
+5. Root SuperAdmin (`nikunj_banker@hotmail.com` / `Auth:SuperAdminEmail`) **cannot be deleted by anyone** (`403 Forbidden: CannotDeleteRootSuperAdmin`).
+6. SuperAdmin **cannot delete their own account** (`400 BadRequest: CannotDeleteSelf`) and lower tiers cannot delete upper tiers (`403 Forbidden: CannotDeleteHigherTierUser`).
 
 ---
 
