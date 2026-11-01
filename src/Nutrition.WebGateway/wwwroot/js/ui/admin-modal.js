@@ -183,10 +183,20 @@ export class AdminModalController {
       }
 
       this.usersMap.clear();
+      const currentUserId = this.authService?.currentUser?.id || this.authService?.currentUser?.userId;
+      const currentUserEmail = (this.authService?.currentUser?.email || '').toLowerCase();
+      const viewerIsSuper = this.isSuperAdmin();
+      const viewerTier = this.authService?.currentUser?.tier;
+      const viewerTierNum = typeof viewerTier === 'number' ? viewerTier : (viewerTier === 'SuperAdmin' ? 3 : 2);
       users.forEach(u => this.usersMap.set(u.id, u));
 
       this.usersTableBody.innerHTML = users.map(u => {
         const isSuper = u.role === 2 || u.role === 'SuperAdmin';
+        const isSelf = (currentUserId && u.id === currentUserId) || (currentUserEmail && u.email && u.email.toLowerCase() === currentUserEmail);
+        const isRootSuper = (u.email && u.email.toLowerCase() === 'nikunj_banker@hotmail.com');
+        const targetTierNum = typeof u.tier === 'number' ? u.tier : (u.tier === 'SuperAdmin' ? 3 : u.tier === 'Premium' ? 2 : u.tier === 'Basic' ? 1 : 0);
+        const isLowerTierThanTarget = viewerTierNum < targetTierNum;
+        const canDelete = viewerIsSuper && !isSelf && !isRootSuper && !isLowerTierThanTarget;
         const roleStr = typeof u.role === 'number' ? (u.role === 2 ? 'SuperAdmin' : u.role === 1 ? 'Admin' : 'User') : u.role;
         const tierStr = typeof u.tier === 'number' ? (u.tier === 3 ? 'SuperAdmin' : u.tier === 2 ? 'Premium' : u.tier === 1 ? 'Basic' : 'Free') : u.tier;
         const statusBadge = u.isActive
@@ -235,9 +245,8 @@ export class AdminModalController {
               ${statusBadge}
             </td>
             <td style="padding: 8px 10px; white-space: nowrap;">
-              <button type="button" class="btn btn-xs btn-outline btn-edit-user" data-user-id="${u.id}" style="margin-right: 4px;">
-                ✏️ Edit
-              </button>
+              <button type="button" class="btn btn-xs btn-outline btn-edit-user" data-user-id="${u.id}" style="margin-right: 4px;">✏️ Edit</button>
+              ${canDelete ? `<button type="button" class="btn btn-xs btn-outline btn-delete-user" data-user-id="${u.id}" data-user-email="${this.escapeHtml(u.email)}" style="margin-right: 4px; color: #f87171; border-color: rgba(239, 68, 68, 0.4);" title="Delete User">🗑️ Delete</button>` : ''}
               ${isSuper ? '<span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 4px;">Protected</span>' : `
                 <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-user-id="${u.id}" data-active="${u.isActive}" title="${u.isActive ? 'Deactivate Account' : 'Activate & Enable Account'}">
                   ${u.isActive ? '🔒 Lock' : '🔓 Activate & Approve'}
@@ -304,7 +313,26 @@ export class AdminModalController {
       });
     });
 
-    this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
+        this.usersTableBody?.querySelectorAll('.btn-delete-user').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const userId = btn.dataset.userId;
+        const userEmail = btn.dataset.userEmail;
+        if (!userId) return;
+
+        const confirmed = window.confirm(`Are you sure you want to delete user ${userEmail}? This will revoke access and soft-delete the account.`);
+        if (!confirmed) return;
+
+        try {
+          await this.adminService.deleteUser(userId);
+          this.toastService?.success(`User ${userEmail} deleted successfully.`);
+          this.loadUsers();
+        } catch (err) {
+          this.toastService?.error(err.data?.error || err.data?.message || err.message || 'Failed to delete user.');
+        }
+      });
+    });
+
+this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
       btn.addEventListener('click', async () => {
         const userId = btn.dataset.userId;
         const isCurrentlyActive = btn.dataset.active === 'true';

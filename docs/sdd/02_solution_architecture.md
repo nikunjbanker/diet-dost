@@ -532,6 +532,7 @@ Per ADR-140 and Issue #115:
   - `SimulateQrApprovalCommandHandler`: Gated behind `IAppEnvironment.AllowsDemoUsers` with strict prohibition against SuperAdmin elevation (GAP-39).
   - `DeleteAccountCommandHandler`: Security stamp rotation and identifier anonymization (`_DELETED_{id}`) under DPDPA 2023 (GAP-22, GAP-24).
   - `AdminUserCommands`: Restricts `UserTier.SuperAdmin` promotion solely to callers with root SuperAdmin role (GAP-11).
+  - `AdminDeleteUserCommandHandler`: Enforces 5-stage defensive guardrails (self-deletion guard, root SuperAdmin protection for `nikunj_banker@hotmail.com`, and tier-hierarchy enforcement preventing lower tiers from deleting upper tiers), executing logical soft-delete with session revocation and cascade profile deletion (ADR-148).
 * **Infrastructure Layer Persistence & Media**:
   - `EfRepository<T>.DeleteAsync`: Enforces soft-delete across all `ISoftDeletable` entities (GAP-23, GAP-34).
   - `ImageSanitizer.cs`: Defensive SkiaSharp image header probing and EXIF stripping (GAP-10, GAP-35).

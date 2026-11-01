@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
@@ -510,3 +511,118 @@ public class AdminLockUserCommandHandler : ICommandHandler<AdminLockUserCommand,
         return await _dispatcher.SendAsync(new UpdateUserStatusCommand(request.TargetUserId, !request.IsLocked, request.AdminUserId), ct);
     }
 }
+
+public record AdminDeleteUserCommand(
+    string TargetUserId,
+    string AdminUserId,
+    string CurrentAdminRole
+) : ICommand<Result<AdminDeleteUserResultDto>>;
+
+public record AdminDeleteUserResultDto(
+    string Message,
+    string UserId,
+    string Email,
+    DateTime DeletedAtUtc
+);
+
+public class AdminDeleteUserCommandHandler : ICommandHandler<AdminDeleteUserCommand, Result<AdminDeleteUserResultDto>>
+{
+    private readonly IRepository<ApplicationUser> _userRepo;
+    private readonly IRepository<UserProfile> _profileRepo;
+    private readonly IUnitOfWork _uow;
+    private readonly IConfiguration _configuration;
+    private readonly ILogger<AdminDeleteUserCommandHandler> _logger;
+
+    public AdminDeleteUserCommandHandler(
+        IRepository<ApplicationUser> userRepo,
+        IRepository<UserProfile> profileRepo,
+        IUnitOfWork uow,
+        IConfiguration configuration,
+        ILogger<AdminDeleteUserCommandHandler> logger)
+    {
+        _userRepo = userRepo;
+        _profileRepo = profileRepo;
+        _uow = uow;
+        _configuration = configuration;
+        _logger = logger;
+    }
+
+    public async Task<Result<AdminDeleteUserResultDto>> HandleAsync(AdminDeleteUserCommand request, CancellationToken ct = default)
+    {
+        // 1. Role Authorization Guard: Only SuperAdmin can execute user deletion
+        if (request.CurrentAdminRole != nameof(UserRole.SuperAdmin))
+        {
+            return Result<AdminDeleteUserResultDto>.Forbidden("Only SuperAdmin can delete users.");
+        }
+
+        // 2. Existence Check
+        var targetUser = await _userRepo.GetByIdAsync(request.TargetUserId, ct);
+        if (targetUser == null || targetUser.IsDeleted)
+        {
+            return Result<AdminDeleteUserResultDto>.NotFound("User not found.");
+        }
+
+        // 3. Self-Deletion Guard: SuperAdmin cannot delete their own account
+        var adminUser = await _userRepo.GetByIdAsync(request.AdminUserId, ct);
+        if (adminUser != null && (string.Equals(targetUser.Id, adminUser.Id, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(targetUser.Email, adminUser.Email, StringComparison.OrdinalIgnoreCase)))
+        {
+            return Result<AdminDeleteUserResultDto>.Failure("You cannot delete your own account.", "CannotDeleteSelf", 400);
+        }
+
+        if (string.Equals(targetUser.Id, request.AdminUserId, StringComparison.OrdinalIgnoreCase))
+        {
+            return Result<AdminDeleteUserResultDto>.Failure("You cannot delete your own account.", "CannotDeleteSelf", 400);
+        }
+
+        // 4. Immutable Root SuperAdmin Protection Guard: nikunj_banker@hotmail.com cannot be deleted by anyone
+        var configuredRootEmail = _configuration["Auth:SuperAdminEmail"] ?? "nikunj_banker@hotmail.com";
+        if (string.Equals(targetUser.Email, configuredRootEmail, StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(targetUser.Email, "nikunj_banker@hotmail.com", StringComparison.OrdinalIgnoreCase))
+        {
+            return Result<AdminDeleteUserResultDto>.Failure(
+                "The root SuperAdmin account (nikunj_banker@hotmail.com) cannot be deleted by anyone.",
+                "CannotDeleteRootSuperAdmin",
+                403);
+        }
+
+        // 5. Tier Hierarchy Guard: Lower tier user cannot delete upper tier user
+        if (adminUser != null && (int)adminUser.Tier < (int)targetUser.Tier)
+        {
+            return Result<AdminDeleteUserResultDto>.Failure(
+                "A lower tier user is not allowed to delete a user with a higher tier.",
+                "CannotDeleteHigherTierUser",
+                403);
+        }
+
+        // 6. Logical Soft-Delete execution
+        var deletedAtUtc = DateTime.UtcNow;
+        targetUser.IsDeleted = true;
+        targetUser.DeletedAtUtc = deletedAtUtc;
+        targetUser.IsActive = false;
+        targetUser.SecurityStamp = Guid.NewGuid().ToString("N"); // Revoke all active sessions/tokens immediately
+
+        // Cascade soft-delete profile if present
+        var profile = await _profileRepo.GetByIdAsync(targetUser.Id, ct);
+        if (profile != null)
+        {
+            profile.IsDeleted = true;
+            profile.DeletedAtUtc = deletedAtUtc;
+        }
+
+        await _uow.SaveChangesAsync(ct);
+
+        if (_logger.IsEnabled(LogLevel.Information))
+        {
+            _logger.LogInformation("SuperAdmin {AdminId} successfully soft-deleted user {UserId} ({Email})",
+                request.AdminUserId, targetUser.Id, targetUser.Email);
+        }
+
+        return Result<AdminDeleteUserResultDto>.Success(new AdminDeleteUserResultDto(
+            $"User {targetUser.Email} deleted successfully.",
+            targetUser.Id,
+            targetUser.Email,
+            deletedAtUtc
+        ));
+    }
+    }

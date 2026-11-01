@@ -47,6 +47,10 @@ export class AdminService {
     return await this.api.put(`/api/admin/users/${userId}/lock`, { isLocked });
   }
 
+  async deleteUser(userId) {
+    return await this.api.delete(`/api/admin/users/${userId}`);
+  }
+
   async getTierConfigs() {
     return await this.api.get('/api/admin/tier-configs');
   }

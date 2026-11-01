@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-10-31T20:08:07.627091+00:00",
-  "totalAdrs": 113,
+  "generatedAt": "2026-11-01T07:44:33.696618+00:00",
+  "totalAdrs": 114,
   "categoryCounts": {
     "architecture": 33,
-    "security": 23,
+    "security": 24,
     "devops": 28,
     "presentation": 16,
     "governance": 13
@@ -1365,6 +1365,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-148-alpha-user-registration-approval-and-inapp-notification-system.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-148-alpha-user-registration-approval-and-inapp-notification-system.md"
+    },
+    {
+      "id": "ADR-149",
+      "number": 149,
+      "title": "SuperAdmin User Deletion Action with Multi-Tier Defensive Guardrails and DPDPA 2023 Compliance",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-11-01",
+      "subsystem": "Security",
+      "filename": "ADR-20261101-149-superadmin-user-deletion-and-multi-tier-defense.md",
+      "relativePath": "docs/adr/security/ADR-20261101-149-superadmin-user-deletion-and-multi-tier-defense.md"
     }
   ]
 }
