@@ -57,7 +57,7 @@ flowchart TD
 
     ACA -->|Private Backbone via Service Endpoint| VNET_RULE
     VNET_RULE --> DB
-    ACA -->|Managed Identity (Zero Password in Config)| SEC_CONN
+    ACA -->|"Managed Identity (Zero Password in Config)"| SEC_CONN
     DEV_CLI -.->|az sql server firewall-rule| FW_RULE
     ADS -.->|Port 1433 Encrypted TLS 1.2| FW_RULE
     FW_RULE --> DB

@@ -52,20 +52,20 @@ graph TD
 
     %% Ingress & Traffic Flows
     ACA_Ingress --> AppContainer
-    AppContainer -->|SMB 3.1.1 Encrypted Mount: /app/data| FileShare
+    AppContainer -->|"SMB 3.1.1 Encrypted Mount: /app/data"| FileShare
     StorageAcc --> FileServices --> FileShare
 
     %% Image Delivery & Registry Flows
     CICD -->|Podman Push via Temporary OAuth Token| ACR
     ACR -->|Secure OCI Image Pull via Port 443| AppContainer
     AppContainer -.->|Assigned Identity| MI
-    MI -.->|Role: AcrPull (7f951dda...)| ACR
+    MI -.->|"Role: AcrPull (7f951dda...)"| ACR
 
     %% Secrets & Telemetry Flows
-    MI -.->|Role: Key Vault Secrets User| KV
-    MI -.->|Role: Monitoring Metrics Publisher| AppInsights
-    AppContainer -.->|Secret Resolution: Jwt--Key & AI API Keys| KV
-    AppContainer -.->|App Logs & Exceptions Only (Entra ID DefaultAzureCredential)| AppInsights
+    MI -.->|"Role: Key Vault Secrets User"| KV
+    MI -.->|"Role: Monitoring Metrics Publisher"| AppInsights
+    AppContainer -.->|"Secret Resolution: Jwt--Key & AI API Keys"| KV
+    AppContainer -.->|"App Logs & Exceptions Only (Entra ID DefaultAzureCredential)"| AppInsights
     AppInsights -.->|Workspace Data Store| LogAnalytics
-    KV -.->|Diagnostic Stream: AuditEvent| DiagKV -.-> LogAnalytics
-    KV -.->|ServiceApiResult Metrics| AlertKV
+    KV -.->|"Diagnostic Stream: AuditEvent"| DiagKV -.-> LogAnalytics
+    KV -.->|"ServiceApiResult Metrics"| AlertKV

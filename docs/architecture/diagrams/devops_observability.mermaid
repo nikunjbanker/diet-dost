@@ -26,10 +26,10 @@ graph TD
         
         AppDeploy -->|Deploys Image| ACA
         NSG --- ACA
-        ACA -->|Mounted Volume (SMB 3.1.1)| SMB_Mount
+        ACA -->|"Mounted Volume (SMB 3.1.1)"| SMB_Mount
         ACA -.->|Passwordless Managed Identity| AKV
         ACA -.->|Pulls Image| ACR_Registry
-        ACA -.->|Application Logs Only (Entra ID)| AppInsights_Cloud
+        ACA -.->|"Application Logs Only (Entra ID)"| AppInsights_Cloud
     end
 
     subgraph Aspire_AppHost [".NET Aspire Local Orchestration & Observability"]

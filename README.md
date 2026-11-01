@@ -223,7 +223,7 @@ graph TB
     DB_Context --> AZURE_SMB
     ADAPTER_Secrets -.->|Runtime Secrets| AZURE_AKV
     AZURE_NSG --- AZURE_ACA
-    AZURE_ACA -->|Volume Mount (SMB 3.1.1)| AZURE_SMB
+    AZURE_ACA -->|"Volume Mount (SMB 3.1.1)"| AZURE_SMB
     AZURE_ACA -.->|Pulls Image| AZURE_ACR
     AZURE_AKV -.->|Diagnostic Audit Logs| OTEL_Collector
     AZURE_AKV -.->|Monitored By| AZURE_ALERT

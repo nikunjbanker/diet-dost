@@ -47,7 +47,7 @@ The repository maintains canonical single-source-of-truth Mermaid diagrams under
 Every `.mermaid` file in this repository **MUST** conform to these syntax rules:
 1. **Line 1 Root Directive**: Line 1 **MUST** begin directly with the Mermaid diagram declaration (e.g. `graph TB`, `graph TD`, `graph LR`, `sequenceDiagram`, `flowchart TD`). No blank lines, HTML comments, or markdown formatting are permitted on Line 1.
 2. **Line 2 License Block**: The dual AGPLv3 / SSPL v1 license header must be embedded on lines 2–8 using Mermaid comment syntax (`%%`).
-3. **Balanced Brackets**: All node labels with special characters (brackets, parentheses, commas) must use double quotes (e.g., `id["Label (Details)"]`).
+3. **Balanced Brackets & Quoted Labels**: All node labels and edge labels with special characters (brackets, parentheses, colons, commas) must use double quotes (e.g., `id["Label (Details)"]` and `A -->|"Volume Mount (SMB 3.1.1)"| B`).
 4. **No HTML Tags in Labels**: Use `<br/>` for line breaks inside double-quoted node labels. Do not use raw HTML block elements (`<div>`, `<span>`, `<p>`).
 
 ---

@@ -214,14 +214,14 @@ graph TD
     subgraph OptionA ["Option A: ACA + Azure Files (DB) & Azure Blob (Media) - Recommended Hybrid"]
         Cloud --> ACA_IngressA[ACA Ingress & Free Managed TLS 1.3]
         ACA_IngressA --> ACA_PodA[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
-        ACA_PodA -->|Volume Mount: /app/data| AzureFilesA[Azure Files SMB Volume<br/>diet_dost.db<br/>PRAGMA journal_mode=DELETE]
+        ACA_PodA -->|"Volume Mount: /app/data"| AzureFilesA[Azure Files SMB Volume<br/>diet_dost.db<br/>PRAGMA journal_mode=DELETE]
         ACA_PodA -->|Azure Storage SDK| AzureBlobA[Azure Blob Storage<br/>uploads/meals & progress<br/>Daily Hot Backups]
     end
     
     subgraph OptionB ["Option B: ACA + Azure Files Alone (All-in-One Share)"]
         Cloud --> ACA_IngressB[ACA Ingress & Free Managed TLS 1.3]
         ACA_IngressB --> ACA_PodB[Diet-Dost WebGateway Container<br/>minReplicas: 1, maxReplicas: 1]
-        ACA_PodB -->|Single Volume Mount: /app/data| AzureFilesB[Azure Files SMB Share<br/>- diet_dost.db<br/>- wwwroot/uploads/]
+        ACA_PodB -->|"Single Volume Mount: /app/data"| AzureFilesB[Azure Files SMB Share<br/>- diet_dost.db<br/>- wwwroot/uploads/]
     end
     
     subgraph OptionC ["Option C: Azure App Service Linux (PaaS)"]
