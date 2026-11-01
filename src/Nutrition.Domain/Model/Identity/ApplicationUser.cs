@@ -151,6 +151,7 @@ public partial class ApplicationUser : ISoftDeletable
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAtUtc { get; set; }
+    public DateTime? LastActiveUtc { get; set; }
 
     /// <summary>
     /// Normalizes email address for consistent, case-insensitive indexing.
@@ -303,3 +304,4 @@ public partial class ApplicationUser : ISoftDeletable
     [GeneratedRegex(@"[^\d+]")]
     private static partial Regex PhoneNumberDigitsRegex();
 }
+

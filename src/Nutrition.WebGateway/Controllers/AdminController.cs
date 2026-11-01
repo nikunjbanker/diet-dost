@@ -11,6 +11,7 @@ using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Features.Admin.Commands.TierConfiguration;
 using Nutrition.Application.Features.Admin.Commands.UserManagement;
 using Nutrition.Application.Features.Admin.Queries.GetAdminUsers;
+using Nutrition.Application.Features.Admin.Queries.GetActiveUsers;
 using Nutrition.Application.Features.Admin.Queries.GetDeletedRecords;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.WebGateway.Extensions;
@@ -61,6 +62,19 @@ public class AdminController : ControllerBase
     public AdminController(IDispatcher dispatcher)
     {
         _dispatcher = dispatcher;
+    }
+
+    [HttpGet("active-users")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
+    public async Task<IActionResult> GetActiveUsers([FromQuery] int windowMinutes = 15, CancellationToken ct = default)
+    {
+        var query = new GetActiveUsersQuery(windowMinutes);
+        var result = await _dispatcher.QueryAsync(query, ct);
+        if (!result.Succeeded)
+        {
+            return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
+        }
+        return Ok(result.Data);
     }
 
     [HttpGet("users")]
@@ -328,4 +342,5 @@ public class AdminController : ControllerBase
         return Ok(result.Data);
     }
 }
+
 

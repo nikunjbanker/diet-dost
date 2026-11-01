@@ -538,3 +538,11 @@ Per ADR-140 and Issue #115:
   - `ImageSanitizer.cs`: Defensive SkiaSharp image header probing and EXIF stripping (GAP-10, GAP-35).
   - `MediaController.cs`: User-scoped authorized media streaming (`GET /api/media/progress/{id}`) (GAP-05).
   - `QrSessionCleanupService.cs`: Background worker for ephemeral session retention lifecycle (GAP-41).
+
+## 15. Real-Time Active User Presence & Azure Monitor Observability (ADR-150)
+
+* **Dual-Channel Hybrid Architecture**:
+  - **Real-Time Operational Presence**: IUserPresenceTracker implements an in-memory debouncer caching user activity timestamps and flushing to database persistence (ApplicationUser.LastActiveUtc) at most once every 2 minutes per active user, eliminating write amplification.
+  - **CQRS Read Dispatching**: GetActiveUsersQuery(WindowMinutes = 15) queries indexed LastActiveUtc with soft-delete filter enforcement (!u.IsDeleted && u.IsActive).
+  - **Strict Admin & SuperAdmin RBAC**: Decorated with [Authorize(Roles = "Admin,SuperAdmin")] on /api/admin/active-users, rejecting non-admin tiers with HTTP 403 Forbidden.
+  - **Privacy-Safe Cloud Observability**: AzureMonitorPresenceMetricsWorker registers an OpenTelemetry ObservableGauge<int> (dietdost.users.active_count) emitting aggregated counts by subscription tier and platform to Azure Monitor Application Insights and Aspire Dashboards with strictly **ZERO PII**.

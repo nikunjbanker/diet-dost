@@ -6,6 +6,7 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 
 namespace Nutrition.Application.Common;
 
@@ -22,6 +23,7 @@ public static class NutritionTelemetry
     /// The application-wide ActivitySource registered with OpenTelemetry tracing in Program.cs.
     /// </summary>
     public static readonly ActivitySource ActivitySource = new(ServiceName, ServiceVersion);
+    public static readonly Meter Meter = new(ServiceName, ServiceVersion);
 
     // Activity / Span Names
     public const string SpanAiFoodDetection = "ai.food_detection";
@@ -70,3 +72,4 @@ public static class NutritionTelemetry
     public const string TagHttpResponsePayload = "http.response.body";
     public const string TagHttpResponseStatusCode = "http.response.status_code";
 }
+

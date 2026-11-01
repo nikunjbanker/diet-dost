@@ -44,7 +44,8 @@ public static class OpenTelemetryExtensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                        .AddHttpClientInstrumentation()
-                       .AddRuntimeInstrumentation();
+                       .AddRuntimeInstrumentation()
+                       .AddMeter(NutritionTelemetry.ServiceName);
             })
             .WithTracing(tracing =>
             {
@@ -89,3 +90,4 @@ public static class OpenTelemetryExtensions
         return services;
     }
 }
+

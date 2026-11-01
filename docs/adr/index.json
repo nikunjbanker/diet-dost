@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T07:44:33.696618+00:00",
-  "totalAdrs": 114,
+  "generatedAt": "2026-11-01T08:12:10.126145+00:00",
+  "totalAdrs": 115,
   "categoryCounts": {
-    "architecture": 33,
+    "architecture": 34,
     "security": 24,
     "devops": 28,
     "presentation": 16,
@@ -1377,6 +1377,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261101-149-superadmin-user-deletion-and-multi-tier-defense.md",
       "relativePath": "docs/adr/security/ADR-20261101-149-superadmin-user-deletion-and-multi-tier-defense.md"
+    },
+    {
+      "id": "ADR-150",
+      "number": 150,
+      "title": "Hybrid Active User Presence Tracking, Strict RBAC & Azure Monitor Telemetry Observability",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-01",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261101-150-hybrid-active-user-monitoring-and-azure-monitor-observability.md",
+      "relativePath": "docs/adr/architecture/ADR-20261101-150-hybrid-active-user-monitoring-and-azure-monitor-observability.md"
     }
   ]
 }

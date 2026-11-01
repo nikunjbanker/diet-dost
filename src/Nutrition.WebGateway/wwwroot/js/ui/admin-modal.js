@@ -42,6 +42,13 @@ export class AdminModalController {
     return role === 'SuperAdmin' || role === 2 || role === '2';
   }
 
+  isAdminOrSuper() {
+    const user = this.authService?.currentUser;
+    if (!user) return false;
+    const role = user.role;
+    return role === 'SuperAdmin' || role === 'Admin' || role === 1 || role === 2 || role === '1' || role === '2';
+  }
+
   escapeHtml(str) {
     if (!str) return '';
     return String(str)
@@ -57,14 +64,21 @@ export class AdminModalController {
     this.btnClose = document.getElementById('btn-close-admin-modal');
 
     this.tabUsers = document.getElementById('btn-admin-tab-users');
+    this.tabActive = document.getElementById('btn-admin-tab-active');
     this.tabTiers = document.getElementById('btn-admin-tab-tiers');
     this.tabLogs = document.getElementById('btn-admin-tab-logs');
     this.tabDeleted = document.getElementById('btn-admin-tab-deleted');
 
     this.paneUsers = document.getElementById('admin-pane-users');
+    this.paneActive = document.getElementById('admin-pane-active');
     this.paneTiers = document.getElementById('admin-pane-tiers');
     this.paneLogs = document.getElementById('admin-pane-logs');
     this.paneDeleted = document.getElementById('admin-pane-deleted');
+
+    this.selectActiveWindow = document.getElementById('admin-active-window');
+    this.btnRefreshActive = document.getElementById('btn-admin-refresh-active');
+    this.activeTableBody = document.getElementById('admin-active-table-body');
+    this.activeCountBadge = document.getElementById('admin-active-count-badge');
 
     this.searchUsers = document.getElementById('admin-search-users');
     this.filterTier = document.getElementById('admin-filter-tier');
@@ -103,6 +117,9 @@ export class AdminModalController {
     this.btnClose?.addEventListener('click', () => this.close());
 
     this.tabUsers?.addEventListener('click', () => this.switchTab('users'));
+    this.tabActive?.addEventListener('click', () => this.switchTab('active'));
+    this.btnRefreshActive?.addEventListener('click', () => this.loadActiveUsers());
+    this.selectActiveWindow?.addEventListener('change', () => this.loadActiveUsers());
     this.tabTiers?.addEventListener('click', () => this.switchTab('tiers'));
     this.tabLogs?.addEventListener('click', () => this.switchTab('logs'));
     this.tabDeleted?.addEventListener('click', () => this.switchTab('deleted'));
@@ -132,6 +149,9 @@ export class AdminModalController {
     if (this.modal) {
       modalStack.push(this.modal);
       this.modal.style.display = 'flex';
+      if (this.tabActive) {
+        this.tabActive.style.display = this.isAdminOrSuper() ? 'inline-block' : 'none';
+      }
       if (this.tabDeleted) {
         this.tabDeleted.style.display = this.isSuperAdmin() ? 'inline-block' : 'none';
       }
@@ -148,19 +168,85 @@ export class AdminModalController {
 
   switchTab(tab) {
     this.tabUsers?.classList.toggle('active', tab === 'users');
+    this.tabActive?.classList.toggle('active', tab === 'active');
     this.tabTiers?.classList.toggle('active', tab === 'tiers');
     this.tabLogs?.classList.toggle('active', tab === 'logs');
     this.tabDeleted?.classList.toggle('active', tab === 'deleted');
 
     if (this.paneUsers) this.paneUsers.style.display = tab === 'users' ? 'block' : 'none';
+    if (this.paneActive) this.paneActive.style.display = tab === 'active' ? 'block' : 'none';
     if (this.paneTiers) this.paneTiers.style.display = tab === 'tiers' ? 'block' : 'none';
     if (this.paneLogs) this.paneLogs.style.display = tab === 'logs' ? 'block' : 'none';
     if (this.paneDeleted) this.paneDeleted.style.display = tab === 'deleted' ? 'block' : 'none';
 
     if (tab === 'users') this.loadUsers();
+    if (tab === 'active') this.loadActiveUsers();
     if (tab === 'tiers') this.loadTiers();
     if (tab === 'logs') this.loadLogs();
     if (tab === 'deleted') this.loadDeletedRecords();
+  }
+
+  async loadActiveUsers() {
+    if (!this.isAdminOrSuper()) {
+      if (this.activeTableBody) {
+        this.activeTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--danger, #ef4444); padding: 2rem;">Access Denied. Admin and SuperAdmin privileges required.</td></tr>';
+      }
+      return;
+    }
+
+    if (this.activeTableBody) {
+      this.activeTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading active users...</td></tr>';
+    }
+
+    const windowMinutes = parseInt(this.selectActiveWindow?.value || '15', 10);
+
+    try {
+      const response = await this.adminService.getActiveUsers(windowMinutes);
+      const activeUsers = response?.data || response || [];
+
+      if (this.activeCountBadge) {
+        this.activeCountBadge.textContent = `${activeUsers.length} Online`;
+      }
+
+      if (!Array.isArray(activeUsers) || activeUsers.length === 0) {
+        if (this.activeTableBody) {
+          this.activeTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 2rem;">No active users recorded in the last ${windowMinutes} minutes.</td></tr>`;
+        }
+        return;
+      }
+
+      const rowsHtml = activeUsers.map(u => {
+        const isOnline = u.isCurrentlyOnline;
+        const statusBadge = isOnline
+          ? '<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4);">🟢 Online Now</span>'
+          : '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.4);">🟡 Recent</span>';
+
+        const roleStr = typeof u.role === 'number' ? (u.role === 2 ? 'SuperAdmin' : u.role === 1 ? 'Admin' : 'User') : u.role;
+        const tierStr = typeof u.tier === 'number' ? (u.tier === 3 ? 'SuperAdmin' : u.tier === 2 ? 'Premium' : u.tier === 1 ? 'Basic' : 'Free') : u.tier;
+        const lastActive = u.lastActiveUtc ? new Date(u.lastActiveUtc).toLocaleString() : 'N/A';
+
+        return `
+          <tr data-user-id="${this.escapeHtml(u.id)}" style="border-bottom: 1px solid var(--border-subtle);">
+            <td style="padding: 8px 10px;">${statusBadge}</td>
+            <td style="padding: 8px 10px;">
+              <div style="font-weight: 600; font-size: 0.85rem;">${this.escapeHtml(u.email || 'Anonymous')}</div>
+              <div style="font-size: 0.72rem; color: var(--text-muted); font-family: monospace;">${this.escapeHtml(u.id)}</div>
+            </td>
+            <td style="padding: 8px 10px;"><span class="badge badge-outline" style="font-size: 0.75rem;">${this.escapeHtml(roleStr)}</span></td>
+            <td style="padding: 8px 10px;"><span class="badge badge-primary" style="font-size: 0.75rem;">${this.escapeHtml(tierStr)}</span></td>
+            <td style="padding: 8px 10px; font-size: 0.82rem; color: var(--text-secondary);">${this.escapeHtml(lastActive)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      if (this.activeTableBody) {
+        this.activeTableBody.innerHTML = rowsHtml;
+      }
+    } catch (err) {
+      if (this.activeTableBody) {
+        this.activeTableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger, #ef4444); padding: 2rem;">Failed to load active users: ${this.escapeHtml(err.message || 'Server Error')}</td></tr>`;
+      }
+    }
   }
 
   debounceLoadUsers() {

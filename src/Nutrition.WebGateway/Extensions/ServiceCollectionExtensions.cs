@@ -80,6 +80,10 @@ public static class ServiceCollectionExtensions
         services.AddSignalR();
         services.AddScoped<IInAppNotificationService, Services.InAppNotificationService>();
 
+        // Active User Monitoring & Azure Monitor Metrics Services
+        services.AddSingleton<IUserPresenceTracker>(sp => new Services.UserPresenceTracker(sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<ILogger<Services.UserPresenceTracker>>()));
+        services.AddHostedService<Services.AzureMonitorPresenceMetricsWorker>();
+
         // Native ASP.NET Core Health Checks (/healthz liveness & /ready readiness)
         services.AddHealthChecks()
             .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("WebGateway service is live."), tags: ["live"])
@@ -88,3 +92,4 @@ public static class ServiceCollectionExtensions
         return services;
     }
 }
+

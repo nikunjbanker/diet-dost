@@ -326,6 +326,8 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Users", "ConsentIpAddress", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "ConsentUserAgent", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "LastLoginAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "LastActiveUtc", "TEXT NULL");
+        await EnsureIndexExistsAsync(db, "Users", "IX_Users_LastActiveUtc", "\"LastActiveUtc\"");
         await EnsureIndexExistsAsync(db, "Users", "IX_Users_RecoveryLookupId", "\"RecoveryLookupId\"");
 
         await db.Database.ExecuteSqlRawAsync(@"
@@ -895,6 +897,8 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Users", "ConsentIpAddress", "NVARCHAR(MAX) NULL");
         await EnsureColumnExistsAsync(db, "Users", "ConsentUserAgent", "NVARCHAR(MAX) NULL");
         await EnsureColumnExistsAsync(db, "Users", "LastLoginAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "LastActiveUtc", "DATETIME2 NULL");
+        await EnsureIndexExistsAsync(db, "Users", "IX_Users_LastActiveUtc", "[LastActiveUtc]");
         await EnsureIndexExistsAsync(db, "Users", "IX_Users_RecoveryLookupId", "[RecoveryLookupId]");
 
         if (logger.IsEnabled(LogLevel.Information))
@@ -1650,3 +1654,5 @@ public static partial class DatabaseInitializationExtensions
         }
     }
 }
+
+

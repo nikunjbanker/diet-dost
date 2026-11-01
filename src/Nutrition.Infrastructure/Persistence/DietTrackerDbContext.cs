@@ -154,6 +154,7 @@ public class DietTrackerDbContext : DbContext
             entity.HasIndex(e => e.Role);
             entity.HasIndex(e => e.Tier);
             entity.HasIndex(e => e.RecoveryLookupId);
+            entity.HasIndex(e => e.LastActiveUtc);
             entity.Property(e => e.RecoveryLookupId).HasMaxLength(64);
             entity.Property(e => e.RecoveryKeyHash).HasMaxLength(256);
             entity.Property(e => e.RecoverySalt).HasMaxLength(64);
@@ -245,3 +246,4 @@ public class DietTrackerDbContext : DbContext
         }
     }
 }
+
