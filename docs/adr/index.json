@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T08:45:27.061449+00:00",
-  "totalAdrs": 117,
+  "generatedAt": "2026-11-01T13:44:24.355553+00:00",
+  "totalAdrs": 118,
   "categoryCounts": {
-    "architecture": 36,
+    "architecture": 37,
     "security": 24,
     "devops": 28,
     "presentation": 16,
@@ -1413,6 +1413,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-152-mermaid-edge-label-quote-invariant-and-syntax-repair.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-152-mermaid-edge-label-quote-invariant-and-syntax-repair.md"
+    },
+    {
+      "id": "ADR-153",
+      "number": 153,
+      "title": "Idempotent Database Seeding, EF Core Global Query Filter Bypass, and Primary Key Conflict Defense",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-01",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md",
+      "relativePath": "docs/adr/architecture/ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md"
     }
   ]
 }

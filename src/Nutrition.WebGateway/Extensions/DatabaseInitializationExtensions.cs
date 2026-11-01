@@ -722,6 +722,7 @@ public static partial class DatabaseInitializationExtensions
                     [ConsentUserAgent] NVARCHAR(MAX) NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL,
                     [LastLoginAtUtc] DATETIME2 NULL,
+                    [LastActiveUtc] DATETIME2 NULL,
                     [IsAnonymous] BIT NOT NULL DEFAULT 0,
                     [DisplayName] NVARCHAR(MAX) NULL,
                     [RecoveryLookupId] NVARCHAR(64) NULL,
@@ -1029,7 +1030,7 @@ public static partial class DatabaseInitializationExtensions
         }
     }
 
-    private static async Task SeedDemoUsersAsync(
+    public static async Task SeedDemoUsersAsync(
         DietTrackerDbContext db,
         IServiceProvider serviceProvider,
         IConfiguration configuration,
@@ -1138,10 +1139,10 @@ public static partial class DatabaseInitializationExtensions
         foreach (var spec in demoSpecs)
         {
             var normEmail = ApplicationUser.NormalizeEmailAddress(spec.Email);
-            var user = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normEmail);
+            var user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.NormalizedEmail == normEmail);
             if (user == null)
             {
-                user = await db.Users.FirstOrDefaultAsync(u => u.Id == spec.Id);
+                user = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == spec.Id);
                 if (user != null)
                 {
                     user.Email = spec.Email;
@@ -1152,6 +1153,8 @@ public static partial class DatabaseInitializationExtensions
                     user.IsEmailVerified = true;
                     user.IsMobileVerified = true;
                     user.IsActive = true;
+                    user.IsDeleted = false;
+                    user.DeletedAtUtc = null;
                     await db.SaveChangesAsync();
                     if (logger.IsEnabled(LogLevel.Information))
                     {
@@ -1198,10 +1201,12 @@ public static partial class DatabaseInitializationExtensions
                 user.IsEmailVerified = true;
                 user.IsMobileVerified = true;
                 user.IsActive = true;
+                user.IsDeleted = false;
+                user.DeletedAtUtc = null;
                 await db.SaveChangesAsync();
             }
 
-            var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == user.Id);
+            var profile = await db.Profiles.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == user.Id);
             if (profile == null)
             {
                 profile = new UserProfile
@@ -1226,6 +1231,8 @@ public static partial class DatabaseInitializationExtensions
             }
             else
             {
+                profile.IsDeleted = false;
+                profile.DeletedAtUtc = null;
                 profile.Name = spec.Name;
                 profile.RegionalCuisine = spec.Cuisine;
                 await db.SaveChangesAsync();
@@ -1376,7 +1383,7 @@ public static partial class DatabaseInitializationExtensions
         var derivedHashHex = RecoveryKit.ComputeKeyHash(masterEntropy, derivedSaltBytes);
         var derivedSaltHex = Convert.ToHexString(derivedSaltBytes).ToLowerInvariant();
 
-        var existingAnon = await db.Users.FirstOrDefaultAsync(u => u.Id == "usr_87c369c1e3f8" || u.RecoveryLookupId == derivedLookupId);
+        var existingAnon = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == "usr_87c369c1e3f8" || u.RecoveryLookupId == derivedLookupId);
         if (existingAnon == null)
         {
             var anonUser = new ApplicationUser
@@ -1386,6 +1393,7 @@ public static partial class DatabaseInitializationExtensions
                 NormalizedEmail = "USR_87C369C1E3F8@DIETDOST.LOCAL",
                 DisplayName = "Nikunj QR",
                 MobileNumber = "ANONYMOUS",
+                NormalizedMobileNumber = "ANONYMOUS",
                 IsAnonymous = true,
                 Role = UserRole.User,
                 Tier = UserTier.Free,
@@ -1407,29 +1415,46 @@ public static partial class DatabaseInitializationExtensions
             };
             db.Users.Add(anonUser);
 
-            var anonProfile = new UserProfile
+            var anonProfile = await db.Profiles.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == anonUser.Id);
+            if (anonProfile == null)
             {
-                Id = anonUser.Id,
-                Name = "Nikunj QR",
-                Sex = BiologicalSex.Male,
-                Age = 35,
-                HeightCm = 175,
-                CurrentWeightKg = 78.0,
-                TargetWeightKg = 72.0,
-                DesiredPaceKgPerWeek = 0.5,
-                ActivityLevel = ActivityLevel.Sedentary,
-                DietaryPreference = DietaryPreference.LactoVeg,
-                RegionalCuisine = "Gujarati",
-                Timezone = "Asia/Kolkata",
-                DiagnosedConditions = new List<string>(),
-                Medications = new List<MedicationEntry>()
-            };
-            db.Profiles.Add(anonProfile);
+                anonProfile = new UserProfile
+                {
+                    Id = anonUser.Id,
+                    Name = "Nikunj QR",
+                    Sex = BiologicalSex.Male,
+                    Age = 35,
+                    HeightCm = 175,
+                    CurrentWeightKg = 78.0,
+                    TargetWeightKg = 72.0,
+                    DesiredPaceKgPerWeek = 0.5,
+                    ActivityLevel = ActivityLevel.Sedentary,
+                    DietaryPreference = DietaryPreference.LactoVeg,
+                    RegionalCuisine = "Gujarati",
+                    Timezone = "Asia/Kolkata",
+                    DiagnosedConditions = new List<string>(),
+                    Medications = new List<MedicationEntry>()
+                };
+                db.Profiles.Add(anonProfile);
+            }
+            else
+            {
+                anonProfile.IsDeleted = false;
+                anonProfile.DeletedAtUtc = null;
+                anonProfile.Name = "Nikunj QR";
+            }
             await db.SaveChangesAsync();
             logger.LogInformation("[SEED] Seeded demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') with permanent recovery kit.");
         }
         else
         {
+            if (existingAnon.IsDeleted)
+            {
+                existingAnon.IsDeleted = false;
+                existingAnon.DeletedAtUtc = null;
+                existingAnon.IsActive = true;
+            }
+
             // Reconcile credentials to guarantee the demo recovery mnemonic always matches
             if (existingAnon.RecoveryLookupId != derivedLookupId ||
                 existingAnon.RecoveryKeyHash != derivedHashHex ||
@@ -1439,9 +1464,42 @@ public static partial class DatabaseInitializationExtensions
                 existingAnon.RecoveryKeyHash = derivedHashHex;
                 existingAnon.RecoverySalt = derivedSaltHex;
                 existingAnon.RecoveryKeyCreatedAtUtc = DateTime.UtcNow;
-                await db.SaveChangesAsync();
-                logger.LogInformation("[SEED] Reconciled demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') credentials with permanent mnemonic.");
             }
+
+            var anonProfile = await db.Profiles.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == existingAnon.Id);
+            if (anonProfile == null)
+            {
+                anonProfile = new UserProfile
+                {
+                    Id = existingAnon.Id,
+                    Name = "Nikunj QR",
+                    Sex = BiologicalSex.Male,
+                    Age = 35,
+                    HeightCm = 175,
+                    CurrentWeightKg = 78.0,
+                    TargetWeightKg = 72.0,
+                    DesiredPaceKgPerWeek = 0.5,
+                    ActivityLevel = ActivityLevel.Sedentary,
+                    DietaryPreference = DietaryPreference.LactoVeg,
+                    RegionalCuisine = "Gujarati",
+                    Timezone = "Asia/Kolkata",
+                    DiagnosedConditions = new List<string>(),
+                    Medications = new List<MedicationEntry>()
+                };
+                db.Profiles.Add(anonProfile);
+            }
+            else
+            {
+                if (anonProfile.IsDeleted)
+                {
+                    anonProfile.IsDeleted = false;
+                    anonProfile.DeletedAtUtc = null;
+                }
+                anonProfile.Name = "Nikunj QR";
+            }
+
+            await db.SaveChangesAsync();
+            logger.LogInformation("[SEED] Reconciled demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') credentials with permanent mnemonic.");
         }
     }
 
@@ -1470,7 +1528,7 @@ public static partial class DatabaseInitializationExtensions
         }
     }
 
-    private static async Task EnsureSuperAdminAccountAsync(
+    public static async Task EnsureSuperAdminAccountAsync(
         DietTrackerDbContext db,
         IServiceProvider serviceProvider,
         IConfiguration configuration,
@@ -1495,11 +1553,11 @@ public static partial class DatabaseInitializationExtensions
                     : "DietDost@Demo2026!"));
 
         var normalizedEmail = ApplicationUser.NormalizeEmailAddress(primarySuperAdminEmail);
-        var superAdmin = await db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+        var superAdmin = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
 
         if (superAdmin == null)
         {
-            superAdmin = await db.Users.FirstOrDefaultAsync(u => u.Id == "superadmin-root");
+            superAdmin = await db.Users.IgnoreQueryFilters().FirstOrDefaultAsync(u => u.Id == "superadmin-root");
         }
 
         if (superAdmin == null)
@@ -1544,6 +1602,8 @@ public static partial class DatabaseInitializationExtensions
             superAdmin.MobileNumber = "+919999999990";
             superAdmin.NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999990");
             superAdmin.IsActive = true;
+            superAdmin.IsDeleted = false;
+            superAdmin.DeletedAtUtc = null;
             if (string.IsNullOrWhiteSpace(superAdmin.PasswordHash))
             {
                 superAdmin.PasswordHash = passwordHasher.HashPassword(superAdminPassword);
@@ -1555,7 +1615,7 @@ public static partial class DatabaseInitializationExtensions
             }
         }
 
-        var profile = await db.Profiles.FirstOrDefaultAsync(p => p.Id == superAdmin.Id);
+        var profile = await db.Profiles.IgnoreQueryFilters().FirstOrDefaultAsync(p => p.Id == superAdmin.Id);
         if (profile == null)
         {
             profile = new UserProfile
@@ -1574,6 +1634,12 @@ public static partial class DatabaseInitializationExtensions
                 Timezone = "Asia/Kolkata"
             };
             await db.Profiles.AddAsync(profile);
+            await db.SaveChangesAsync();
+        }
+        else
+        {
+            profile.IsDeleted = false;
+            profile.DeletedAtUtc = null;
             await db.SaveChangesAsync();
         }
 
