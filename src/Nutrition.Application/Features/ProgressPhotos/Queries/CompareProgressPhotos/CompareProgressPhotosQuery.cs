@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -87,17 +87,37 @@ public class CompareProgressPhotosQueryHandler : IQueryHandler<CompareProgressPh
         var hasComparison = (baselineFace != null && currentFace != null && baselineFace.Id != currentFace.Id) ||
                             (baselineFullBody != null && currentFullBody != null && baselineFullBody.Id != currentFullBody.Id);
 
+        var projectedAll = allPhotos.Select(ProjectPhoto).Where(p => p != null).Select(p => p!).ToList();
+
         var dto = new ProgressPhotoComparisonDto(
             hasComparison,
-            baselineFace,
-            currentFace,
-            baselineFullBody,
-            currentFullBody,
+            ProjectPhoto(baselineFace),
+            ProjectPhoto(currentFace),
+            ProjectPhoto(baselineFullBody),
+            ProjectPhoto(currentFullBody),
             weightDeltaKg,
             daysElapsed,
-            allPhotos.Count,
-            allPhotos);
+            projectedAll.Count,
+            projectedAll);
 
         return Result<ProgressPhotoComparisonDto>.Success(dto);
+    }
+
+    private static ProgressPhoto? ProjectPhoto(ProgressPhoto? p)
+    {
+        if (p == null) return null;
+        return new ProgressPhoto
+        {
+            Id = p.Id,
+            UserId = p.UserId,
+            CapturedAtUtc = p.CapturedAtUtc,
+            WeightKg = p.WeightKg,
+            PhotoType = p.PhotoType,
+            PhotoUri = $"/api/media/progress/{p.Id}",
+            IsBaseline = p.IsBaseline,
+            Notes = p.Notes,
+            IsDeleted = p.IsDeleted,
+            DeletedAtUtc = p.DeletedAtUtc
+        };
     }
 }

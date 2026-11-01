@@ -61,7 +61,21 @@ public class GetProgressPhotosQueryHandler : IQueryHandler<GetProgressPhotosQuer
             p => p.UserId == targetUserId && (!request.PhotoType.HasValue || p.PhotoType == request.PhotoType.Value),
             ct);
 
-        var ordered = photos.OrderBy(p => p.CapturedAtUtc).ToList();
+        var ordered = photos.OrderBy(p => p.CapturedAtUtc)
+            .Select(p => new ProgressPhoto
+            {
+                Id = p.Id,
+                UserId = p.UserId,
+                CapturedAtUtc = p.CapturedAtUtc,
+                WeightKg = p.WeightKg,
+                PhotoType = p.PhotoType,
+                PhotoUri = $"/api/media/progress/{p.Id}",
+                IsBaseline = p.IsBaseline,
+                Notes = p.Notes,
+                IsDeleted = p.IsDeleted,
+                DeletedAtUtc = p.DeletedAtUtc
+            }).ToList();
+
         return Result<List<ProgressPhoto>>.Success(ordered);
     }
 }

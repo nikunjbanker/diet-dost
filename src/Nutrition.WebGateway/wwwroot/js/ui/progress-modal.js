@@ -222,6 +222,12 @@ export class ProgressModalController {
     }
   }
 
+  resolvePhotoUrl(photo) {
+    if (!photo) return '/assets/placeholder-progress.svg';
+    if (photo.id) return `/api/media/progress/${encodeURIComponent(photo.id)}`;
+    return photo.photoUri || '/assets/placeholder-progress.svg';
+  }
+
   open(targetTab = 'pane-face-progress') {
     const user = this._authService?.currentUser;
     const isCompareAllowed = user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true;
@@ -441,13 +447,15 @@ export class ProgressModalController {
 
       // Dashboard Face Card
       if (bf && el.imgBaselineFace) {
-        el.imgBaselineFace.src = bf.photoUri;
+        delete el.imgBaselineFace.dataset.hasFallback;
+        el.imgBaselineFace.src = this.resolvePhotoUrl(bf);
         if (el.txtBaselineDate) el.txtBaselineDate.textContent = `Baseline (${formatDate(bf.capturedAtUtc)})`;
         if (el.txtBaselineWeight) el.txtBaselineWeight.textContent = `${bf.weightKg.toFixed(1)} kg`;
       }
 
       if (cf && el.imgCurrentFace) {
-        el.imgCurrentFace.src = cf.photoUri;
+        delete el.imgCurrentFace.dataset.hasFallback;
+        el.imgCurrentFace.src = this.resolvePhotoUrl(cf);
         if (el.txtCurrentDate) el.txtCurrentDate.textContent = `Latest (${formatDate(cf.capturedAtUtc)})`;
         if (el.txtCurrentWeight) {
           const deltaStr = data.weightDeltaKg < 0 ? `▼ ${Math.abs(data.weightDeltaKg)} kg` : `+${data.weightDeltaKg} kg`;
@@ -470,24 +478,28 @@ export class ProgressModalController {
 
       // Modal Detail Face
       if (bf && el.detailBaselineFaceImg) {
-        el.detailBaselineFaceImg.src = bf.photoUri;
+        delete el.detailBaselineFaceImg.dataset.hasFallback;
+        el.detailBaselineFaceImg.src = this.resolvePhotoUrl(bf);
         if (el.detailBaselineFaceDate) el.detailBaselineFaceDate.textContent = `Day 1 (${formatDate(bf.capturedAtUtc)})`;
         if (el.detailBaselineFaceWeight) el.detailBaselineFaceWeight.textContent = `${bf.weightKg.toFixed(1)} kg`;
       }
       if (cf && el.detailCurrentFaceImg) {
-        el.detailCurrentFaceImg.src = cf.photoUri;
+        delete el.detailCurrentFaceImg.dataset.hasFallback;
+        el.detailCurrentFaceImg.src = this.resolvePhotoUrl(cf);
         if (el.detailCurrentFaceDate) el.detailCurrentFaceDate.textContent = `Day ${data.daysElapsed} (${formatDate(cf.capturedAtUtc)})`;
         if (el.detailCurrentFaceWeight) el.detailCurrentFaceWeight.textContent = `${cf.weightKg.toFixed(1)} kg (▼ ${Math.abs(data.weightDeltaKg)} kg)`;
       }
 
       // Modal Detail Full Body
       if (bb && el.detailBaselineBodyImg) {
-        el.detailBaselineBodyImg.src = bb.photoUri;
+        delete el.detailBaselineBodyImg.dataset.hasFallback;
+        el.detailBaselineBodyImg.src = this.resolvePhotoUrl(bb);
         if (el.detailBaselineBodyDate) el.detailBaselineBodyDate.textContent = `Day 1 (${formatDate(bb.capturedAtUtc)})`;
         if (el.detailBaselineBodyWeight) el.detailBaselineBodyWeight.textContent = `${bb.weightKg.toFixed(1)} kg`;
       }
       if (cb && el.detailCurrentBodyImg) {
-        el.detailCurrentBodyImg.src = cb.photoUri;
+        delete el.detailCurrentBodyImg.dataset.hasFallback;
+        el.detailCurrentBodyImg.src = this.resolvePhotoUrl(cb);
         if (el.detailCurrentBodyDate) el.detailCurrentBodyDate.textContent = `Day ${data.daysElapsed} (${formatDate(cb.capturedAtUtc)})`;
         if (el.detailCurrentBodyWeight) el.detailCurrentBodyWeight.textContent = `${cb.weightKg.toFixed(1)} kg (▼ ${Math.abs(data.weightDeltaKg)} kg)`;
       }
@@ -513,11 +525,12 @@ export class ProgressModalController {
       const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
       const tagClass = p.isBaseline ? 'baseline-badge' : 'current-badge';
       const tagLabel = p.isBaseline ? 'Baseline' : 'Check-In';
+      const photoSrc = this.resolvePhotoUrl(p);
 
       return `
         <div class="timeline-card">
-          <div class="timeline-thumb-frame" onclick="if (window.openPhotoLightbox) window.openPhotoLightbox('${p.photoUri}', '${dateStr} · ${typeLabels[p.photoType] || 'Progress Photo'}');" title="Click to inspect full photo">
-            <img src="${p.photoUri}" alt="Progress photo" class="timeline-thumb" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
+          <div class="timeline-thumb-frame" onclick="if (window.openPhotoLightbox) window.openPhotoLightbox('${photoSrc}', '${dateStr} · ${typeLabels[p.photoType] || 'Progress Photo'}');" title="Click to inspect full photo">
+            <img src="${photoSrc}" alt="Progress photo" class="timeline-thumb" onerror="this.onerror=null; this.src='/assets/placeholder-progress.svg';">
             <div class="photo-meta-overlay" style="padding: 6px 8px;">
               <span class="weight-tag" style="font-size: 0.72rem;">${p.weightKg.toFixed(1)} kg</span>
               <span class="compare-badge ${tagClass}" style="font-size: 0.65rem; padding: 1px 5px;">${tagLabel}</span>

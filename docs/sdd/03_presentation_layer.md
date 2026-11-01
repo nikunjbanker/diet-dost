@@ -301,3 +301,17 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 * **Persistent Dashboard Revisit Banner (`onboarding-banner.html`, `main.js`, `styles.css`)**:
   - Amber pulse indicator (`.pulse-indicator-amber`) and warning callout (`#onboarding-revisit-banner`) displayed prominently above HUD when profile intake is pending.
   - One-click `Complete Profile ➔` button immediately re-opens the onboarding modal, ensuring compliance with ICMR-NIN 2024 Zero-Assumption requirements.
+
+
+## 18. Face & Body Progress Photo Hydration & Authorized Media Streaming (`ADR-154`)
+
+* **Authorized Streaming Media Resolution (`progress-modal.js`)**:
+  - `resolvePhotoUrl(photo)` helper inspects photo objects and IDs, routing image requests to `/api/media/progress/{id}`.
+  - Transparently maps photo IDs, relative paths, and legacy demo assets.
+  - Updates `#img-baseline-face` and `#img-current-face` on `#face-progress-card` during composite dashboard hydration.
+* **Resilient Image Error Handling (`main.js`)**:
+  - Global `error` event listener checks if image source contains `placeholder-` before applying fallback placeholders (`/assets/placeholder-progress.svg` or `/assets/placeholder-meal.svg`).
+  - Clears `dataset.hasFallback` when fresh progress photo URLs are injected by `progressModalController.updateComparisonView()`, preventing permanent fallback lock-in.
+* **Timeline Gallery & Detail Lightbox Hydration**:
+  - Timeline cards dynamically display progress photo thumbnails streamed through authenticated media endpoints.
+  - Comparison slider and detailed DEXA body inspection views hydrate high-resolution photos seamlessly with zero CORS or static file 403 blocks.

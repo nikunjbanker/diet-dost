@@ -88,7 +88,7 @@ public class GetDeletedRecordsQueryHandler : IQueryHandler<GetDeletedRecordsQuer
                     "ProgressPhoto",
                     p.UserId,
                     $"{p.PhotoType} Progress Photo",
-                    p.PhotoUri,
+                    $"/api/media/progress/{p.Id}",
                     p.DeletedAtUtc,
                     p.CapturedAtUtc,
                     $"{p.WeightKg:F1} kg {(p.IsBaseline ? "(Baseline)" : "")}"

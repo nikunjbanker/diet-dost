@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T13:44:24.355553+00:00",
-  "totalAdrs": 118,
+  "generatedAt": "2026-11-01T15:03:29.869162+00:00",
+  "totalAdrs": 119,
   "categoryCounts": {
-    "architecture": 37,
+    "architecture": 38,
     "security": 24,
     "devops": 28,
     "presentation": 16,
@@ -1425,6 +1425,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md"
+    },
+    {
+      "id": "ADR-154",
+      "number": 154,
+      "title": "Authorized Progress Media Streaming, DPDPA Biometric Isolation, and Dashboard Hydration",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-01",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md",
+      "relativePath": "docs/adr/architecture/ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md"
     }
   ]
 }

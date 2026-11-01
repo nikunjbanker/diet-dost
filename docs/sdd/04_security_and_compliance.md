@@ -237,3 +237,20 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
   - The Zero-PII anonymous registration switcher is disabled in Alpha mode to prevent users from bypassing owner review. Seeded offline mnemonic login remains supported.
 * **Stored XSS Prevention**:
   - In-app notification titles and messages rendered in header dropdowns or modals are strictly escaped using HTML entity encoding and DOM text node assignment.
+
+
+## 13. Authorized Progress Media Streaming & DPDPA Biometric Privacy (`ADR-154`)
+
+* **Gated Media Streaming Gateway**:
+  - Biometric facial photos and DEXA body composition scans are classified as sensitive health data under DPDPA 2023. Direct unauthenticated file serving under `/uploads/users/` is rejected with `403 Forbidden` at the static file pipeline boundary (`WebApplicationExtensions.cs`).
+  - Progress photos are accessed strictly via `GET /api/media/progress/{id}`, enforced by `MediaController.cs`.
+* **Multi-Root Filesystem Probing**:
+  - `MediaController` probes the SMB persistent volume mount (`_storageOptions.Value.WebRootPath`) before falling back to local `_env.ContentRootPath/wwwroot`, ensuring transparent file resolution across local debugging, Docker containers, and Azure Container Apps.
+* **Content Security & Browser Isolation**:
+  - Responses enforce strict headers: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`, and `Cache-Control: private, max-age=3600`.
+  - Content-Type is resolved accurately by extension, including `.svg` (`image/svg+xml`), preventing content-sniffing and cross-site execution.
+* **IDOR & Soft-Delete Authorization**:
+  - Photo ownership is verified against `User.FindFirstValue(ClaimTypes.NameIdentifier)`. Non-owners receive `403 Forbidden`.
+  - SuperAdmins and Admins can access soft-deleted photos for regulatory audit trails; standard users receive `404 Not Found` for soft-deleted records.
+* **CQRS Endpoint Projections**:
+  - Handlers (`GetProgressPhotosQueryHandler`, `CompareProgressPhotosQueryHandler`, `UploadProgressPhotoCommandHandler`, `GetDeletedRecordsQueryHandler`) project `/api/media/progress/{id}` rather than internal disk paths, keeping storage physical structures hidden from clients.
