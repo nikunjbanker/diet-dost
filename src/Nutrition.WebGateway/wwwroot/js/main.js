@@ -46,6 +46,8 @@ import { NotificationService } from './services/notification-service.js?v=1.9.4'
 window.addEventListener('error', (event) => {
   const target = event.target;
   if (target && target.tagName === 'IMG') {
+    const currentSrc = target.getAttribute('src') || '';
+    if (currentSrc.includes('placeholder-')) return;
     if (!target.dataset.hasFallback) {
       target.dataset.hasFallback = 'true';
       const id = target.id || '';

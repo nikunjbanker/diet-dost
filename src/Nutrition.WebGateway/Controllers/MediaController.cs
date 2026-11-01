@@ -7,6 +7,7 @@
  */
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Nutrition.Application.Common;
@@ -47,24 +48,24 @@ public class MediaController : ControllerBase
     public async Task<IActionResult> GetProgressPhoto(string id, CancellationToken ct)
     {
         var photo = await _photoRepo.GetByIdAsync(id, ct);
-        if (photo == null || photo.IsDeleted)
+        var currentUserId = User.GetUserId();
+        var isAdmin = User.IsInRole(UserRole.Admin.ToString()) || User.IsInRole(UserRole.SuperAdmin.ToString());
+
+        if (photo == null || (photo.IsDeleted && !isAdmin))
         {
             return NotFound();
         }
-
-        var currentUserId = User.GetUserId();
-        var isAdmin = User.IsInRole(UserRole.Admin.ToString()) || User.IsInRole(UserRole.SuperAdmin.ToString());
 
         if (photo.UserId != currentUserId && !isAdmin)
         {
             return Forbid();
         }
 
-        var webRoot = !string.IsNullOrWhiteSpace(_storageOptions.Value?.WebRootPath)
+        var primaryWebRoot = !string.IsNullOrWhiteSpace(_storageOptions.Value?.WebRootPath)
             ? _storageOptions.Value.WebRootPath
             : Path.Combine(_env.ContentRootPath, "wwwroot");
 
-        var canonicalRoot = Path.GetFullPath(webRoot);
+        var canonicalRoot = Path.GetFullPath(primaryWebRoot);
         var sanitizedRel = PhotoPathSanitizer.NormalizeToRelativePath(photo.PhotoUri).TrimStart('/', '\\');
         var fullPath = Path.GetFullPath(Path.Combine(canonicalRoot, sanitizedRel));
 
@@ -75,15 +76,31 @@ public class MediaController : ControllerBase
 
         if (!System.IO.File.Exists(fullPath))
         {
-            return NotFound();
+            // Probe fallback wwwroot (e.g. for seeded SVG assets in web root while storage points to /app/data)
+            var fallbackWebRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "wwwroot"));
+            var fallbackFullPath = Path.GetFullPath(Path.Combine(fallbackWebRoot, sanitizedRel));
+            if (fallbackFullPath.StartsWith(fallbackWebRoot, StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(fallbackFullPath))
+            {
+                fullPath = fallbackFullPath;
+            }
+            else
+            {
+                return NotFound();
+            }
         }
 
         var contentType = Path.GetExtension(fullPath).ToLowerInvariant() switch
         {
             ".png" => "image/png",
             ".webp" => "image/webp",
+            ".svg" => "image/svg+xml",
+            ".gif" => "image/gif",
             _ => "image/jpeg"
         };
+
+        Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        Response.Headers.Append("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
+        Response.Headers.Append("Cache-Control", "private, max-age=3600");
 
         return PhysicalFile(fullPath, contentType, enableRangeProcessing: true);
     }

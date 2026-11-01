@@ -1073,7 +1073,6 @@ To prevent startup container crashes and primary key constraint collisions (`PK_
   - `MediaController.cs`: User-scoped authorized media streaming (`GET /api/media/progress/{id}`) (GAP-05).
   - `QrSessionCleanupService.cs`: Background worker for ephemeral session retention lifecycle (GAP-41).
 
-<<<<<<< Updated upstream
 ## 15. Real-Time Active User Presence & Azure Monitor Observability (ADR-150)
 
 * **Dual-Channel Hybrid Architecture**:
@@ -1093,3 +1092,21 @@ To prevent startup container crashes and primary key constraint collisions (`PK_
   - `WebDashboardCompositeDto` and `WebUserProfileDto` expose `bool IsIntakePending`.
   - `WebBffController.GetDashboardComposite` detects incomplete profiles, sets `IsIntakePending = true`, and returns the default 1,600 kcal ledger with empty macro targets so the frontend can prompt the user to complete intake without experiencing HTTP 500 errors.
 
+
+
+## 17. Authorized Progress Media Streaming & DPDPA Biometric Privacy (ADR-154)
+
+* **Gated Media Streaming Gateway**:
+  - Biometric facial photos and DEXA body scans are classified as sensitive personal health data under DPDPA 2023.
+  - Static file middleware (WebApplicationExtensions.cs) rejects direct unauthenticated access to /uploads/users/ with HTTP 403 Forbidden.
+  - Media streaming is served exclusively through GET /api/media/progress/{id}, guarded by MediaController.cs.
+* **Multi-Root Filesystem Probing**:
+  - MediaController probes the SMB persistent volume mount (_storageOptions.Value.WebRootPath) before falling back to _env.ContentRootPath/wwwroot, ensuring uniform file resolution across dev and production ACA environments.
+* **Defense-in-Depth Headers & Formats**:
+  - Enforces X-Content-Type-Options: nosniff, Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline', and Cache-Control: private, max-age=3600.
+  - Automatically resolves SVG (image/svg+xml), GIF, WebP, PNG, and JPEG MIME types.
+* **IDOR & Soft-Delete Authorization**:
+  - Photo ownership is validated against User.FindFirstValue(ClaimTypes.NameIdentifier); non-owners receive HTTP 403 Forbidden.
+  - Admins and SuperAdmins can view soft-deleted progress photos for regulatory audit trails; standard users receive HTTP 404 Not Found.
+* **CQRS URL Projection**:
+  - All progress photo queries and commands (GetProgressPhotosQuery, CompareProgressPhotosQuery, UploadProgressPhotoCommand, GetDeletedRecordsQuery) project URLs dynamically to /api/media/progress/{id} rather than exposing internal disk storage structures.
