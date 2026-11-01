@@ -199,7 +199,8 @@ public class WebBffCompositeTests : IDisposable
                 CurrentWeightKg = 64,
                 ActivityLevel = ActivityLevel.Sedentary,
                 TargetWeightKg = 58,
-                Timezone = "Asia/Kolkata"
+                Timezone = "Asia/Kolkata",
+                IsOnboarded = true
             };
             db.Profiles.Add(profile);
 
@@ -260,7 +261,8 @@ public class WebBffCompositeTests : IDisposable
                 TargetWeightKg = 70,
                 ActivityLevel = ActivityLevel.Sedentary,
                 DietaryPreference = DietaryPreference.LactoVeg,
-                Timezone = "Asia/Kolkata"
+                Timezone = "Asia/Kolkata",
+                IsOnboarded = true
             };
             db.Profiles.Add(profile);
 
@@ -438,6 +440,68 @@ public class WebBffCompositeTests : IDisposable
         var composite = Assert.IsType<WebDashboardCompositeDto>(okResult.Value);
 
         Assert.Equal("Demo3", composite.User.DisplayName);
+        Assert.Null(composite.User.Budget);
+        Assert.Null(composite.User.Macros);
+        Assert.Equal(1600.0, composite.TodayLedger.BudgetedCalories);
+    }
+
+    [Fact]
+    public async Task GetDashboardComposite_NewlyRegisteredUser_HasIsOnboardedFalseAndIsIntakePendingTrue()
+    {
+        // Arrange
+        var userId = "usr-new-registered-demo";
+        using (var scope = _scopeFactory.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+            var user = new ApplicationUser
+            {
+                Id = userId,
+                Email = "newbie@example.com",
+                NormalizedEmail = "NEWBIE@EXAMPLE.COM",
+                MobileNumber = "+919876543210",
+                NormalizedMobileNumber = "+919876543210",
+                PasswordHash = "dummyhash",
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                Role = UserRole.User,
+                Tier = UserTier.Free,
+                IsOnboarded = false
+            };
+            db.Users.Add(user);
+
+            var profile = new UserProfile
+            {
+                Id = userId,
+                Name = "Newbie User",
+                Age = 30,
+                Sex = BiologicalSex.Male,
+                HeightCm = 170,
+                CurrentWeightKg = 70,
+                TargetWeightKg = 65,
+                DesiredPaceKgPerWeek = 0.5,
+                ActivityLevel = ActivityLevel.Sedentary,
+                DietaryPreference = DietaryPreference.LactoVeg,
+                RegionalCuisine = "North Indian",
+                Timezone = "Asia/Kolkata",
+                IsOnboarded = false
+            };
+            db.Profiles.Add(profile);
+            await db.SaveChangesAsync();
+        }
+
+        var principal = CreateUserPrincipal(userId, "newbie@example.com", "User", "Free", "Newbie User");
+        var controller = CreateController(principal);
+
+        // Act
+        var actionResult = await controller.GetDashboardComposite("7D");
+
+        // Assert
+        var okResult = Assert.IsType<OkObjectResult>(actionResult);
+        var composite = Assert.IsType<WebDashboardCompositeDto>(okResult.Value);
+
+        Assert.False(composite.IsOnboarded);
+        Assert.True(composite.IsIntakePending);
+        Assert.False(composite.User.IsOnboarded);
+        Assert.True(composite.User.IsIntakePending);
         Assert.Null(composite.User.Budget);
         Assert.Null(composite.User.Macros);
         Assert.Equal(1600.0, composite.TodayLedger.BudgetedCalories);

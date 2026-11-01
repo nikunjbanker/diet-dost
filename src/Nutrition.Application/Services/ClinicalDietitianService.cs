@@ -61,6 +61,7 @@ public class ClinicalDietitianService
 
     public async Task<UserProfile> SaveProfileAsync(UserProfile profile, CancellationToken ct = default)
     {
+        profile.IsOnboarded = true;
         profile.ValidateIntakeCompleteness();
         profile.UpdatedAtUtc = DateTime.UtcNow;
 
@@ -85,6 +86,7 @@ public class ClinicalDietitianService
             existing.DiagnosedConditions = profile.DiagnosedConditions;
             existing.Medications = profile.Medications;
             existing.Timezone = profile.Timezone;
+            existing.IsOnboarded = true;
             existing.UpdatedAtUtc = profile.UpdatedAtUtc;
             await _profileRepo.UpdateAsync(existing, ct);
             await _uow.SaveChangesAsync(ct);

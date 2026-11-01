@@ -137,7 +137,8 @@ public class WebBffController : ControllerBase
             ?? profileResult.Data?.Profile?.Name
             ?? email;
 
-        var isIntakePending = profileResult.Data?.Profile == null || !profileResult.Data.Profile.IsIntakeComplete();
+        var isIntakePending = profileResult.Data?.Profile == null || !profileResult.Data.Profile.IsOnboarded || !profileResult.Data.Profile.IsIntakeComplete();
+        var isOnboarded = !isIntakePending;
 
         var userDto = new WebUserProfileDto(
             UserId: userId,
@@ -147,7 +148,8 @@ public class WebBffController : ControllerBase
             Role: roleStr,
             Budget: profileResult.Data?.Budget,
             Macros: profileResult.Data?.Macros,
-            IsIntakePending: isIntakePending
+            IsIntakePending: isIntakePending,
+            IsOnboarded: isOnboarded
         );
 
         var isPrivilegedOrPremium = userTier is UserTier.Premium || roleStr is "SuperAdmin" or "Admin";
@@ -185,7 +187,8 @@ public class WebBffController : ControllerBase
                 RecentOperations: new()
             ),
             FeatureFlags: featureFlags,
-            IsIntakePending: isIntakePending
+            IsIntakePending: isIntakePending,
+            IsOnboarded: isOnboarded
         );
 
         return Ok(composite);

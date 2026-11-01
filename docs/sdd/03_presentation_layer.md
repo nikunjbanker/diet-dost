@@ -315,3 +315,15 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 * **Timeline Gallery & Detail Lightbox Hydration**:
   - Timeline cards dynamically display progress photo thumbnails streamed through authenticated media endpoints.
   - Comparison slider and detailed DEXA body inspection views hydrate high-resolution photos seamlessly with zero CORS or static file 403 blocks.
+
+## 19. Explicit Onboarding State & Zero-Assumption Intake Modal Modernization (`ADR-155`)
+
+* **Explicit `IsOnboarded` Presentation Binding**:
+  - `main.js` evaluates `isIntakePending = Boolean(dashboard.isIntakePending || dashboard.user?.isIntakePending || (dashboard.user && dashboard.user.isOnboarded === false) || dashboard.isOnboarded === false)`.
+  - Automatically launches the onboarding intake modal (`profileModal.open({ isOnboarding: true, userName })`) upon login for users who have not completed intake.
+* **Onboarding Mode Modal Customization (`profile-modal.js`)**:
+  - `open(options = {})` dynamically toggles modal modes:
+    - Onboarding Mode: Displays welcome HUD (`Welcome to Diet Dost! 👋`), onboarding title (`Complete Your Clinical Profile`), explanatory subtitle, "Skip for now" ghost button (`#btn-profile-skip`), hides progress promo and session sign-out rows, and changes submit button text to `🚀 Complete Onboarding & Start`.
+    - Edit Profile Mode: Displays standard clinical title (`Your Health Profile`), cancel button, photo promo banner, session sign-out row, and `💾 Save & Recalculate`.
+  - Implemented `handleSkipOnboarding()`: sets `dd_onboarding_deferred = 'true'` in session storage, closes modal, emits `profile:onboarding-deferred`, and notifies user via toast that default 1,600 kcal baseline is in use.
+  - Submits `isOnboarded: true` in payload and cleans up session storage upon successful clinical profile save.

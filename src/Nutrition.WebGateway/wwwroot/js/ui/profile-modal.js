@@ -148,8 +148,36 @@ export class ProfileModalController {
     }
   }
 
-  async open() {
+  async open(options = {}) {
     const el = this.elements;
+    const isOnboarding = Boolean(options && options.isOnboarding);
+
+    if (isOnboarding) {
+      if (el.hudTitle) el.hudTitle.textContent = 'Welcome to Diet Dost! 👋';
+      if (el.title) el.title.textContent = 'Complete Your Clinical Profile';
+      if (el.subtitle) {
+        el.subtitle.textContent = 'Personalize your clinical targets and nutrition parameters.';
+        el.subtitle.style.display = 'block';
+      }
+      if (el.btnSkip) el.btnSkip.style.display = 'inline-flex';
+      if (el.btnCancel) el.btnCancel.style.display = 'none';
+      if (el.progressPromo) el.progressPromo.style.display = 'none';
+      if (el.sessionRow) el.sessionRow.style.display = 'none';
+      if (el.saveBtnText) el.saveBtnText.innerHTML = '🚀 Complete Onboarding & Start';
+      if (options.userName && el.inpName && !el.inpName.value) {
+        el.inpName.value = options.userName;
+      }
+    } else {
+      if (el.hudTitle) el.hudTitle.textContent = 'Zero Assumption Clinical Intake';
+      if (el.title) el.title.textContent = 'Your Health Profile';
+      if (el.subtitle) el.subtitle.style.display = 'none';
+      if (el.btnSkip) el.btnSkip.style.display = 'none';
+      if (el.btnCancel) el.btnCancel.style.display = 'inline-flex';
+      if (el.progressPromo) el.progressPromo.style.display = 'flex';
+      if (el.sessionRow) el.sessionRow.style.display = 'flex';
+      if (el.saveBtnText) el.saveBtnText.innerHTML = '💾 Save & Recalculate';
+    }
+
     this.syncFromCm(parseFloat(el.inpHeight?.value) || 175);
     this.updateMedicationSuggestions(false);
     this._autoDetectTimezone();
@@ -163,10 +191,23 @@ export class ProfileModalController {
       const data = await this._profile.getProfile(this._state.userId);
       if (data && data.profile) {
         this.populateProfile(data.profile);
+        if (isOnboarding && options.userName && el.inpName && (!el.inpName.value || el.inpName.value === 'Patient' || el.inpName.value === 'Aarav Sharma')) {
+          el.inpName.value = options.userName;
+        }
       }
     } catch (err) {
       console.warn('[ProfileModal] Could not fetch profile from server, using local defaults:', err);
     }
+  }
+
+  handleSkipOnboarding() {
+    sessionStorage.setItem('dd_onboarding_deferred', 'true');
+    this.close();
+    this._bus.emit('profile:onboarding-deferred');
+    this._toast.show({
+      title: 'Clinical Intake Deferred',
+      message: 'Using default 1,600 kcal baseline. You can complete your profile anytime from the top banner.'
+    });
   }
 
   close() {
@@ -380,7 +421,8 @@ export class ProfileModalController {
       regionalCuisine: el.inpCuisine ? el.inpCuisine.value : 'North Indian',
       timezone: selectedTimezone,
       diagnosedConditions: selectedConditions,
-      medications: meds
+      medications: meds,
+      isOnboarded: true
     };
 
     try {
@@ -392,6 +434,7 @@ export class ProfileModalController {
         if (saveBtnText) saveBtnText.innerHTML = origText;
       }
 
+      sessionStorage.removeItem('dd_onboarding_deferred');
       this.close();
       this._confetti.burst();
 

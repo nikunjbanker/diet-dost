@@ -131,6 +131,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
             IsEmailVerified = false,
             IsMobileVerified = false,
             IsActive = false, // Alpha Preview: requires owner activation
+            IsOnboarded = false,
             TermsAcceptedAtUtc = DateTime.UtcNow,
             TermsVersionAccepted = termsVersion,
             HealthConsentAcceptedAtUtc = DateTime.UtcNow,
@@ -165,7 +166,8 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
             ActivityLevel = ActivityLevel.Sedentary,
             DietaryPreference = DietaryPreference.LactoVeg,
             RegionalCuisine = "North Indian",
-            Timezone = "Asia/Kolkata"
+            Timezone = "Asia/Kolkata",
+            IsOnboarded = false
         };
         await _profileRepo.AddAsync(profile, ct);
 

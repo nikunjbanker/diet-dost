@@ -310,6 +310,9 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
+        string boolColDef = db.Database.IsSqlServer() ? "BIT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
+        await EnsureColumnExistsAsync(db, "Profiles", "IsOnboarded", boolColDef);
+        await EnsureColumnExistsAsync(db, "Users", "IsOnboarded", boolColDef);
         await EnsureSoftDeleteColumnsAsync(db);
 
         // Reconcile Users table columns for legacy SQLite installations
@@ -392,6 +395,7 @@ public static partial class DatabaseInitializationExtensions
                 ""RecoveryKeyHash"" TEXT NULL,
                 ""RecoverySalt"" TEXT NULL,
                 ""RecoveryKeyCreatedAtUtc"" TEXT NULL,
+                ""IsOnboarded"" INTEGER NOT NULL DEFAULT 0,
                 ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
                 ""DeletedAtUtc"" TEXT NULL
             );
@@ -729,6 +733,7 @@ public static partial class DatabaseInitializationExtensions
                     [RecoveryKeyHash] NVARCHAR(256) NULL,
                     [RecoverySalt] NVARCHAR(64) NULL,
                     [RecoveryKeyCreatedAtUtc] DATETIME2 NULL,
+                    [IsOnboarded] BIT NOT NULL DEFAULT 0,
                     [IsDeleted] BIT NOT NULL DEFAULT 0,
                     [DeletedAtUtc] DATETIME2 NULL
                 );");
@@ -882,6 +887,9 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
+        string boolColDef = db.Database.IsSqlServer() ? "BIT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
+        await EnsureColumnExistsAsync(db, "Profiles", "IsOnboarded", boolColDef);
+        await EnsureColumnExistsAsync(db, "Users", "IsOnboarded", boolColDef);
         await EnsureSoftDeleteColumnsAsync(db);
 
         // Reconcile Users table columns for legacy Azure SQL installations
@@ -1153,6 +1161,7 @@ public static partial class DatabaseInitializationExtensions
                     user.IsEmailVerified = true;
                     user.IsMobileVerified = true;
                     user.IsActive = true;
+                    user.IsOnboarded = true;
                     user.IsDeleted = false;
                     user.DeletedAtUtc = null;
                     await db.SaveChangesAsync();
@@ -1177,6 +1186,7 @@ public static partial class DatabaseInitializationExtensions
                         IsEmailVerified = true,
                         IsMobileVerified = true,
                         IsActive = true,
+                        IsOnboarded = true,
                         TermsAcceptedAtUtc = DateTime.UtcNow,
                         TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
                         HealthConsentAcceptedAtUtc = DateTime.UtcNow,
@@ -1201,6 +1211,7 @@ public static partial class DatabaseInitializationExtensions
                 user.IsEmailVerified = true;
                 user.IsMobileVerified = true;
                 user.IsActive = true;
+                user.IsOnboarded = true;
                 user.IsDeleted = false;
                 user.DeletedAtUtc = null;
                 await db.SaveChangesAsync();
@@ -1224,7 +1235,8 @@ public static partial class DatabaseInitializationExtensions
                     RegionalCuisine = spec.Cuisine,
                     Timezone = "Asia/Kolkata",
                     DiagnosedConditions = spec.Conditions,
-                    Medications = spec.Medications
+                    Medications = spec.Medications,
+                    IsOnboarded = true
                 };
                 await db.Profiles.AddAsync(profile);
                 await db.SaveChangesAsync();
@@ -1233,8 +1245,10 @@ public static partial class DatabaseInitializationExtensions
             {
                 profile.IsDeleted = false;
                 profile.DeletedAtUtc = null;
+            profile.IsOnboarded = true;
                 profile.Name = spec.Name;
                 profile.RegionalCuisine = spec.Cuisine;
+                profile.IsOnboarded = true;
                 await db.SaveChangesAsync();
             }
 
@@ -1411,7 +1425,8 @@ public static partial class DatabaseInitializationExtensions
                 RecoveryLookupId = derivedLookupId,
                 RecoverySalt = derivedSaltHex,
                 RecoveryKeyHash = derivedHashHex,
-                RecoveryKeyCreatedAtUtc = DateTime.UtcNow
+                RecoveryKeyCreatedAtUtc = DateTime.UtcNow,
+                IsOnboarded = true
             };
             db.Users.Add(anonUser);
 
@@ -1433,7 +1448,8 @@ public static partial class DatabaseInitializationExtensions
                     RegionalCuisine = "Gujarati",
                     Timezone = "Asia/Kolkata",
                     DiagnosedConditions = new List<string>(),
-                    Medications = new List<MedicationEntry>()
+                    Medications = new List<MedicationEntry>(),
+                    IsOnboarded = true
                 };
                 db.Profiles.Add(anonProfile);
             }
@@ -1442,6 +1458,7 @@ public static partial class DatabaseInitializationExtensions
                 anonProfile.IsDeleted = false;
                 anonProfile.DeletedAtUtc = null;
                 anonProfile.Name = "Nikunj QR";
+                anonProfile.IsOnboarded = true;
             }
             await db.SaveChangesAsync();
             logger.LogInformation("[SEED] Seeded demo zero-PII user 'usr_87c369c1e3f8' ('Nikunj QR') with permanent recovery kit.");
@@ -1453,6 +1470,7 @@ public static partial class DatabaseInitializationExtensions
                 existingAnon.IsDeleted = false;
                 existingAnon.DeletedAtUtc = null;
                 existingAnon.IsActive = true;
+                existingAnon.IsOnboarded = true;
             }
 
             // Reconcile credentials to guarantee the demo recovery mnemonic always matches
@@ -1484,7 +1502,8 @@ public static partial class DatabaseInitializationExtensions
                     RegionalCuisine = "Gujarati",
                     Timezone = "Asia/Kolkata",
                     DiagnosedConditions = new List<string>(),
-                    Medications = new List<MedicationEntry>()
+                    Medications = new List<MedicationEntry>(),
+                    IsOnboarded = true
                 };
                 db.Profiles.Add(anonProfile);
             }
@@ -1496,6 +1515,7 @@ public static partial class DatabaseInitializationExtensions
                     anonProfile.DeletedAtUtc = null;
                 }
                 anonProfile.Name = "Nikunj QR";
+                anonProfile.IsOnboarded = true;
             }
 
             await db.SaveChangesAsync();
@@ -1576,6 +1596,7 @@ public static partial class DatabaseInitializationExtensions
                 IsEmailVerified = true,
                 IsMobileVerified = true,
                 IsActive = true,
+                IsOnboarded = true,
                 TermsAcceptedAtUtc = DateTime.UtcNow,
                 TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
                 HealthConsentAcceptedAtUtc = DateTime.UtcNow,
@@ -1602,6 +1623,7 @@ public static partial class DatabaseInitializationExtensions
             superAdmin.MobileNumber = "+919999999990";
             superAdmin.NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999990");
             superAdmin.IsActive = true;
+            superAdmin.IsOnboarded = true;
             superAdmin.IsDeleted = false;
             superAdmin.DeletedAtUtc = null;
             if (string.IsNullOrWhiteSpace(superAdmin.PasswordHash))
@@ -1631,7 +1653,8 @@ public static partial class DatabaseInitializationExtensions
                 ActivityLevel = ActivityLevel.Moderate,
                 DietaryPreference = DietaryPreference.LactoVeg,
                 RegionalCuisine = "North Indian",
-                Timezone = "Asia/Kolkata"
+                Timezone = "Asia/Kolkata",
+                IsOnboarded = true
             };
             await db.Profiles.AddAsync(profile);
             await db.SaveChangesAsync();
@@ -1640,6 +1663,7 @@ public static partial class DatabaseInitializationExtensions
         {
             profile.IsDeleted = false;
             profile.DeletedAtUtc = null;
+            profile.IsOnboarded = true;
             await db.SaveChangesAsync();
         }
 

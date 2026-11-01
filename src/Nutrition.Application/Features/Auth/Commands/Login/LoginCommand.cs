@@ -143,7 +143,8 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig
+            tierConfig,
+            user.IsOnboarded
         );
 
         return Result<LoginResultDto>.Success(new LoginResultDto(token, responseUser, principal));

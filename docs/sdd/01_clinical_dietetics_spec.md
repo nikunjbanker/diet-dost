@@ -80,11 +80,12 @@
 
 ---
 
-## 4. Zero-Assumption Clinical Intake & Profile Completion Governance (ADR-151)
+## 4. Zero-Assumption Clinical Intake & Profile Completion Governance (ADR-151, ADR-155)
 
 ### 4.1 Strict Zero-Assumption Rule (ICMR-NIN 2024)
 - **Medical Integrity**: Under ICMR-NIN 2024 guidelines, medical algorithms must never make arbitrary assumptions or hallucinate clinical biometrics when patient data is incomplete.
-- **Intake Evaluation Criteria**: A user profile is clinically complete if and only if all mandatory biometrics are recorded within physiological boundaries:
+- **Intake Evaluation Criteria**: A user profile is clinically complete if and only if explicit clinical onboarding is confirmed and all mandatory biometrics are recorded within physiological boundaries:
+  - `IsOnboarded == true` (explicit confirmation of clinical intake; pre-populated registration defaults do NOT satisfy this criteria).
   - `Name` and `Timezone` are non-empty.
   - `Age` $\in [1, 120]$.
   - `HeightCm` $\in [80, 250]$.

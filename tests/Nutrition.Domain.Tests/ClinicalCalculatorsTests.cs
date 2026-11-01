@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -182,7 +182,8 @@ public class ClinicalCalculatorsTests
         {
             Id = "usr_skeleton_test",
             Name = "Demo3",
-            Timezone = "Asia/Kolkata"
+            Timezone = "Asia/Kolkata",
+            IsOnboarded = true
         };
 
         Assert.False(profile.IsIntakeComplete());
@@ -202,10 +203,30 @@ public class ClinicalCalculatorsTests
             TargetWeightKg = 72,
             DesiredPaceKgPerWeek = 0.50,
             ActivityLevel = ActivityLevel.Sedentary,
-            Timezone = "Asia/Kolkata"
+            Timezone = "Asia/Kolkata",
+            IsOnboarded = true
         };
 
         Assert.True(profile.IsIntakeComplete());
+    }
+
+    [Fact]
+    public void IsIntakeComplete_WhenNotOnboarded_ReturnsFalseEvenWithPopulatedMetrics()
+    {
+        var profile = new UserProfile
+        {
+            Id = "usr_not_onboarded_test",
+            Name = "demo1@demo.com",
+            Age = 30,
+            HeightCm = 170,
+            CurrentWeightKg = 70,
+            TargetWeightKg = 65,
+            DesiredPaceKgPerWeek = 0.50,
+            Timezone = "Asia/Kolkata",
+            IsOnboarded = false
+        };
+
+        Assert.False(profile.IsIntakeComplete());
     }
 
     [Theory]
@@ -225,7 +246,8 @@ public class ClinicalCalculatorsTests
             CurrentWeightKg = currentWeight,
             TargetWeightKg = targetWeight,
             DesiredPaceKgPerWeek = pace,
-            Timezone = "Asia/Kolkata"
+            Timezone = "Asia/Kolkata",
+            IsOnboarded = true
         };
 
         Assert.False(profile.IsIntakeComplete());

@@ -108,6 +108,7 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
             HealthConsentVersionAccepted = "v1.0-202609",
             ConsentIpAddress = request.IpAddress ?? "Unknown",
             ConsentUserAgent = request.UserAgent ?? "Unknown",
+            IsOnboarded = false,
             CreatedAtUtc = DateTime.UtcNow
         };
 
@@ -121,7 +122,8 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
             Id = sanitizedUserId,
             Name = effectiveName,
             CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow
+            UpdatedAtUtc = DateTime.UtcNow,
+            IsOnboarded = false
         };
         await _profileRepo.AddAsync(profile, ct);
 
@@ -151,7 +153,8 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig
+            tierConfig,
+            user.IsOnboarded
         );
 
         if (_logger.IsEnabled(LogLevel.Information))

@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T15:03:29.869162+00:00",
-  "totalAdrs": 119,
+  "generatedAt": "2026-11-01T16:24:42.734712+00:00",
+  "totalAdrs": 120,
   "categoryCounts": {
-    "architecture": 38,
+    "architecture": 39,
     "security": 24,
     "devops": 28,
     "presentation": 16,
@@ -1437,6 +1437,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md"
+    },
+    {
+      "id": "ADR-155",
+      "number": 155,
+      "title": "Explicit User Onboarding Boolean Flag & Zero-Assumption Intake Governance",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-01",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261101-155-explicit-user-onboarding-boolean-flag.md",
+      "relativePath": "docs/adr/architecture/ADR-20261101-155-explicit-user-onboarding-boolean-flag.md"
     }
   ]
 }

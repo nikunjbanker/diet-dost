@@ -5,11 +5,13 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Profile.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
+using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Profile;
 
 namespace Nutrition.Application.Features.Profile.Commands.SaveProfile;
@@ -22,10 +24,22 @@ public record SaveProfileCommand(
 public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Result<ProfileResponseDto>>
 {
     private readonly ClinicalDietitianService _dietitianService;
+    private readonly IRepository<ApplicationUser>? _userRepo;
+    private readonly IUnitOfWork? _uow;
 
-    public SaveProfileCommandHandler(ClinicalDietitianService dietitianService)
+    public SaveProfileCommandHandler(
+        ClinicalDietitianService dietitianService,
+        IRepository<ApplicationUser>? userRepo = null,
+        IUnitOfWork? uow = null)
     {
         _dietitianService = dietitianService;
+        _userRepo = userRepo;
+        _uow = uow;
+    }
+
+    public SaveProfileCommandHandler(ClinicalDietitianService dietitianService)
+        : this(dietitianService, null, null)
+    {
     }
 
     public async Task<Result<ProfileResponseDto>> HandleAsync(SaveProfileCommand request, CancellationToken ct = default)
@@ -41,6 +55,16 @@ public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Res
         try
         {
             var saved = await _dietitianService.SaveProfileAsync(request.Profile, ct);
+            if (_userRepo != null && _uow != null)
+            {
+                var user = await _userRepo.GetByIdAsync(request.CurrentUserId, ct);
+                if (user != null && !user.IsOnboarded)
+                {
+                    user.IsOnboarded = true;
+                    await _userRepo.UpdateAsync(user, ct);
+                    await _uow.SaveChangesAsync(ct);
+                }
+            }
             var budget = ClinicalCalculators.CalculateCaloricBudget(saved);
             var macros = ClinicalCalculators.CalculateMacroDistribution(saved, budget);
 
