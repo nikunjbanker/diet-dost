@@ -8,6 +8,7 @@
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Domain.Model.Identity;
@@ -161,15 +162,26 @@ public class UpdateUserStatusCommandHandler : ICommandHandler<UpdateUserStatusCo
 {
     private readonly IRepository<ApplicationUser> _userRepo;
     private readonly IUnitOfWork _uow;
+    private readonly IInAppNotificationService? _notificationService;
     private readonly ILogger<UpdateUserStatusCommandHandler> _logger;
 
     public UpdateUserStatusCommandHandler(
         IRepository<ApplicationUser> userRepo,
         IUnitOfWork uow,
         ILogger<UpdateUserStatusCommandHandler> logger)
+        : this(userRepo, uow, null, logger)
+    {
+    }
+
+    public UpdateUserStatusCommandHandler(
+        IRepository<ApplicationUser> userRepo,
+        IUnitOfWork uow,
+        IInAppNotificationService? notificationService,
+        ILogger<UpdateUserStatusCommandHandler> logger)
     {
         _userRepo = userRepo;
         _uow = uow;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -190,8 +202,25 @@ public class UpdateUserStatusCommandHandler : ICommandHandler<UpdateUserStatusCo
             targetUser.SecurityStamp = Guid.NewGuid().ToString("N");
         }
 
+        var wasInactive = !targetUser.IsActive;
         targetUser.IsActive = request.IsActive;
+        if (request.IsActive)
+        {
+            targetUser.IsEmailVerified = true;
+        }
         await _uow.SaveChangesAsync(ct);
+
+        if (wasInactive && request.IsActive && _notificationService != null)
+        {
+            try
+            {
+                await _notificationService.NotifyUserAccountActivatedAsync(targetUser.Id, targetUser.Email, ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[NOTIFICATIONS] Failed to dispatch account activation notification for UserId: {UserId}", targetUser.Id);
+            }
+        }
 
         if (_logger.IsEnabled(LogLevel.Information))
         {

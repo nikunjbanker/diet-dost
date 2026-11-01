@@ -38,6 +38,7 @@ import { AdminModalController } from './ui/admin-modal.js?v=1.9.3';
 import { QuotaModalController } from './ui/quota-modal.js?v=1.9.3';
 import { CameraService } from './services/camera-service.js?v=1.9.3';
 import { CameraModalController } from './ui/camera-modal.js?v=1.9.3';
+import { NotificationService } from './services/notification-service.js?v=1.9.3';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -138,17 +139,21 @@ container.register('progressModal', (c) => new ProgressModalController({
   eventBus: c.resolve('eventBus')
 }));
 
+container.register('notificationService', (c) => new NotificationService(c.resolve('apiClient')));
+
 container.register('authGate', (c) => new AuthGateController({
   authService: c.resolve('authService'),
   toastService: c.resolve('toastService'),
-  eventBus: c.resolve('eventBus')
+  eventBus: c.resolve('eventBus'),
+  notificationService: c.resolve('notificationService')
 }));
 
 container.register('adminModal', (c) => new AdminModalController({
   adminService: c.resolve('adminService'),
   authService: c.resolve('authService'),
   toastService: c.resolve('toastService'),
-  eventBus: c.resolve('eventBus')
+  eventBus: c.resolve('eventBus'),
+  notificationService: c.resolve('notificationService')
 }));
 
 container.register('quotaModal', (c) => new QuotaModalController({
@@ -582,6 +587,15 @@ async function initApp() {
       adminMenuItem.style.display = isAdmin ? 'flex' : 'none';
     }
 
+    if (isAdmin) {
+      if (notifBellContainer) notifBellContainer.style.display = 'block';
+      notifService.connect();
+      syncNotifications();
+    } else {
+      if (notifBellContainer) notifBellContainer.style.display = 'none';
+      if (!user) notifService.disconnect();
+    }
+
     // Keep authService.currentUser synchronized with entitlements for modals & feature gates
     authService.currentUser = {
       id: userId,
@@ -597,6 +611,136 @@ async function initApp() {
       }
     };
   }
+
+  // ── In-App Notification Bell & Real-time Alerts ─────────────────────────────
+  const notifService = container.resolve('notificationService');
+  const notifBellContainer = document.getElementById('notification-bell-container');
+  const notifBellBtn = document.getElementById('btn-notification-bell');
+  const notifBadge = document.getElementById('notification-badge-count');
+  const notifDropdown = document.getElementById('notification-dropdown');
+  const notifList = document.getElementById('notification-list');
+  const btnMarkAllRead = document.getElementById('btn-mark-all-read');
+
+  let activeNotifications = [];
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function updateNotificationBadge() {
+    const unreadCount = activeNotifications.filter(n => !n.isRead).length;
+    if (notifBadge) {
+      if (unreadCount > 0) {
+        notifBadge.textContent = unreadCount > 99 ? '99+' : String(unreadCount);
+        notifBadge.style.display = 'block';
+      } else {
+        notifBadge.style.display = 'none';
+      }
+    }
+  }
+
+  function renderNotifications() {
+    if (!notifList) return;
+    if (activeNotifications.length === 0) {
+      notifList.innerHTML = '<div style="padding: 18px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">No new notifications</div>';
+      return;
+    }
+
+    notifList.innerHTML = activeNotifications.map(n => {
+      const timeStr = n.createdAtUtc ? new Date(n.createdAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      const bg = n.isRead ? 'transparent' : 'rgba(56, 189, 248, 0.08)';
+      const border = n.isRead ? 'var(--border-subtle)' : 'rgba(56, 189, 248, 0.3)';
+      const icon = n.type === 'NewRegistration' ? '🆕' : '🔔';
+
+      return `
+        <div class="notification-item" data-id="${n.id}" style="padding: 10px; border-radius: 6px; margin-bottom: 6px; background: ${bg}; border: 1px solid ${border}; cursor: pointer; transition: background 0.2s;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
+            <div style="font-weight: 600; font-size: 0.8rem; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+              <span>${icon}</span>
+              <span>${escapeHtml(n.title)}</span>
+            </div>
+            <span style="font-size: 0.68rem; color: var(--text-muted); white-space: nowrap;">${timeStr}</span>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.4;">
+            ${escapeHtml(n.message)}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    notifList.querySelectorAll('.notification-item').forEach(el => {
+      el.addEventListener('click', async () => {
+        const id = el.dataset.id;
+        const item = activeNotifications.find(x => x.id === id);
+        if (item && !item.isRead) {
+          item.isRead = true;
+          updateNotificationBadge();
+          renderNotifications();
+          await notifService.markAsRead(id);
+        }
+        if (item && item.type === 'NewRegistration') {
+          if (notifDropdown) notifDropdown.style.display = 'none';
+          adminModal.open();
+        }
+      });
+    });
+  }
+
+  async function syncNotifications() {
+    try {
+      activeNotifications = await notifService.fetchNotifications(25);
+      updateNotificationBadge();
+      renderNotifications();
+    } catch (err) {
+      console.warn('[Main] Error syncing notifications:', err);
+    }
+  }
+
+  notifBellBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+    if (notifDropdown) {
+      const isVisible = notifDropdown.style.display === 'block';
+      notifDropdown.style.display = isVisible ? 'none' : 'block';
+      if (!isVisible) {
+        syncNotifications();
+      }
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (notifDropdown && !notifDropdown.contains(e.target) && !notifBellBtn?.contains(e.target)) {
+      notifDropdown.style.display = 'none';
+    }
+  });
+
+  btnMarkAllRead?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    activeNotifications.forEach(n => n.isRead = true);
+    updateNotificationBadge();
+    renderNotifications();
+    await notifService.markAllAsRead();
+  });
+
+  notifService.on('NewRegistration', (data) => {
+    activeNotifications.unshift({
+      id: data.id || ('temp-' + Date.now()),
+      title: 'New Account Registration',
+      message: data.message || `User ${data.email} has registered and is awaiting owner approval.`,
+      type: 'NewRegistration',
+      isRead: false,
+      createdAtUtc: data.createdAtUtc || new Date().toISOString()
+    });
+    updateNotificationBadge();
+    renderNotifications();
+    try { toastService.info(`🔔 New Registration: ${data.email} is awaiting approval!`); } catch {}
+  });
 
   // User menu dropdown toggle
   const userMenuBtn = document.getElementById('btn-user-menu');
@@ -631,6 +775,9 @@ async function initApp() {
 
   const performSignOut = async () => {
     if (userMenuDropdown) userMenuDropdown.style.display = 'none';
+    if (notifDropdown) notifDropdown.style.display = 'none';
+    if (notifBellContainer) notifBellContainer.style.display = 'none';
+    notifService.disconnect();
     if (window.closeProfileModal) window.closeProfileModal();
     await authService.logout();
     updateUserUI(null);

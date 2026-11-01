@@ -77,6 +77,8 @@ public static class ServiceCollectionExtensions
         // Ambient User Claims Context Provider (OWASP ASVS tenant isolation)
         services.AddHttpContextAccessor();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ICurrentUserService, Services.CurrentUserService>();
+        services.AddSignalR();
+        services.AddScoped<IInAppNotificationService, Services.InAppNotificationService>();
 
         // Native ASP.NET Core Health Checks (/healthz liveness & /ready readiness)
         services.AddHealthChecks()

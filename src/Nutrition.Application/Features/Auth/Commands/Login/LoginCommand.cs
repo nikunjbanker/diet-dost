@@ -93,6 +93,14 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
 
         if (!user.CanLogin(out var rejectionReason))
         {
+            if (!user.IsActive)
+            {
+                return Result<LoginResultDto>.Failure(
+                    rejectionReason ?? "Your account is pending review and activation by the application owner for this Alpha Preview. Please check back shortly.",
+                    "AccountPendingApproval",
+                    403);
+            }
+
             if (!user.IsEmailVerified)
             {
                 return Result<LoginResultDto>.Failure(rejectionReason ?? "Account email verification required.", "UnverifiedAccount", 403);

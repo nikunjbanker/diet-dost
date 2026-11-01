@@ -20,6 +20,25 @@
       ⚙️ Clinical Intake
     </button>
 
+    <!-- Real-time In-App Notification Bell (SuperAdmin / User Alerts) -->
+    <div id="notification-bell-container" class="notification-bell-wrapper" style="position: relative; display: none;">
+      <button type="button" id="btn-notification-bell" class="btn btn-outline" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; position: relative;" title="In-App Notifications">
+        <span style="font-size: 1.15rem; line-height: 1;">🔔</span>
+        <span id="notification-badge-count" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: #ffffff; font-size: 0.65rem; font-weight: 700; border-radius: 9999px; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 4px; border: 2px solid #0d1117;">0</span>
+      </button>
+      <div id="notification-dropdown" class="user-dropdown" style="display: none; width: 340px; right: 0; max-height: 420px; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+        <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
+            <span>🔔</span> Notifications
+          </div>
+          <button type="button" id="btn-mark-all-read" style="background: none; border: none; color: var(--accent); font-size: 0.72rem; cursor: pointer; text-decoration: underline;">Mark all read</button>
+        </div>
+        <div id="notification-list" style="padding: 6px 8px;">
+          <div style="padding: 18px; text-align: center; font-size: 0.8rem; color: var(--text-muted);">No new notifications</div>
+        </div>
+      </div>
+    </div>
+
     <!-- User Account & Tier Entitlements Dropdown -->
     <div class="user-menu-wrapper" style="position: relative;">
       <button type="button" id="btn-user-menu" class="btn btn-outline" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px;">

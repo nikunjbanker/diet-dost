@@ -5,11 +5,11 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Common.Options;
 using Nutrition.Application.Features.Auth.DTOs;
@@ -39,6 +39,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
     private readonly IPasswordHasher _passwordHasher;
     private readonly IOtpService _otpService;
     private readonly AuthOptions _authOptions;
+    private readonly IInAppNotificationService? _notificationService;
     private readonly ILogger<RegisterUserCommandHandler> _logger;
 
     public RegisterUserCommandHandler(
@@ -50,6 +51,20 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
         IOtpService otpService,
         IOptions<AuthOptions> authOptions,
         ILogger<RegisterUserCommandHandler> logger)
+        : this(userRepo, profileRepo, otpRepo, uow, passwordHasher, otpService, authOptions, null, logger)
+    {
+    }
+
+    public RegisterUserCommandHandler(
+        IRepository<ApplicationUser> userRepo,
+        IRepository<UserProfile> profileRepo,
+        IRepository<VerificationOtp> otpRepo,
+        IUnitOfWork uow,
+        IPasswordHasher passwordHasher,
+        IOtpService otpService,
+        IOptions<AuthOptions> authOptions,
+        IInAppNotificationService? notificationService,
+        ILogger<RegisterUserCommandHandler> logger)
     {
         _userRepo = userRepo;
         _profileRepo = profileRepo;
@@ -58,6 +73,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
         _passwordHasher = passwordHasher;
         _otpService = otpService;
         _authOptions = authOptions?.Value ?? new AuthOptions();
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -99,6 +115,9 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
             return Result<RegisterResultDto>.Failure(pwdError ?? "Password does not meet strength requirements.", "WeakPassword", 400);
         }
 
+        // Alpha Preview Access Gate:
+        // New user accounts require manual activation by the application owner (nikunj_banker@hotmail.com).
+        // Therefore, IsActive is set to false initially.
         var user = new ApplicationUser
         {
             Email = request.Email.Trim(),
@@ -111,7 +130,7 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
             Tier = UserTier.Free,
             IsEmailVerified = false,
             IsMobileVerified = false,
-            IsActive = true,
+            IsActive = false, // Alpha Preview: requires owner activation
             TermsAcceptedAtUtc = DateTime.UtcNow,
             TermsVersionAccepted = termsVersion,
             HealthConsentAcceptedAtUtc = DateTime.UtcNow,
@@ -150,23 +169,45 @@ public class RegisterUserCommandHandler : ICommandHandler<RegisterUserCommand, R
         };
         await _profileRepo.AddAsync(profile, ct);
 
-        // Generate 6-digit OTP code for Email verification
+        // Generate 6-digit OTP code for future verification
         var rawCode = _otpService.GenerateCode();
         var otp = _otpService.CreateOtp(user.Id, user.Email, OtpChannel.Email, rawCode);
         await _otpRepo.AddAsync(otp, ct);
 
         await _uow.SaveChangesAsync(ct);
 
+        // Dispatch in-app notification to SuperAdmin
+        var registrationTicket = Guid.NewGuid().ToString("N");
+        if (_notificationService != null)
+        {
+            try
+            {
+                await _notificationService.NotifySuperAdminNewRegistrationAsync(
+                    user.Id,
+                    request.Name.Trim(),
+                    user.Email,
+                    user.MobileNumber.Trim(),
+                    user.CreatedAtUtc,
+                    ct);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[NOTIFICATIONS] Failed to dispatch in-app notification for new registration: {UserId}", user.Id);
+            }
+        }
+
         if (_logger.IsEnabled(LogLevel.Information))
         {
-            _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. OTP dispatched to: {Target}", user.Id, user.Email);
+            _logger.LogInformation("[AUTH] Registration completed for user: {UserId}. Pending SuperAdmin approval.", user.Id);
         }
 
         var responseDto = new RegisterResultDto(
             user.Id,
             user.Email,
-            "Registration successful. Please enter the 6-digit verification code sent to your email to activate your account.",
-            request.IsDev ? rawCode : null
+            "Registration received! Diet-Dost is currently in private Alpha preview. Your account is pending review and activation by the application owner (nikunj_banker@hotmail.com). You will be notified in the app once enabled.",
+            request.IsDev ? rawCode : null,
+            RequiresOwnerApproval: true,
+            RegistrationTicket: registrationTicket
         );
 
         return Result<RegisterResultDto>.Success(responseDto, 201);

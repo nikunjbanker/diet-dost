@@ -76,7 +76,8 @@ graph TB
 
     subgraph LAYER_GATEWAY ["3. PRESENTATION GATEWAY & BACKEND-FOR-FRONTEND (Nutrition.WebGateway)"]
         direction TB
-        CONTROLLERS["Thin REST Controllers (.NET 11)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController)"]
+        CONTROLLERS["Thin REST Controllers (.NET 11)<br/>(AuthController, MealsController, ProfileController, AnalyticsController, AdminController, NotificationsController)"]
+        HUB_Notification["NotificationHub (/hubs/notifications)<br/>Real-Time SignalR WebSockets, CSWSH Shield & Applicant Groups"]
         BFF_Composite["Web BFF Composite Hydration (/api/web/v1/dashboard)<br/>Parallel Task.WhenAll CQRS Execution & Sub-50ms Payload"]
         BFF_Mobile["Mobile BFF Facade (/api/mobile/v1/*)<br/>Compact Cellular DTOs & Hardware Token Handshake"]
         MW_Pipeline["HTTP Middleware Pipeline<br/>(Authentication, Rate Limiting, Exception Handling RFC 7807, HttpPayloadTelemetry)"]
@@ -88,9 +89,10 @@ graph TB
         CQRS_Engine["Native CQRS Pipeline (Zero MediatR Dependency)<br/>(Pure Microsoft.Extensions.DependencyInjection Handlers)"]
         
         subgraph USECASES_AUTH ["Identity & Security Use Cases"]
-            CMD_Login["LoginCommandHandler<br/>(Debug-Only Demo Guard & JWT Generation)"]
-            CMD_Register["RegisterUserCommandHandler<br/>(DPDPA Consent & PasswordPolicy)"]
+            CMD_Login["LoginCommandHandler<br/>(Debug-Only Demo Guard, Alpha Approval Check & JWT Generation)"]
+            CMD_Register["RegisterUserCommandHandler<br/>(Alpha Owner Review Gate & SuperAdmin Notification Dispatch)"]
             CMD_Reset["ResetPasswordCommandHandler<br/>(Active User Check & Policy)"]
+            SVC_Notification["IInAppNotificationService<br/>(Realtime SignalR Dispatch & AppNotification Persistence)"]
         end
 
         subgraph USECASES_VISION ["Meal Vision Use Cases"]
@@ -120,6 +122,7 @@ graph TB
             AGG_Ledger["DailyCalorieLedger (Aggregate Root)<br/>(Date, Consumed, Budget, Pending Deficit)"]
             ENT_Secret["AppSecret Entity<br/>(Key, Value, Description, CreatedAtUtc, UpdatedAtUtc)"]
             ENT_TierConfig["TierFeatureConfiguration<br/>(DailyAiLimit: 1, 7, 30, -1; PhotoCompare; DataExport)"]
+            ENT_Notification["AppNotification Entity<br/>(RecipientRole, RecipientUserId, Type, IsRead, MetadataJson)"]
         end
 
         subgraph CLINICAL ["Clinical Dietetics Safeguards (ICMR-NIN 2024 & WHO)"]

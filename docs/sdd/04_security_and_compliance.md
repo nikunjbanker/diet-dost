@@ -218,3 +218,21 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
   - Extended `/ready` probe timeout to 10s with 6 failure thresholds in `app.bicep` for serverless pause/resume (GAP-19).
   - Implemented `QrSessionCleanupService` background worker purging expired QR sessions older than 24h (GAP-41).
   - Validated table identifiers with regex and bracket escaping in `AzureSqlTargetWriter.cs` (GAP-31).
+
+## 12. Alpha User Registration Approval & Real-Time Notification Security (`ADR-148`)
+
+* **Alpha Owner Approval Gate & Account Activation**:
+  - In Alpha Preview, all new registrations default to `IsActive = false` pending review by the application owner (`nikunj_banker@hotmail.com`).
+  - Attempting to log in with an unapproved account yields an HTTP 403 Forbidden with `AccountPendingApproval` code and a localized pending activation explanation.
+  - Upon SuperAdmin approval via the Governance Console, the account is activated (`IsActive = true`) and `IsEmailVerified = true` is automatically set, unlocking full dashboard access.
+* **Cross-Site WebSocket Hijacking (CSWSH) Defense**:
+  - `NotificationHub.cs` validates the `Origin` header against `Request.Host` during connection handshake. Mismatched or untrusted origins are immediately aborted.
+* **Applicant Channel Cryptographic Isolation**:
+  - Applicants join a temporary notification group keyed by a cryptographically random 128-bit ticket (`Guid.NewGuid().ToString("N")`).
+  - Strict regex validation (`^[a-fA-F0-9]{32}$`) prevents injection attacks and snooping across applicant channels.
+* **Claims-Enforced Administrative Groups**:
+  - The `"SuperAdmins"` SignalR group is populated exclusively server-side in `OnConnectedAsync` by inspecting the authenticated `ClaimsPrincipal`. Regular applicants cannot join administrative groups.
+* **Anonymous Mode Bypass Remediation**:
+  - The Zero-PII anonymous registration switcher is disabled in Alpha mode to prevent users from bypassing owner review. Seeded offline mnemonic login remains supported.
+* **Stored XSS Prevention**:
+  - In-app notification titles and messages rendered in header dropdowns or modals are strictly escaped using HTML entity encoding and DOM text node assignment.

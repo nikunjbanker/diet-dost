@@ -162,7 +162,9 @@ public class AuthController : ControllerBase
                 userId = result.Data!.UserId,
                 email = result.Data.Email,
                 message = result.Data.Message,
-                devOtpCode = result.Data.DevOtpCode
+                devOtpCode = result.Data.DevOtpCode,
+                requiresOwnerApproval = result.Data.RequiresOwnerApproval,
+                registrationTicket = result.Data.RegistrationTicket
             });
         });
     }
