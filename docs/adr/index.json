@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T08:20:58.894171+00:00",
-  "totalAdrs": 116,
+  "generatedAt": "2026-11-01T08:45:27.061449+00:00",
+  "totalAdrs": 117,
   "categoryCounts": {
-    "architecture": 35,
+    "architecture": 36,
     "security": 24,
     "devops": 28,
     "presentation": 16,
@@ -1401,6 +1401,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-151-zero-assumption-clinical-onboarding-and-anonymous-recovery.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-151-zero-assumption-clinical-onboarding-and-anonymous-recovery.md"
+    },
+    {
+      "id": "ADR-152",
+      "number": 152,
+      "title": "Mermaid Diagram Edge Label Quoting Invariant & GitHub Rich Display Parse Error Resolution",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-01",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261101-152-mermaid-edge-label-quote-invariant-and-syntax-repair.md",
+      "relativePath": "docs/adr/architecture/ADR-20261101-152-mermaid-edge-label-quote-invariant-and-syntax-repair.md"
     }
   ]
 }

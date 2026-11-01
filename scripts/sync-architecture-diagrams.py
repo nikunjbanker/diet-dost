@@ -116,6 +116,21 @@ def validate_mermaid_syntax(filepath: str) -> List[str]:
     if curly_open != curly_close:
         errors.append(f"{os.path.basename(filepath)}: Unbalanced curly braces: {curly_open} '{{' vs {curly_close} '}}'.")
 
+    # Edge label special-character quoting check (ADR-086 & Mermaid parser safety)
+    edge_pattern = re.compile(r'(-->|-\.->|==>|<-->)\s*\|([^\|]+)\|')
+    for line_idx, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if stripped.startswith("%%"):
+            continue
+        for match in edge_pattern.finditer(line):
+            label = match.group(2).strip()
+            if not (label.startswith('"') and label.endswith('"')):
+                if re.search(r'[\(\)\[\]\{\}:]', label):
+                    errors.append(
+                        f"{os.path.basename(filepath)}: Line {line_idx} violates ADR-086 edge label quoting rule. "
+                        f"Edge labels containing special characters (brackets, parentheses, colons) must be enclosed in double quotes: |\"{label}\"|"
+                    )
+
     return errors
 
 

@@ -22,7 +22,7 @@
 ```mermaid
 graph TD
     User([End User / Mobile PWA]) -->|HTTPS / TLS 1.3| DNS[Custom Domain DNS<br/>dev.diet-dost.in]
-    DNS -->|CNAME: dev -> *.azurecontainerapps.io<br/>TXT: asuid.dev -> Domain Verification ID| ACA_Env[Azure Container Apps Environment<br/>Managed TLS / Ingress]
+    DNS -->|"CNAME: dev -> *.azurecontainerapps.io<br/>TXT: asuid.dev -> Domain Verification ID"| ACA_Env[Azure Container Apps Environment<br/>Managed TLS / Ingress]
     
     subgraph Azure_Cloud ["Azure Cloud (Secure Perimeter)"]
         ACA_Env --> App[WebGateway Container<br/>.NET 11 Web API + Static PWA<br/>Port 8080]
