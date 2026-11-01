@@ -174,4 +174,60 @@ public class ClinicalCalculatorsTests
         Assert.Equal(5, f5);
         Assert.Equal(0.0, i0);
     }
+
+    [Fact]
+    public void IsIntakeComplete_ForNewlyCreatedSkeletonProfile_ReturnsFalse()
+    {
+        var profile = new UserProfile
+        {
+            Id = "usr_skeleton_test",
+            Name = "Demo3",
+            Timezone = "Asia/Kolkata"
+        };
+
+        Assert.False(profile.IsIntakeComplete());
+    }
+
+    [Fact]
+    public void IsIntakeComplete_ForCompleteProfile_ReturnsTrue()
+    {
+        var profile = new UserProfile
+        {
+            Id = "usr_complete_test",
+            Name = "Aarav Sharma",
+            Age = 32,
+            Sex = BiologicalSex.Male,
+            HeightCm = 175,
+            CurrentWeightKg = 82,
+            TargetWeightKg = 72,
+            DesiredPaceKgPerWeek = 0.50,
+            ActivityLevel = ActivityLevel.Sedentary,
+            Timezone = "Asia/Kolkata"
+        };
+
+        Assert.True(profile.IsIntakeComplete());
+    }
+
+    [Theory]
+    [InlineData(0, 175, 82, 72, 0.5)]   // Invalid Age
+    [InlineData(32, 50, 82, 72, 0.5)]   // Height too low (<80cm)
+    [InlineData(32, 175, 20, 72, 0.5)]  // Weight too low (<25kg)
+    [InlineData(32, 175, 82, 20, 0.5)]  // Target weight too low (<25kg)
+    [InlineData(32, 175, 82, 72, 1.0)]  // Unsafe pace (>0.75kg/wk)
+    public void IsIntakeComplete_WithInvalidMetrics_ReturnsFalse(int age, double height, double currentWeight, double targetWeight, double pace)
+    {
+        var profile = new UserProfile
+        {
+            Id = "usr_invalid_test",
+            Name = "Priya",
+            Age = age,
+            HeightCm = height,
+            CurrentWeightKg = currentWeight,
+            TargetWeightKg = targetWeight,
+            DesiredPaceKgPerWeek = pace,
+            Timezone = "Asia/Kolkata"
+        };
+
+        Assert.False(profile.IsIntakeComplete());
+    }
 }

@@ -22,7 +22,8 @@ public record WebDashboardCompositeDto(
     AnalyticsProjection Projections,
     IReadOnlyList<MealLog> RecentMeals,
     AiUsageStatsResult Quota,
-    TierFeatureFlagsDto FeatureFlags
+    TierFeatureFlagsDto FeatureFlags,
+    bool IsIntakePending = false
 );
 
 /// <summary>
@@ -35,7 +36,8 @@ public record WebUserProfileDto(
     string Tier,
     string Role,
     BmrTdeeResult? Budget = null,
-    MacroDistribution? Macros = null
+    MacroDistribution? Macros = null,
+    bool IsIntakePending = false
 );
 
 /// <summary>

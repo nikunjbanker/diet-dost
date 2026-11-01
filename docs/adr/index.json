@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T08:12:10.126145+00:00",
-  "totalAdrs": 115,
+  "generatedAt": "2026-11-01T08:20:58.894171+00:00",
+  "totalAdrs": 116,
   "categoryCounts": {
-    "architecture": 34,
+    "architecture": 35,
     "security": 24,
     "devops": 28,
     "presentation": 16,
@@ -1389,6 +1389,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-150-hybrid-active-user-monitoring-and-azure-monitor-observability.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-150-hybrid-active-user-monitoring-and-azure-monitor-observability.md"
+    },
+    {
+      "id": "ADR-151",
+      "number": 151,
+      "title": "Zero-Assumption Clinical Onboarding Flow & Disaster Recovery Architecture",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-01",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261101-151-zero-assumption-clinical-onboarding-and-anonymous-recovery.md",
+      "relativePath": "docs/adr/architecture/ADR-20261101-151-zero-assumption-clinical-onboarding-and-anonymous-recovery.md"
     }
   ]
 }

@@ -1,4 +1,4 @@
-﻿<!--
+<!--
   Copyright (c) 2026 diet-dost and/or its contributors.
   Licensed under the "GNU Affero General Public License v3.0 only" and
   the "Server Side Public License, v 1"; you may not use this file except
@@ -77,3 +77,23 @@
 | **PCOS / PCOD**<br>*(Metformin, Inositol)* | • High protein: **1.3g–1.5g/kg IBW**.<br>• Anti-inflammatory, low-GI carb focus. | • Spearmint tea (anti-androgen).<br>• Haldi-ginger infusion, Cinnamon.<br>• Sprouted lentils, Tofu, Paneer. | • Refined flours, dairy desserts, sugary milk tea. | Combine with post-meal 10-minute brisk walk for optimal insulin sensitization. |
 | **Hyperuricemia / Gout**<br>*(Febuxostat, Allopurinol)* | • Hydration mandate: **3.5L to 4L/day**.<br>• Avoid acute caloric deprivation. | • Low-fat curd, Fresh cherries, Lemon water.<br>• Cucumber, Lauki, Oats. | • Organ meats, Sardines/Mackerel.<br>• High yeast extracts, HFCS.<br>• Concentrated pulses limited to 1 katori. | Avoid aggressive deficits which spike uric acid and trigger painful acute gout flares. |
 | **Fatty Liver (NAFLD)**<br>*(Saroglitazar, Vitamin E)* | • Gradual pace capped at **0.75 kg/week**.<br>• Zero added fructose/refined sugars. | • Amla (antioxidant), Black coffee.<br>• Green leafy subzis, Turmeric. | • High-fructose corn syrup, Fruit juices.<br>• Excessive mango/chikoo, Deep fried curries. | Rapid weight loss (>1.5 kg/wk) exacerbates hepatic steatohepatitis. |
+
+---
+
+## 4. Zero-Assumption Clinical Intake & Profile Completion Governance (ADR-151)
+
+### 4.1 Strict Zero-Assumption Rule (ICMR-NIN 2024)
+- **Medical Integrity**: Under ICMR-NIN 2024 guidelines, medical algorithms must never make arbitrary assumptions or hallucinate clinical biometrics when patient data is incomplete.
+- **Intake Evaluation Criteria**: A user profile is clinically complete if and only if all mandatory biometrics are recorded within physiological boundaries:
+  - `Name` and `Timezone` are non-empty.
+  - `Age` $\in [1, 120]$.
+  - `HeightCm` $\in [80, 250]$.
+  - `CurrentWeightKg` $\in [25, 350]$.
+  - `TargetWeightKg` $\in [25, 350]$.
+  - `DesiredPaceKgPerWeek` $\in \{0.25, 0.5, 0.75\}$.
+- **Programmatic Guard**: Evaluated via `UserProfile.IsIntakeComplete()`.
+
+### 4.2 Graceful Calculation Withholding & Baseline Maintenance Floor
+- When `IsIntakeComplete()` returns `false`, `CalculateCaloricBudget` and `CalculateMacroDistribution` are strictly withheld.
+- System queries (`GetProfileQuery`, `GetDailyLedgerQuery`, `GetProjectionsQuery`, and `WebBffController.GetDashboardComposite`) return `budget: null`, `macros: null`, and a conservative standard maintenance floor of **1,600 kcal** with neutral macros (200g carb, 60g protein, 53g fat, 25g fiber, 2,000mg sodium, 25g sugar).
+- Prevents HTTP 500 runtime exceptions while signaling `isIntakePending: true` to prompt user clinical onboarding.

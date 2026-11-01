@@ -36,8 +36,17 @@ export class ProfileModalController {
   get elements() {
     return {
       modal: document.getElementById('profile-modal'),
+      hudTitle: document.getElementById('profile-modal-hud-title'),
+      title: document.getElementById('profile-modal-title'),
+      subtitle: document.getElementById('profile-modal-subtitle'),
+      progressPromo: document.getElementById('profile-progress-promo'),
+      sessionRow: document.getElementById('profile-session-row'),
       btnOpen: document.getElementById('btn-open-profile'),
       btnClose: document.getElementById('btn-close-profile'),
+      btnSkip: document.getElementById('btn-profile-skip'),
+      btnCancel: document.getElementById('btn-profile-cancel'),
+      saveBtn: document.getElementById('btn-profile-save'),
+      saveBtnText: document.getElementById('btn-profile-save-text'),
       form: document.getElementById('profile-form'),
       btnUnitCm: document.getElementById('btn-unit-cm'),
       btnUnitFt: document.getElementById('btn-unit-ft'),
@@ -75,6 +84,10 @@ export class ProfileModalController {
 
     if (el.btnClose) {
       el.btnClose.addEventListener('click', () => this.close());
+    }
+
+    if (el.btnSkip) {
+      el.btnSkip.addEventListener('click', () => this.handleSkipOnboarding());
     }
 
     if (el.modal) {
@@ -168,13 +181,14 @@ export class ProfileModalController {
     const el = this.elements;
     if (p.name && el.inpName) el.inpName.value = p.name;
     if (p.sex !== undefined && el.inpSex) el.inpSex.value = p.sex;
-    if (p.age && el.inpAge) el.inpAge.value = p.age;
-    if (p.heightCm && el.inpHeight) {
-      el.inpHeight.value = p.heightCm;
-      this.syncFromCm(p.heightCm);
+    if (el.inpAge) el.inpAge.value = (p.age && p.age > 0) ? p.age : 30;
+    if (el.inpHeight) {
+      const h = (p.heightCm && p.heightCm > 0) ? p.heightCm : 170;
+      el.inpHeight.value = h;
+      this.syncFromCm(h);
     }
-    if (p.currentWeightKg && el.inpWeight) el.inpWeight.value = p.currentWeightKg;
-    if (p.targetWeightKg && el.inpTargetWeight) el.inpTargetWeight.value = p.targetWeightKg;
+    if (el.inpWeight) el.inpWeight.value = (p.currentWeightKg && p.currentWeightKg > 0) ? p.currentWeightKg : 70;
+    if (el.inpTargetWeight) el.inpTargetWeight.value = (p.targetWeightKg && p.targetWeightKg > 0) ? p.targetWeightKg : 65;
     if (p.desiredPaceKgPerWeek && el.inpPace) el.inpPace.value = p.desiredPaceKgPerWeek.toFixed(2);
     if (p.activityLevel !== undefined && el.inpActivity) el.inpActivity.value = p.activityLevel;
     if (p.dietaryPreference !== undefined && el.inpDietary) el.inpDietary.value = p.dietaryPreference;

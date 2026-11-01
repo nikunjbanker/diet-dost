@@ -287,3 +287,17 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
   - Displays `⏳ Pending Review` status badges on inactive accounts.
   - Provides prominent `🔓 Activate & Approve` action buttons for instant one-click activation.
   - Real-time `NewRegistration` SignalR events trigger instant directory refresh and toast notification alerts.
+
+
+## 17. Clinical Onboarding Flow & Disaster Recovery UX (`ADR-151`)
+
+* **Disaster Recovery Form Fixes (`qr-auth-controller.js`)**:
+  - Resolved `TypeError: Cannot set property type of #<HTMLTextAreaElement>` by ensuring `.type = 'password'` is only applied to `<input>` elements (such as `recoverKeyInput`), while preserving standard textarea behavior for 12-word mnemonic entry.
+  - Added safe fallback display names (`res.user?.name || res.user?.displayName || 'User'`) in auth recovery toasts.
+* **Obsidian-Dark User Onboarding Modal (`profile-modal.html`, `profile-modal.js`)**:
+  - Implemented single-card onboarding modal layout triggered automatically when `dashboard.isIntakePending === true`.
+  - Added "Skip for now" ghost button (`#btn-profile-skip`), allowing users to defer onboarding while persisting safe 1,600 kcal baseline ledgers in session storage without disruption.
+  - Added clinical default pre-fills (Age 30, Height 170cm, Weight 70kg, Pace 0.5 kg/week) to reduce user cognitive load during initial onboarding.
+* **Persistent Dashboard Revisit Banner (`onboarding-banner.html`, `main.js`, `styles.css`)**:
+  - Amber pulse indicator (`.pulse-indicator-amber`) and warning callout (`#onboarding-revisit-banner`) displayed prominently above HUD when profile intake is pending.
+  - One-click `Complete Profile ➔` button immediately re-opens the onboarding modal, ensuring compliance with ICMR-NIN 2024 Zero-Assumption requirements.

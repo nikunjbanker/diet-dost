@@ -45,8 +45,9 @@ public class GetProfileQueryHandler : IQueryHandler<GetProfileQuery, Result<Prof
             return Result<ProfileResponseDto>.NotFound("User profile not found. Please complete clinical onboarding.");
         }
 
-        var budget = ClinicalCalculators.CalculateCaloricBudget(profile);
-        var macros = ClinicalCalculators.CalculateMacroDistribution(profile, budget);
+        var isComplete = profile.IsIntakeComplete();
+        var budget = isComplete ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
+        var macros = (budget != null) ? ClinicalCalculators.CalculateMacroDistribution(profile, budget) : null;
 
         return Result<ProfileResponseDto>.Success(new ProfileResponseDto(profile, budget, macros));
     }

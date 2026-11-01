@@ -90,6 +90,21 @@ public class UserProfile : ISoftDeletable
     /// <summary>
     /// Enforces the Zero Assumption Rule: Validates that all required metrics and clinical fields are present.
     /// </summary>
+    /// <summary>
+    /// Checks whether clinical intake metrics are sufficiently complete to compute clinical caloric budgets.
+    /// Under Zero Assumption Rule, biometrics cannot be assumed.
+    /// </summary>
+    public bool IsIntakeComplete()
+    {
+        return !string.IsNullOrWhiteSpace(Name)
+            && !string.IsNullOrWhiteSpace(Timezone)
+            && Age > 0 && Age <= 120
+            && HeightCm >= 80 && HeightCm <= 250
+            && CurrentWeightKg >= 25 && CurrentWeightKg <= 350
+            && TargetWeightKg >= 25 && TargetWeightKg <= 350
+            && DesiredPaceKgPerWeek is (0.25 or 0.5 or 0.75);
+    }
+
     public void ValidateIntakeCompleteness()
     {
         if (string.IsNullOrWhiteSpace(Name))

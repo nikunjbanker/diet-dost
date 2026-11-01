@@ -3,14 +3,15 @@
   <div class="review-card profile-modal-card" style="max-width: min(95vw, 840px);">
     <div class="review-header">
       <div>
-        <div class="hud-title">Zero Assumption Clinical Intake</div>
-        <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.2rem;">Your Health Profile</h2>
+        <div class="hud-title" id="profile-modal-hud-title">Zero Assumption Clinical Intake</div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.2rem;" id="profile-modal-title">Your Health Profile</h2>
+        <div id="profile-modal-subtitle" style="display: none; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;"></div>
       </div>
       <button id="btn-close-profile" class="btn btn-sm" onclick="closeProfileModal()">✕</button>
     </div>
 
     <!-- Visual Transformation & Body Progress Section in Profile -->
-    <div style="background: var(--surface-subtle); border: 1px solid rgba(94, 106, 210, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+    <div id="profile-progress-promo" style="background: var(--surface-subtle); border: 1px solid rgba(94, 106, 210, 0.25); border-radius: var(--radius-md); padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
       <div>
         <div style="font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 6px;">
           <span>🧍 Visual Transformation & Full Body Progress</span>
@@ -174,7 +175,7 @@
       </div>
 
       <!-- Account Session & Sign Out for Mobile & Desktop Users -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); margin-top: 0.25rem;">
+      <div id="profile-session-row" style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: var(--radius-md); background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); margin-top: 0.25rem;">
         <div>
           <div style="font-weight: 600; font-size: 0.85rem; color: #f87171;">Account Session</div>
           <div style="font-size: 0.73rem; color: var(--text-muted);" id="profile-user-session-email">Signed in</div>
@@ -190,6 +191,7 @@
 
     <!-- Sticky Save / Cancel footer — always visible -->
     <div class="profile-modal-footer">
+      <button type="button" id="btn-profile-skip" class="btn btn-ghost" style="display: none; color: var(--text-muted); font-size: 0.82rem;">Skip for now (Use 1,600 kcal default)</button>
       <button type="button" id="btn-profile-cancel" class="btn btn-outline" onclick="closeProfileModal()">Cancel</button>
       <button type="submit" form="profile-form" id="btn-profile-save" class="btn btn-primary">
         <span id="btn-profile-save-text">💾 Save &amp; Recalculate</span>
