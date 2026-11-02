@@ -322,6 +322,13 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyHash", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "RecoverySalt", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyCreatedAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryLookupId", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryKeyHash", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoverySalt", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryKeyCreatedAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryKeyExpiresAtUtc", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryIssueTokenHash", "TEXT NULL");
+        await EnsureColumnExistsAsync(db, "Users", "LastActivatedRecoveryIssueTokenHash", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "TermsAcceptedAtUtc", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "TermsVersionAccepted", "TEXT NULL");
         await EnsureColumnExistsAsync(db, "Users", "HealthConsentAcceptedAtUtc", "TEXT NULL");
@@ -395,6 +402,13 @@ public static partial class DatabaseInitializationExtensions
                 ""RecoveryKeyHash"" TEXT NULL,
                 ""RecoverySalt"" TEXT NULL,
                 ""RecoveryKeyCreatedAtUtc"" TEXT NULL,
+                ""PendingRecoveryLookupId"" TEXT NULL,
+                ""PendingRecoveryKeyHash"" TEXT NULL,
+                ""PendingRecoverySalt"" TEXT NULL,
+                ""PendingRecoveryKeyCreatedAtUtc"" TEXT NULL,
+                ""PendingRecoveryKeyExpiresAtUtc"" TEXT NULL,
+                ""PendingRecoveryIssueTokenHash"" TEXT NULL,
+                ""LastActivatedRecoveryIssueTokenHash"" TEXT NULL,
                 ""IsOnboarded"" INTEGER NOT NULL DEFAULT 0,
                 ""IsDeleted"" INTEGER NOT NULL DEFAULT 0,
                 ""DeletedAtUtc"" TEXT NULL
@@ -733,6 +747,13 @@ public static partial class DatabaseInitializationExtensions
                     [RecoveryKeyHash] NVARCHAR(256) NULL,
                     [RecoverySalt] NVARCHAR(64) NULL,
                     [RecoveryKeyCreatedAtUtc] DATETIME2 NULL,
+                    [PendingRecoveryLookupId] NVARCHAR(64) NULL,
+                    [PendingRecoveryKeyHash] NVARCHAR(256) NULL,
+                    [PendingRecoverySalt] NVARCHAR(64) NULL,
+                    [PendingRecoveryKeyCreatedAtUtc] DATETIME2 NULL,
+                    [PendingRecoveryKeyExpiresAtUtc] DATETIME2 NULL,
+                    [PendingRecoveryIssueTokenHash] NVARCHAR(64) NULL,
+                    [LastActivatedRecoveryIssueTokenHash] NVARCHAR(64) NULL,
                     [IsOnboarded] BIT NOT NULL DEFAULT 0,
                     [IsDeleted] BIT NOT NULL DEFAULT 0,
                     [DeletedAtUtc] DATETIME2 NULL
@@ -899,6 +920,13 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyHash", "NVARCHAR(256) NULL");
         await EnsureColumnExistsAsync(db, "Users", "RecoverySalt", "NVARCHAR(64) NULL");
         await EnsureColumnExistsAsync(db, "Users", "RecoveryKeyCreatedAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryLookupId", "NVARCHAR(64) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryKeyHash", "NVARCHAR(256) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoverySalt", "NVARCHAR(64) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryKeyCreatedAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryKeyExpiresAtUtc", "DATETIME2 NULL");
+        await EnsureColumnExistsAsync(db, "Users", "PendingRecoveryIssueTokenHash", "NVARCHAR(64) NULL");
+        await EnsureColumnExistsAsync(db, "Users", "LastActivatedRecoveryIssueTokenHash", "NVARCHAR(64) NULL");
         await EnsureColumnExistsAsync(db, "Users", "TermsAcceptedAtUtc", "DATETIME2 NULL");
         await EnsureColumnExistsAsync(db, "Users", "TermsVersionAccepted", "NVARCHAR(MAX) NULL");
         await EnsureColumnExistsAsync(db, "Users", "HealthConsentAcceptedAtUtc", "DATETIME2 NULL");
@@ -1744,5 +1772,3 @@ public static partial class DatabaseInitializationExtensions
         }
     }
 }
-
-

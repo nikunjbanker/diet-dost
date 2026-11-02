@@ -118,6 +118,7 @@ graph TB
         subgraph USECASES_AUTH ["Identity & Security Use Cases"]
             CMD_Login["LoginCommandHandler<br/>(Debug-Only Demo Guard, Alpha Approval Check & JWT Generation)"]
             CMD_Register["RegisterUserCommandHandler<br/>(Alpha Owner Review Gate & SuperAdmin Notification Dispatch)"]
+            CMD_RecoveryKit["GenerateRecoveryKit & ActivateRecoveryKit<br/>(Password Step-Up, 15-Minute Staging & User Confirmation)"]
             CMD_Reset["ResetPasswordCommandHandler<br/>(Active User Check & Policy)"]
             SVC_Notification["IInAppNotificationService<br/>(Realtime SignalR Dispatch & AppNotification Persistence)"]
         end
@@ -143,7 +144,7 @@ graph TB
     subgraph LAYER_DOMAIN ["5. DOMAIN CORE LAYER (Nutrition.Domain - DDD)"]
         direction TB
         subgraph AGGREGATES ["Domain Aggregates & Entities"]
-            AGG_User["ApplicationUser (Aggregate Root)<br/>(DPDPA Consent Timestamps, SecurityStamp, DemoEmails, Tier, Role)"]
+            AGG_User["ApplicationUser (Aggregate Root)<br/>(DPDPA Consent, SecurityStamp, Active & Pending Recovery Key Hashes, Tier, Role)"]
             AGG_Profile["UserProfile (Aggregate Root)<br/>(Height, Weight, Pace, Dietary Preference, IANA Timezone)"]
             AGG_Meal["MealLog (Aggregate Root)<br/>(MealType, PhotoUri, Status: Uploaded->Analyzed->Verified)"]
             AGG_Ledger["DailyCalorieLedger (Aggregate Root)<br/>(Date, Consumed, Budget, Pending Deficit)"]
@@ -201,6 +202,7 @@ graph TB
     
     CQRS_Engine --> CMD_Login
     CQRS_Engine --> CMD_Register
+    CQRS_Engine --> CMD_RecoveryKit
     CQRS_Engine --> CMD_MealUpload
     CQRS_Engine --> CMD_SaveProfile
     CQRS_Engine --> QRY_Ledger
@@ -232,6 +234,7 @@ graph TB
     CMD_SaveProfile --> CLINICAL
     CLINICAL --> AGG_Profile
     CMD_Login --> AGG_User
+    CMD_RecoveryKit --> AGG_User
 
     %% Telemetry & Observability
     MW_Pipeline -.->|Payload Telemetry| OTEL_Collector

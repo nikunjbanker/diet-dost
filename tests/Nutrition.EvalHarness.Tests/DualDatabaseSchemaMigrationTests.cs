@@ -82,6 +82,10 @@ public class DualDatabaseSchemaMigrationTests
                 Assert.False(user.IsAnonymous);
                 Assert.Null(user.DisplayName);
                 Assert.Null(user.RecoveryLookupId);
+                Assert.Null(user.PendingRecoveryLookupId);
+                Assert.Null(user.PendingRecoveryKeyHash);
+                Assert.Null(user.PendingRecoveryIssueTokenHash);
+                Assert.Null(user.LastActivatedRecoveryIssueTokenHash);
 
                 // Step 4: QrSessions table must exist and accept new sessions
                 var session = QrLoginSession.CreateNew(
@@ -187,6 +191,10 @@ public class DualDatabaseSchemaMigrationTests
                 Assert.False(superAdmin.IsAnonymous);
                 Assert.Null(superAdmin.DisplayName);
                 Assert.Null(superAdmin.RecoveryLookupId);
+                Assert.Null(superAdmin.PendingRecoveryLookupId);
+                Assert.Null(superAdmin.PendingRecoveryKeyHash);
+                Assert.Null(superAdmin.PendingRecoveryIssueTokenHash);
+                Assert.Null(superAdmin.LastActivatedRecoveryIssueTokenHash);
 
                 // Step 5: QrSessions table must exist and accept new sessions
                 var session = QrLoginSession.CreateNew(

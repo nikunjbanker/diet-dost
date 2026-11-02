@@ -55,7 +55,8 @@ public class GetCurrentUserQueryHandler : IQueryHandler<GetCurrentUserQuery, Res
             user.IsEmailVerified,
             user.IsMobileVerified,
             tierConfig,
-            user.IsOnboarded
+            user.IsOnboarded,
+            user.IsAnonymous
         );
 
         return Result<CurrentUserResponseDto>.Success(responseDto);

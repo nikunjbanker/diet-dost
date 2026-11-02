@@ -29,7 +29,8 @@ public record CurrentUserResponseDto(
     bool IsEmailVerified,
     bool IsMobileVerified,
     TierFeatureConfiguration? Entitlements,
-    bool IsOnboarded = false
+    bool IsOnboarded = false,
+    bool IsAnonymous = false
 );
 
 public record LoginResultDto(
@@ -100,4 +101,12 @@ public record RecoverAccountResultDto(
     string NewMnemonicPhrase,
     string NewRecoveryLookupId,
     string NewJsonBackupPayload
+);
+
+public record RecoveryKitIssueDto(
+    string RecoveryKitIssueId,
+    string RecoveryKeyHex,
+    string MnemonicPhrase,
+    string RecoveryLookupId,
+    string JsonBackupPayload
 );

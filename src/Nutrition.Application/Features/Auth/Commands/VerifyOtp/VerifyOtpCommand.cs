@@ -127,7 +127,8 @@ public class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, Result<
             user.IsEmailVerified,
             user.IsMobileVerified,
             tierConfig,
-            user.IsOnboarded
+            user.IsOnboarded,
+            user.IsAnonymous
         );
 
         return Result<VerifyOtpResultDto>.Success(new VerifyOtpResultDto(

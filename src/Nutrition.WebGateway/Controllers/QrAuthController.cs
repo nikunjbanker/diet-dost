@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -12,8 +13,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Features.Auth.Commands.ActivateRecoveryKit;
 using Nutrition.Application.Features.Auth.Commands.ApproveQrSession;
 using Nutrition.Application.Features.Auth.Commands.ExchangeQrTicket;
+using Nutrition.Application.Features.Auth.Commands.GenerateRecoveryKit;
 using Nutrition.Application.Features.Auth.Commands.InitiateQrSession;
 using Nutrition.Application.Features.Auth.Commands.RecoverAccount;
 using Nutrition.Application.Features.Auth.Commands.RegisterAnonymous;
@@ -59,6 +62,10 @@ public record ExchangeQrRequest(
 public record RecoverAccountRequest(
     string RecoveryKeyOrMnemonic,
     bool RotateKey = false);
+
+public record GenerateRecoveryKitRequest([Required, MaxLength(256)] string CurrentPassword);
+
+public record ActivateRecoveryKitRequest([Required, StringLength(64, MinimumLength = 64)] string RecoveryKitIssueId);
 
 /// <summary>
 /// Thin Presentation Controller for Cross-Device QR Authentication, Zero-PII Anonymous Onboarding,
@@ -498,7 +505,7 @@ public class QrAuthController : ControllerBase
 
             return Ok(new
             {
-                message = "Account successfully recovered. Prior sessions have been invalidated, and a new recovery kit has been generated.",
+                message = "Account successfully recovered. Prior sessions have been invalidated.",
                 token = result.Data.Token,
                 tokenType = "Bearer",
                 user = result.Data.User,
@@ -507,6 +514,72 @@ public class QrAuthController : ControllerBase
                 newRecoveryLookupId = result.Data.NewRecoveryLookupId,
                 newJsonBackupPayload = result.Data.NewJsonBackupPayload
             });
+        });
+    }
+
+    [Authorize]
+    [HttpPost("recovery-kit/generate")]
+    public async Task<IActionResult> GenerateRecoveryKit(
+        [FromBody] GenerateRecoveryKitRequest request,
+        CancellationToken ct)
+    {
+        return await ExecuteWithRateLimitAsync(async () =>
+        {
+            var userId = User.GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
+            var result = await _dispatcher.SendAsync(
+                new GenerateRecoveryKitCommand(userId, request.CurrentPassword),
+                ct);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(result.StatusCode, new ProblemDetails
+                {
+                    Type = "https://dietdost.app/errors/recovery-kit-generation-failed",
+                    Title = result.ErrorCode ?? "Recovery Kit Generation Failed",
+                    Status = result.StatusCode,
+                    Detail = result.Error
+                });
+            }
+
+            return Ok(result.Data);
+        });
+    }
+
+    [Authorize]
+    [HttpPost("recovery-kit/activate")]
+    public async Task<IActionResult> ActivateRecoveryKit(
+        [FromBody] ActivateRecoveryKitRequest request,
+        CancellationToken ct)
+    {
+        return await ExecuteWithRateLimitAsync(async () =>
+        {
+            var userId = User.GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
+            var result = await _dispatcher.SendAsync(
+                new ActivateRecoveryKitCommand(userId, request.RecoveryKitIssueId),
+                ct);
+
+            if (!result.Succeeded)
+            {
+                return StatusCode(result.StatusCode, new ProblemDetails
+                {
+                    Type = "https://dietdost.app/errors/recovery-kit-activation-failed",
+                    Title = result.ErrorCode ?? "Recovery Kit Activation Failed",
+                    Status = result.StatusCode,
+                    Detail = result.Error
+                });
+            }
+
+            return Ok(new { message = result.Data });
         });
     }
 }

@@ -158,6 +158,11 @@ public class DietTrackerDbContext : DbContext
             entity.Property(e => e.RecoveryLookupId).HasMaxLength(64);
             entity.Property(e => e.RecoveryKeyHash).HasMaxLength(256);
             entity.Property(e => e.RecoverySalt).HasMaxLength(64);
+            entity.Property(e => e.PendingRecoveryLookupId).HasMaxLength(64);
+            entity.Property(e => e.PendingRecoveryKeyHash).HasMaxLength(256);
+            entity.Property(e => e.PendingRecoverySalt).HasMaxLength(64);
+            entity.Property(e => e.PendingRecoveryIssueTokenHash).HasMaxLength(64);
+            entity.Property(e => e.LastActivatedRecoveryIssueTokenHash).HasMaxLength(64);
         });
 
         // QrLoginSession entity configuration
@@ -246,4 +251,3 @@ public class DietTrackerDbContext : DbContext
         }
     }
 }
-

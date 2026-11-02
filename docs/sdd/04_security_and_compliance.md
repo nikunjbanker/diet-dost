@@ -254,3 +254,13 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
   - SuperAdmins and Admins can access soft-deleted photos for regulatory audit trails; standard users receive `404 Not Found` for soft-deleted records.
 * **CQRS Endpoint Projections**:
   - Handlers (`GetProgressPhotosQueryHandler`, `CompareProgressPhotosQueryHandler`, `UploadProgressPhotoCommandHandler`, `GetDeletedRecordsQueryHandler`) project `/api/media/progress/{id}` rather than internal disk paths, keeping storage physical structures hidden from clients.
+
+## 14. Recovery Kit Issuance & Staged Key Activation (`ADR-156`)
+
+- Password-backed, non-anonymous users can request a recovery kit from the profile modal. `POST /api/auth/recovery-kit/generate` requires an authenticated user and current-password verification; the user ID is taken only from authenticated claims, never from the request body. Endpoint rate limiting applies.
+- Issuance stages a replacement key and returns its phrase, key material, JSON backup, and a random 256-bit issue token once. The existing active key remains valid until explicit confirmation. The staged key expires after 15 minutes.
+- Only the pending recovery lookup ID, PBKDF2 hash and salt, timestamps, and SHA-256 issue-token hash are persisted. Confirmation uses `POST /api/auth/recovery-kit/activate`; it checks authenticated ownership, token hash, expiry, and pending material before atomically replacing active key fields. Reconfirmation of the last activation is idempotent.
+- Recovery login must present the existing recovery material in the shared recovery-kit modal rather than discard it. This is separate from generating a replacement kit.
+- **Plaintext backup warning**: downloaded JSON contains the recovery phrase/key in plaintext and is not encrypted by the application. Users should save it only in private, encrypted storage. The UI must not claim application-side encryption.
+- This is staged key rotation, not forward secrecy. Never log the phrase, raw key, JSON payload, or issue token. Client-side memory cleanup is best effort only.
+- Schema initialization and legacy reconciliation must include the pending recovery fields for SQLite and Azure SQL. Verify command behavior with `QrAuthenticationSecurityTests` and schema parity with `DualDatabaseSchemaMigrationTests`.
