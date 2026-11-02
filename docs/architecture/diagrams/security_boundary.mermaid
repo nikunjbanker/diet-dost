@@ -44,6 +44,7 @@ graph LR
         GoogleAISafety["Google AI StrictSafetySettings<br/>(BLOCK_LOW_AND_ABOVE across 5 Categories)"]
         DataPoisonGuard["Adversarial Retraining Data Poisoning Guard"]
         GlobalFilter["EF Core Global Query Filter: UserId == CurrentUser.Id"]
+        RecoveryKit["Recovery Kit Staging<br/>Claims-Derived User, Password Step-Up, Hashed Confirmation Token"]
         CQRS["Native CQRS Dispatcher & Fluent Validation Pipeline"]
     end
 
@@ -63,10 +64,13 @@ graph LR
     SmartAuth --> AuthContext
     AuthContext --> EnvGate
     EnvGate --> CQRS
+    AuthContext --> RecoveryKit
+    RecoveryKit --> CQRS
     CQRS --> PromptShield
     PromptShield --> GoogleAISafety
     PromptShield --> DataPoisonGuard
     CQRS --> GlobalFilter
+    RecoveryKit --> AzureFiles
     GlobalFilter --> AzureFiles
     CQRS -.->|Passwordless Managed Identity| KeyVault
     FileCheck --> BlobData

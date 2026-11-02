@@ -139,7 +139,8 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
             user.IsEmailVerified,
             user.IsMobileVerified,
             tierConfig,
-            user.IsOnboarded
+            user.IsOnboarded,
+            user.IsAnonymous
         );
 
         if (_logger.IsEnabled(LogLevel.Information))

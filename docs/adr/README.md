@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 120 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 121 Active Records Across 5 Domain Hierarchies
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -32,7 +32,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **39** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
-| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **24** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
+| **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **25** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **28** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **16** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
@@ -115,6 +115,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-136** | Cross-Device QR Authentication, Zero-PII Anonymous Onboarding, and BIP-39 Disaster Recovery Architecture | `[SECURITY]` | `ACCEPTED` | [`ADR-20261026-136-cross-device-qr-auth-and-zero-pii-recovery.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261026-136-cross-device-qr-auth-and-zero-pii-recovery.md) |
 | **ADR-147** | Adversarial Security Remediation, Identity Lifecycle & Cloud Infrastructure Hardening | `[SECURITY]` | `ACCEPTED` | [`ADR-20261031-147-adversarial-security-remediation-and-infrastructure-hardening.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261031-147-adversarial-security-remediation-and-infrastructure-hardening.md) |
 | **ADR-149** | SuperAdmin User Deletion Action with Multi-Tier Defensive Guardrails and DPDPA 2023 Compliance | `[SECURITY]` | `ACCEPTED` | [`ADR-20261101-149-superadmin-user-deletion-and-multi-tier-defense.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261101-149-superadmin-user-deletion-and-multi-tier-defense.md) |
+| **ADR-156** | Staged Recovery Kit Activation | `[SECURITY]` | `ACCEPTED` | [`ADR-20261102-156-staged-recovery-kit-activation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/ADR-20261102-156-staged-recovery-kit-activation.md) |
 
 ### 🚀 DevOps & Cloud Infrastructure (`docs/adr/devops/`)
 > *Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines.*
@@ -212,4 +213,3 @@ Historical decision entries from the initial project inception through the mobil
    # Or cross-platform Python:
    python3 scripts/sync-adr-index.py
    ```
-

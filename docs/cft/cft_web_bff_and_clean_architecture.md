@@ -159,6 +159,13 @@
 - [x] **Step 5.3**: Zero-PII Account Tier Limits:
   - [x] **Assert**: Anonymous users register strictly into `UserTier.Free` with `DailyAiDetectionLimit = 1`.
   - [x] **Assert**: Multi-tier CFT asserts 100% pass across all 5 user tiers.
+- [ ] **Step 5.4**: Password-Backed Recovery Kit Staged Rotation (ADR-156):
+  - [ ] **Assert**: An authenticated password-backed user can issue a recovery kit only after current-password verification; the acting account is derived from claims.
+  - [ ] **Assert**: Anonymous users and invalid-password attempts cannot issue a kit; endpoint rate limiting is enforced.
+  - [ ] **Assert**: Issuance leaves the active recovery key usable and stores only pending hashes/lookup metadata; no plaintext key or mnemonic is persisted.
+  - [ ] **Assert**: Confirmation activates the pending key; the prior key is rejected after activation, expired or invalid issue tokens are rejected, and repeating successful confirmation is idempotent.
+  - [ ] **Assert**: Recovery login displays the existing phrase/key and JSON backup; the UI clearly states that downloaded JSON contains plaintext recovery material and is not encrypted.
+  - [ ] **Assert**: Profile recovery controls are hidden for anonymous users and onboarding; test at mobile, tablet, and desktop viewports.
 
 ---
 

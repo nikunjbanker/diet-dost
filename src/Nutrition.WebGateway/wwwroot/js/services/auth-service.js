@@ -151,6 +151,14 @@ export class AuthService {
     return res;
   }
 
+  async generateRecoveryKit(currentPassword) {
+    return await this.api.post('/api/auth/recovery-kit/generate', { currentPassword });
+  }
+
+  async activateRecoveryKit(recoveryKitIssueId) {
+    return await this.api.post('/api/auth/recovery-kit/activate', { recoveryKitIssueId });
+  }
+
 
   getToken() {
     return localStorage.getItem('dd_jwt_token');

@@ -18,6 +18,8 @@ using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
 using Nutrition.Application.Features.Auth.Commands.ApproveQrSession;
 using Nutrition.Application.Features.Auth.Commands.ExchangeQrTicket;
+using Nutrition.Application.Features.Auth.Commands.ActivateRecoveryKit;
+using Nutrition.Application.Features.Auth.Commands.GenerateRecoveryKit;
 using Nutrition.Application.Features.Auth.Commands.InitiateQrSession;
 using Nutrition.Application.Features.Auth.Commands.RecoverAccount;
 using Nutrition.Application.Features.Auth.Commands.RegisterAnonymous;
@@ -57,6 +59,7 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
 
         services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
 
         var jwtOptions = new JwtOptions
         {
@@ -318,6 +321,149 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
     }
 
     [Fact]
+    public async Task RecoveryKitGeneration_StagesUntilConfirmed_ThenReplacesActiveKitIdempotently()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        const string userId = "recovery-kit-step-up-user";
+        const string password = "StrongTestPassword!2026";
+        var existingKit = RecoveryKit.GenerateNew("Recovery Test", userId);
+
+        db.Users.Add(new ApplicationUser
+        {
+            Id = userId,
+            Email = "recovery-kit-step-up@dietdost.app",
+            NormalizedEmail = "RECOVERY-KIT-STEP-UP@DIETDOST.APP",
+            MobileNumber = "+919876543210",
+            NormalizedMobileNumber = "919876543210",
+            PasswordHash = passwordHasher.HashPassword(password),
+            SecurityStamp = Guid.NewGuid().ToString("N"),
+            Role = UserRole.User,
+            Tier = UserTier.Free,
+            IsEmailVerified = true,
+            IsActive = true,
+            DisplayName = "Recovery Test",
+            RecoveryLookupId = existingKit.RecoveryLookupId,
+            RecoveryKeyHash = existingKit.RecoveryKeyHash,
+            RecoverySalt = existingKit.RecoverySalt,
+            RecoveryKeyCreatedAtUtc = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var invalidPassword = await dispatcher.SendAsync(
+            new GenerateRecoveryKitCommand(userId, "incorrect-password"));
+        Assert.False(invalidPassword.Succeeded);
+        Assert.Equal(401, invalidPassword.StatusCode);
+
+        var issued = await dispatcher.SendAsync(new GenerateRecoveryKitCommand(userId, password));
+        Assert.True(issued.Succeeded, issued.Error);
+        Assert.NotNull(issued.Data);
+        Assert.Equal(64, issued.Data!.RecoveryKitIssueId.Length);
+
+        var persisted = await db.Users.FirstAsync(user => user.Id == userId);
+        Assert.Equal(existingKit.RecoveryLookupId, persisted.RecoveryLookupId);
+        Assert.Equal(existingKit.RecoveryKeyHash, persisted.RecoveryKeyHash);
+        Assert.NotNull(persisted.PendingRecoveryKeyHash);
+        Assert.NotEqual(issued.Data.RecoveryKeyHex, persisted.PendingRecoveryKeyHash);
+        Assert.NotEqual(issued.Data.RecoveryKitIssueId, persisted.PendingRecoveryIssueTokenHash);
+
+        var wrongIssue = await dispatcher.SendAsync(
+            new ActivateRecoveryKitCommand(userId, new string('0', 64)));
+        Assert.False(wrongIssue.Succeeded);
+        Assert.Equal(409, wrongIssue.StatusCode);
+
+        var activation = await dispatcher.SendAsync(
+            new ActivateRecoveryKitCommand(userId, issued.Data.RecoveryKitIssueId));
+        Assert.True(activation.Succeeded, activation.Error);
+
+        var retry = await dispatcher.SendAsync(
+            new ActivateRecoveryKitCommand(userId, issued.Data.RecoveryKitIssueId));
+        Assert.True(retry.Succeeded, retry.Error);
+
+        persisted = await db.Users.FirstAsync(user => user.Id == userId);
+        Assert.Equal(RecoveryKit.DeriveLookupId(Convert.FromHexString(issued.Data.RecoveryKeyHex)), persisted.RecoveryLookupId);
+        Assert.Null(persisted.PendingRecoveryIssueTokenHash);
+        Assert.NotNull(persisted.LastActivatedRecoveryIssueTokenHash);
+
+        var oldLogin = await dispatcher.SendAsync(
+            new RecoverAccountCommand(existingKit.MnemonicPhrase));
+        Assert.False(oldLogin.Succeeded);
+        Assert.Equal(401, oldLogin.StatusCode);
+
+        var newLogin = await dispatcher.SendAsync(
+            new RecoverAccountCommand(issued.Data.MnemonicPhrase));
+        Assert.True(newLogin.Succeeded, newLogin.Error);
+        Assert.Equal(userId, newLogin.Data!.User.Id);
+    }
+
+    [Fact]
+    public async Task RecoveryKitGeneration_RejectsAnonymousAccounts()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+        var registration = await dispatcher.SendAsync(
+            new RegisterAnonymousCommand("Anonymous Recovery User", AcceptTerms: true, AcceptHealthConsent: true));
+
+        var result = await dispatcher.SendAsync(
+            new GenerateRecoveryKitCommand(registration.Data!.UserId, "any-password"));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(401, result.StatusCode);
+    }
+
+    [Fact]
+    public async Task RecoveryKitActivation_RejectsExpiredIssueWithoutReplacingActiveKit()
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+        const string userId = "recovery-kit-expired-user";
+        var existingKit = RecoveryKit.GenerateNew("Recovery Test", userId);
+        db.Users.Add(new ApplicationUser
+        {
+            Id = userId,
+            Email = "recovery-kit-expired@dietdost.app",
+            NormalizedEmail = "RECOVERY-KIT-EXPIRED@DIETDOST.APP",
+            MobileNumber = "+919876543211",
+            NormalizedMobileNumber = "919876543211",
+            PasswordHash = passwordHasher.HashPassword("StrongTestPassword!2026"),
+            SecurityStamp = Guid.NewGuid().ToString("N"),
+            Role = UserRole.User,
+            Tier = UserTier.Free,
+            IsEmailVerified = true,
+            IsActive = true,
+            DisplayName = "Recovery Test",
+            RecoveryLookupId = existingKit.RecoveryLookupId,
+            RecoveryKeyHash = existingKit.RecoveryKeyHash,
+            RecoverySalt = existingKit.RecoverySalt,
+            RecoveryKeyCreatedAtUtc = DateTime.UtcNow,
+            CreatedAtUtc = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        var issued = await dispatcher.SendAsync(
+            new GenerateRecoveryKitCommand(userId, "StrongTestPassword!2026"));
+        Assert.True(issued.Succeeded, issued.Error);
+
+        var user = await db.Users.FirstAsync(candidate => candidate.Id == userId);
+        user.PendingRecoveryKeyExpiresAtUtc = DateTime.UtcNow.AddMinutes(-1);
+        await db.SaveChangesAsync();
+
+        var activation = await dispatcher.SendAsync(
+            new ActivateRecoveryKitCommand(userId, issued.Data!.RecoveryKitIssueId));
+
+        Assert.False(activation.Succeeded);
+        Assert.Equal(409, activation.StatusCode);
+        user = await db.Users.FirstAsync(candidate => candidate.Id == userId);
+        Assert.Equal(existingKit.RecoveryLookupId, user.RecoveryLookupId);
+        Assert.Null(user.PendingRecoveryIssueTokenHash);
+    }
+
+    [Fact]
     public async Task SoftDeletedUser_CannotApproveQrSession()
     {
         using var scope = _scopeFactory.CreateScope();
@@ -411,4 +557,3 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         Assert.Equal(QrSessionStatus.Rejected, status.Data!.Status);
     }
 }
-
