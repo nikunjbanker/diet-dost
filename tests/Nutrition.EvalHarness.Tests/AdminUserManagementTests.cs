@@ -9,6 +9,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
 using Nutrition.Application.Features.Admin.Commands.TierConfiguration;
@@ -226,8 +227,10 @@ public class AdminUserManagementTests : IDisposable
 
         var handler = new AdminUpdateUserCommandHandler(
             _userRepo,
+            _profileRepo,
             _uow,
             _passwordHasher,
+            new ConfigurationManager(),
             NullLogger<AdminUpdateUserCommandHandler>.Instance);
 
         var command = new AdminUpdateUserCommand(
@@ -271,8 +274,10 @@ public class AdminUserManagementTests : IDisposable
 
         var handler = new AdminUpdateUserCommandHandler(
             _userRepo,
+            _profileRepo,
             _uow,
             _passwordHasher,
+            new ConfigurationManager(),
             NullLogger<AdminUpdateUserCommandHandler>.Instance);
 
         // Try to demote role
@@ -288,6 +293,116 @@ public class AdminUserManagementTests : IDisposable
         var res2 = await handler.HandleAsync(lockCmd);
         Assert.False(res2.Succeeded);
         Assert.Equal("CannotLockSuperAdmin", res2.ErrorCode);
+    }
+
+    [Fact]
+    public async Task UpdateUser_RootSuperAdminCanSetAndResetOnboarding()
+    {
+        const string rootEmail = "root@dietdost.app";
+        var rootUser = new ApplicationUser
+        {
+            Id = "root-user",
+            Email = rootEmail,
+            NormalizedEmail = rootEmail.ToUpperInvariant(),
+            Role = UserRole.SuperAdmin,
+            Tier = UserTier.SuperAdmin
+        };
+        var targetUser = new ApplicationUser
+        {
+            Id = "onboarding-target",
+            Email = "onboarding.target@dietdost.app",
+            NormalizedEmail = "ONBOARDING.TARGET@DIETDOST.APP",
+            Role = UserRole.User,
+            Tier = UserTier.Free,
+            IsOnboarded = true
+        };
+        var targetProfile = new UserProfile
+        {
+            Id = targetUser.Id,
+            IsOnboarded = true
+        };
+        _db.Users.AddRange(rootUser, targetUser);
+        _db.Profiles.Add(targetProfile);
+        await _db.SaveChangesAsync();
+
+        var configuration = new ConfigurationManager
+        {
+            ["Auth:SuperAdminEmail"] = rootEmail
+        };
+        var handler = new AdminUpdateUserCommandHandler(
+            _userRepo,
+            _profileRepo,
+            _uow,
+            _passwordHasher,
+            configuration,
+            NullLogger<AdminUpdateUserCommandHandler>.Instance);
+
+        var resetResult = await handler.HandleAsync(new AdminUpdateUserCommand(
+            targetUser.Id, null, null, null, null, null, null, rootUser.Id,
+            nameof(UserRole.SuperAdmin), IsOnboarded: false));
+
+        Assert.True(resetResult.Succeeded);
+        Assert.False((await _userRepo.GetByIdAsync(targetUser.Id))!.IsOnboarded);
+        Assert.False((await _profileRepo.GetByIdAsync(targetProfile.Id))!.IsOnboarded);
+
+        var setResult = await handler.HandleAsync(new AdminUpdateUserCommand(
+            targetUser.Id, null, null, null, null, null, null, rootUser.Id,
+            nameof(UserRole.SuperAdmin), IsOnboarded: true));
+
+        Assert.True(setResult.Succeeded);
+        Assert.True((await _userRepo.GetByIdAsync(targetUser.Id))!.IsOnboarded);
+        Assert.True((await _profileRepo.GetByIdAsync(targetProfile.Id))!.IsOnboarded);
+    }
+
+    [Fact]
+    public async Task UpdateUser_NonRootSuperAdminCannotChangeOnboarding()
+    {
+        var rootUser = new ApplicationUser
+        {
+            Id = "configured-root",
+            Email = "root@dietdost.app",
+            NormalizedEmail = "ROOT@DIETDOST.APP",
+            Role = UserRole.SuperAdmin,
+            Tier = UserTier.SuperAdmin
+        };
+        var otherSuperAdmin = new ApplicationUser
+        {
+            Id = "other-superadmin",
+            Email = "other.superadmin@dietdost.app",
+            NormalizedEmail = "OTHER.SUPERADMIN@DIETDOST.APP",
+            Role = UserRole.SuperAdmin,
+            Tier = UserTier.SuperAdmin
+        };
+        var targetUser = new ApplicationUser
+        {
+            Id = "protected-onboarding-target",
+            Email = "protected.target@dietdost.app",
+            NormalizedEmail = "PROTECTED.TARGET@DIETDOST.APP",
+            Role = UserRole.User,
+            Tier = UserTier.Free
+        };
+        _db.Users.AddRange(rootUser, otherSuperAdmin, targetUser);
+        await _db.SaveChangesAsync();
+
+        var configuration = new ConfigurationManager
+        {
+            ["Auth:SuperAdminEmail"] = rootUser.Email
+        };
+        var handler = new AdminUpdateUserCommandHandler(
+            _userRepo,
+            _profileRepo,
+            _uow,
+            _passwordHasher,
+            configuration,
+            NullLogger<AdminUpdateUserCommandHandler>.Instance);
+
+        var result = await handler.HandleAsync(new AdminUpdateUserCommand(
+            targetUser.Id, null, null, null, null, null, null, otherSuperAdmin.Id,
+            nameof(UserRole.SuperAdmin), IsOnboarded: true));
+
+        Assert.False(result.Succeeded);
+        Assert.Equal(403, result.StatusCode);
+        Assert.False((await _userRepo.GetByIdAsync(targetUser.Id))!.IsOnboarded);
     }
 
     [Fact]

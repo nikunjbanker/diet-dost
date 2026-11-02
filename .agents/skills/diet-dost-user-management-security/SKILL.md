@@ -433,6 +433,7 @@ Include account dropdown: Profile, AI Usage, Admin Panel (if Admin/SuperAdmin), 
 
 ### 9.6 Admin Portal (`partials/admin-modal.html`)
 - Full user management: paginated list, role/tier editing, lock/unlock toggle.
+- Only the configured root SuperAdmin can set or reset a user's onboarding-complete flag from the edit-user modal; server-side authorization synchronizes `ApplicationUser.IsOnboarded` and `UserProfile.IsOnboarded`.
 - Consent timestamps visible for each user (forensic audit).
 - Dynamic tier limit editor.
 

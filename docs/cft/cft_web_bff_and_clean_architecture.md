@@ -86,6 +86,12 @@
 - [x] Verify gated premium buttons (`btn-open-body-modal`, comparison tabs) are hidden/disabled and export button (`btn-export-excel`) is disabled with opacity for Free and Basic users (Verified via Browser subagent).
 - [x] Verify zero console errors (`Uncaught TypeError`, `404 Not Found`) across all scenarios.
 
+### Root SuperAdmin User Onboarding Governance
+- [x] Sign in as the configured root SuperAdmin and open **Admin Governance → Users → Edit** for a test user.
+- [x] Confirm **Onboarding Complete (Uncheck to Reset)** reflects the user's current state; save once checked and once unchecked.
+- [ ] Confirm both user and profile onboarding fields change together, and the next dashboard request reflects the updated onboarding state.
+- [ ] As a non-root SuperAdmin, confirm the onboarding control is absent and a direct `PUT /api/admin/users/{id}` request containing `isOnboarded` is rejected with `403 Forbidden`.
+
 ---
 
 ## 6. Live Core Functionality E2E Acceptance Execution Evidence

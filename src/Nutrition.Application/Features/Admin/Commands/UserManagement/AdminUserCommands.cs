@@ -376,25 +376,32 @@ public record AdminUpdateUserCommand(
     bool? IsEmailVerified,
     string? NewPassword,
     string AdminUserId,
-    string CurrentAdminRole
+    string CurrentAdminRole,
+    bool? IsOnboarded = null
 ) : ICommand<Result<AdminUserSummaryDto>>;
 
 public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserCommand, Result<AdminUserSummaryDto>>
 {
     private readonly IRepository<ApplicationUser> _userRepo;
+    private readonly IRepository<UserProfile> _profileRepo;
     private readonly IUnitOfWork _uow;
     private readonly IPasswordHasher _passwordHasher;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<AdminUpdateUserCommandHandler> _logger;
 
     public AdminUpdateUserCommandHandler(
         IRepository<ApplicationUser> userRepo,
+        IRepository<UserProfile> profileRepo,
         IUnitOfWork uow,
         IPasswordHasher passwordHasher,
+        IConfiguration configuration,
         ILogger<AdminUpdateUserCommandHandler> logger)
     {
         _userRepo = userRepo;
+        _profileRepo = profileRepo;
         _uow = uow;
         _passwordHasher = passwordHasher;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -403,6 +410,30 @@ public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserComm
         var targetUser = await _userRepo.GetByIdAsync(request.TargetUserId, ct);
         if (targetUser == null)
             return Result<AdminUserSummaryDto>.NotFound("User not found.");
+
+        if (request.IsOnboarded.HasValue)
+        {
+            var adminUser = await _userRepo.GetByIdAsync(request.AdminUserId, ct);
+            var rootEmail = _configuration["Auth:SuperAdminEmail"]
+                ?? _configuration["SUPER_ADMIN_EMAIL"]
+                ?? _configuration["SuperAdminEmail"];
+            if (request.CurrentAdminRole != nameof(UserRole.SuperAdmin)
+                || adminUser is null
+                || adminUser.Role != UserRole.SuperAdmin
+                || string.IsNullOrWhiteSpace(rootEmail)
+                || !string.Equals(adminUser.Email, rootEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                return Result<AdminUserSummaryDto>.Forbidden("Only the root SuperAdmin can change a user's onboarding status.");
+            }
+
+            targetUser.IsOnboarded = request.IsOnboarded.Value;
+            var targetProfile = await _profileRepo.GetByIdAsync(targetUser.Id, ct);
+            if (targetProfile is not null)
+            {
+                targetProfile.IsOnboarded = request.IsOnboarded.Value;
+                targetProfile.UpdatedAtUtc = DateTime.UtcNow;
+            }
+        }
 
         // Guard SuperAdmin demotion/deactivation
         if (targetUser.Role == UserRole.SuperAdmin)
@@ -486,7 +517,8 @@ public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserComm
             ConsentIpAddress: targetUser.ConsentIpAddress,
             CreatedAtUtc: targetUser.CreatedAtUtc,
             LastLoginAtUtc: targetUser.LastLoginAtUtc,
-            TodayAiDetectionsCount: 0
+            TodayAiDetectionsCount: 0,
+            IsOnboarded: targetUser.IsOnboarded
         ));
     }
 }

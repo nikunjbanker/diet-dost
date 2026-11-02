@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-01T16:24:42.734712+00:00",
-  "totalAdrs": 120,
+  "generatedAt": "2026-11-02T08:35:32.105873+00:00",
+  "totalAdrs": 121,
   "categoryCounts": {
     "architecture": 39,
-    "security": 24,
+    "security": 25,
     "devops": 28,
     "presentation": 16,
     "governance": 13
@@ -1449,6 +1449,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-155-explicit-user-onboarding-boolean-flag.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-155-explicit-user-onboarding-boolean-flag.md"
+    },
+    {
+      "id": "ADR-156",
+      "number": 156,
+      "title": "Root SuperAdmin Onboarding Status Governance",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-11-02",
+      "subsystem": "Security",
+      "filename": "ADR-20261102-156-root-superadmin-onboarding-governance.md",
+      "relativePath": "docs/adr/security/ADR-20261102-156-root-superadmin-onboarding-governance.md"
     }
   ]
 }
