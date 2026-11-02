@@ -9,9 +9,10 @@ import { encodeQrSvg } from './qr-code-encoder.js?v=1.9.3';
 
 
 export class QrAuthController {
-  constructor({ authService, toastService, onAuthSuccess }) {
+  constructor({ authService, toastService, recoveryKitModal, onAuthSuccess }) {
     this.auth = authService;
     this.toast = toastService;
+    this.recoveryKitModal = recoveryKitModal;
     this.onAuthSuccess = onAuthSuccess;
 
     this.currentSessionId = null;
@@ -20,8 +21,6 @@ export class QrAuthController {
     this.pollInterval = null;
     this.countdownTimer = null;
     this.remainingSeconds = 90;
-    this.pendingRecoveryKit = null;
-
     this.initElements();
     this.bindEvents();
   }
@@ -45,14 +44,6 @@ export class QrAuthController {
     this.anonDisplayName = document.getElementById('reg-anon-displayname');
     this.btnSubmitRegister = document.getElementById('btn-submit-register');
 
-    // Recovery Kit Modal elements
-    this.recoveryModal = document.getElementById('recovery-kit-modal');
-    this.mnemonicGrid = document.getElementById('recovery-mnemonic-grid');
-    this.btnDownloadJson = document.getElementById('btn-download-recovery-json');
-    this.btnCopyMnemonic = document.getElementById('btn-copy-mnemonic-phrase');
-    this.chkConfirmSaved = document.getElementById('chk-confirm-recovery-saved');
-    this.btnCompleteRecovery = document.getElementById('btn-complete-recovery-kit');
-
     // Disaster Recovery Form elements
     this.recoverForm = document.getElementById('form-recover');
     this.recoverError = document.getElementById('recover-error');
@@ -70,21 +61,6 @@ export class QrAuthController {
     // Registration mode toggling
     this.btnModeStandard?.addEventListener('click', () => this.setRegistrationMode(false));
     this.btnModeAnon?.addEventListener('click', () => this.setRegistrationMode(true));
-
-    // Recovery Kit modal actions
-    this.btnDownloadJson?.addEventListener('click', () => this.downloadRecoveryJson());
-    this.btnCopyMnemonic?.addEventListener('click', () => this.copyMnemonicToClipboard());
-    this.chkConfirmSaved?.addEventListener('change', () => {
-      if (this.btnCompleteRecovery) {
-        this.btnCompleteRecovery.disabled = !this.chkConfirmSaved.checked;
-      }
-    });
-    this.btnCompleteRecovery?.addEventListener('click', () => {
-      this.closeRecoveryModal();
-      if (this.pendingRecoveryKit?.user) {
-        this.onAuthSuccess(this.pendingRecoveryKit.user);
-      }
-    });
 
     // Disaster Recovery Form actions
     this.recoverForm?.addEventListener('submit', (e) => this.handleRecoverSubmit(e));
@@ -120,7 +96,7 @@ export class QrAuthController {
       document.querySelectorAll('#standard-reg-fields input').forEach(inp => inp.required = false);
 
       if (this.btnSubmitRegister) {
-        this.btnSubmitRegister.querySelector('.btn-text').textContent = 'Create Zero-PII Anonymous Account ➔';
+        this.btnSubmitRegister.querySelector('.btn-text').textContent = 'Create Account with Recovery Key ➔';
       }
     } else {
       this.btnModeStandard?.classList.replace('btn-outline', 'btn-primary');
@@ -343,63 +319,18 @@ export class QrAuthController {
   }
 
   showRecoveryModal(recoveryData) {
-    this.pendingRecoveryKit = recoveryData;
-    if (!this.recoveryModal || !this.mnemonicGrid) return;
-
-    const words = (recoveryData.mnemonicPhrase || '').split(' ');
-    this.mnemonicGrid.innerHTML = words.map((w, i) => `
-      <div class="mnemonic-pill">
-        <span class="mnemonic-num">#${(i + 1).toString().padStart(2, '0')}</span>
-        <span class="mnemonic-word">${w}</span>
-      </div>
-    `).join('');
-
-    if (this.chkConfirmSaved) this.chkConfirmSaved.checked = false;
-    if (this.btnCompleteRecovery) this.btnCompleteRecovery.disabled = true;
-
-    this.recoveryModal.style.display = 'flex';
-  }
-
-  closeRecoveryModal() {
-    if (this.recoveryModal) {
-      this.recoveryModal.style.display = 'none';
-    }
-  }
-
-  downloadRecoveryJson() {
-    if (!this.pendingRecoveryKit?.jsonBackupPayload) {
-      this.toast?.show('No recovery data available to download.', 'error');
-      return;
-    }
-
-    const blob = new Blob([this.pendingRecoveryKit.jsonBackupPayload], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `diet-dost-disaster-recovery-${this.pendingRecoveryKit.recoveryLookupId || 'kit'}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    this.toast?.show('Disaster Recovery Kit JSON downloaded safely.', 'success');
-    if (this.chkConfirmSaved) {
-      this.chkConfirmSaved.checked = true;
-      if (this.btnCompleteRecovery) this.btnCompleteRecovery.disabled = false;
-    }
-  }
-
-  copyMnemonicToClipboard() {
-    if (!this.pendingRecoveryKit?.mnemonicPhrase) return;
-    navigator.clipboard.writeText(this.pendingRecoveryKit.mnemonicPhrase).then(() => {
-      this.toast?.show('12-word mnemonic phrase copied to clipboard!', 'success');
-      if (this.chkConfirmSaved) {
-        this.chkConfirmSaved.checked = true;
-        if (this.btnCompleteRecovery) this.btnCompleteRecovery.disabled = false;
+    const shown = this.recoveryKitModal?.show(recoveryData, {
+      onComplete: () => {
+        if (recoveryData.user) this.onAuthSuccess(recoveryData.user);
+      },
+      onCancel: () => {
+        if (recoveryData.user) this.onAuthSuccess(recoveryData.user);
       }
-    }).catch(() => {
-      this.toast?.show('Failed to copy to clipboard. Please copy manually.', 'error');
     });
+
+    if (!shown && recoveryData.user) {
+      this.onAuthSuccess(recoveryData.user);
+    }
   }
 
   handleFileSelect(e) {
@@ -465,9 +396,22 @@ export class QrAuthController {
 
       this.toast?.show(`🔑 Welcome back, ${res.user?.name || res.user?.displayName || 'User'}! Signed in successfully.`, 'success');
 
-      // Dismiss auth gate and enter dashboard immediately
+      // Offer the existing recovery materials before dismissing the auth gate.
       if (res.user) {
-        this.onAuthSuccess(res.user);
+        const recoveryData = {
+          mnemonicPhrase: res.newMnemonicPhrase,
+          recoveryLookupId: res.newRecoveryLookupId,
+          jsonBackupPayload: res.newJsonBackupPayload,
+          user: res.user
+        };
+        const shown = this.recoveryKitModal?.show(recoveryData, {
+          onComplete: () => this.onAuthSuccess(res.user),
+          onCancel: () => this.onAuthSuccess(res.user)
+        });
+        if (!shown) {
+          this.toast?.show('Signed in, but the recovery kit could not be displayed. You can still continue to your dashboard.', 'warning');
+          this.onAuthSuccess(res.user);
+        }
       }
     } catch (err) {
       this.showRecoverError(err.message || 'Recovery failed. Invalid mnemonic checksum or phrase.');

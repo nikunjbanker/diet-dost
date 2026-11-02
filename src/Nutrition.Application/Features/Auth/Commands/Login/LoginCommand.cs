@@ -144,7 +144,8 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
             user.IsEmailVerified,
             user.IsMobileVerified,
             tierConfig,
-            user.IsOnboarded
+            user.IsOnboarded,
+            user.IsAnonymous
         );
 
         return Result<LoginResultDto>.Success(new LoginResultDto(token, responseUser, principal));

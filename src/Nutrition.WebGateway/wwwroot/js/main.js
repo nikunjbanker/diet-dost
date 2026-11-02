@@ -15,7 +15,7 @@ import { eventBus } from './core/event-bus.js';
 import { appState } from './core/state.js';
 
 import { apiClient } from './services/api.js?v=1.9.5';
-import { AuthService } from './services/auth-service.js?v=1.9.5';
+import { AuthService } from './services/auth-service.js?v=1.9.6';
 import { AdminService } from './services/admin-service.js?v=1.9.5';
 import { MealsService } from './services/meals-service.js?v=1.9.5';
 import { ProfileService } from './services/profile-service.js?v=1.9.5';
@@ -30,10 +30,11 @@ import { MealLoggerController } from './ui/meal-logger.js?v=1.9.5';
 import { ReviewModalController } from './ui/review-modal.js?v=1.9.5';
 import { AnalyticsChartController } from './ui/analytics-chart.js?v=1.9.5';
 import { ExcelExportService } from './services/ExcelExportService.js?v=1.9.5';
-import { ProfileModalController } from './ui/profile-modal.js?v=1.9.5';
+import { ProfileModalController } from './ui/profile-modal.js?v=1.9.6';
 import { TransparencyModalController } from './ui/transparency-modal.js?v=1.9.5';
 import { ProgressModalController } from './ui/progress-modal.js?v=1.9.5';
-import { AuthGateController } from './ui/auth-gate.js?v=1.9.5';
+import { AuthGateController } from './ui/auth-gate.js?v=1.9.6';
+import { RecoveryKitModalController } from './ui/recovery-kit-modal.js?v=1.9.6';
 import { AdminModalController } from './ui/admin-modal.js?v=1.9.5';
 import { QuotaModalController } from './ui/quota-modal.js?v=1.9.5';
 import { CameraService } from './services/camera-service.js?v=1.9.5';
@@ -69,6 +70,10 @@ container.register('toastService', toastService);
 container.register('confettiService', confettiService);
 
 container.register('authService', (c) => new AuthService(c.resolve('apiClient')));
+container.register('recoveryKitModal', (c) => new RecoveryKitModalController({
+  authService: c.resolve('authService'),
+  toastService: c.resolve('toastService')
+}));
 container.register('adminService', (c) => new AdminService(c.resolve('apiClient')));
 
 container.register('mealsService', (c) => new MealsService(c.resolve('apiClient')));
@@ -122,7 +127,9 @@ container.register('profileModal', (c) => new ProfileModalController({
   toastService: c.resolve('toastService'),
   confettiService: c.resolve('confettiService'),
   appState: c.resolve('appState'),
-  eventBus: c.resolve('eventBus')
+  eventBus: c.resolve('eventBus'),
+  authService: c.resolve('authService'),
+  recoveryKitModal: c.resolve('recoveryKitModal')
 }));
 
 container.register('transparencyModal', (c) => new TransparencyModalController({
@@ -147,7 +154,8 @@ container.register('authGate', (c) => new AuthGateController({
   authService: c.resolve('authService'),
   toastService: c.resolve('toastService'),
   eventBus: c.resolve('eventBus'),
-  notificationService: c.resolve('notificationService')
+  notificationService: c.resolve('notificationService'),
+  recoveryKitModal: c.resolve('recoveryKitModal')
 }));
 
 container.register('adminModal', (c) => new AdminModalController({
@@ -1030,4 +1038,3 @@ if (document.readyState === 'loading') {
 } else {
   initApp();
 }
-

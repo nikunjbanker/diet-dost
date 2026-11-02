@@ -16,10 +16,10 @@
  *  – Forgot-Password OTP flow (2 steps: email → OTP + new password)
  */
 import { modalStack } from './modal-stack-manager.js';
-import { QrAuthController } from './qr-auth-controller.js?v=1.9.3';
+import { QrAuthController } from './qr-auth-controller.js?v=1.9.6';
 
 export class AuthGateController {
-  constructor({ authService, toastService, eventBus, notificationService }) {
+  constructor({ authService, toastService, eventBus, notificationService, recoveryKitModal }) {
     this.authService = authService;
     this.toastService = toastService;
     this.eventBus = eventBus;
@@ -37,6 +37,7 @@ export class AuthGateController {
     this.qrController = new QrAuthController({
       authService: this.authService,
       toastService: this.toastService,
+      recoveryKitModal,
       onAuthSuccess: (user) => {
         this.hide();
         this.eventBus?.emit('auth:success', user);

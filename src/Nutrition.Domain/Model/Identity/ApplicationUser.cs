@@ -121,6 +121,14 @@ public partial class ApplicationUser : ISoftDeletable
     /// </summary>
     public DateTime? RecoveryKeyCreatedAtUtc { get; set; }
 
+    public string? PendingRecoveryLookupId { get; set; }
+    public string? PendingRecoveryKeyHash { get; set; }
+    public string? PendingRecoverySalt { get; set; }
+    public DateTime? PendingRecoveryKeyCreatedAtUtc { get; set; }
+    public DateTime? PendingRecoveryKeyExpiresAtUtc { get; set; }
+    public string? PendingRecoveryIssueTokenHash { get; set; }
+    public string? LastActivatedRecoveryIssueTokenHash { get; set; }
+
     // =========================================================================
     // Legal Compliance & Forensic Audit Properties (India DPDPA 2023 & GDPR)
     // =========================================================================
@@ -310,4 +318,3 @@ public partial class ApplicationUser : ISoftDeletable
     [GeneratedRegex(@"[^\d+]")]
     private static partial Regex PhoneNumberDigitsRegex();
 }
-

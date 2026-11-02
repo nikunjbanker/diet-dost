@@ -22,13 +22,15 @@ export class ProfileModalController {
    * @param {import('../core/state.js').AppState} options.appState
    * @param {import('../core/event-bus.js').EventBus} options.eventBus
    */
-  constructor({ profileService, medicationService, toastService, confettiService, appState, eventBus }) {
+  constructor({ profileService, medicationService, toastService, confettiService, appState, eventBus, authService, recoveryKitModal }) {
     this._profile = profileService;
     this._meds = medicationService;
     this._toast = toastService;
     this._confetti = confettiService;
     this._state = appState;
     this._bus = eventBus;
+    this._auth = authService;
+    this._recoveryKitModal = recoveryKitModal;
 
     this._bindEvents();
   }
@@ -71,7 +73,11 @@ export class ProfileModalController {
       medSuggestions: document.getElementById('med-quick-suggestions'),
       medPromptNote: document.getElementById('med-prompt-note'),
       medPlaceholderHint: document.getElementById('med-placeholder-hint'),
-      btnProfileOpenProgress: document.getElementById('btn-profile-open-progress')
+      btnProfileOpenProgress: document.getElementById('btn-profile-open-progress'),
+      recoveryCard: document.getElementById('profile-recovery-kit-card'),
+      recoveryPassword: document.getElementById('profile-recovery-current-password'),
+      recoveryError: document.getElementById('profile-recovery-kit-error'),
+      btnGenerateRecoveryKit: document.getElementById('btn-generate-recovery-kit')
     };
   }
 
@@ -139,6 +145,8 @@ export class ProfileModalController {
       el.form.addEventListener('submit', (e) => this.handleSubmit(e));
     }
 
+    el.btnGenerateRecoveryKit?.addEventListener('click', () => this.handleGenerateRecoveryKit());
+
     // View Photos Shortcut
     if (el.btnProfileOpenProgress) {
       el.btnProfileOpenProgress.addEventListener('click', () => {
@@ -163,6 +171,7 @@ export class ProfileModalController {
       if (el.btnCancel) el.btnCancel.style.display = 'none';
       if (el.progressPromo) el.progressPromo.style.display = 'none';
       if (el.sessionRow) el.sessionRow.style.display = 'none';
+      if (el.recoveryCard) el.recoveryCard.style.display = 'none';
       if (el.saveBtnText) el.saveBtnText.innerHTML = '🚀 Complete Onboarding & Start';
       if (options.userName && el.inpName && !el.inpName.value) {
         el.inpName.value = options.userName;
@@ -175,6 +184,9 @@ export class ProfileModalController {
       if (el.btnCancel) el.btnCancel.style.display = 'inline-flex';
       if (el.progressPromo) el.progressPromo.style.display = 'flex';
       if (el.sessionRow) el.sessionRow.style.display = 'flex';
+      if (el.recoveryCard) {
+        el.recoveryCard.style.display = this._auth?.currentUser?.isAnonymous ? 'none' : 'block';
+      }
       if (el.saveBtnText) el.saveBtnText.innerHTML = '💾 Save & Recalculate';
     }
 
@@ -208,6 +220,51 @@ export class ProfileModalController {
       title: 'Clinical Intake Deferred',
       message: 'Using default 1,600 kcal baseline. You can complete your profile anytime from the top banner.'
     });
+  }
+
+  async handleGenerateRecoveryKit() {
+    const el = this.elements;
+    if (!el.recoveryPassword?.value) {
+      this._setRecoveryError('Enter your current password to continue.');
+      el.recoveryPassword?.focus();
+      return;
+    }
+
+    const button = el.btnGenerateRecoveryKit;
+    if (button) button.disabled = true;
+    this._setRecoveryError('');
+
+    try {
+      const kit = await this._auth.generateRecoveryKit(el.recoveryPassword.value);
+      el.recoveryPassword.value = '';
+      const shown = this._recoveryKitModal?.show(kit, {
+        activationRequired: true,
+        onComplete: () => this._toast.show({
+          title: 'Recovery Kit Activated',
+          message: 'Your new recovery kit is active. The previous key has been replaced.'
+        }),
+        onCancel: () => this._toast.show({
+          title: 'Current Key Preserved',
+          message: 'The new kit was not activated; your current recovery key remains valid.'
+        })
+      });
+
+      if (!shown) {
+        this._setRecoveryError('The recovery kit could not be displayed. Your current key remains active; generate a new kit to try again.');
+      }
+    } catch (error) {
+      el.recoveryPassword.value = '';
+      this._setRecoveryError(error.message || 'Could not generate a recovery kit. Your current key remains active.');
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  _setRecoveryError(message) {
+    const error = this.elements.recoveryError;
+    if (!error) return;
+    error.textContent = message;
+    error.style.display = message ? 'block' : 'none';
   }
 
   close() {
