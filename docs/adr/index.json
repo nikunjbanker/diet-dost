@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-02T08:37:01.355021+00:00",
-  "totalAdrs": 121,
+  "generatedAt": "2026-11-02T12:05:06.628059+00:00",
+  "totalAdrs": 122,
   "categoryCounts": {
     "architecture": 39,
-    "security": 25,
+    "security": 26,
     "devops": 28,
     "presentation": 16,
     "governance": 13
@@ -1461,6 +1461,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261102-156-staged-recovery-kit-activation.md",
       "relativePath": "docs/adr/security/ADR-20261102-156-staged-recovery-kit-activation.md"
+    },
+    {
+      "id": "ADR-157",
+      "number": 157,
+      "title": "Root SuperAdmin Onboarding Status Governance",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-11-02",
+      "subsystem": "Security",
+      "filename": "ADR-20261102-157-root-superadmin-onboarding-governance.md",
+      "relativePath": "docs/adr/security/ADR-20261102-157-root-superadmin-onboarding-governance.md"
     }
   ]
 }

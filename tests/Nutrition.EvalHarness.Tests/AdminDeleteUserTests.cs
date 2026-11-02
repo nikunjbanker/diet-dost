@@ -3,6 +3,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
 using Nutrition.WebGateway.Controllers;
@@ -14,7 +15,6 @@ using Nutrition.WebGateway.Controllers;
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Linq.Expressions;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
 using Nutrition.Application.Features.Admin.Commands.UserManagement;
@@ -432,7 +432,7 @@ public class AdminDeleteUserTests
         ));
 
         var dispatcher = new FakeDispatcher(cmd => fakeResult);
-        var controller = new AdminController(dispatcher);
+        var controller = new AdminController(dispatcher, new ConfigurationManager());
         var userClaims = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "superadmin-id"),
@@ -461,7 +461,7 @@ public class AdminDeleteUserTests
         );
 
         var dispatcher = new FakeDispatcher(cmd => fakeResult);
-        var controller = new AdminController(dispatcher);
+        var controller = new AdminController(dispatcher, new ConfigurationManager());
         var userClaims = new ClaimsPrincipal(new ClaimsIdentity(new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "superadmin-id"),

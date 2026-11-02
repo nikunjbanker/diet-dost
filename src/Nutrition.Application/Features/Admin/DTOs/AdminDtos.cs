@@ -25,5 +25,7 @@ public record AdminUserSummaryDto(
     string? ConsentIpAddress,
     DateTime CreatedAtUtc,
     DateTime? LastLoginAtUtc,
-    int TodayAiDetectionsCount
+    int TodayAiDetectionsCount,
+    bool IsOnboarded = false,
+    bool CanSetOnboarding = false
 );

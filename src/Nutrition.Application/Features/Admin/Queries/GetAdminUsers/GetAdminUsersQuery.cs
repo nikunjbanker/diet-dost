@@ -78,7 +78,8 @@ public class GetAdminUsersQueryHandler : IQueryHandler<GetAdminUsersQuery, Resul
             ConsentIpAddress: u.ConsentIpAddress,
             CreatedAtUtc: u.CreatedAtUtc,
             LastLoginAtUtc: u.LastLoginAtUtc,
-            TodayAiDetectionsCount: todayCounts.TryGetValue(u.Id, out var count) ? count : 0
+            TodayAiDetectionsCount: todayCounts.TryGetValue(u.Id, out var count) ? count : 0,
+            IsOnboarded: u.IsOnboarded
         )).ToList();
 
         return Result<List<AdminUserSummaryDto>>.Success(dtos);

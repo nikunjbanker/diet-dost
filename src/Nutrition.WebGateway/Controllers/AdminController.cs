@@ -7,6 +7,7 @@
  */
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Features.Admin.Commands.TierConfiguration;
 using Nutrition.Application.Features.Admin.Commands.UserManagement;
@@ -38,7 +39,8 @@ public record AdminUpdateUserRequest(
     UserTier? Tier,
     bool? IsActive,
     bool? IsEmailVerified,
-    string? NewPassword
+    string? NewPassword,
+    bool? IsOnboarded = null
 );
 public record UpdateTierConfigRequest(
     int DailyAiDetectionLimit,
@@ -58,10 +60,12 @@ public record UpdateTierConfigRequest(
 public class AdminController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
+    private readonly IConfiguration _configuration;
 
-    public AdminController(IDispatcher dispatcher)
+    public AdminController(IDispatcher dispatcher, IConfiguration configuration)
     {
         _dispatcher = dispatcher;
+        _configuration = configuration;
     }
 
     [HttpGet("active-users")]
@@ -92,7 +96,12 @@ public class AdminController : ControllerBase
             return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
         }
 
-        return Ok(result.Data);
+        var rootEmail = _configuration["Auth:SuperAdminEmail"]
+            ?? _configuration["SUPER_ADMIN_EMAIL"]
+            ?? _configuration["SuperAdminEmail"];
+        var canSetOnboarding = User.IsInRole(nameof(UserRole.SuperAdmin))
+            && string.Equals(User.GetEmail(), rootEmail, StringComparison.OrdinalIgnoreCase);
+        return Ok(result.Data?.Select(user => user with { CanSetOnboarding = canSetOnboarding }));
     }
 
     [HttpPut("users/{id}/tier")]
@@ -211,7 +220,8 @@ public class AdminController : ControllerBase
             request.IsEmailVerified,
             request.NewPassword,
             adminUserId,
-            currentRole
+            currentRole,
+            request.IsOnboarded
         );
         var result = await _dispatcher.SendAsync(command, ct);
 
@@ -342,5 +352,3 @@ public class AdminController : ControllerBase
         return Ok(result.Data);
     }
 }
-
-

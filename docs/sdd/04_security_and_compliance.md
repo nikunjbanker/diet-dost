@@ -208,6 +208,7 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
   - Enforced soft-delete across `EfRepository<T>.DeleteAsync` for all `ISoftDeletable` domain entities (GAP-23, GAP-34).
   - Blocked non-SuperAdmin users from elevating accounts to `UserTier.SuperAdmin` in `AdminUserCommands.cs` (GAP-11).
   - Enforced SuperAdmin User Deletion Guardrails (ADR-148): Self-deletion prevention (`CannotDeleteSelf`), immutable root SuperAdmin protection (`nikunj_banker@hotmail.com` protected account), tier-hierarchy enforcement (lower tier prohibited from deleting upper tier), logical soft-deletion (`IsDeleted = true`, `DeletedAtUtc = DateTime.UtcNow`), immediate cryptographic session revocation via security stamp reset, and cascade soft-deletion of `UserProfile` while preserving clinical history for audit.
+  - Restricted user onboarding status changes through the governance editor to the configured root SuperAdmin; the command updates both `ApplicationUser.IsOnboarded` and `UserProfile.IsOnboarded` atomically, while the Zero-Assumption intake checks remain authoritative (ADR-156).
   - Masked disaster recovery mnemonics with `type="password"` and wiped backup JSON from client memory upon submission (GAP-42).
 * **Media Protection & Privacy**:
   - Implemented `ImageSanitizer.cs` with SkiaSharp two-phase header probing against decompression bombs (16 MP limit) and EXIF stripping (GAP-10, GAP-35).

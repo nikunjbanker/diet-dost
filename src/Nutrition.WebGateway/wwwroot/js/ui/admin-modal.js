@@ -509,6 +509,13 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
     document.getElementById('admin-edit-user-active').checked = !!user.isActive;
     document.getElementById('admin-edit-user-verified').checked = !!user.isEmailVerified;
 
+    const onboardingContainer = document.getElementById('admin-edit-user-onboarding-container');
+    const onboardingCheckbox = document.getElementById('admin-edit-user-onboarded');
+    if (onboardingContainer && onboardingCheckbox) {
+      onboardingContainer.style.display = user.canSetOnboarding ? 'block' : 'none';
+      onboardingCheckbox.checked = !!user.isOnboarded;
+    }
+
     const isSuper = roleVal === 2;
     document.getElementById('admin-edit-user-role').disabled = isSuper;
     document.getElementById('admin-edit-user-tier').disabled = isSuper;
@@ -536,6 +543,10 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
     const newPassword = document.getElementById('admin-edit-user-password')?.value || null;
     const isActive = document.getElementById('admin-edit-user-active')?.checked ?? true;
     const isEmailVerified = document.getElementById('admin-edit-user-verified')?.checked ?? true;
+    const user = this.usersMap.get(userId);
+    const isOnboarded = user?.canSetOnboarding
+      ? (document.getElementById('admin-edit-user-onboarded')?.checked ?? false)
+      : undefined;
 
     try {
       await this.adminService.updateUser(userId, {
@@ -544,6 +555,7 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
         tier,
         isActive,
         isEmailVerified,
+        isOnboarded,
         newPassword: newPassword || undefined
       });
       this.toastService?.success('User updated successfully.');
@@ -821,4 +833,3 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
     }
   }
 }
-
