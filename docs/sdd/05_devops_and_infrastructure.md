@@ -269,9 +269,9 @@ Production deployment executes via two decoupled GitHub Actions workflows condit
 
 ### 7.2 Declarative Bicep Infrastructure as Code (IaC)
 - [`infra/<env>/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep): Base infrastructure definition with Key Vault purge protection enabled (`enablePurgeProtection: true`), 90-day retention, Azure Files SMB share, storage mount definitions on the ACA Managed Environment, and conditional invocation of `sql.bicep` with `Microsoft.Sql` service endpoint binding.
-- [`infra/<env>/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep): Dedicated Azure SQL Database Serverless module (`GP_S_Gen5_1`, auto-pause 60m, 100k vCore-s monthly free, with configurable `useFreeLimit` and `freeLimitExhaustionBehavior` defaulting to `false` and `BillOverUsage` to prevent paid-to-free ARM update rejections, ADR-143), VNet Service Endpoint binding (`allow-aca-subnet`), and Key Vault secret generation with explicit `contentType` metadata (`sql-admin-password`, `azure-sql-connection-string`). See [`docs/sql-setup-guide.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sql-setup-guide.md).
+- [`infra/<env>/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep): Dedicated Azure SQL Database Basic DTU module (`Basic` service objective, 5 DTUs, 2 GB maximum), VNet Service Endpoint binding (`allow-aca-subnet`), and Key Vault secret generation with explicit `contentType` metadata (`sql-admin-password`, `azure-sql-connection-string`). See [`docs/sql-setup-guide.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sql-setup-guide.md).
 - [`infra/<env>/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep): Application definition configuring container volume mounts (`/app/data`), CPU (0.5 vCPU) and memory (1.0 Gi) limits, environment variables, managed identity role assignments (`acrPullRole`, `keyVaultSecretsUserRole`), Key Vault secret mapping for `ConnectionStrings__AzureSqlConnection`, and decoupled custom domain hostname bindings.
-- [`infra/<env>/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep): Composite template orchestrating foundation, SQL Serverless, and workload modules for full end-to-end deployments.
+- [`infra/<env>/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep): Composite template orchestrating foundation, SQL Basic DTU, and workload modules for full end-to-end deployments.
 
 ### 7.3 Azure Files SMB Volume Mount & Zero-Data-Loss Configuration
 The Container App mounts the Azure Files SMB share as a persistent volume:
@@ -340,7 +340,7 @@ graph TD
     - `Deny-All-Other-Inbound` (Priority 4000, Explicit Catch-All Deny).
   - **Outbound**:
     - `Allow-Storage-SMB-Outbound` (Priority 100, Port 445) restricted strictly to `Storage` service tag for persistent SQLite mount.
-    - `Allow-SQL-Outbound` (Priority 105, Ports `1433` and `11000-11999`) restricted to `Sql` service tag for direct Azure SQL Serverless connectivity via Azure SQL Redirect connection policy.
+    - `Allow-SQL-Outbound` (Priority 105, Ports `1433` and `11000-11999`) restricted to `Sql` service tag for Azure SQL connectivity via the Redirect connection policy.
     - `Allow-AzureCloud-HTTPS-Outbound` (Priority 110, Port 443) restricted to `AzureCloud` service tag (Key Vault, ACR image pulls, Entra ID, Log Analytics).
     - `Allow-DNS-Outbound` (Priority 120, Port 53) for core name resolution.
     - `Allow-NTP-Outbound` (Priority 130, Port 123) for clock synchronization.
@@ -470,6 +470,12 @@ The full architectural blueprint is codified in the following repository visual 
      - Formats `environment_ids` as a numeric 64-bit integer JSON array piped via stdin to `gh api ... --input -`, resolving the HTTP 422 error.
      - Real-time job telemetry reporting active stages, completed/total job ratios, and statuses.
      - Automated post-deployment validation asserting HTTP 200 responses across `https://dev.diet-dost.in/health`, `/index.html`, and component partials upon deployment success.
+
+### 8.18 Azure SQL Basic DTU Cost Guardrail (ADR-160)
+- **Problem**: The deployment's Azure SQL Bicep module selected `GP_S_Gen5_1` (General Purpose Serverless), which could result in unexpected vCore-based charges and did not meet the required DTU-based Basic tier.
+- **Decision**: The SQL database resource is fixed to SKU `Basic`, tier `Basic`, capacity 5 DTUs, and a 2 GB maximum. Serverless-only free-limit, minimum-capacity, and auto-pause properties are removed. Infrastructure and application deployment summaries identify the selected Basic DTU tier.
+- **Existing Resources**: A normal deployment reapplies the Basic SKU to existing Azure SQL databases. The operator must back up the database and confirm that the data fits within Basic's 2 GB maximum before deploying. Application networking, authentication, and Key Vault connection handling are unchanged.
+- **Regression Guard**: `SqlBicep_ProvisionsBasicDtuTier_AndExcludesServerlessConfiguration` checks the exact Bicep SKU and prevents serverless-only settings or outdated workflow labels from returning.
 
 ## 12. Adversarial Infrastructure & Cloud Perimeter Hardening (`ADR-147`)
 

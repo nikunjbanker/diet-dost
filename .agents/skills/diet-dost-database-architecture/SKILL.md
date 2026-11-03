@@ -4,7 +4,7 @@ version: 1.0.0
 status: Approved Enterprise Architecture & Cloud Persistence Playbook
 description: >-
   Authoritative SQL, NoSQL, and Hybrid Cloud Database architecture guide for Diet-Dost (.NET 11,
-  Web & Mobile). Covers enterprise transition from SQLite MVP to Azure Cloud (Azure SQL Serverless Free Tier,
+  Web & Mobile). Covers enterprise transition from SQLite MVP to Azure Cloud (Azure SQL Basic DTU,
   Azure Cosmos DB 1,000 RU/s Free Tier, and PostgreSQL Flexible Server JSONB). Provides domain-specific
   nutrition data models (IFCT 2017/ICMR-NIN 2024), DPDPA 2023 health privacy compliance, mobile offline-first
   sync patterns, passwordless Azure Managed Identity integration, and zero-cost cloud deployment playbooks.
@@ -24,7 +24,7 @@ description: >-
 > **Specification Version**: `v1.0.0-ENTERPRISE-DB`  
 > **Domain Classification**: Nutrition & Clinical Dietetics Persistence Engine  
 > **Platforms Supported**: Web PWA (`Nutrition.WebGateway`) & Cross-Platform Mobile (.NET MAUI / Expo)  
-> **Cloud Provider**: Microsoft Azure (Zero-Cost Free Tier Starting Architecture)  
+> **Cloud Provider**: Microsoft Azure (Cost-Controlled Deployment Architecture)
 > **Compliance Standard**: DPDPA 2023, OWASP ASVS v4.0, Indian Medical Standards (ICMR-NIN 2024)  
 
 ---
@@ -130,18 +130,18 @@ An inspection of the active SQLite database ([`src/Nutrition.WebGateway/`](file:
 
 ## 2. Comprehensive Azure Database Evaluation & Deep Comparison
 
-To balance enterprise security, clinical data flexibility, scalability, and zero startup cost, four architectural database options are evaluated:
+To balance enterprise security, clinical data flexibility, scalability, and deployment cost, four architectural database options are evaluated:
 
-| Dimension | Option 1: SQLite (Current MVP) | Option 2: Azure SQL Database (Serverless Free Tier) | Option 3: Azure Cosmos DB (NoSQL Free Tier) | Option 4: Azure PostgreSQL (Flexible Server) |
+| Dimension | Option 1: SQLite (Current MVP) | Option 2: Azure SQL Database (Basic DTU) | Option 3: Azure Cosmos DB (NoSQL Free Tier) | Option 4: Azure PostgreSQL (Flexible Server) |
 | :--- | :---: | :---: | :---: | :---: |
-| **Azure Free Tier** | 100% Free (Local file / Azure Files) | 🏆 **Free Forever**<br>(32,000 vCore-s/mo + 32 GB storage) | 🏆 **Free Forever**<br>(1,000 RU/s + 25 GB storage) | ⚠️ **12 Months Free Trial**<br>(B1ms instance + 32 GB, then ~$12/mo) |
+| **Azure Free Tier** | 100% Free (Local file / Azure Files) | Paid provisioned DTU tier; 5 DTUs and 2 GB maximum | 🏆 **Free Forever**<br>(1,000 RU/s + 25 GB storage) | ⚠️ **12 Months Free Trial**<br>(B1ms instance + 32 GB, then ~$12/mo) |
 | **Model Type** | Embedded Relational | Relational + Native JSON | NoSQL Document (JSON) | Relational + JSONB (Hybrid) |
-| **Enterprise Readiness** | ⚠️ Single-node file locking (No horizontal scale) | 🏆 High Enterprise (Autoscale, 99.99% SLA) | 🏆 Global Enterprise (Turnkey multi-region, 99.999% SLA) | 🏆 High Enterprise (Managed HA, Extensions) |
+| **Enterprise Readiness** | ⚠️ Single-node file locking (No horizontal scale) | Managed relational database; Basic performance limits apply | 🏆 Global Enterprise (Turnkey multi-region, 99.999% SLA) | 🏆 High Enterprise (Managed HA, Extensions) |
 | **Schema Flexibility** | Moderate (Dynamic typing) | High (Native `JSON` columns + `OPENJSON`) | 🏆 Highest (Schema-less documents) | 🏆 Highest (JSONB with GIN indexing) |
 | **.NET 11 / EF Core Support** | Native (`Microsoft.EntityFrameworkCore.Sqlite`) | 🏆 First-Class (`Microsoft.EntityFrameworkCore.SqlServer`) | First-Class (`Microsoft.EntityFrameworkCore.Cosmos`) | First-Class (`Npgsql.EntityFrameworkCore.PostgreSQL`) |
 | **DPDPA 2023 & Security** | File-level OS encryption | 🏆 **Always Encrypted**, TDE, Row-Level Security | 🏆 RBAC, Entra ID, Customer Managed Keys | RLS, SCRAM-SHA-256, Entra ID |
 | **Mobile Offline Sync** | Native (Same engine on phone) | Sync via Mobile BFF REST APIs | Sync via Mobile BFF or Cosmos Change Feed | Sync via Mobile BFF REST APIs |
-| **Initial Cloud Hosting Cost** | **$0.00 / month** | **$0.00 / month** | **$0.00 / month** | **$0.00 / month (Year 1)**, then ~$12/mo |
+| **Initial Cloud Hosting Cost** | **$0.00 / month** | Fixed Basic DTU charge; varies by region | **$0.00 / month** | **$0.00 / month (Year 1)**, then ~$12/mo |
 
 ---
 
@@ -167,27 +167,25 @@ To balance enterprise security, clinical data flexibility, scalability, and zero
 
 ---
 
-### 2.2 Option 2: Azure SQL Database Serverless (Relational + Native JSON — The Recommended Free Tier)
+### 2.2 Option 2: Azure SQL Database Basic DTU (Relational + Native JSON — Current Deployment Tier)
 
 - **WHAT It Is**:
-  - A fully managed, cloud-native Microsoft SQL Server with serverless compute that auto-scales between 0.5 and 4 vCores and automatically pauses during idle periods. Includes **32,000 vCore-seconds and 32 GB storage completely free every month for life**.
+  - A fully managed, cloud-native Microsoft SQL Server using the DTU purchasing model's Basic service objective. Diet-Dost provisions **5 DTUs** and limits the database to **2 GB**. Compute is provisioned rather than serverless and does not auto-pause.
 - **WHY Consider It**:
-  - Combines enterprise ACID relational guarantees for Identity, Subscriptions, and DPDPA consent with modern EF Core JSON columns (`ToJson()`) for flexible Indian food recipes and AI vision metadata.
+  - Provides a predictable, low-capacity relational tier for Identity, Subscriptions, and DPDPA consent, with existing EF Core SQL Server support for the application's relational schema.
 - **HOW It Works**:
   - Configured in .NET 11 via `options.UseSqlServer(connectionString)`.
-  - Authenticates securely via **Microsoft Entra ID (Azure AD) Managed Identity** with zero passwords in code.
-  - Maps complex meal ingredient arrays directly to native `nvarchar(max)` JSON columns with sub-50ms query projections.
+  - Current infrastructure provisions the `Basic` service objective (5 DTUs, 2 GB max) and stores SQL credentials/connection data in Azure Key Vault.
 - **PROS**:
-  - **Free Tier Forever**: 32,000 vCore-seconds + 32 GB storage free every month ($0.00 cloud bill).
-  - **First-Class .NET 11 & EF Core Integration**: Zero migration friction from SQLite; identical LINQ semantics.
-  - **Hybrid Data Superpower**: Eliminates 6-table joins for Indian meals by storing ingredients in native JSON columns.
+  - **Cost guardrail**: The fixed Basic DTU objective avoids accidentally provisioning General Purpose Serverless vCore compute.
+  - **First-Class .NET 11 & EF Core Integration**: Uses the existing SQL Server EF Core provider and LINQ semantics.
+  - **Constrained resource footprint**: 2 GB maximum storage is suitable only while the data remains within that limit.
   - **Enterprise Security Suite**: Transparent Data Encryption (TDE), Always Encrypted, Row-Level Security (RLS), and Dynamic Data Masking out of the box.
-  - **Seamless Scalability**: Effortlessly handles thousands of concurrent Web and Mobile connections.
 - **CONS**:
-  - **Cold-Start Pause Latency**: When auto-paused after 60 minutes of inactivity, resuming takes ~20 to 40 seconds on the first request (can be warmed with synthetic health-check pings).
-  - **32 GB Free Cap**: High-volume photo binary storage must be offloaded to Azure Blob Storage rather than DB tables.
+  - **Low capacity**: 5 DTUs and 2 GB maximum constrain throughput and data growth; monitor workload and storage.
+  - **Paid tier**: Basic is not the Serverless free quota; its regional price applies while provisioned.
   - **Proprietary Engine**: Relies on Microsoft T-SQL syntax and ecosystem.
-  - **Verdict**: **The #1 Best Overall Choice for Diet-Dost Enterprise Cloud Launch**.
+  - **Verdict**: Current deployment choice for cost containment; scale only through an explicitly reviewed infrastructure change.
 
 ---
 
@@ -249,11 +247,11 @@ START: What is the current operational phase and priority?
 │       ├── WHY: 0 infrastructure, 0 cost, instant test teardown.
 │       └── HOW: UseSqlite("Data Source=dietdost.db") with EF Core.
 │
-├── Phase 2: Enterprise Cloud Launch on Azure (ZERO Startup Cost Mandate)
-│   └── ➔ USE: Option 2 (Azure SQL Database Serverless Free Tier) [RECOMMENDED]
-│       ├── WHAT: Managed SQL Serverless with 32,000 vCore-s + 32 GB free forever.
-│       ├── WHY: $0.00/mo forever, 0 migration friction from EF Core SQLite, Always Encrypted & RLS.
-│       └── HOW: UseSqlServer() + Entra ID Managed Identity + builder.OwnsMany().ToJson().
+├── Phase 2: Azure Cloud Deployment (Basic DTU Cost Guardrail)
+│   └── ➔ USE: Option 2 (Azure SQL Database Basic DTU) [CURRENT DEPLOYMENT]
+│       ├── WHAT: Managed SQL with 5 DTUs and 2 GB maximum.
+│       ├── WHY: Explicitly bounded low-cost tier; no serverless/vCore SKU drift.
+│       └── HOW: UseSqlServer() + Key Vault connection string + Basic service objective.
 │
 ├── Phase 3: High-Scale AI Multimodal Vision & Global Food Catalog Offload
 │   └── ➔ USE: Option 2 (Azure SQL) + Option 3 (Azure Cosmos DB Free Tier) [POLYGLOT]
@@ -279,8 +277,8 @@ graph LR
         SQLITE["SQLite Embedded File<br/>Zero setup, zero cloud cost<br/>Perfect for tests & offline mobile"]
     end
 
-    subgraph PHASE_2 ["Phase 2: Cloud Launch (Zero Cost Forever)"]
-        AZ_SQL["Azure SQL Database Serverless<br/>- 32,000 vCore-s free / month<br/>- 32 GB free storage<br/>- Relational Auth + JSON Food Columns"]
+    subgraph PHASE_2 ["Phase 2: Cloud Launch (Basic DTU Cost Guardrail)"]
+        AZ_SQL["Azure SQL Database Basic DTU<br/>- 5 DTUs<br/>- 2 GB maximum<br/>- Relational Auth + SQL Server EF Core"]
         COSMOS["Azure Cosmos DB Free Tier<br/>- 1,000 RU/s free forever<br/>- 25 GB free storage<br/>- Food Vision & Catalog Storage"]
     end
 
@@ -292,17 +290,15 @@ graph LR
     PHASE_2 -->|Global Scale| PHASE_3
 ```
 
-### 3.1 The Winning Cloud-Launch Recommendation (Zero-Cost Tier)
-For launching Diet-Dost into Azure with **zero initial cloud spend ($0.00/mo)** while maintaining enterprise-grade security and compliance:
+### 3.1 Current Cloud-Launch Database Decision
 
-1. **Option A (Recommended Unified): Azure SQL Database Serverless (Free Forever)**
-   - **Why**: Microsoft Azure offers **32,000 vCore seconds of compute and 32 GB storage completely free every single month** per Azure subscription for the lifetime of the account.
-   - **How it handles nutrition**: Store Users, Roles, Tiers, DPDPA Consents, and Daily Ledgers in relational tables; store variable meal ingredients, AI vision outputs, and clinical metadata in native `nvarchar(max)` columns using EF Core 8/9/11 JSON mapping (`ToJson()`).
-   - **Cost**: **$0.00 / month**.
-   - **Migration Effort**: Extremely low (swapping EF Core provider from SQLite to SqlServer).
+1. **Option A (Current): Azure SQL Database Basic DTU**
+   - **Why**: The deployment pins the database to Basic DTU to avoid an unintended General Purpose Serverless vCore SKU.
+   - **Limits**: 5 DTUs and 2 GB maximum database size; price varies by region and is not a free-tier offer.
+   - **Migration Effort**: Existing Azure SQL EF Core provider and relational schema remain unchanged.
 
-2. **Option B (The Polyglot Cloud-Native Option): Azure SQL Serverless + Azure Cosmos DB Free Tier**
-   - **Azure SQL Serverless (Free Forever)**: Manages User Identities, DPDPA Consent audit trails, Tier Quotas, and Auth tokens.
+2. **Option B (Future Polyglot Option): Azure SQL + Azure Cosmos DB Free Tier**
+   - **Azure SQL Basic DTU**: Manages User Identities, DPDPA Consent audit trails, Tier Quotas, and Auth tokens.
    - **Azure Cosmos DB Free Tier (Free Forever)**: 1,000 RU/s throughput + 25 GB storage free forever. Houses the IFCT food catalog and rich meal photo vision logs.
    - **Cost**: **$0.00 / month**.
 
@@ -442,10 +438,10 @@ public class MealLogConfiguration : IEntityTypeConfiguration<MealLog>
 
 ---
 
-## 7. Azure Zero-Cost Free Tier Provisioning Playbook
+## 7. Azure Database Provisioning Playbook
 
-### 7.1 Azure SQL Serverless Free Tier Setup via Azure CLI
-Run these commands to provision the permanent free tier:
+### 7.1 Azure SQL Basic DTU Setup via Azure CLI
+The deployment's authoritative IaC is `infra/dev/sql.bicep`. For manual provisioning on an existing logical server, select the Basic DTU service objective:
 
 ```bash
 # 1. Create Resource Group in Central India or East US
@@ -460,16 +456,13 @@ az sql server create \
   --external-admin-name "admin@dietdost.app" \
   --external-admin-sid "<your-azure-ad-object-id>"
 
-# 3. Provision Serverless General Purpose Database with FREE TIER enabled
+# 3. Provision Azure SQL Basic DTU (5 DTUs, 2 GB maximum)
 az sql db create \
   --resource-group rg-dietdost-prod \
   --server sql-dietdost-prod \
   --name dietdost \
-  --edition GeneralPurpose \
-  --family Gen5 \
-  --compute-model Serverless \
-  --free-limit-exhaustion-behavior AutoPause \
-  --use-free-limit true
+  --service-objective Basic \
+  --max-size 2GB
 
 # 4. Configure Firewall to allow Azure Services (App Service / Container Apps)
 az sql server firewall-rule create \
@@ -515,4 +508,3 @@ Whenever introducing new database entities, columns, or indexes to Diet-Dost:
    - Never use `TEXT` or `NVARCHAR(MAX)` for index key columns in SQL Server (causes Error 1919 / Error 207). Always specify bounded types like `NVARCHAR(128)`.
 3. **Automated Dual-Provider Test Gate**:
    - `DualDatabaseSchemaMigrationTests` executes real SQLite file and SQL Server LocalDB migrations, asserting that legacy databases migrate cleanly without throwing missing column or syntax errors.
-

@@ -53,7 +53,7 @@ on:
         type: string
         default: 'snet-aca-infra'
       deployAzureSql:
-        description: 'Deploy Azure SQL Database Serverless Free Tier (GP_S_Gen5_1, 100k vCore-s free)'
+        description: 'Deploy Azure SQL Database Basic DTU (5 DTUs, 2 GB maximum)'
         required: false
         type: boolean
         default: true
@@ -97,7 +97,7 @@ jobs:
             echo "| **File Share Quota (GB)** | \`${{ inputs.fileShareQuotaGb || 1 }}\` | Persistent SQLite SMB quota |"
             echo "| **ACR Name** | \`${{ inputs.acrName || 'crdostdevskehxuagttzos' }}\` | Azure Container Registry |"
             echo "| **Key Vault Name** | \`${{ inputs.keyVaultName || 'kvdostdevskehxuagttzos' }}\` | Azure Key Vault |"
-            echo "| **Deploy Azure SQL Serverless** | \`${{ inputs.deployAzureSql != false }}\` | Azure SQL Free Tier (GP_S_Gen5_1, 100k vCore-s) |"
+            echo "| **Deploy Azure SQL Basic DTU** | \`${{ inputs.deployAzureSql != false }}\` | 5 DTUs, 2 GB maximum database size |"
             echo "| **SQL Admin Login** | \`${{ inputs.sqlAdminLogin || 'sqladmin' }}\` | SQL Server Authentication admin username |"
             echo "| **Allowed Client IP** | \`${{ inputs.allowedClientIp || 'None' }}\` | Local workstation IP permitted in firewall |"
             echo "| **Skip Pre-Flight Gates** | \`${{ inputs.skipPreFlightGates }}\` | Pre-flight security scan status |"
@@ -553,7 +553,7 @@ jobs:
             echo "| **Key Vault URI** | \`${{ steps.deploy-infra.outputs.keyVaultUri }}\` |"
             echo "| **Managed Identity** | \`${{ steps.deploy-infra.outputs.managedIdentityId }}\` |"
             echo "| **Application Insights** | \`${{ steps.deploy-infra.outputs.appInsightsName }}\` (DisableLocalAuth: true) |"
-            echo "| **Azure SQL Serverless** | $([ "${{ inputs.deployAzureSql }}" = "true" ] && echo "✅ Provisioned (\`${{ steps.deploy-infra.outputs.sqlServerFqdn }}\` / \`${{ steps.deploy-infra.outputs.sqlDatabaseName }}\`)" || echo "Disabled (Using SQLite)") |"
+            echo "| **Azure SQL Basic DTU** | $([ "${{ inputs.deployAzureSql }}" = "true" ] && echo "✅ Provisioned (\`${{ steps.deploy-infra.outputs.sqlServerFqdn }}\` / \`${{ steps.deploy-infra.outputs.sqlDatabaseName }}\`)" || echo "Disabled (Using SQLite)") |"
             echo "| **Static Ingress IP** | \`${{ steps.deploy-infra.outputs.staticIp }}\` |"
             echo "| **Custom Domain Verification ID** | \`${{ steps.deploy-infra.outputs.customDomainVerificationId }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"

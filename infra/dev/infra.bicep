@@ -28,7 +28,7 @@ param keyVaultName string = ''
 @description('Name of the delegated subnet for Azure Container Apps infrastructure.')
 param acaSubnetName string = 'snet-aca-infra'
 
-@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default true for AzureSql database provider).')
+@description('Flag indicating whether the Azure SQL Basic DTU database should be provisioned (default true for AzureSql database provider).')
 param deployAzureSql bool = true
 
 @description('Optional explicit name for Azure SQL Server. If omitted, a unique name is derived.')
@@ -576,7 +576,7 @@ resource keyVaultUnauthorizedAlert 'Microsoft.Insights/metricAlerts@2018-03-01' 
 }
 
 // ------------------------------------------------------------------------------
-// 11. Azure SQL Serverless Free Tier Database Module
+// 11. Azure SQL Basic DTU Database Module
 // ------------------------------------------------------------------------------
 module sql 'sql.bicep' = if (deployAzureSql) {
   name: 'sql-deployment'

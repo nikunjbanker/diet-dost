@@ -179,10 +179,10 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Tactile Mobile Haptics**: Added `navigator.vibrate(10)` micro-haptic feedback on tab interactions.
     - **Touch Target & Contract Invariants**: Retained 100% DOM element IDs (`btn-nav-overview`, `btn-nav-log-meal`, `btn-nav-history`, `btn-nav-profile`), ensuring all CFT suites, accessibility targets (>= 48x48px), and routing listeners continue to function without drift.
 
-15. **Non-Blocking Database Pre-Warming & Azure SQL Serverless Auto-Resume Architecture (`api-client.js`, `main.js`, `SystemController.cs`, `IDatabaseWarmupService.cs`, ADR-134)**:
+15. **Non-Blocking Database Readiness Probe (`api-client.js`, `main.js`, `SystemController.cs`, `IDatabaseWarmupService.cs`, ADR-134)**:
     - **Non-Blocking Cloud Database Pre-Warming**:
-      - `apiClient.warmupDatabase()`: Issues a background `GET /api/system/warmup` probe on `initApp()` while HTML partials hydrate, triggering Azure SQL Serverless Free Tier instances to auto-resume from cold pause before user-facing requests are made.
-      - **Human-Presence Keep-Alive**: Triggers background warm-up on pointer/keyboard interaction when the user engages after 15+ minutes of inactivity, plus a 45-minute keep-alive interval while the browser tab remains active and visible, guaranteeing zero cold-start delay during user sessions without wasting monthly vCore-seconds.
+      - `apiClient.warmupDatabase()`: Issues a background `GET /api/system/warmup` readiness probe on `initApp()` while HTML partials hydrate. The deployed Azure SQL Basic DTU tier does not auto-pause; this probe does not change database compute capacity.
+      - **Human-Presence Keep-Alive**: Existing background probes on user interaction and while the tab remains active remain readiness checks; the current Basic DTU deployment has no serverless auto-pause behavior.
 
 16. **SuperAdmin Governance Console: Soft-Deleted Records Audit & User-Scoped Media Management (`admin-modal.html`, `admin-modal.js`, `admin-service.js`, `ADR-135`)**:
     - **SuperAdmin Deleted Records Audit Pane** (`admin-pane-deleted`): Dedicated audit tab enabled exclusively for SuperAdmin operators. Provides real-time visibility into soft-deleted entities across all models (`Meal`, `ProgressPhoto`, `User`).
