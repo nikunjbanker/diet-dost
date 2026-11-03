@@ -40,4 +40,12 @@ export class ProgressPhotosService {
   async getUserPhotos(userId) {
     return this._api.get('/api/progress-photos', { userId });
   }
+
+  /**
+   * Retrieve a protected progress photo as a binary response.
+   * @param {string} photoId
+   */
+  async getPhoto(photoId) {
+    return this._api.getBlob(`/api/media/progress/${encodeURIComponent(photoId)}`);
+  }
 }

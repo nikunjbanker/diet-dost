@@ -157,6 +157,7 @@ public sealed class MediaStreamingSecurityTests : IDisposable
         var responseHeaders = controller.Response.Headers;
         Assert.Equal("nosniff", responseHeaders["X-Content-Type-Options"].ToString());
         Assert.Contains("default-src 'none'", responseHeaders["Content-Security-Policy"].ToString());
+        Assert.Equal("private, no-store", responseHeaders["Cache-Control"].ToString());
     }
 
     [Fact]

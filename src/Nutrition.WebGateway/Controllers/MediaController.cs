@@ -100,7 +100,7 @@ public class MediaController : ControllerBase
 
         Response.Headers.Append("X-Content-Type-Options", "nosniff");
         Response.Headers.Append("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
-        Response.Headers.Append("Cache-Control", "private, max-age=3600");
+        Response.Headers.Append("Cache-Control", "private, no-store");
 
         return PhysicalFile(fullPath, contentType, enableRangeProcessing: true);
     }

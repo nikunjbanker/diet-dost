@@ -248,7 +248,8 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 * **Multi-Root Filesystem Probing**:
   - `MediaController` probes the SMB persistent volume mount (`_storageOptions.Value.WebRootPath`) before falling back to local `_env.ContentRootPath/wwwroot`, ensuring transparent file resolution across local debugging, Docker containers, and Azure Container Apps.
 * **Content Security & Browser Isolation**:
-  - Responses enforce strict headers: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`, and `Cache-Control: private, max-age=3600`.
+  - Responses enforce strict headers: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'`, and `Cache-Control: private, no-store`.
+  - Browser clients retrieve progress images through authenticated `fetch` requests and short-lived object URLs; bearer credentials remain in headers and sensitive image bytes are not retained in the HTTP cache.
   - Content-Type is resolved accurately by extension, including `.svg` (`image/svg+xml`), preventing content-sniffing and cross-site execution.
 * **IDOR & Soft-Delete Authorization**:
   - Photo ownership is verified against `User.FindFirstValue(ClaimTypes.NameIdentifier)`. Non-owners receive `403 Forbidden`.

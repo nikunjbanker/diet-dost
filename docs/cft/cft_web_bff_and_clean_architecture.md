@@ -86,6 +86,14 @@
 - [x] Verify gated premium buttons (`btn-open-body-modal`, comparison tabs) are hidden/disabled and export button (`btn-export-excel`) is disabled with opacity for Free and Basic users (Verified via Browser subagent).
 - [x] Verify zero console errors (`Uncaught TypeError`, `404 Not Found`) across all scenarios.
 
+### Protected Progress Photo Rendering (Desktop and Mobile Web)
+- [x] Sign in as `premium@dietdost.app` and verify dashboard face photos, face/body detail photos, and timeline gallery photos load at desktop (`1440x900`) and mobile (`390x844`) viewports.
+- [x] Assert protected media requests use the `Authorization` header; rendered personal-photo images use in-memory `blob:` URLs and have non-zero natural dimensions.
+- [x] Assert a cookie-less request without authorization returns `401`, the same request with a bearer header succeeds, and the media response uses `Cache-Control: private, no-store`.
+- [x] Confirm sign-out clears authentication and emits the event that revokes in-memory progress-photo URLs and clears image elements.
+- [x] Confirm no horizontal overflow in the tested viewports and preserve the existing media IDOR regression coverage.
+- [x] Run `node --experimental-default-type=module --test tests/progress_photo_client.test.mjs` and `dotnet test tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj --filter FullyQualifiedName~MediaStreamingSecurityTests --nologo`.
+
 ### Root SuperAdmin User Onboarding Governance
 - [x] Sign in as the configured root SuperAdmin and open **Admin Governance → Users → Edit** for a test user.
 - [x] Confirm **Onboarding Complete (Uncheck to Reset)** reflects the user's current state; save once checked and once unchecked.

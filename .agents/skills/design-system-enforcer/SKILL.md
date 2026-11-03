@@ -159,6 +159,12 @@ UI work must not accidentally change:
 
 Unless explicitly requested, keep UI changes behavior-preserving.
 
+### Protected progress imagery (Diet-Dost web)
+
+- Do not use a bare `<img src>` for authenticated personal media when authorization depends on a bearer header. Fetch through the authenticated API client and render a short-lived object URL.
+- Keep media authorization and ownership checks intact; never put bearer tokens in URLs or persist photo bytes in browser storage.
+- Revoke object URLs when media is replaced, the account/session changes, or authorization expires. Use `no-store` for sensitive image requests and responses.
+
 ## Responsive design
 
 Evaluate relevant viewport classes:

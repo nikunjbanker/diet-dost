@@ -32,8 +32,15 @@ export class ProgressModalController {
     this._authService = authService;
     this._state = appState;
     this._bus = eventBus;
+    this._photoObjectUrls = new Map();
+    this._pendingPhotoLoads = new Map();
+    this._photoOwnerId = null;
+    this._photoLoadVersion = 0;
 
     this._bindEvents();
+    window.addEventListener('auth:token_expired', () => this._setPhotoOwner(null));
+    window.addEventListener('auth:unauthorized', () => this._setPhotoOwner(null));
+    window.addEventListener('auth:logout', () => this._setPhotoOwner(null));
 
     // Listen for events
     this._bus.on('progress:open', (targetTab) => this.open(targetTab));
@@ -224,8 +231,93 @@ export class ProgressModalController {
 
   resolvePhotoUrl(photo) {
     if (!photo) return '/assets/placeholder-progress.svg';
-    if (photo.id) return `/api/media/progress/${encodeURIComponent(photo.id)}`;
+    if (photo.id) return this._photoObjectUrls.get(photo.id) || '/assets/placeholder-progress.svg';
     return photo.photoUri || '/assets/placeholder-progress.svg';
+  }
+
+  _clearPhotoObjectUrls() {
+    this._photoLoadVersion++;
+    this._photoObjectUrls.forEach(url => URL.revokeObjectURL(url));
+    this._photoObjectUrls.clear();
+    this._pendingPhotoLoads.clear();
+  }
+
+  _clearProgressPhotoElements() {
+    const placeholder = '/assets/placeholder-progress.svg';
+    const el = this.elements;
+    [
+      el.imgBaselineFace,
+      el.imgCurrentFace,
+      el.detailBaselineFaceImg,
+      el.detailCurrentFaceImg,
+      el.detailBaselineBodyImg,
+      el.detailCurrentBodyImg
+    ].forEach(img => {
+      if (img) img.src = placeholder;
+    });
+    el.timelineGalleryGrid?.replaceChildren();
+  }
+
+  _setPhotoOwner(ownerId) {
+    if (this._photoOwnerId === ownerId) return;
+    this._clearPhotoObjectUrls();
+    this._photoOwnerId = ownerId;
+    this._clearProgressPhotoElements();
+  }
+
+  async _getPhotoObjectUrl(photo) {
+    if (!photo?.id) return photo?.photoUri || '/assets/placeholder-progress.svg';
+
+    const cachedUrl = this._photoObjectUrls.get(photo.id);
+    if (cachedUrl) return cachedUrl;
+
+    const pendingRequest = this._pendingPhotoLoads.get(photo.id);
+    if (pendingRequest) return pendingRequest;
+
+    const loadVersion = this._photoLoadVersion;
+    let request;
+    request = this._progress.getPhoto(photo.id)
+      .then(blob => {
+        if (loadVersion !== this._photoLoadVersion) return null;
+        const objectUrl = URL.createObjectURL(blob);
+        this._photoObjectUrls.set(photo.id, objectUrl);
+        return objectUrl;
+      })
+      .finally(() => {
+        if (this._pendingPhotoLoads.get(photo.id) === request) {
+          this._pendingPhotoLoads.delete(photo.id);
+        }
+      });
+    this._pendingPhotoLoads.set(photo.id, request);
+    return request;
+  }
+
+  async _preparePhotoObjectUrls(photos) {
+    const photosById = new Map();
+    photos.forEach(photo => {
+      if (photo?.id) photosById.set(photo.id, photo);
+    });
+
+    const entries = [...photosById.entries()];
+    const loadVersion = this._photoLoadVersion;
+    const results = await Promise.allSettled(
+      entries.map(([, photo]) => this._getPhotoObjectUrl(photo))
+    );
+
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`[ProgressModalController] Failed to load progress photo ${entries[index][0]}:`, result.reason);
+      }
+    });
+
+    if (loadVersion !== this._photoLoadVersion) return;
+
+    this._photoObjectUrls.forEach((url, photoId) => {
+      if (!photosById.has(photoId)) {
+        URL.revokeObjectURL(url);
+        this._photoObjectUrls.delete(photoId);
+      }
+    });
   }
 
   open(targetTab = 'pane-face-progress') {
@@ -365,6 +457,7 @@ export class ProgressModalController {
 
   async refresh(preloadedFlags = null) {
     const user = this._authService?.currentUser;
+    const ownerId = this._state.userId ?? null;
     const isCompareAllowed = preloadedFlags?.canComparePhotos !== undefined
       ? preloadedFlags.canComparePhotos
       : (user?.entitlements?.allowPhotoCompare ?? this._authService?.isAdmin() ?? true);
@@ -374,6 +467,7 @@ export class ProgressModalController {
     const el = this.elements;
 
     if (!isCompareAllowed) {
+      this._setPhotoOwner(null);
       if (faceGrid) faceGrid.style.display = 'none';
       if (el.btnOpenBody) {
         el.btnOpenBody.disabled = true;
@@ -411,6 +505,8 @@ export class ProgressModalController {
       return;
     }
 
+    this._setPhotoOwner(ownerId);
+
     if (faceGrid) faceGrid.style.display = 'grid';
     if (lockedOverlay) lockedOverlay.style.display = 'none';
     if (el.btnOpenBody) {
@@ -430,7 +526,7 @@ export class ProgressModalController {
     });
 
     try {
-      const data = await this._progress.getComparison(this._state.userId);
+      const data = await this._progress.getComparison(ownerId);
       if (!data) return;
 
       const el = this.elements;
@@ -438,6 +534,9 @@ export class ProgressModalController {
       const cf = data.currentFace;
       const bb = data.baselineFullBody;
       const cb = data.currentFullBody;
+      const allPhotos = data.allPhotos || [];
+      await this._preparePhotoObjectUrls([bf, cf, bb, cb, ...allPhotos].filter(Boolean));
+      if (ownerId !== this._photoOwnerId) return;
 
       const formatDate = (iso) => {
         if (!iso) return '';
@@ -446,16 +545,20 @@ export class ProgressModalController {
       };
 
       // Dashboard Face Card
-      if (bf && el.imgBaselineFace) {
+      if (el.imgBaselineFace) {
         delete el.imgBaselineFace.dataset.hasFallback;
         el.imgBaselineFace.src = this.resolvePhotoUrl(bf);
+      }
+      if (bf) {
         if (el.txtBaselineDate) el.txtBaselineDate.textContent = `Baseline (${formatDate(bf.capturedAtUtc)})`;
         if (el.txtBaselineWeight) el.txtBaselineWeight.textContent = `${bf.weightKg.toFixed(1)} kg`;
       }
 
-      if (cf && el.imgCurrentFace) {
+      if (el.imgCurrentFace) {
         delete el.imgCurrentFace.dataset.hasFallback;
         el.imgCurrentFace.src = this.resolvePhotoUrl(cf);
+      }
+      if (cf) {
         if (el.txtCurrentDate) el.txtCurrentDate.textContent = `Latest (${formatDate(cf.capturedAtUtc)})`;
         if (el.txtCurrentWeight) {
           const deltaStr = data.weightDeltaKg < 0 ? `▼ ${Math.abs(data.weightDeltaKg)} kg` : `+${data.weightDeltaKg} kg`;
@@ -477,35 +580,43 @@ export class ProgressModalController {
       }
 
       // Modal Detail Face
-      if (bf && el.detailBaselineFaceImg) {
+      if (el.detailBaselineFaceImg) {
         delete el.detailBaselineFaceImg.dataset.hasFallback;
         el.detailBaselineFaceImg.src = this.resolvePhotoUrl(bf);
+      }
+      if (bf) {
         if (el.detailBaselineFaceDate) el.detailBaselineFaceDate.textContent = `Day 1 (${formatDate(bf.capturedAtUtc)})`;
         if (el.detailBaselineFaceWeight) el.detailBaselineFaceWeight.textContent = `${bf.weightKg.toFixed(1)} kg`;
       }
-      if (cf && el.detailCurrentFaceImg) {
+      if (el.detailCurrentFaceImg) {
         delete el.detailCurrentFaceImg.dataset.hasFallback;
         el.detailCurrentFaceImg.src = this.resolvePhotoUrl(cf);
+      }
+      if (cf) {
         if (el.detailCurrentFaceDate) el.detailCurrentFaceDate.textContent = `Day ${data.daysElapsed} (${formatDate(cf.capturedAtUtc)})`;
         if (el.detailCurrentFaceWeight) el.detailCurrentFaceWeight.textContent = `${cf.weightKg.toFixed(1)} kg (▼ ${Math.abs(data.weightDeltaKg)} kg)`;
       }
 
       // Modal Detail Full Body
-      if (bb && el.detailBaselineBodyImg) {
+      if (el.detailBaselineBodyImg) {
         delete el.detailBaselineBodyImg.dataset.hasFallback;
         el.detailBaselineBodyImg.src = this.resolvePhotoUrl(bb);
+      }
+      if (bb) {
         if (el.detailBaselineBodyDate) el.detailBaselineBodyDate.textContent = `Day 1 (${formatDate(bb.capturedAtUtc)})`;
         if (el.detailBaselineBodyWeight) el.detailBaselineBodyWeight.textContent = `${bb.weightKg.toFixed(1)} kg`;
       }
-      if (cb && el.detailCurrentBodyImg) {
+      if (el.detailCurrentBodyImg) {
         delete el.detailCurrentBodyImg.dataset.hasFallback;
         el.detailCurrentBodyImg.src = this.resolvePhotoUrl(cb);
+      }
+      if (cb) {
         if (el.detailCurrentBodyDate) el.detailCurrentBodyDate.textContent = `Day ${data.daysElapsed} (${formatDate(cb.capturedAtUtc)})`;
         if (el.detailCurrentBodyWeight) el.detailCurrentBodyWeight.textContent = `${cb.weightKg.toFixed(1)} kg (▼ ${Math.abs(data.weightDeltaKg)} kg)`;
       }
 
       // Timeline Gallery
-      this.renderTimelineGallery(data.allPhotos || []);
+      this.renderTimelineGallery(allPhotos);
     } catch (err) {
       console.error('[ProgressModalController] Failed to refresh:', err);
     }

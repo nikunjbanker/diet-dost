@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-02T12:05:06.628059+00:00",
-  "totalAdrs": 122,
+  "generatedAt": "2026-11-03T09:01:06.103667+00:00",
+  "totalAdrs": 123,
   "categoryCounts": {
     "architecture": 39,
     "security": 26,
     "devops": 28,
-    "presentation": 16,
+    "presentation": 17,
     "governance": 13
   },
   "records": [
@@ -1473,6 +1473,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261102-157-root-superadmin-onboarding-governance.md",
       "relativePath": "docs/adr/security/ADR-20261102-157-root-superadmin-onboarding-governance.md"
+    },
+    {
+      "id": "ADR-158",
+      "number": 158,
+      "title": "Authenticated Progress Photo Rendering Without URL Tokens",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-11-03",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261103-158-authenticated-progress-photo-rendering.md",
+      "relativePath": "docs/adr/presentation/ADR-20261103-158-authenticated-progress-photo-rendering.md"
     }
   ]
 }
