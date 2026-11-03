@@ -1,9 +1,9 @@
 // Copyright (c) 2026 diet-dost and/or its contributors.
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
-import { spawn } from 'child_process';
 import { existsSync, writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
+import { launchBrowserWithCdp } from './helpers/browser-cdp.mjs';
 
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
@@ -71,36 +71,14 @@ async function main() {
 
     // 1. Launch Headless Edge with remote debugging
     console.log('[1/6] Launching headless Edge browser on port ' + PORT + '...');
-    const edgeProc = spawn(EDGE_PATH, [
-        '--headless=new',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        `--remote-debugging-port=${PORT}`,
-        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-default-browser-check',
-        'about:blank'
-    ]);
-
-    edgeProc.stderr.on('data', () => {});
-    await sleep(2000);
+    const { browserProcess: edgeProc } = await launchBrowserWithCdp({
+        browserPath: EDGE_PATH,
+        port: PORT,
+        userDataDirectory: `${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`
+    });
 
     let ws = null;
     try {
-        let versionData = null;
-    for (let i = 0; i < 20; i++) {
-        try {
-            const versionRes = await fetch(`http://127.0.0.1:${PORT}/json/version`);
-            if (versionRes.ok) {
-                versionData = await versionRes.json();
-                break;
-            }
-        } catch {
-            await sleep(500);
-        }
-    }
-    if (!versionData) throw new Error('Could not connect to Edge DevTools port ' + PORT);
     console.log('[2/6] Opening target application on http://localhost:5240/...');
     const newPageRes = await fetch(`http://127.0.0.1:${PORT}/json/new?${encodeURIComponent(BASE_URL)}`, { method: 'PUT' });
     const pageData = await newPageRes.json();

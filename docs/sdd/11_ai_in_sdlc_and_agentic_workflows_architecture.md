@@ -7,7 +7,7 @@
 -->
 
 # AI in SDLC & Agentic Workflows Architecture Specification
-> **Specification Version**: `v1.6.0 (Production & Living SDD)`  
+> **Specification Version**: `v1.7.0 (Production & Living SDD)`
 > **Classification**: Solution Architecture, Engineering Lifecycles & Governance Standard  
 > **Approved Domain Focus**: SDLC vs. AI SDLC vs. Agentic SDLC, Role Evolution, DevSecOps & Closed-Loop Workflows  
 > **Target Framework**: .NET 11, .NET Aspire 13.5.4, OpenTelemetry, GitHub Actions, OWASP Top 10 for LLM  
@@ -306,6 +306,8 @@ if (result.OverallConfidenceScore < 0.70)
 ```
 If an image is dark or blurry (`FIX-03`), the model defers rather than hallucinating nutrients, prompting the user to retake the photo.
 
+Browser-driven CFTs share `tests/helpers/browser-cdp.mjs` for headless Chrome startup. The helper waits up to 30 seconds for the loopback DevTools endpoint, checks for premature process exit, and includes bounded browser stderr in startup failures. This avoids treating a cold-runner startup delay as a product failure while keeping the Tier 4 pass-rate gate strict.
+
 ### 4.5 Section Conclusion
 Phase 3 establishes an empirical, multi-layered quality gate. By combining disjoint synthetic data governance with live multi-tier acceptance testing and browser UI verification, Diet-Dost ensures that both deterministic and probabilistic components perform reliably.
 
@@ -585,6 +587,7 @@ graph TD
 | `v1.4.0` | 2026-10-14 | Living Evolution Mandate | Codified day-to-day trigger matrix (T-1 to T-7), living sync protocol, and AGENTS.md Rule 17. | Human Architect & AI Agent |
 | `v1.5.0` | 2026-10-14 | T-4 & T-5 (Quality & CI/CD Gating) | Established mandatory pre-deployment quality validation gates across all 4 tiers (Unit 90%, Integration 80%, System 75%, E2E 70%), dual deployment gating, and AGENTS.md Rule 23. | Human Architect & AI Agent |
 | `v1.6.0` | 2026-10-18 | T-2 & T-6 (Prompt Defenses, Structured Outputs, Diagram Alignment & GenAI OTel Observability) | Formalized adversarial agentic alignment (Anthropic/MS/OpenAI), JSON schema structured outputs, resilient AiJsonParser fast-path, 259-test diagram synchronization, and CNCF OpenTelemetry GenAI token telemetry across Gemini and Azure OpenAI (ADR-113). | Human Architect & AI Agent |
+| `v1.7.0` | 2026-11-04 | T-4 (Live CFT Browser Reliability) | Unified headless browser startup across CFT suites with a bounded 30-second CDP readiness wait, premature-exit detection, and captured startup diagnostics (ADR-159). | Human Architect & AI Agent |
 
 ---
 
