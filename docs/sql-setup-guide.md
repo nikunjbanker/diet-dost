@@ -6,21 +6,20 @@
   License v3.0 only" or the "Server Side Public License, v 1".
 -->
 
-# Diet-Dost: Azure SQL Database Serverless (Free Tier) Setup & Operations Guide
+# Diet-Dost: Azure SQL Database Basic DTU Setup & Operations Guide
 
-This guide provides the authoritative architecture, Infrastructure-as-Code (Bicep) automation, security boundaries, and local developer workstation procedures for running Diet-Dost on **Azure SQL Database Serverless Free Tier**.
+This guide provides the authoritative architecture, Infrastructure-as-Code (Bicep) automation, security boundaries, and local developer workstation procedures for running Diet-Dost on **Azure SQL Database Basic DTU**.
 
 ---
 
-## 1. Architectural Summary & Free Tier Quotas
+## 1. Architectural Summary & Basic DTU Limits
 
-Microsoft Azure provides a permanent free grant for Azure SQL Database Serverless under the following parameters:
-- **Compute Tier**: General Purpose Serverless Gen5 (`GP_S_Gen5_1`).
-- **Free Allowance**: **100,000 vCore-seconds per month** free for the lifetime of the Azure subscription.
-- **Storage Limit**: **32 GB** included at $0 cost.
-- **Auto-Pause Delay**: 60 minutes of inactivity. When paused, compute charges are **$0.00**.
-- **Free Limit Exhaustion Behavior**: Configured to `'AutoPause'`, which prevents any unmetered cloud billing if the 100k vCore-second threshold is reached within a billing cycle.
-- **Quota Rule**: Exactly **1 free Azure SQL database** is permitted per Azure subscription.
+The deployment uses the DTU purchasing model with a fixed **Basic** service objective:
+- **Compute Tier**: Basic DTU (`Basic` service objective), **5 DTUs**.
+- **Storage Limit**: **2 GB maximum** database size.
+- **Billing Model**: Provisioned DTU tier; it does not use vCore-based serverless compute, auto-pause, or a free-quota exhaustion mode.
+- **Existing Database Changes**: The next Bicep deployment applies the Basic SKU to an existing database as well. Back up the database and verify its current allocated/used size is compatible with the 2 GB maximum before deployment.
+- **Authoritative Limits**: [Microsoft Learn: Azure SQL DTU single-database resource limits](https://learn.microsoft.com/azure/azure-sql/database/resource-limits-dtu-single-databases?view=azuresql#single-database-storage-sizes-and-compute-sizes).
 
 ---
 
@@ -46,7 +45,7 @@ flowchart TD
         subgraph SQLBoundary ["Azure SQL Logical Server (sql-dietdost-dev)"]
             VNET_RULE["VNet Rule: allow-aca-subnet"]
             FW_RULE["Firewall Rule: LocalDevWorkstationIP"]
-            DB[("dietdost (GP_S_Gen5_1 Serverless Free)")]
+            DB[("dietdost (Basic DTU, 5 DTUs / 2 GB max)")]
         end
 
         subgraph SecretVault ["Azure Key Vault (kvdostdev)"]
@@ -81,10 +80,10 @@ flowchart TD
 
 | File | Subsystem Role | Key Parameters & Safe Defaults |
 | :--- | :--- | :--- |
-| [`infra/dev/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep) | Dedicated SQL Serverless Free Tier Module | Provisions logical server, `GP_S_Gen5_1` free database (`useFreeLimit: true`), VNet rule, firewall rules, and Key Vault secrets. |
+| [`infra/dev/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep) | Dedicated SQL Basic DTU Module | Provisions logical server, `Basic` DTU database (5 DTUs, 2 GB maximum), VNet rule, firewall rules, and Key Vault secrets. |
 | [`infra/dev/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) | Foundation Infrastructure | Adds `Microsoft.Sql` service endpoint to `acaSubnet`, `Allow-SQL-Outbound` NSG rule, and conditionally invokes `sql.bicep` when `deployAzureSql == true`. |
 | [`infra/dev/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) | Workload Container App | Maps Key Vault secret reference `azure-sql-connection-string` into `ConnectionStrings__AzureSqlConnection`. |
-| [`infra/dev/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep) | Composite Deployment | Default `deployAzureSql = false`. Requires explicit parameter override to enable. |
+| [`infra/dev/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep) | Composite Deployment | Defaults `deployAzureSql = true` and provisions the Basic DTU database unless explicitly disabled. |
 
 ---
 
@@ -96,15 +95,15 @@ flowchart TD
 2. Navigate to **Actions** $\to$ **Aspire - Provision Azure Infrastructure** (`azure-infra-deploy.yml`).
 3. Click **Run workflow** and configure inputs:
    - **Target environment**: `dev`
-   - **Deploy Azure SQL Database Serverless Free Tier**: Check `true` (default: `false`).
+   - **Deploy Azure SQL Database Basic DTU**: Check `true` (default: `true`).
    - **SQL Server Administrator login username**: `sqladmin`
    - **Optional developer workstation client IP**: (Optional: provide public IP for immediate workstation access).
 4. Run the workflow. Upon completion:
-   - SQL Server and Free Database are provisioned.
+   - SQL Server and Basic DTU database (5 DTUs, 2 GB maximum) are provisioned.
    - VNet rules and Service Endpoints are active.
    - Key Vault secret `azure-sql-connection-string` is written.
 5. Run **Aspire - Deploy Application Workload** (`azure-app-deploy.yml`) with:
-   - **Persistence database provider**: `AzureSql` (default: `Sqlite`).
+   - **Persistence database provider**: `AzureSql` (default: `AzureSql`).
 
 ### Method B: Manual Deployment via Azure CLI
 
@@ -175,18 +174,16 @@ dotnet user-secrets set "Database:Provider" "Sqlite"
 - **Username**: `sqladmin`
 - **Password**: *(retrieved from Key Vault secret `sql-admin-password`)*
 - **Encryption**: `Mandatory` (`Trust Server Certificate: False`)
-- **Connection Timeout**: `60` seconds *(critical for cold-start auto-pause resumes)*
+- **Connection Timeout**: `60` seconds *(allows for transient connection and startup delays)*
 
 ---
 
-## 6. Cold-Start Wake-Up & Transient Handling (Error 40613)
+## 6. Transient Connection Handling
 
-### The Cold-Start Challenge
-When compute is paused after 60 minutes of inactivity, incoming connection attempts cause Azure SQL to resume compute. Resuming compute takes between **15 and 45 seconds**. During this resumption window, incoming connections receive SQL error code **40613**:
-> *"Database 'dietdost' on server '...' is not currently available. Please retry the connection later."*
+Basic DTU is a provisioned compute tier and does not auto-pause. The application still tolerates transient SQL connectivity failures; serverless-specific auto-resume behavior is not part of this deployment configuration.
 
 ### Application Safeguards
-1. **60-Second Connection Timeout**: ADO.NET defaults to 15 seconds, which causes socket timeout before resumption finishes. `StorageInfrastructureExtensions` automatically inspects and enforces a minimum **60-second `ConnectTimeout`**.
+1. **60-Second Connection Timeout**: `StorageInfrastructureExtensions` enforces a minimum **60-second `ConnectTimeout`** to tolerate transient connection delays.
 2. **Execution Retry Strategy**: EF Core is configured with:
    ```csharp
    sqlOpts.EnableRetryOnFailure(
@@ -195,7 +192,7 @@ When compute is paused after 60 minutes of inactivity, incoming connection attem
        errorNumbersToAdd: new[] { 40613 });
    sqlOpts.CommandTimeout(60);
    ```
-3. **Container App Health Probe Tolerance**: ACA startup and readiness probes (`/healthz` and `/ready`) in `app.bicep` are configured with a failure threshold of 30 checks $\times$ 5 seconds = 150 seconds, preventing ACA from terminating the container while the database wakes up.
+3. **Container App Health Probe Tolerance**: ACA startup and readiness probes (`/healthz` and `/ready`) in `app.bicep` allow bounded time for database initialization and transient connectivity recovery.
 
 ---
 
@@ -259,4 +256,3 @@ dotnet run --project src/Nutrition.Tools.DataMigrator -- `
   --mode Upsert `
   --ensure-schema
 ```
-

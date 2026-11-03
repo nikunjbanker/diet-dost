@@ -53,7 +53,7 @@ param databaseProvider string = 'AzureSql'
 @secure()
 param azureSqlConnectionString string = ''
 
-@description('Flag indicating whether Azure SQL Database Serverless Free Tier should be provisioned (default true for AzureSql database provider).')
+@description('Flag indicating whether the Azure SQL Basic DTU database should be provisioned (default true for AzureSql database provider).')
 param deployAzureSql bool = true
 
 @description('Optional explicit name for Azure SQL Server. If omitted, a unique name is derived.')

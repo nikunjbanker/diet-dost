@@ -75,8 +75,35 @@ public class AdversarialAndSecurityRemediationTests
         var bicepPath = Path.Combine(GetRepoRoot(), "infra", "dev", "sql.bicep");
         var content = File.ReadAllText(bicepPath);
 
-        // Assert output serverlessConnectionString is removed to prevent plaintext password leakage into deployment history
+        // Assert the plaintext connection string output is removed from deployment history.
         Assert.DoesNotContain("output serverlessConnectionString", content);
+    }
+
+    [Fact]
+    public void SqlBicep_ProvisionsBasicDtuTier_AndExcludesServerlessConfiguration()
+    {
+        var repoRoot = GetRepoRoot();
+        var bicepPath = Path.Combine(repoRoot, "infra", "dev", "sql.bicep");
+        var content = File.ReadAllText(bicepPath);
+
+        Assert.Matches(@"sku:\s*\{\s*name:\s*'Basic'\s*tier:\s*'Basic'\s*capacity:\s*5\s*\}", content);
+        Assert.Contains("maxSizeBytes: 2147483648", content);
+        Assert.DoesNotContain("GP_S_Gen5_1", content);
+        Assert.DoesNotContain("GeneralPurpose", content);
+        Assert.DoesNotContain("Serverless", content);
+        Assert.DoesNotContain("autoPauseDelay", content);
+        Assert.DoesNotContain("minCapacity", content);
+        Assert.DoesNotContain("useFreeLimit", content);
+        Assert.DoesNotContain("freeLimitExhaustionBehavior", content);
+
+        var workflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-infra-deploy.yml");
+        var workflow = File.ReadAllText(workflowPath);
+        Assert.Contains("Azure SQL Database Basic DTU", workflow);
+        Assert.DoesNotContain("GP_S_Gen5_1", workflow);
+
+        var appWorkflowPath = Path.Combine(repoRoot, ".github", "workflows", "azure-app-deploy.yml");
+        var appWorkflow = File.ReadAllText(appWorkflowPath);
+        Assert.Contains("AzureSql tier: Basic DTU (5 DTUs, 2 GB max)", appWorkflow);
     }
 
     [Fact]

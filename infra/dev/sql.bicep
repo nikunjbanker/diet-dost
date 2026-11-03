@@ -5,8 +5,8 @@
 // in compliance with, at your election, the "GNU Affero General Public
 // License v3.0 only" or the "Server Side Public License, v 1".
 // ==============================================================================
-// Diet-Dost Azure SQL Database Serverless (Free Tier) Module
-// Provides: Logical Server + Serverless Free Database + VNet Service Endpoint Rule
+// Diet-Dost Azure SQL Database Basic DTU Module
+// Provides: Logical Server + Basic DTU Database + VNet Service Endpoint Rule
 //           + Developer Firewall Rule + Key Vault Secret Persistence
 // ==============================================================================
 
@@ -38,12 +38,6 @@ param keyVaultName string
 @description('Optional client IP address of the local developer workstation to allow through SQL Server firewall.')
 param allowedClientIp string = ''
 
-@description('Enables Azure SQL Free Tier. Set to false if database has been upgraded or uses metered billing.')
-param useFreeLimit bool = false
-
-@description('Behavior when free quota is consumed (AutoPause, BillOverUsage).')
-param freeLimitExhaustionBehavior string = 'BillOverUsage'
-
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var actualSqlServerName = !empty(sqlServerName) ? toLower(sqlServerName) : take('sql-dietdost-${environment}-${uniqueSuffix}', 63)
 
@@ -68,26 +62,21 @@ resource sqlServer 'Microsoft.Sql/servers@2023-08-01-preview' = {
 }
 
 // ------------------------------------------------------------------------------
-// 2. Azure SQL Database - GeneralPurpose Serverless Free Tier
-// Features: 100,000 vCore-seconds/mo free, 32 GB storage limit, auto-pause after 60m
+// 2. Azure SQL Database - Basic DTU
+// Features: 5 DTUs and a 2 GB maximum database size
 // ------------------------------------------------------------------------------
 resource sqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: sqlServer
   name: databaseName
   location: location
   sku: {
-    name: 'GP_S_Gen5_1'
-    tier: 'GeneralPurpose'
-    family: 'Gen5'
-    capacity: 1
+    name: 'Basic'
+    tier: 'Basic'
+    capacity: 5
   }
   properties: {
     collation: 'SQL_Latin1_General_CP1_CI_AS'
-    maxSizeBytes: 34359738368 // 32 GB (Free Tier quota ceiling)
-    autoPauseDelay: 60 // Auto-pause after 60 minutes of inactivity
-    minCapacity: json('0.5') // Minimum serverless compute capacity
-    useFreeLimit: useFreeLimit // Configurable Azure SQL Free Tier toggle
-    freeLimitExhaustionBehavior: freeLimitExhaustionBehavior // Configurable quota exhaustion behavior (AutoPause, BillOverUsage)
+    maxSizeBytes: 2147483648 // 2 GB (Azure SQL Basic DTU maximum)
   }
   tags: {
     'aspire-resource-name': 'dietdost-sqldb'

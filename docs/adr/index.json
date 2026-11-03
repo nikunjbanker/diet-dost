@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-03T18:56:00.315714+00:00",
-  "totalAdrs": 124,
+  "generatedAt": "2026-11-03T19:26:42.152344+00:00",
+  "totalAdrs": 125,
   "categoryCounts": {
     "architecture": 39,
     "security": 26,
-    "devops": 29,
+    "devops": 30,
     "presentation": 17,
     "governance": 13
   },
@@ -1497,6 +1497,18 @@
       "subsystem": "CI/CD, Quality Test Harness",
       "filename": "ADR-20261104-159-resilient-cft-browser-startup.md",
       "relativePath": "docs/adr/devops/ADR-20261104-159-resilient-cft-browser-startup.md"
+    },
+    {
+      "id": "ADR-160",
+      "number": 160,
+      "title": "Azure SQL Basic DTU Cost Guardrail",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEFECT_FIX]",
+      "date": "2026-11-04T00:43:23+05:30",
+      "subsystem": "Infrastructure, CI/CD, Database",
+      "filename": "ADR-20261104-160-azure-sql-basic-dtu-cost-guardrail.md",
+      "relativePath": "docs/adr/devops/ADR-20261104-160-azure-sql-basic-dtu-cost-guardrail.md"
     }
   ]
 }

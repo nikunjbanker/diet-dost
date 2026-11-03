@@ -558,6 +558,11 @@ graph TD
   11. **Post-Deployment Verification**: Asserts container revision health and queries active default Azure Ingress FQDN.
   12. **Resilient Custom Domain & Managed TLS (Step 11b)**: When `enableCustomDomain: true`, checks public DNS for CNAME resolution. If verified, calls `az containerapp hostname add` and `hostname bind` to provision free Managed Certificate with SNI; if DNS has not yet propagated, emits registrar CNAME/TXT instructions to `$GITHUB_STEP_SUMMARY` without failing the deployment.
 
+### Azure SQL SKU Cost Guardrail
+- Azure SQL deployments must use the Basic DTU service objective (`Basic`, 5 DTUs) with a 2 GB maximum database size in `infra/<env>/sql.bicep`.
+- Do not configure General Purpose Serverless SKUs, vCore capacity, auto-pause, or free-limit exhaustion properties for the deployed SQL database.
+- The application and infrastructure workflows must identify the Basic DTU tier in their summaries. Bicep applies this SKU to existing databases on the next deployment; operators must back up the database and verify the 2 GB limit before deploying.
+
 ---
 
 ## 8. Verification & Operational Health Check
@@ -595,4 +600,3 @@ Whenever making architectural, deployment, or infrastructure changes:
    pwsh -File scripts/sync-adr-index.ps1
    ```
 3. Verify `docs/adr/index.json` and `docs/adr/README.md` are updated with 0 errors.
-
