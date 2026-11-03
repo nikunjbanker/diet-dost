@@ -1,9 +1,9 @@
 // Copyright (c) 2026 diet-dost and/or its contributors.
 // Licensed under the "GNU Affero General Public License v3.0 only" and "Server Side Public License, v 1".
 
-import { spawn } from 'child_process';
 import { existsSync, writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
+import { launchBrowserWithCdp } from './helpers/browser-cdp.mjs';
 
 const EDGE_PATH = process.env.BROWSER_PATH || process.env.CHROME_PATH || (process.platform === 'win32'
     ? 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe'
@@ -55,37 +55,11 @@ async function main() {
 
     // 1. Launch Headless Edge with remote debugging
     console.log('[1/5] Launching headless browser on port ' + PORT + '...');
-    const edgeProc = spawn(EDGE_PATH, [
-        '--headless=new',
-        '--no-sandbox',
-        '--disable-dev-shm-usage',
-        `--remote-debugging-port=${PORT}`,
-        `--user-data-dir=${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`,
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-default-browser-check',
-        'about:blank'
-    ]);
-
-    edgeProc.stderr.on('data', () => {}); // silence noise
-
-    // Wait for CDP to be available
-    let versionData = null;
-    for (let i = 0; i < 20; i++) {
-        await sleep(500);
-        try {
-            const res = await fetch(`http://127.0.0.1:${PORT}/json/version`);
-            if (res.ok) {
-                versionData = await res.json();
-                break;
-            }
-        } catch {}
-    }
-
-    if (!versionData) {
-        edgeProc.kill();
-        throw new Error('Failed to connect to browser CDP');
-    }
+    const { browserProcess: edgeProc, versionData } = await launchBrowserWithCdp({
+        browserPath: EDGE_PATH,
+        port: PORT,
+        userDataDirectory: `${(process.env.TEMP || process.env.TMPDIR || '/tmp')}/edge_cft_${Date.now()}`
+    });
     console.log('   Browser CDP Connected: ' + versionData.Browser);
 
     // 2. Open new target page

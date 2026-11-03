@@ -131,6 +131,15 @@ graph TD
 - **Scope**: Aggregates results from all 7 security scanners and publishes a standardized markdown summary on the Pull Request.
 - **Condition**: Asserts that `gitleaks`, `eslint`, `securitycodescan`, `trivy`, `checkov`, `actionlint`, and `ai-security-defense` all exited with code 0.
 
+### 2.9 Quality Gate Browser CFT Startup
+- **Scope**: Tier 4 browser acceptance scripts use the shared `tests/helpers/browser-cdp.mjs` launcher.
+- **Startup Contract**: The launcher polls the loopback DevTools endpoint for up to 30 seconds, exits early if Chrome fails to spawn or terminates, and includes the last connection error plus bounded browser stderr in failures.
+- **Local Verification**:
+  ```bash
+  node --experimental-default-type=module --test tests/browser_cdp.test.mjs
+  ```
+- **Gate Policy**: Browser startup retries do not skip suites or relax the configured pass-rate threshold; unavailable browsers still fail with actionable diagnostics.
+
 ---
 
 ## 3. Vulnerability Triage & Policy Governance (`SECURITY.md`)
