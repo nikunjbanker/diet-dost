@@ -70,6 +70,7 @@ export class AuthService {
     } finally {
       localStorage.removeItem('dd_jwt_token');
       this.currentUser = null;
+      window.dispatchEvent(new Event('auth:logout'));
     }
   }
 
@@ -77,6 +78,7 @@ export class AuthService {
     const res = await this.api.post('/api/auth/delete-account', {});
     localStorage.removeItem('dd_jwt_token');
     this.currentUser = null;
+    window.dispatchEvent(new Event('auth:logout'));
     return res;
   }
 

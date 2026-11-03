@@ -103,6 +103,7 @@ export default [
         setInterval: "readonly",
         clearInterval: "readonly",
         fetch: "readonly",
+        Response: "readonly",
         URL: "readonly",
         URLSearchParams: "readonly",
         WebSocket: "readonly",

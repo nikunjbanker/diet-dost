@@ -54,6 +54,29 @@ export class ApiClient {
   }
 
   /**
+   * Retrieve an authenticated binary response without storing sensitive content in the HTTP cache.
+   * @param {string} url
+   * @returns {Promise<Blob>}
+   */
+  async getBlob(url) {
+    const res = await fetch(`${this.baseUrl}${url}`, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: {
+        'Accept': 'application/octet-stream',
+        ...this._getAuthHeaders()
+      }
+    });
+
+    if (!res.ok) {
+      return this._handleResponse(res);
+    }
+
+    return res.blob();
+  }
+
+  /**
    * Retrieves the composite web dashboard payload in a single HTTP roundtrip.
    * Invokes GET /api/web/v1/dashboard?period=${period}
    * Concurrently aggregated by the backend Web BFF controller across isolated DI scopes.

@@ -12,7 +12,7 @@
 > **Classification**: Software Design Document (SDD) – Presentation & Web UI  
 > **Governing Design System**: [`DESIGN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/DESIGN.md) (Linear Obsidian Surface Ladder)  
 > **Architecture Pattern**: Native ES Modules, Zero-Bundler Vanilla JS, Component Partials, Web BFF Single-Roundtrip Hydration  
-> **Associated ADRs**: [`ADR-055`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261001-055-web-client-single-roundtrip-hydration.md), [`ADR-061`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md), [`ADR-065`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md), [`ADR-067`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md), [`ADR-114`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md), [`ADR-128`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md), [`ADR-133`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md), [`ADR-135`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md)  
+> **Associated ADRs**: [`ADR-055`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261001-055-web-client-single-roundtrip-hydration.md), [`ADR-061`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261002-061-responsive-ui-layout-and-mobile-bottom-navigation.md), [`ADR-065`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-065-mobile-user-signout-and-meal-logger-ergonomics.md), [`ADR-067`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261003-067-universal-mobile-modal-ergonomics-and-ai-nutrition-recalculation.md), [`ADR-114`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261018-114-diet-dost-brand-icon-and-loading-experience.md), [`ADR-128`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261024-128-daily-view-isolation-and-yearly-view-removal.md), [`ADR-133`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261025-133-futuristic-bio-telemetry-mobile-navigation-and-biometrics.md), [`ADR-135`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261025-135-user-scoped-uploads-and-soft-delete-architecture.md), [`ADR-158`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261103-158-authenticated-progress-photo-rendering.md)
 > **Relevant CFTs**: [`cft_web_bff_and_clean_architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_web_bff_and_clean_architecture.md), [`cft_responsive_web_and_tablet.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_responsive_web_and_tablet.md), [`cft_mobile_mvp_cross_platform.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/cft/cft_mobile_mvp_cross_platform.md)  
 
 ---
@@ -303,18 +303,22 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
   - One-click `Complete Profile ➔` button immediately re-opens the onboarding modal, ensuring compliance with ICMR-NIN 2024 Zero-Assumption requirements.
 
 
-## 18. Face & Body Progress Photo Hydration & Authorized Media Streaming (`ADR-154`)
+## 18. Face & Body Progress Photo Hydration & Authorized Media Streaming (`ADR-154`, `ADR-158`)
 
-* **Authorized Streaming Media Resolution (`progress-modal.js`)**:
-  - `resolvePhotoUrl(photo)` helper inspects photo objects and IDs, routing image requests to `/api/media/progress/{id}`.
-  - Transparently maps photo IDs, relative paths, and legacy demo assets.
-  - Updates `#img-baseline-face` and `#img-current-face` on `#face-progress-card` during composite dashboard hydration.
+* **Authenticated Binary Retrieval (`api-client.js`, `progress-service.js`)**:
+  - `ApiClient.getBlob()` sends the stored bearer token in the `Authorization` header, includes same-origin session cookies, and requests `cache: 'no-store'`.
+  - `ProgressPhotosService.getPhoto(id)` retrieves each protected image from `/api/media/progress/{id}`. Bearer tokens must never be embedded in media URLs.
+* **In-Memory Image Rendering (`progress-modal.js`)**:
+  - Dashboard, face/body detail, and timeline images use short-lived object URLs created from authenticated response blobs; the DOM never points directly at a protected media endpoint.
+  - URLs are reused per photo ID, revoked when photos are removed, the account/session changes, the user signs out, or authorization expires.
+  - Failed media requests are logged and render only the existing neutral placeholder; they do not bypass media authorization.
+* **Private Media Response Caching (`MediaController.cs`)**:
+  - The authenticated endpoint retains owner/Admin authorization and returns `Cache-Control: private, no-store`, preventing browser caches from reusing sensitive response bytes.
 * **Resilient Image Error Handling (`main.js`)**:
   - Global `error` event listener checks if image source contains `placeholder-` before applying fallback placeholders (`/assets/placeholder-progress.svg` or `/assets/placeholder-meal.svg`).
-  - Clears `dataset.hasFallback` when fresh progress photo URLs are injected by `progressModalController.updateComparisonView()`, preventing permanent fallback lock-in.
+  - Clears `dataset.hasFallback` when fresh progress photo objects are injected, preventing permanent fallback lock-in.
 * **Timeline Gallery & Detail Lightbox Hydration**:
-  - Timeline cards dynamically display progress photo thumbnails streamed through authenticated media endpoints.
-  - Comparison slider and detailed DEXA body inspection views hydrate high-resolution photos seamlessly with zero CORS or static file 403 blocks.
+  - Timeline cards, dashboard comparison cards, and detailed DEXA/body views share the same authenticated object URL and lightbox source.
 
 ## 19. Explicit Onboarding State & Zero-Assumption Intake Modal Modernization (`ADR-155`)
 
