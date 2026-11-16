@@ -5,16 +5,13 @@
 # in compliance with, at your election, the "GNU Affero General Public
 # License v3.0 only" or the "Server Side Public License, v 1".
 # ==============================================================================
-# GitHub Actions: Automated Release Lifecycle, Semantic Tagging & Azure Deployment
-# Auto-triggers on merge to main with Conventional Commits semantic bump detection
+# GitHub Actions: Release Orchestrator & ACA Deployment
+# Strictly On-Demand (workflow_dispatch only) with Mandatory nikunjbanker Actor Gating
 # ==============================================================================
 
-name: Automated Release & ACA Deployment on Merge
+name: Release Orchestrator & ACA Deployment
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       bumpType:
@@ -63,6 +60,7 @@ jobs:
   evaluate-and-tag:
     name: 'Stage 1: Evaluate & Cut Release Branch'
     runs-on: ubuntu-latest
+    if: github.actor == 'nikunjbanker'
     outputs:
       previous_tag: ${{ steps.calc.outputs.previous_tag }}
       new_tag: ${{ steps.calc.outputs.new_tag }}
@@ -156,6 +154,7 @@ jobs:
     needs: [evaluate-and-tag]
     if: |
       always() &&
+      github.actor == 'nikunjbanker' &&
       needs.evaluate-and-tag.result == 'success' &&
       needs.evaluate-and-tag.outputs.dry_run != 'true' &&
       needs.evaluate-and-tag.outputs.deploy_requested == 'true'
@@ -221,6 +220,7 @@ jobs:
     needs: [evaluate-and-tag, deploy-application]
     if: |
       always() &&
+      github.actor == 'nikunjbanker' &&
       needs.evaluate-and-tag.result == 'success' &&
       needs.evaluate-and-tag.outputs.dry_run != 'true' &&
       (needs.evaluate-and-tag.outputs.deploy_requested != 'true' || needs.deploy-application.result == 'success')

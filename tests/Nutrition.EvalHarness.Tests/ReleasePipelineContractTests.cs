@@ -58,9 +58,12 @@ public class ReleasePipelineContractTests
         Assert.True(File.Exists(workflowPath), $"Auto-release workflow missing at {workflowPath}");
         var content = File.ReadAllText(workflowPath);
 
-        // Assert triggers
-        Assert.Contains("branches:\n      - main", content.Replace("\r\n", "\n"));
+        // Assert triggers: strictly workflow_dispatch (manual dispatch by admin only, no push on main)
+        Assert.DoesNotContain("push:", content);
         Assert.Contains("workflow_dispatch:", content);
+
+        // Assert actor gating for nikunjbanker
+        Assert.Contains("github.actor == 'nikunjbanker'", content);
 
         // Assert jobs
         Assert.Contains("evaluate-and-tag:", content);

@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-16T12:29:32.713024+00:00",
-  "totalAdrs": 128,
+  "generatedAt": "2026-11-16T13:00:57.668074+00:00",
+  "totalAdrs": 129,
   "categoryCounts": {
     "architecture": 41,
     "security": 26,
-    "devops": 31,
+    "devops": 32,
     "presentation": 17,
     "governance": 13
   },
@@ -1545,6 +1545,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261116-162-cross-platform-timezone-resolution.md",
       "relativePath": "docs/adr/architecture/ADR-20261116-162-cross-platform-timezone-resolution.md"
+    },
+    {
+      "id": "ADR-163",
+      "number": 163,
+      "title": "Manual Release Dispatch Orchestration and Admin Actor Gating",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-16",
+      "subsystem": "Devops",
+      "filename": "ADR-20261116-163-manual-release-dispatch-and-actor-gating.md",
+      "relativePath": "docs/adr/devops/ADR-20261116-163-manual-release-dispatch-and-actor-gating.md"
     }
   ]
 }
