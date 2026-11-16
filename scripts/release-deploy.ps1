@@ -154,6 +154,16 @@ Write-Host "  Calculated Release Branch: $releaseBranch" -ForegroundColor Green
 Write-Host "  Next Target Tag Post-Dep: $nextIncrementTag" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 
+if ($env:GITHUB_OUTPUT) {
+    "previous_tag=$currentTagStr" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "new_tag=$newTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "release_branch=$releaseBranch" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "bump_type=$effectiveBump" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "next_increment_tag=$nextIncrementTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "dry_run=$($DryRun.IsPresent)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    "environment=$Environment" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+}
+
 if ($DryRun) {
     Write-Host "[DRY RUN] Simulation complete. No Git modifications or deployment dispatched." -ForegroundColor Yellow
     return [PSCustomObject]@{
