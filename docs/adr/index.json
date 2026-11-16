@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-03T19:26:42.152344+00:00",
-  "totalAdrs": 125,
+  "generatedAt": "2026-11-16T11:33:34.874620+00:00",
+  "totalAdrs": 126,
   "categoryCounts": {
     "architecture": 39,
     "security": 26,
-    "devops": 30,
+    "devops": 31,
     "presentation": 17,
     "governance": 13
   },
@@ -1509,6 +1509,18 @@
       "subsystem": "Infrastructure, CI/CD, Database",
       "filename": "ADR-20261104-160-azure-sql-basic-dtu-cost-guardrail.md",
       "relativePath": "docs/adr/devops/ADR-20261104-160-azure-sql-basic-dtu-cost-guardrail.md"
+    },
+    {
+      "id": "ADR-161",
+      "number": 161,
+      "title": "Automated Release Pipeline, Semantic Tagging & Azure Deployment",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-16",
+      "subsystem": "Devops",
+      "filename": "ADR-20261116-161-automated-release-tag-and-deployment-pipeline.md",
+      "relativePath": "docs/adr/devops/ADR-20261116-161-automated-release-tag-and-deployment-pipeline.md"
     }
   ]
 }

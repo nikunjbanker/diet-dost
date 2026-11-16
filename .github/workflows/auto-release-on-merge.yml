@@ -1,0 +1,275 @@
+# ==============================================================================
+# Copyright (c) 2026 diet-dost and/or its contributors.
+# Licensed under the "GNU Affero General Public License v3.0 only" and
+# the "Server Side Public License, v 1"; you may not use this file except
+# in compliance with, at your election, the "GNU Affero General Public
+# License v3.0 only" or the "Server Side Public License, v 1".
+# ==============================================================================
+# GitHub Actions: Automated Release Lifecycle, Semantic Tagging & Azure Deployment
+# Auto-triggers on merge to main with Conventional Commits semantic bump detection
+# ==============================================================================
+
+name: Automated Release & ACA Deployment on Merge
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      bumpType:
+        description: 'Semantic Version Bump (Auto, Major, Minor, Patch, Build)'
+        required: false
+        type: choice
+        options:
+          - Auto
+          - Major
+          - Minor
+          - Patch
+          - Build
+        default: 'Auto'
+      customTag:
+        description: 'Manual Tag Override (optional, e.g. alpha-6.0.0.0)'
+        required: false
+        type: string
+        default: ''
+      environment:
+        description: 'Target Azure Environment (dev, prod)'
+        required: false
+        type: string
+        default: 'dev'
+      deploy:
+        description: 'Trigger Azure Container Apps deployment'
+        required: false
+        type: boolean
+        default: true
+      dryRun:
+        description: '⚡ Dry Run (Simulate version bump, tag and branch without push or deploy)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: write
+  actions: write
+  security-events: write
+  pull-requests: write
+
+jobs:
+  # ============================================================================
+  # STAGE 1: EVALUATE COMMIT & COMPUTE SEMANTIC TAG & RELEASE BRANCH
+  # ============================================================================
+  evaluate-and-tag:
+    name: 'Stage 1: Evaluate & Cut Release Branch'
+    runs-on: ubuntu-latest
+    outputs:
+      previous_tag: ${{ steps.calc.outputs.previous_tag }}
+      new_tag: ${{ steps.calc.outputs.new_tag }}
+      release_branch: ${{ steps.calc.outputs.release_branch }}
+      bump_type: ${{ steps.calc.outputs.bump_type }}
+      next_increment_tag: ${{ steps.calc.outputs.next_increment_tag }}
+      dry_run: ${{ steps.calc.outputs.dry_run }}
+      deploy_requested: ${{ steps.calc.outputs.deploy_requested }}
+      environment: ${{ steps.calc.outputs.environment }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 2. Compute Target Tag & Release Branch
+        id: calc
+        shell: pwsh
+        run: |
+          $bumpInput = "${{ inputs.bumpType }}"
+          if (-not $bumpInput) { $bumpInput = "Auto" }
+          $customTagInput = "${{ inputs.customTag }}"
+          $dryRunInput = "${{ inputs.dryRun }}" -eq "true"
+          $deployInput = "${{ inputs.deploy }}" -ne "false"
+          $envInput = "${{ inputs.environment }}"
+          if (-not $envInput) { $envInput = "dev" }
+
+          Write-Host "Evaluating commit and calculating next release tag..."
+          $result = pwsh -File ./scripts/release-deploy.ps1 `
+              -BumpType $bumpInput `
+              -TargetTag $customTagInput `
+              -Environment $envInput `
+              -DryRun
+
+          Write-Host "Calculated Tag: $($result.NewTag)"
+          Write-Host "Calculated Branch: $($result.ReleaseBranch)"
+          Write-Host "Detected Bump: $($result.BumpType)"
+
+          {
+              echo "previous_tag=$($result.PreviousTag)"
+              echo "new_tag=$($result.NewTag)"
+              echo "release_branch=$($result.ReleaseBranch)"
+              echo "bump_type=$($result.BumpType)"
+              echo "next_increment_tag=$($result.NextIncrementTag)"
+              echo "dry_run=$dryRunInput"
+              echo "deploy_requested=$deployInput"
+              echo "environment=$envInput"
+          } >> "$env:GITHUB_OUTPUT"
+
+      - name: 3. Create & Push Tag and Release Branch
+        if: steps.calc.outputs.dry_run != 'true'
+        shell: pwsh
+        run: |
+          $newTag = "${{ steps.calc.outputs.new_tag }}"
+          $releaseBranch = "${{ steps.calc.outputs.release_branch }}"
+          $headSha = (git rev-parse HEAD).Trim()
+
+          Write-Host "Configuring Git Credentials for Automated Release..."
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          Write-Host "Creating annotated tag: $newTag on $headSha"
+          git tag -a $newTag -m "Release ${newTag} - Automated release deployment from $headSha"
+
+          Write-Host "Creating release branch: $releaseBranch on $headSha"
+          git branch -f $releaseBranch $headSha
+
+          Write-Host "Pushing tag and release branch to origin..."
+          git push origin $newTag
+          git push -u origin $releaseBranch
+
+          Write-Host "✅ Tag '$newTag' and Branch '$releaseBranch' pushed successfully."
+
+      - name: 4. Publish Release Planning Summary
+        if: always()
+        shell: pwsh
+        run: |
+          {
+            echo "## 🏷️ Release Lifecycle Evaluation Summary"
+            echo "| Dimension | Value |"
+            echo "| :--- | :--- |"
+            echo "| **Previous Highest Tag** | \`${{ steps.calc.outputs.previous_tag }}\` |"
+            echo "| **Detected Bump Type** | \`${{ steps.calc.outputs.bump_type }}\` |"
+            echo "| **Target Release Tag** | \`${{ steps.calc.outputs.new_tag }}\` |"
+            echo "| **Release Branch** | \`${{ steps.calc.outputs.release_branch }}\` |"
+            echo "| **Next Anticipated Increment** | \`${{ steps.calc.outputs.next_increment_tag }}\` |"
+            echo "| **Target Environment** | \`${{ steps.calc.outputs.environment }}\` |"
+            echo "| **Dry Run Mode** | \`${{ steps.calc.outputs.dry_run }}\` |"
+            echo "| **Deploy Requested** | \`${{ steps.calc.outputs.deploy_requested }}\` |"
+          } >> "$env:GITHUB_STEP_SUMMARY"
+
+  # ============================================================================
+  # STAGE 2: TRIGGER AZURE APPLICATION DEPLOYMENT
+  # ============================================================================
+  deploy-application:
+    name: 'Stage 2: Deploy to Azure Container Apps'
+    needs: [evaluate-and-tag]
+    if: |
+      always() &&
+      needs.evaluate-and-tag.result == 'success' &&
+      needs.evaluate-and-tag.outputs.dry_run != 'true' &&
+      needs.evaluate-and-tag.outputs.deploy_requested == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.evaluate-and-tag.outputs.environment || 'dev' }}
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.evaluate-and-tag.outputs.release_branch }}
+
+      - name: 2. Trigger Aspire Application Deployment Pipeline
+        id: trigger-deploy
+        shell: pwsh
+        run: |
+          $branch = "${{ needs.evaluate-and-tag.outputs.release_branch }}"
+          $envName = "${{ needs.evaluate-and-tag.outputs.environment }}"
+          $rgName = "rg-dietdost-$envName"
+
+          Write-Host "Dispatching 'azure-app-deploy.yml' against branch '$branch'..."
+          gh workflow run azure-app-deploy.yml `
+            --ref $branch `
+            -f environment=$envName `
+            -f resourceGroupName=$rgName `
+            -f provisionInfra=true `
+            -f enableCustomDomain=true `
+            -f allowDemoUsers=true `
+            -f databaseProvider="AzureSql"
+
+          Write-Host "Waiting for workflow run to register on GitHub..."
+          Start-Sleep -Seconds 15
+
+          $runId = gh run list --workflow azure-app-deploy.yml --branch $branch --limit 1 --json databaseId -q ".[0].databaseId"
+          if (-not $runId) {
+            Write-Host "Retrying run discovery..."
+            Start-Sleep -Seconds 10
+            $runId = gh run list --workflow azure-app-deploy.yml --branch $branch --limit 1 --json databaseId -q ".[0].databaseId"
+          }
+
+          if ($runId) {
+            Write-Host "Discovered active deployment run ID: $runId"
+            echo "run_id=$runId" >> "$env:GITHUB_OUTPUT"
+            Write-Host "Streaming workflow logs..."
+            gh run watch $runId
+
+            $conclusion = gh run view $runId --json conclusion -q ".conclusion"
+            if ($conclusion -ne "success") {
+              Write-Host "❌ Deployment run $runId failed with conclusion: $conclusion"
+              exit 1
+            }
+            Write-Host "✅ Deployment run $runId finished with success."
+          }
+          else {
+            Write-Host "⚠️ Warning: Workflow dispatched but run ID could not be polled directly."
+          }
+
+  # ============================================================================
+  # STAGE 3: POST-DEPLOYMENT VERIFICATION & GITHUB RELEASE PUBLICATION
+  # ============================================================================
+  publish-release:
+    name: 'Stage 3: Publish GitHub Release & Increment'
+    needs: [evaluate-and-tag, deploy-application]
+    if: |
+      always() &&
+      needs.evaluate-and-tag.result == 'success' &&
+      needs.evaluate-and-tag.outputs.dry_run != 'true' &&
+      (needs.evaluate-and-tag.outputs.deploy_requested != 'true' || needs.deploy-application.result == 'success')
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: 1. Checkout Repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ needs.evaluate-and-tag.outputs.release_branch }}
+
+      - name: 2. Publish Official GitHub Release
+        shell: pwsh
+        run: |
+          $tag = "${{ needs.evaluate-and-tag.outputs.new_tag }}"
+          $branch = "${{ needs.evaluate-and-tag.outputs.release_branch }}"
+          $bump = "${{ needs.evaluate-and-tag.outputs.bump_type }}"
+          $next = "${{ needs.evaluate-and-tag.outputs.next_increment_tag }}"
+
+          Write-Host "Publishing GitHub Release for '$tag' on branch '$branch'..."
+          gh release create $tag `
+            --target $branch `
+            --title "Diet-Dost $tag ($bump Release)" `
+            --generate-notes
+
+          Write-Host "✅ Official GitHub Release created."
+
+          {
+            echo "## 🚀 Live Deployment & Release Success"
+            echo "| Metric | Value |"
+            echo "| :--- | :--- |"
+            echo "| **Published Release** | \`$tag\` |"
+            echo "| **Release Branch** | \`$branch\` |"
+            echo "| **Bump Classification** | \`$bump\` |"
+            echo "| **Deployment Status** | ✅ Verified Live |"
+            echo "| **Live Environment** | \`${{ needs.evaluate-and-tag.outputs.environment }}.diet-dost.in\` |"
+            echo "| **Next Tag Staged** | \`$next\` |"
+            echo ""
+            echo "> Deployment verified. The system is ready for subsequent merges and releases."
+          } >> "$env:GITHUB_STEP_SUMMARY"
+

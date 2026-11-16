@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 125 Active Records Across 5 Domain Hierarchies
+> **Total Decisions**: 126 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -33,7 +33,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **39** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **26** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
-| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **30** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
+| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **31** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **17** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
@@ -153,6 +153,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-145** | Unified Auto-Approve & Deployment Daemon Architecture | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261031-145-unified-auto-approve-and-deploy-daemon.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261031-145-unified-auto-approve-and-deploy-daemon.md) |
 | **ADR-159** | Resilient Browser Startup for Live CFT Suites | `[DEFECT_FIX]` | `ACCEPTED` | [`ADR-20261104-159-resilient-cft-browser-startup.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261104-159-resilient-cft-browser-startup.md) |
 | **ADR-160** | Azure SQL Basic DTU Cost Guardrail | `[DEFECT_FIX]` | `ACCEPTED` | [`ADR-20261104-160-azure-sql-basic-dtu-cost-guardrail.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261104-160-azure-sql-basic-dtu-cost-guardrail.md) |
+| **ADR-161** | Automated Release Pipeline, Semantic Tagging & Azure Deployment | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261116-161-automated-release-tag-and-deployment-pipeline.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261116-161-automated-release-tag-and-deployment-pipeline.md) |
 
 ### 🎨 Presentation & UI/UX (`docs/adr/presentation/`)
 > *Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration.*
@@ -217,3 +218,4 @@ Historical decision entries from the initial project inception through the mobil
    # Or cross-platform Python:
    python3 scripts/sync-adr-index.py
    ```
+
