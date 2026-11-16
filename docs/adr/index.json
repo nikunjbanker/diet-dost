@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-16T11:33:34.874620+00:00",
-  "totalAdrs": 126,
+  "generatedAt": "2026-11-16T11:53:49.711658+00:00",
+  "totalAdrs": 127,
   "categoryCounts": {
-    "architecture": 39,
+    "architecture": 40,
     "security": 26,
     "devops": 31,
     "presentation": 17,
@@ -1521,6 +1521,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261116-161-automated-release-tag-and-deployment-pipeline.md",
       "relativePath": "docs/adr/devops/ADR-20261116-161-automated-release-tag-and-deployment-pipeline.md"
+    },
+    {
+      "id": "ADR-162",
+      "number": 162,
+      "title": "Cross-Platform Timezone Resolution & Circadian Day Bucketing",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-16",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261116-162-cross-platform-timezone-resolution.md",
+      "relativePath": "docs/adr/architecture/ADR-20261116-162-cross-platform-timezone-resolution.md"
     }
   ]
 }

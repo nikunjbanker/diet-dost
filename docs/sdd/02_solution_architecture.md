@@ -1099,6 +1099,13 @@ To prevent startup container crashes and primary key constraint collisions (`PK_
 
 ## 17. Authorized Progress Media Streaming & DPDPA Biometric Privacy (ADR-154)
 
+## 18. Cross-Platform Timezone Resolution & Circadian Day Bucketing (ADR-162)
+
+* **Canonical IANA Defaulting & Linux Support**:
+  - `ClinicalDietitianService.GetUserTimeZoneInfo` defaults unconfigured or empty timezones to canonical `"Asia/Kolkata"` rather than Windows-only identifiers.
+  - On Linux distributions (e.g. Ubuntu 26) where legacy `Asia/Calcutta` is deprecated in tzdata, canonical `Asia/Kolkata` resolves directly.
+  - Implements multi-tier fallback: `FindSystemTimeZoneById` -> `TryConvertIanaIdToWindowsId` -> `TryConvertWindowsIdToIanaId` -> `Asia/Kolkata` -> `India Standard Time` -> `TimeZoneInfo.Utc`, guaranteeing zero unhandled `TimeZoneNotFoundException` crashes during circadian day calculations across all operating systems.
+
 * **Gated Media Streaming Gateway**:
   - Biometric facial photos and DEXA body scans are classified as sensitive personal health data under DPDPA 2023.
   - Static file middleware (WebApplicationExtensions.cs) rejects direct unauthenticated access to /uploads/users/ with HTTP 403 Forbidden.
