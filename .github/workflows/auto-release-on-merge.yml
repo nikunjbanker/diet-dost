@@ -5,13 +5,17 @@
 # in compliance with, at your election, the "GNU Affero General Public
 # License v3.0 only" or the "Server Side Public License, v 1".
 # ==============================================================================
-# GitHub Actions: Release Orchestrator & ACA Deployment
-# Strictly On-Demand (workflow_dispatch only) with Mandatory nikunjbanker Actor Gating
+# GitHub Actions: Automated Release Lifecycle, Semantic Tagging & Azure Deployment
+# Auto-triggers on push to main by nikunjbanker & on-demand workflow_dispatch
+# Strictly gated to: github.ref_name == 'main' AND github.actor == 'nikunjbanker'
 # ==============================================================================
 
-name: Release Orchestrator & ACA Deployment
+name: Automated Release & ACA Deployment
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       bumpType:
@@ -60,7 +64,9 @@ jobs:
   evaluate-and-tag:
     name: 'Stage 1: Evaluate & Cut Release Branch'
     runs-on: ubuntu-latest
-    if: github.actor == 'nikunjbanker'
+    if: |
+      github.actor == 'nikunjbanker' &&
+      (github.ref_name == 'main' || github.ref == 'refs/heads/main')
     outputs:
       previous_tag: ${{ steps.calc.outputs.previous_tag }}
       new_tag: ${{ steps.calc.outputs.new_tag }}
@@ -136,6 +142,8 @@ jobs:
             echo "## 🏷️ Release Lifecycle Evaluation Summary"
             echo "| Dimension | Value |"
             echo "| :--- | :--- |"
+            echo "| **Pushed By (Actor)** | \`@${{ github.actor }}\` |"
+            echo "| **Branch / Ref** | \`${{ github.ref_name }}\` |"
             echo "| **Previous Highest Tag** | \`${{ steps.calc.outputs.previous_tag }}\` |"
             echo "| **Detected Bump Type** | \`${{ steps.calc.outputs.bump_type }}\` |"
             echo "| **Target Release Tag** | \`${{ steps.calc.outputs.new_tag }}\` |"
@@ -155,6 +163,7 @@ jobs:
     if: |
       always() &&
       github.actor == 'nikunjbanker' &&
+      (github.ref_name == 'main' || github.ref == 'refs/heads/main') &&
       needs.evaluate-and-tag.result == 'success' &&
       needs.evaluate-and-tag.outputs.dry_run != 'true' &&
       needs.evaluate-and-tag.outputs.deploy_requested == 'true'
@@ -221,6 +230,7 @@ jobs:
     if: |
       always() &&
       github.actor == 'nikunjbanker' &&
+      (github.ref_name == 'main' || github.ref == 'refs/heads/main') &&
       needs.evaluate-and-tag.result == 'success' &&
       needs.evaluate-and-tag.outputs.dry_run != 'true' &&
       (needs.evaluate-and-tag.outputs.deploy_requested != 'true' || needs.deploy-application.result == 'success')

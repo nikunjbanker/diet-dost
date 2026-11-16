@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-16T13:00:57.668074+00:00",
-  "totalAdrs": 129,
+  "generatedAt": "2026-11-16T13:23:04.710330+00:00",
+  "totalAdrs": 130,
   "categoryCounts": {
     "architecture": 41,
     "security": 26,
-    "devops": 32,
+    "devops": 33,
     "presentation": 17,
     "governance": 13
   },
@@ -1557,6 +1557,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261116-163-manual-release-dispatch-and-actor-gating.md",
       "relativePath": "docs/adr/devops/ADR-20261116-163-manual-release-dispatch-and-actor-gating.md"
+    },
+    {
+      "id": "ADR-164",
+      "number": 164,
+      "title": "Combined Actor and Main Branch Gating for Automated Release Pipeline",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-16",
+      "subsystem": "Devops",
+      "filename": "ADR-20261116-164-actor-gated-main-push-and-dispatch-release-orchestration.md",
+      "relativePath": "docs/adr/devops/ADR-20261116-164-actor-gated-main-push-and-dispatch-release-orchestration.md"
     }
   ]
 }
