@@ -71,6 +71,19 @@ public class ReleasePipelineContractTests
         Assert.Contains("azure-app-deploy.yml", content);
     }
 
+    [Fact]
+    public void AutoReleaseWorkflow_DoesNotUnconditionallyHardcodeDryRun()
+    {
+        var repoRoot = GetRepoRoot();
+        var workflowPath = Path.Combine(repoRoot, ".github", "workflows", "auto-release-on-merge.yml");
+
+        Assert.True(File.Exists(workflowPath), $"Auto-release workflow missing at {workflowPath}");
+        var content = File.ReadAllText(workflowPath).Replace("\r\n", "\n");
+
+        // Assert release-deploy.ps1 is NOT called with a hardcoded -DryRun flag
+        Assert.DoesNotContain("& ./scripts/release-deploy.ps1 `\n              -BumpType $bumpInput `\n              -TargetTag $customTagInput `\n              -Environment $envInput `\n              -DryRun", content);
+    }
+
     [Theory]
     [InlineData("feat!: breaking overhaul of authentication", "Major", "alpha-6.0.0.0", "release-alpha-6.0.0.0")]
     [InlineData("feat(profile): add Indian clinical BMI insights", "Minor", "alpha-5.1.0.0", "release-alpha-5.1.0.0")]

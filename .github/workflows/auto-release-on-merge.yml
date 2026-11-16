@@ -94,13 +94,17 @@ jobs:
           if (-not $envInput) { $envInput = "dev" }
 
           Write-Host "Evaluating commit and calculating next release tag..."
-          & ./scripts/release-deploy.ps1 `
-              -BumpType $bumpInput `
-              -TargetTag $customTagInput `
-              -Environment $envInput `
-              -DryRun
+          $params = @{
+              BumpType    = $bumpInput
+              Environment = $envInput
+          }
+          if ($customTagInput) { $params["TargetTag"] = $customTagInput }
+          if ($dryRunInput) { $params["DryRun"] = $true }
 
-          "deploy_requested=$deployInput" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          & ./scripts/release-deploy.ps1 @params
+
+          $deployVal = if ($deployInput) { "true" } else { "false" }
+          "deploy_requested=$deployVal" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: 3. Create & Push Tag and Release Branch
         if: steps.calc.outputs.dry_run != 'true'
@@ -184,13 +188,12 @@ jobs:
             -f databaseProvider="AzureSql"
 
           Write-Host "Waiting for workflow run to register on GitHub..."
-          Start-Sleep -Seconds 15
-
-          $runId = gh run list --workflow azure-app-deploy.yml --branch $branch --limit 1 --json databaseId -q ".[0].databaseId"
-          if (-not $runId) {
-            Write-Host "Retrying run discovery..."
+          $runId = $null
+          for ($i = 1; $i -le 6; $i++) {
             Start-Sleep -Seconds 10
             $runId = gh run list --workflow azure-app-deploy.yml --branch $branch --limit 1 --json databaseId -q ".[0].databaseId"
+            if ($runId) { break }
+            Write-Host "Waiting for workflow run to register (attempt $i/6)..."
           }
 
           if ($runId) {
