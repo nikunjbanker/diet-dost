@@ -15,7 +15,7 @@ description: Authoritative DevSecOps, 8-job static analysis security gate, local
 
 > **CI Pipeline**: [`.github/workflows/security-scan.yml`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/.github/workflows/security-scan.yml) (8 parallel / sequential security analyzers)  
 > **Security Baseline**: OWASP Top 10 (2021), OWASP LLM Top 10 (2025), India DPDPA 2023, Safe Harbor & CVD ([`SECURITY.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/SECURITY.md))  
-> **Target Framework**: .NET 11 RC (`net11.0`), Native ES Modules, Azure Bicep, Containerfile  
+> **Target Framework**: .NET 11 (`net11.0`), Native ES Modules, Azure Bicep, Containerfile  
 > **Administrative Authority**: Contributor `@nikunjbanker` holds sole authority over secrets and cloud access  
 
 ---

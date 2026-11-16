@@ -1,6 +1,6 @@
 # Diet Dost 🥗 | AI-Powered Indian Diet & Calorie Tracker
 
-[![.NET 11](https://img.shields.io/badge/.NET-11%20RC-512bd4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![.NET 11](https://img.shields.io/badge/.NET-11%20GA-512bd4?logo=dotnet)](https://dotnet.microsoft.com/)
 [![.NET Aspire](https://img.shields.io/badge/.NET_Aspire-Orchestrated-blue?logo=dotnet)](https://learn.microsoft.com/dotnet/aspire/)
 [![ICMR-NIN 2024](https://img.shields.io/badge/Clinical_Standards-ICMR--NIN_2024_%26_WHO-10b981)](https://www.nin.res.in/)
 [![Design System](https://img.shields.io/badge/Aesthetic-Linear.app_Dark_Glassmorphism-6366f1)](https://linear.app)
@@ -249,7 +249,7 @@ graph TB
 
 | Layer | Technologies |
 |---|---|
-| **Platform** | [.NET 11 RC](https://dotnet.microsoft.com/) (`net11.0`) / C# 13 |
+| **Platform** | [.NET 11 (General Availability)](https://dotnet.microsoft.com/) (`net11.0`) / C# 13 |
 | **Architecture** | Clean Architecture (Onion/Hexagonal), Native CQRS via `Microsoft.Extensions.DependencyInjection` (Zero MediatR) |
 | **Orchestration & Dashboard** | [.NET Aspire 13.5.4](https://learn.microsoft.com/dotnet/aspire/) (Standalone AppHost SDK) |
 | **Secrets Management** | Database Secret Store (`AppSecrets` table, `ISecretStore` port, `DatabaseConfigurationProvider`) |

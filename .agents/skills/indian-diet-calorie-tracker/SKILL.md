@@ -4,7 +4,7 @@ version: 1.4.0
 status: Final Approved Production Specification & SDD Development Rulebook
 description: >-
   Software Design Document (SDD) and implementation specification for building an AI-powered
-  Indian Diet Calorie & Weight Loss Tracker web application using .NET 11 RC, .NET Aspire,
+  Indian Diet Calorie & Weight Loss Tracker web application using .NET 11, .NET Aspire,
   Domain-Driven Design (DDD), OWASP security principles, Linear.app design aesthetic, and
   mandatory living SDD markdown documentation artifacts with full-lifecycle architecture diagrams.
 ---
@@ -21,7 +21,7 @@ description: >-
 > **Specification Version**: `v1.4.0 (Production & Living SDD)`  
 > **Classification**: Production Software Design Document (SDD), Architecture Blueprint & Clinical Rulebook  
 > **Approved Domain Focus**: Indian Population, ICMR-NIN & WHO Medical Standards, Zero-Assumption Clinical Logic  
-> **Tech Architecture**: .NET 11 RC (Exclusive, Zero Warnings, Pre-release Packages Enabled), Standalone Aspire.AppHost.Sdk 13.5.4+, Swappable SQLite V1 (PWA Offline-First), Multi-Provider AI Engine (Google Gemini 3.6-Flash / 3-Flash-Preview & Azure OpenAI gpt-5.6-luna), Podman 5.7.0 & Azure Container Apps, OWASP ASVS, Linear.app Design System (11 Modular UI Partials)  
+> **Tech Architecture**: .NET 11 (Exclusive, Zero Warnings, General Availability Packages), Standalone Aspire.AppHost.Sdk 13.5.4+, Swappable SQLite V1 (PWA Offline-First), Multi-Provider AI Engine (Google Gemini 3.6-Flash / 3-Flash-Preview & Azure OpenAI gpt-5.6-luna), Podman 5.7.0 & Azure Container Apps, OWASP ASVS, Linear.app Design System (11 Modular UI Partials)  
 > **Documentation Governance**: Mandatory `docs/sdd/*.md` deliverables, Multi-Dimensional Solution Architecture Mermaid Diagrams, Living Documentation Protocol for All Features & Bug Fixes  
 > **Development Methodology**: Harness Engineering (`Aspire.Hosting.Testing`, Eval Harnesses), Git Branching & PR-Only Merge Mandate, Closed-Loop Feedback Cycles  
 
@@ -29,7 +29,7 @@ This skill guides the design, architecture, documentation, and development of a 
 
 ### Mandatory .NET 11 & Package Governance Standard
 1. **Exclusive .NET 11 Target**: All C# projects across the solution (`src/` and `tests/`) must strictly target `<TargetFramework>net11.0</TargetFramework>`. Do not dual-target with older versions like `.NET 10`.
-2. **Pre-Release Package Policy**: All projects are authorized and instructed to use official Microsoft and third-party pre-release packages (e.g. `11.0.0-rc.*`, `Aspire.AppHost.Sdk 13.5.*`, `SQLitePCLRaw 3.*`) to ensure compatibility with .NET 11 previews.
+2. **Package Policy**: All core projects are instructed to use official Microsoft .NET 11 General Availability packages (`11.0.0`, `Aspire.AppHost.Sdk 13.5.*`, `SQLitePCLRaw 3.*`).
 3. **Zero-Warning & Zero-Vulnerability Build Standard**:
    - The solution must build with **0 Warnings and 0 Errors**.
    - Redundant implicit packages (e.g. `System.Net.Http.Json`) must be omitted.
@@ -552,7 +552,7 @@ Whenever designing, modifying, or querying date/time fields across the system:
 
 ---
 
-## 4. Technical Architecture: .NET 11 RC & Aspire Topology
+## 4. Technical Architecture: .NET 11 & Aspire Topology
 
 ### 4.1 Master Solution Architecture Blueprint
 The architecture spans five coordinated dimensions: **UI/UX Design System**, **Application Microservices**, **OWASP Security Boundary**, **DevOps & Observability**, and **Clinical Dietetics Functional Engine**:
@@ -586,7 +586,7 @@ graph TB
     end
 
     subgraph LAYER_GATEWAY ["3. INGRESS & ORCHESTRATION GATEWAY"]
-        YARP["YARP API Gateway / Reverse Proxy (.NET 11 RC)<br/>(Path Routing, Auth Token Verification, Distributed Rate Limiting)"]
+        YARP["YARP API Gateway / Reverse Proxy (.NET 11)<br/>(Path Routing, Auth Token Verification, Distributed Rate Limiting)"]
     end
 
     subgraph LAYER_APPLICATION ["4. APPLICATION SERVICES LAYER (DDD Bounded Contexts)"]
@@ -625,9 +625,9 @@ graph TB
         CLOUD_AI["Multi-Provider AI Foundation<br/>(Google Gemini 3.6-Flash / 3-Flash-Preview / 3.7-Flash,<br/>Azure OpenAI gpt-5.6-luna,<br/>Local SLM Fine-Tuning Roadmap)"]
     end
 
-    subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11 RC)"]
+    subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (NET 11 RC & Aspire.AppHost.Sdk 13.5.4)<br/>(Standalone Orchestration & Environment Injector)"]
+        ASPIRE_Host[".NET Aspire AppHost (NET 11 & Aspire.AppHost.Sdk 13.5.4)<br/>(Standalone Orchestration & Environment Injector)"]
         ASPIRE_Dash["Aspire Developer Dashboard<br/>(Real-Time Health, Distributed Traces, Console Logs, OTLP 18888)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(HttpPayloadTelemetryMiddleware, NutritionTelemetry GenAI Spans)"]
         STORE_Cache[("Redis Cache Cluster<br/>(Session Store, Token Bucket, Query Acceleration)")]
@@ -1211,7 +1211,7 @@ graph LR
 ```mermaid
 graph TD
     subgraph Aspire_AppHost [".NET Aspire Distributed AppHost"]
-        Host["Aspire.Hosting.AppHost (NET 11 RC)"]
+        Host["Aspire.Hosting.AppHost (NET 11)"]
         OTel["OpenTelemetry OTLP Collector"]
         Dash["Aspire Observability Dashboard (Port 18888)"]
         RedisRes[("Redis Cache Container")]

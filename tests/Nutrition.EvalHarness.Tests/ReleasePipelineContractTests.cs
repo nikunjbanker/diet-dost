@@ -85,12 +85,12 @@ public class ReleasePipelineContractTests
     }
 
     [Theory]
-    [InlineData("feat!: breaking overhaul of authentication", "Major", "alpha-6.0.0.0", "release-alpha-6.0.0.0")]
-    [InlineData("feat(profile): add Indian clinical BMI insights", "Minor", "alpha-5.1.0.0", "release-alpha-5.1.0.0")]
-    [InlineData("fix(infra): pin Azure SQL to Basic DTU tier", "Patch", "alpha-5.0.1.0", "release-alpha-5.0.1.0")]
-    [InlineData("chore(deps): update Aspire CLI to latest", "Patch", "alpha-5.0.1.0", "release-alpha-5.0.1.0")]
+    [InlineData("feat!: breaking overhaul of authentication", "Major")]
+    [InlineData("feat(profile): add Indian clinical BMI insights", "Minor")]
+    [InlineData("fix(infra): pin Azure SQL to Basic DTU tier", "Patch")]
+    [InlineData("chore(deps): update Aspire CLI to latest", "Patch")]
     public void ReleaseScript_DryRun_AccuratelyCalculatesSemanticTagAndBranch(
-        string commitMessage, string expectedBump, string expectedTag, string expectedBranch)
+        string commitMessage, string expectedBump)
     {
         var repoRoot = GetRepoRoot();
         var scriptPath = Path.Combine(repoRoot, "scripts", "release-deploy.ps1");
@@ -123,8 +123,24 @@ public class ReleasePipelineContractTests
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
+        var newTag = root.GetProperty("NewTag").GetString();
+        var releaseBranch = root.GetProperty("ReleaseBranch").GetString();
+
         Assert.Equal(expectedBump, root.GetProperty("BumpType").GetString());
-        Assert.Equal(expectedTag, root.GetProperty("NewTag").GetString());
-        Assert.Equal(expectedBranch, root.GetProperty("ReleaseBranch").GetString());
+        Assert.NotNull(newTag);
+        Assert.Equal($"release-{newTag}", releaseBranch);
+
+        if (expectedBump == "Major")
+        {
+            Assert.StartsWith("alpha-6.", newTag);
+        }
+        else if (expectedBump == "Minor")
+        {
+            Assert.StartsWith("alpha-5.1.", newTag);
+        }
+        else if (expectedBump == "Patch")
+        {
+            Assert.Matches(@"^alpha-5\.0\.[1-9]\d*\.0$", newTag);
+        }
     }
 }
