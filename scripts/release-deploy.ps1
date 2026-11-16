@@ -160,7 +160,8 @@ if ($env:GITHUB_OUTPUT) {
     "release_branch=$releaseBranch" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
     "bump_type=$effectiveBump" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
     "next_increment_tag=$nextIncrementTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-    "dry_run=$($DryRun.IsPresent)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+    $dryRunStr = if ($DryRun.IsPresent) { "true" } else { "false" }
+    "dry_run=$dryRunStr" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
     "environment=$Environment" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 }
 
