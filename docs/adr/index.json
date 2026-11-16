@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-16T13:23:04.710330+00:00",
-  "totalAdrs": 130,
+  "generatedAt": "2026-11-16T16:19:26.628383+00:00",
+  "totalAdrs": 131,
   "categoryCounts": {
     "architecture": 41,
     "security": 26,
     "devops": 33,
-    "presentation": 17,
+    "presentation": 18,
     "governance": 13
   },
   "records": [
@@ -1569,6 +1569,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261116-164-actor-gated-main-push-and-dispatch-release-orchestration.md",
       "relativePath": "docs/adr/devops/ADR-20261116-164-actor-gated-main-push-and-dispatch-release-orchestration.md"
+    },
+    {
+      "id": "ADR-165",
+      "number": 165,
+      "title": "Cross-Platform Social Share and Export Subsystem",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-11-16",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261116-165-cross-platform-social-share-and-export-subsystem.md",
+      "relativePath": "docs/adr/presentation/ADR-20261116-165-cross-platform-social-share-and-export-subsystem.md"
     }
   ]
 }

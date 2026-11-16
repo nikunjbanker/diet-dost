@@ -20,6 +20,8 @@ export class DailyHudController {
     this._analytics = analyticsService;
     this._state = appState;
     this._bus = eventBus;
+    this._currentLedger = null;
+    this._shareBound = false;
 
     // Listen to global changes
     this._bus.on('meal:logged', () => this.refresh());
@@ -36,6 +38,7 @@ export class DailyHudController {
       streakCounter: document.getElementById('streak-counter'),
       scoreCircle: document.getElementById('score-circle-val'),
       badges: document.getElementById('badges-container'),
+      btnShare: document.getElementById('btn-share-daily-hud'),
       proteinVal: document.getElementById('macro-protein-val'),
       proteinTarget: document.getElementById('macro-protein-target'),
       meterProtein: document.getElementById('meter-protein'),
@@ -57,6 +60,8 @@ export class DailyHudController {
    */
   hydrate(ledger) {
     if (!ledger) return;
+    this._currentLedger = ledger;
+    this._bindShare();
     const el = this.elements;
 
     if (el.consumed) el.consumed.textContent = Math.round(ledger.consumedCalories || 0).toLocaleString();
@@ -135,6 +140,22 @@ export class DailyHudController {
       this.hydrate(ledger);
     } catch (err) {
       console.error('[DailyHudController] Failed to refresh ledger:', err);
+    }
+  }
+
+  _bindShare() {
+    if (this._shareBound) return;
+    const el = this.elements;
+    if (el.btnShare) {
+      this._shareBound = true;
+      el.btnShare.addEventListener('click', () => {
+        if (this._currentLedger) {
+          this._bus.emit('share:open', {
+            type: 'daily',
+            data: this._currentLedger
+          });
+        }
+      });
     }
   }
 }

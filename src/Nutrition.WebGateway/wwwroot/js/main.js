@@ -40,6 +40,8 @@ import { QuotaModalController } from './ui/quota-modal.js?v=1.9.5';
 import { CameraService } from './services/camera-service.js?v=1.9.5';
 import { CameraModalController } from './ui/camera-modal.js?v=1.9.5';
 import { NotificationService } from './services/notification-service.js?v=1.9.5';
+import { ShareService } from './services/share-service.js?v=1.9.6';
+import { ShareModalController } from './ui/share-modal.js?v=1.9.6';
 
 // ============================================================================
 // Global Image Fallback Handler (Capturing phase catches all failed <img> loads)
@@ -177,6 +179,17 @@ container.register('cameraModal', (c) => new CameraModalController({
   cameraService: c.resolve('cameraService'),
   toastService: c.resolve('toastService'),
   eventBus: c.resolve('eventBus')
+}));
+
+container.register('shareService', (c) => new ShareService({
+  toastService: c.resolve('toastService'),
+  eventBus: c.resolve('eventBus')
+}));
+
+container.register('shareModal', (c) => new ShareModalController({
+  shareService: c.resolve('shareService'),
+  eventBus: c.resolve('eventBus'),
+  toastService: c.resolve('toastService')
 }));
 
 /**
@@ -512,6 +525,8 @@ async function initApp() {
   const transparencyModal = container.resolve('transparencyModal');
   const progressModal = container.resolve('progressModal');
   const cameraModal = container.resolve('cameraModal');
+  container.resolve('shareService');
+  container.resolve('shareModal');
   const toastService = container.resolve('toastService');
   const confettiService = container.resolve('confettiService');
 

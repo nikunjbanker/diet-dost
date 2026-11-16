@@ -117,6 +117,7 @@ export class ReviewModalController {
       dietitianAdvice: document.getElementById('review-dietitian-advice'),
       btnCancel: document.getElementById('btn-cancel-review'),
       btnHeaderClose: document.getElementById('btn-review-header-close'),
+      btnShare: document.getElementById('btn-share-review-meal'),
       btnConfirm: document.getElementById('btn-confirm-meal'),
       photoContainer: document.getElementById('review-photo-container'),
       photoWrapper: document.getElementById('review-photo-wrapper'),
@@ -193,6 +194,31 @@ export class ReviewModalController {
 
     if (el.btnHeaderClose) {
       el.btnHeaderClose.addEventListener('click', () => this.close());
+    }
+
+    if (el.btnShare) {
+      el.btnShare.addEventListener('click', () => {
+        this.recalculateTotals();
+        const meal = this._state.currentMeal;
+        if (meal) {
+          const dish = (el.dishNameInput && el.dishNameInput.value.trim()) || meal.dishName || 'Logged Meal';
+          const payload = {
+            ...meal,
+            dishName: dish,
+            items: meal.identifiedItems || meal.items || [],
+            totalCalories: meal.totalCalories || 0,
+            totalProteinGrams: meal.totalProtein || meal.totalProteinGrams || 0,
+            totalCarbsGrams: meal.totalCarbs || meal.totalCarbsGrams || 0,
+            totalFatGrams: meal.totalFat || meal.totalFatGrams || 0,
+            totalFiberGrams: meal.totalFiber || meal.totalFiberGrams || 0,
+            dietitianAdvice: meal.dietitianAdvice || (el.dietitianAdvice ? el.dietitianAdvice.textContent.trim() : '')
+          };
+          this._bus.emit('share:open', {
+            type: 'meal',
+            data: payload
+          });
+        }
+      });
     }
 
     if (el.btnConfirm) {

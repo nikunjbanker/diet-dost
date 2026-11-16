@@ -1,0 +1,123 @@
+<!--
+  Copyright (c) 2026 diet-dost and/or its contributors.
+  Licensed under the "GNU Affero General Public License v3.0 only" and
+  the "Server Side Public License, v 1"; you may not use this file except
+  in compliance with, at your election, the "GNU Affero General Public
+  License v3.0 only" or the "Server Side Public License, v 1".
+-->
+<!-- Share & Export Studio Modal Component -->
+<div class="share-modal-overlay" id="share-modal" style="display: none;" aria-label="Social Share & Export Studio" role="dialog" aria-modal="true">
+  <div class="share-modal-container">
+    <div class="share-modal-header">
+      <div>
+        <div class="hud-title" id="share-modal-title">Share & Export Studio</div>
+        <div class="share-modal-subtitle" id="share-modal-subtitle">Generate high-DPI social nutrition cards</div>
+      </div>
+      <button type="button" class="btn btn-sm" id="btn-close-share-modal" aria-label="Close Share Studio" title="Close (Esc)">✕</button>
+    </div>
+
+    <div class="share-studio-layout">
+      <!-- Left / Center: Preview Column -->
+      <div class="share-preview-column">
+        <!-- Aspect Ratio Controls -->
+        <div class="share-aspect-row">
+          <span class="share-control-label">Format:</span>
+          <div class="share-aspect-pills">
+            <button type="button" class="share-aspect-pill active" id="btn-aspect-square" data-aspect="square">
+              🔲 Square (1:1)
+            </button>
+            <button type="button" class="share-aspect-pill" id="btn-aspect-story" data-aspect="story">
+              📱 Story (9:16)
+            </button>
+          </div>
+        </div>
+
+        <!-- High-DPI Card Visual Preview Frame -->
+        <div class="share-card-preview-frame" id="share-card-preview-frame">
+          <div class="share-loading-spinner" id="share-card-loading" style="display: none;">
+            <div class="splash-spinner-ring"></div>
+            <span>Rendering High-DPI Card...</span>
+          </div>
+          <img id="share-card-img" src="" alt="Diet Dost Shareable Nutrition Card" class="share-preview-img" />
+        </div>
+
+        <!-- Customization Toggles -->
+        <div class="share-toggles-wrap">
+          <label class="share-toggle-row" id="toggle-photo-row">
+            <input type="checkbox" id="share-toggle-photo" checked />
+            <span>Include Meal Plate Photo</span>
+          </label>
+          <label class="share-toggle-row" id="toggle-advice-row">
+            <input type="checkbox" id="share-toggle-advice" checked />
+            <span>Include Clinical Dost Insight</span>
+          </label>
+          <label class="share-toggle-row">
+            <input type="checkbox" id="share-toggle-anonymize" />
+            <span>DPDPA Privacy Mode (Anonymize Name & Exact Timestamp)</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Right / Bottom: Action Rail -->
+      <div class="share-actions-rail">
+        <!-- Desktop Hero 1-Click Clipboard Action -->
+        <button type="button" class="btn btn-primary btn-hero-share" id="btn-copy-share-image" title="Copy high-res image to clipboard for instant Ctrl+V pasting">
+          <span class="hero-share-icon">📋</span>
+          <div class="hero-share-text">
+            <strong>Copy Card Image (Ctrl+V)</strong>
+            <span>Paste directly into WhatsApp Web, Slack, Discord or Facebook</span>
+          </div>
+        </button>
+
+        <div class="share-divider">
+          <span>Or Share Directly Via</span>
+        </div>
+
+        <!-- Social Action Buttons Grid -->
+        <div class="share-buttons-grid">
+          <button type="button" class="btn-share-grid-action btn-share-whatsapp" id="btn-share-whatsapp-web" title="Share formatted summary to WhatsApp Web">
+            <span class="share-btn-icon">💬</span>
+            <span class="share-btn-label">WhatsApp Web</span>
+          </button>
+
+          <button type="button" class="btn-share-grid-action btn-share-download" id="btn-download-share-card" title="Download high-resolution 300 DPI PNG file">
+            <span class="share-btn-icon">📥</span>
+            <span class="share-btn-label">Download PNG</span>
+          </button>
+
+          <button type="button" class="btn-share-grid-action btn-share-copy" id="btn-copy-share-text" title="Copy formatted text summary with emojis">
+            <span class="share-btn-icon">📝</span>
+            <span class="share-btn-label">Copy Text</span>
+          </button>
+
+          <button type="button" class="btn-share-grid-action btn-share-facebook" id="btn-share-facebook" title="Share on Facebook">
+            <span class="share-btn-icon">👥</span>
+            <span class="share-btn-label">Facebook</span>
+          </button>
+
+          <button type="button" class="btn-share-grid-action btn-share-twitter" id="btn-share-twitter" title="Share on X (Twitter)">
+            <span class="share-btn-icon">🐦</span>
+            <span class="share-btn-label">X / Twitter</span>
+          </button>
+
+          <button type="button" class="btn-share-grid-action btn-share-email" id="btn-share-email" title="Share nutrition report via email">
+            <span class="share-btn-icon">✉️</span>
+            <span class="share-btn-label">Email Report</span>
+          </button>
+
+          <button type="button" class="btn-share-grid-action btn-share-system" id="btn-system-share" style="display: none;" title="Open device system share sheet">
+            <span class="share-btn-icon">📱</span>
+            <span class="share-btn-label">System Share...</span>
+          </button>
+        </div>
+
+        <!-- Application Link Callout -->
+        <div class="share-app-link-box">
+          <span class="app-link-label">🌐 Web Application Link:</span>
+          <a href="https://dietdost.app" target="_blank" rel="noopener noreferrer" class="app-link-url" id="share-app-link-display">https://dietdost.app</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

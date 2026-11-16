@@ -38,7 +38,8 @@ export class MealDiaryView {
     filterSubtitle = null,
     clearFilterBtn = null,
     onEditMeal = null,
-    onDeleteMeal = null
+    onDeleteMeal = null,
+    onShareMeal = null
   }) {
     this._cardsContainer = cardsContainer;
     this._gridContainer = gridContainer;
@@ -50,6 +51,7 @@ export class MealDiaryView {
     this._clearFilterBtn = clearFilterBtn;
     this._onEditMeal = onEditMeal;
     this._onDeleteMeal = onDeleteMeal;
+    this._onShareMeal = onShareMeal;
 
     this._currentView = 'cards';
     this._currentMeals = [];
@@ -194,6 +196,9 @@ export class MealDiaryView {
             <div class="meal-card-top-right">
               <span class="meal-card-time">${dateFormatted} · ${timeFormatted}</span>
               <div class="meal-card-actions">
+                <button type="button" class="btn-card-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal">
+                  <span class="action-icon">📤</span> Share
+                </button>
                 <button type="button" class="btn-card-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal">
                   <span class="action-icon">✏️</span> Edit
                 </button>
@@ -300,6 +305,7 @@ export class MealDiaryView {
           </td>
           <td class="action-col" style="text-align: center; white-space: nowrap;">
             <div class="table-actions-wrap">
+              <button type="button" class="btn-table-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal">📤</button>
               <button type="button" class="btn-table-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal">✏️</button>
               <button type="button" class="btn-table-action btn-delete-meal" data-meal-id="${meal.id}" title="Delete Meal">🗑️</button>
             </div>
@@ -337,6 +343,18 @@ export class MealDiaryView {
    */
   _bindActions(container) {
     if (!container) return;
+
+    // Share meal
+    container.querySelectorAll('.btn-share-meal').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const mealId = btn.dataset.mealId;
+        const meal = this._currentMeals.find(m => m.id === mealId);
+        if (meal && typeof this._onShareMeal === 'function') {
+          this._onShareMeal(meal);
+        }
+      });
+    });
 
     // Edit meal
     container.querySelectorAll('.btn-edit-meal').forEach(btn => {

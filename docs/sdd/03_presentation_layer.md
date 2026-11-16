@@ -331,3 +331,25 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - Edit Profile Mode: Displays standard clinical title (`Your Health Profile`), cancel button, photo promo banner, session sign-out row, and `💾 Save & Recalculate`.
   - Implemented `handleSkipOnboarding()`: sets `dd_onboarding_deferred = 'true'` in session storage, closes modal, emits `profile:onboarding-deferred`, and notifies user via toast that default 1,600 kcal baseline is in use.
   - Submits `isOnboarded: true` in payload and cleans up session storage upon successful clinical profile save.
+
+## 20. Cross-Platform Social Share & Export Studio Subsystem (`ADR-165`)
+
+* **Client-Side High-DPI Graphics Engine (`ShareCardRenderer.js`)**:
+  - Leverages offscreen HTML5 2D Canvas to generate high-DPI (1080x1080 Square and 1080x1920 Story) social nutrition cards in <50ms without external server-side rendering dependencies.
+  - Implements **Meal Log Entry Cards** (dish title, meal type badge, plate photo with rounded clip, 5-macro distribution matrix, portion pill tags, ICMR-NIN 2024 Dost clinical advice, web app link).
+  - Implements **Daily Nutrition Pulse Cards** (consumed vs budgeted gauge, deficit remaining badge, 4-column macro meters, Daily Health Score 88/100, consistency streak, earned Indian badges, companion reflection, web app link).
+* **Device-Adaptive Dispatching & Mobile Ergonomics (`ShareService.js`)**:
+  - Automatically feature-detects **Web Share API Level 2** (`navigator.canShare({ files })`).
+  - On Mobile (<640px), dispatches generated PNG files directly to the native OS share sheet (WhatsApp, Instagram Stories, Facebook, AirDrop, Camera Roll).
+  - Fallback mechanism opens the responsive bottom-sheet Share Studio on browsers without file-sharing support.
+* **Desktop 1-Click Clipboard Image Copy & Web Intents (`share-modal.html`, `share-modal.js`)**:
+  - **1-Click Clipboard Copy (`navigator.clipboard.write`)**: Users click "Copy Card Image" and hit `Ctrl+V` directly inside WhatsApp Web, Slack, Discord, or Facebook composers without downloading files.
+  - **Direct Web App Intents**: Shortcuts for WhatsApp Web (`web.whatsapp.com`), Facebook, X (Twitter), Email (`mailto:`), and high-res PNG download.
+  - **Interactive Live Preview**: Real-time card preview frame with Square (1:1) and Story (9:16) aspect ratio toggles and privacy controls.
+* **Touchpoint Integration Across Web Gateway**:
+  - Meal Review Modal (`review-modal.html`): Header share button `#btn-share-review-meal`.
+  - Daily Calorie Balance Hero HUD (`hero-hud.html`): Header share button `#btn-share-daily-hud`.
+  - Meal History Diary (`MealDiaryView.js`): Action button `.btn-share-meal` on timeline cards and data grid rows.
+* **DPDPA 2023 Compliance & Zero PII Leakage**:
+  - Excludes all personal identifiers (user IDs, emails, phone numbers, exact body weight, medications) from card rendering and formatted share text.
+  - Displays authoritative web application link: `https://dietdost.app`.

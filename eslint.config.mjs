@@ -51,6 +51,7 @@ export default [
         File: "readonly",
         FileReader: "readonly",
         Image: "readonly",
+        ClipboardItem: "readonly",
         performance: "readonly",
         requestAnimationFrame: "readonly",
         alert: "readonly",
