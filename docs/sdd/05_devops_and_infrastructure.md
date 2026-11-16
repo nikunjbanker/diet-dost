@@ -477,6 +477,25 @@ The full architectural blueprint is codified in the following repository visual 
 - **Existing Resources**: A normal deployment reapplies the Basic SKU to existing Azure SQL databases. The operator must back up the database and confirm that the data fits within Basic's 2 GB maximum before deploying. Application networking, authentication, and Key Vault connection handling are unchanged.
 - **Regression Guard**: `SqlBicep_ProvisionsBasicDtuTier_AndExcludesServerlessConfiguration` checks the exact Bicep SKU and prevents serverless-only settings or outdated workflow labels from returning.
 
+### 8.19 Automated Release Pipeline, Semantic Tagging & Azure Deployment (ADR-161)
+- **Problem**: Release tagging (`alpha-1.0.0.0` through `alpha-5.0.0.0`) and branch creation were manual, lacking automated triggers upon merge to `main`, Conventional Commit semantic bump detection, and end-to-end integration with the Aspire ACA deployment workflow.
+- **Architectural Solution**:
+  1. **Event-Driven Merge Workflow (`.github/workflows/auto-release-on-merge.yml`)**:
+     - Auto-triggers on `push: branches: [main]` whenever a PR is merged.
+     - Pushes new release tags to `refs/tags/alpha-*` and branches to `refs/heads/release-alpha-*`, ensuring 100% immunity from recursive trigger loops against `main`.
+  2. **Conventional Commits Semantic Bump Engine (`scripts/release-deploy.ps1`)**:
+     - Dynamically discovers the highest `alpha-X.Y.Z.B` tag in the repository.
+     - **Major Bump** (`alpha-(X+1).0.0.0`): Detected when commit message / PR contains `BREAKING CHANGE:`, `feat!:`, `fix!:`, or label `release:major`.
+     - **Minor Bump** (`alpha-X.(Y+1).0.0`): Detected when commit message / PR starts with `feat:` / `feat(...)` or label `release:minor`.
+     - **Patch Bump** (`alpha-X.Y.(Z+1).0`): Detected on `fix:`, `perf:`, `refactor:`, `chore:`, or label `release:patch`.
+     - **Branch Invariant**: Automatically provisions release branch `release-alpha-<major>.<minor>.<patch>.<build>` (e.g. `release-alpha-6.0.0.0`) anchored strictly to verified remote tracking commit `origin/main`.
+  3. **Continuous Deployment & Verification**:
+     - Dispatches `azure-app-deploy.yml` with `--ref release-alpha-<version>`.
+     - Dual-actor permission in `azure-app-deploy.yml` allows both `@nikunjbanker` and `github-actions[bot]`.
+     - Verifies live Azure Container App health state (`Healthy` probe & HTTP 200).
+     - Automatically creates and publishes a GitHub Release with auto-generated release notes.
+
+
 ## 12. Adversarial Infrastructure & Cloud Perimeter Hardening (`ADR-147`)
 
 * **Azure SQL Serverless Perimeter Hardening**:

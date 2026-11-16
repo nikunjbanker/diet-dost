@@ -107,7 +107,7 @@ jobs:
     needs: [pre-deployment-security-scan, pre-deployment-quality-gate]
     if: |
       always() &&
-      github.actor == 'nikunjbanker' &&
+      (github.actor == 'nikunjbanker' || github.actor == 'github-actions[bot]') &&
       !contains(needs.*.result, 'failure') &&
       !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
@@ -291,7 +291,7 @@ jobs:
     needs: [validate-application]
     if: |
       always() &&
-      github.actor == 'nikunjbanker' &&
+      (github.actor == 'nikunjbanker' || github.actor == 'github-actions[bot]') &&
       needs.validate-application.result == 'success'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment || 'dev' }}
@@ -378,7 +378,7 @@ jobs:
     needs: [preview-application, validate-application]
     if: |
       always() &&
-      github.actor == 'nikunjbanker' &&
+      (github.actor == 'nikunjbanker' || github.actor == 'github-actions[bot]') &&
       needs.validate-application.result == 'success' &&
       needs.preview-application.result == 'success'
     runs-on: ubuntu-latest

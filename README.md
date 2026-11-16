@@ -404,14 +404,30 @@ Diet-Dost delivers a workable public cloud showcase MVP hosted on **Azure Contai
 4. **Free Managed TLS 1.3**: Automatic 90-day auto-renewing certificate via Azure Container Apps managed environment.
 5. **Showcase 5-Tier Governance**: Configured with `Security:AllowDemoUsers=true` enabling live validation across all 5 user tiers.
 
+### Automated Release & Deployment Pipeline (ADR-161):
+Diet-Dost features an automated, event-driven release pipeline ([`.github/workflows/auto-release-on-merge.yml`](.github/workflows/auto-release-on-merge.yml)) that:
+1. **Auto-Triggers on Merge to `main`**: Automatically triggers when any Pull Request merges into `main`.
+2. **Conventional Commits Semantic Bump Detection**: Evaluates commit messages and PR metadata:
+   - **Major Bump** (`alpha-(X+1).0.0.0`): Detected on `BREAKING CHANGE:`, `feat!:`, `fix!:`, or PR label `release:major`.
+   - **Minor Bump** (`alpha-X.(Y+1).0.0`): Detected on `feat:`, `feat(...)`, or PR label `release:minor`.
+   - **Patch Bump** (`alpha-X.Y.(Z+1).0`): Detected on `fix:`, `perf:`, `refactor:`, `chore:`, or PR label `release:patch`.
+3. **Automated Tagging & Release Branching**: Creates tag `alpha-<version>` and cuts isolated branch `release-alpha-<version>` (e.g. `release-alpha-6.0.0.0`) anchored strictly to verified remote tracking commit `origin/main`.
+4. **Azure Container Apps Deployment**: Dispatches `azure-app-deploy.yml` on the release branch, validates container revision health, and publishes official GitHub Release notes.
+
+```bash
+# Local Release Orchestrator & Dry-Run Simulation:
+pwsh -File scripts/release-deploy.ps1 -DryRun -BumpType Auto
+pwsh -File scripts/release-deploy.ps1 -BumpType Major -CreateTagAndBranch -Deploy
+```
+
 ### On-Demand Deployment via GitHub Actions:
-Deployments are managed exclusively via the automated GitHub Actions workflow ([`.github/workflows/azure-deploy.yml`](.github/workflows/azure-deploy.yml)) triggered on-demand (`workflow_dispatch`):
+Deployments can also be executed on-demand via the Aspire application deployment workflow ([`.github/workflows/azure-app-deploy.yml`](.github/workflows/azure-app-deploy.yml)) triggered via `workflow_dispatch`:
 
 ```bash
 # Trigger via GitHub CLI:
-gh workflow run "Build and Deploy to Azure Container Apps" -f allowDemoUsers=true
+gh workflow run azure-app-deploy.yml -f environment=dev -f provisionInfra=true -f databaseProvider=AzureSql
 ```
-Or via GitHub Web UI: Navigate to **Actions** → **Build and Deploy to Azure Container Apps** → **Run workflow**.
+Or via GitHub Web UI: Navigate to **Actions** → **Aspire - Build & Deploy Application** → **Run workflow**.
 
 ### DNS Records for Custom Domain (`dev.diet-dost.in`):
 | Type | Host | Target / Value | Purpose |

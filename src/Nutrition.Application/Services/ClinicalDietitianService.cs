@@ -607,18 +607,15 @@ public class ClinicalDietitianService
 
     public static TimeZoneInfo GetUserTimeZoneInfo(string? timezoneId)
     {
-        if (string.IsNullOrWhiteSpace(timezoneId))
-        {
-            return TimeZoneInfo.FindSystemTimeZoneById("India Standard Time");
-        }
+        var targetTz = string.IsNullOrWhiteSpace(timezoneId) ? "Asia/Kolkata" : timezoneId;
 
         try
         {
-            return TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+            return TimeZoneInfo.FindSystemTimeZoneById(targetTz);
         }
-        catch (TimeZoneNotFoundException)
+        catch (Exception)
         {
-            if (TimeZoneInfo.TryConvertIanaIdToWindowsId(timezoneId, out var windowsId))
+            if (TimeZoneInfo.TryConvertIanaIdToWindowsId(targetTz, out var windowsId))
             {
                 try
                 {
@@ -629,10 +626,18 @@ public class ClinicalDietitianService
                     // Fallback below
                 }
             }
-        }
-        catch (InvalidTimeZoneException)
-        {
-            // Fallback below
+
+            if (TimeZoneInfo.TryConvertWindowsIdToIanaId(targetTz, out var ianaId))
+            {
+                try
+                {
+                    return TimeZoneInfo.FindSystemTimeZoneById(ianaId);
+                }
+                catch
+                {
+                    // Fallback below
+                }
+            }
         }
 
         try
