@@ -94,26 +94,13 @@ jobs:
           if (-not $envInput) { $envInput = "dev" }
 
           Write-Host "Evaluating commit and calculating next release tag..."
-          $result = pwsh -File ./scripts/release-deploy.ps1 `
+          & ./scripts/release-deploy.ps1 `
               -BumpType $bumpInput `
               -TargetTag $customTagInput `
               -Environment $envInput `
               -DryRun
 
-          Write-Host "Calculated Tag: $($result.NewTag)"
-          Write-Host "Calculated Branch: $($result.ReleaseBranch)"
-          Write-Host "Detected Bump: $($result.BumpType)"
-
-          {
-              echo "previous_tag=$($result.PreviousTag)"
-              echo "new_tag=$($result.NewTag)"
-              echo "release_branch=$($result.ReleaseBranch)"
-              echo "bump_type=$($result.BumpType)"
-              echo "next_increment_tag=$($result.NextIncrementTag)"
-              echo "dry_run=$dryRunInput"
-              echo "deploy_requested=$deployInput"
-              echo "environment=$envInput"
-          } >> "$env:GITHUB_OUTPUT"
+          "deploy_requested=$deployInput" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: 3. Create & Push Tag and Release Branch
         if: steps.calc.outputs.dry_run != 'true'
