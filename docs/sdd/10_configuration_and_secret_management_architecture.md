@@ -12,7 +12,7 @@
 > **Classification**: Authoritative System Design Document & Living Architecture Proof  
 > **Status**: `APPROVED & LIVING`  
 > **Last Synchronized**: 2026-10-09  
-> **Target Framework**: `.NET 11 RC`, `.NET Aspire 13.5.4`, `Azure Container Apps`, `Azure Key Vault`  
+> **Target Framework**: `.NET 11` (`net11.0`), `.NET Aspire 13.5.4`, `Azure Container Apps`, `Azure Key Vault`  
 
 ---
 

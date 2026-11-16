@@ -87,8 +87,8 @@ public class ReleasePipelineContractTests
     [Theory]
     [InlineData("feat!: breaking overhaul of authentication", "Major", "alpha-6.0.0.0", "release-alpha-6.0.0.0")]
     [InlineData("feat(profile): add Indian clinical BMI insights", "Minor", "alpha-5.1.0.0", "release-alpha-5.1.0.0")]
-    [InlineData("fix(infra): pin Azure SQL to Basic DTU tier", "Patch", "alpha-5.0.1.0", "release-alpha-5.0.1.0")]
-    [InlineData("chore(deps): update Aspire CLI to latest", "Patch", "alpha-5.0.1.0", "release-alpha-5.0.1.0")]
+    [InlineData("fix(infra): pin Azure SQL to Basic DTU tier", "Patch", "alpha-5.0.2.0", "release-alpha-5.0.2.0")]
+    [InlineData("chore(deps): update Aspire CLI to latest", "Patch", "alpha-5.0.2.0", "release-alpha-5.0.2.0")]
     public void ReleaseScript_DryRun_AccuratelyCalculatesSemanticTagAndBranch(
         string commitMessage, string expectedBump, string expectedTag, string expectedBranch)
     {

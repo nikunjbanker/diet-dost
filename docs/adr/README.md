@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 127 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 128 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **40** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **41** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **26** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **31** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **17** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -85,6 +85,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-153** | Idempotent Database Seeding, EF Core Global Query Filter Bypass, and Primary Key Conflict Defense | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-153-idempotent-database-seeding-and-soft-delete-filter-bypass.md) |
 | **ADR-154** | Authorized Progress Media Streaming, DPDPA Biometric Isolation, and Dashboard Hydration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-154-face-and-body-photo-authorized-media-streaming.md) |
 | **ADR-155** | Explicit User Onboarding Boolean Flag & Zero-Assumption Intake Governance | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261101-155-explicit-user-onboarding-boolean-flag.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261101-155-explicit-user-onboarding-boolean-flag.md) |
+| **ADR-156** | Upgrade Solution Code and Dependencies to .NET 11 General Availability (Release 11.0.0) | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261116-156-upgrade-to-dotnet-11-release-version.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261116-156-upgrade-to-dotnet-11-release-version.md) |
 | **ADR-162** | Cross-Platform Timezone Resolution & Circadian Day Bucketing | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261116-162-cross-platform-timezone-resolution.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261116-162-cross-platform-timezone-resolution.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)

@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-16T11:53:49.711658+00:00",
-  "totalAdrs": 127,
+  "generatedAt": "2026-11-16T12:29:32.713024+00:00",
+  "totalAdrs": 128,
   "categoryCounts": {
-    "architecture": 40,
+    "architecture": 41,
     "security": 26,
     "devops": 31,
     "presentation": 17,
@@ -1449,6 +1449,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261101-155-explicit-user-onboarding-boolean-flag.md",
       "relativePath": "docs/adr/architecture/ADR-20261101-155-explicit-user-onboarding-boolean-flag.md"
+    },
+    {
+      "id": "ADR-156",
+      "number": 156,
+      "title": "Upgrade Solution Code and Dependencies to .NET 11 General Availability (Release 11.0.0)",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-16",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261116-156-upgrade-to-dotnet-11-release-version.md",
+      "relativePath": "docs/adr/architecture/ADR-20261116-156-upgrade-to-dotnet-11-release-version.md"
     },
     {
       "id": "ADR-156",
