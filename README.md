@@ -404,9 +404,9 @@ Diet-Dost delivers a workable public cloud showcase MVP hosted on **Azure Contai
 4. **Free Managed TLS 1.3**: Automatic 90-day auto-renewing certificate via Azure Container Apps managed environment.
 5. **Showcase 5-Tier Governance**: Configured with `Security:AllowDemoUsers=true` enabling live validation across all 5 user tiers.
 
-### Automated Release & Deployment Pipeline (ADR-161, ADR-163):
+### Automated Release & Deployment Pipeline (ADR-161, ADR-163, ADR-164):
 Diet-Dost features an automated release orchestrator pipeline ([`.github/workflows/auto-release-on-merge.yml`](.github/workflows/auto-release-on-merge.yml)) that:
-1. **On-Demand Dispatch with Maintainer Gating (ADR-163)**: Triggered manually via `workflow_dispatch` and strictly gated to `@nikunjbanker` (`github.actor == 'nikunjbanker'`).
+1. **Automated Trigger on Main with Maintainer Gating (ADR-164)**: Triggers automatically on `push: branches: [main]` as well as on-demand via `workflow_dispatch`, strictly gated to `@nikunjbanker` (`github.actor == 'nikunjbanker'`). Pushes by other actors or bots do not trigger deployments.
 2. **Conventional Commits Semantic Bump Detection**: Evaluates commit messages and PR metadata:
    - **Major Bump** (`alpha-(X+1).0.0.0`): Detected on `BREAKING CHANGE:`, `feat!:`, `fix!:`, or PR label `release:major`.
    - **Minor Bump** (`alpha-X.(Y+1).0.0`): Detected on `feat:`, `feat(...)`, or PR label `release:minor`.
