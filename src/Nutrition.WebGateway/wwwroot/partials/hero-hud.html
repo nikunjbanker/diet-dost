@@ -4,7 +4,12 @@
   <div class="card">
     <div class="calorie-hud-header">
       <div class="hud-title">Daily Calorie Balance</div>
-      <div class="brand-tag tabular" id="date-tag">Today</div>
+      <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+        <div class="brand-tag tabular" id="date-tag">Today</div>
+        <button type="button" class="btn btn-sm btn-hud-share" id="btn-share-daily-hud" aria-label="Share Daily Nutrition Progress" title="Share daily calorie balance, macros and badges">
+          <span>📤</span> <span class="share-hud-label">Share Day</span>
+        </button>
+      </div>
     </div>
 
     <div class="calorie-numbers-row">

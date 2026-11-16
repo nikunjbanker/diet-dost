@@ -98,7 +98,8 @@ export class AnalyticsChartController {
       filterSubtitle: el.mealLogFilterSubtitle,
       clearFilterBtn: el.mealLogClearFilter,
       onEditMeal: (meal) => this._bus.emit('meal:edit', meal),
-      onDeleteMeal: (meal, btn) => this._handleDeleteMeal(meal, btn)
+      onDeleteMeal: (meal, btn) => this._handleDeleteMeal(meal, btn),
+      onShareMeal: (meal) => this._bus.emit('share:open', { type: 'meal', data: meal })
     });
   }
 

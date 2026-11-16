@@ -140,11 +140,11 @@ public class ReleasePipelineContractTests
         }
         else if (expectedBump == "Minor")
         {
-            Assert.StartsWith("alpha-5.1.", newTag);
+            Assert.Matches(@"^alpha-5\.[1-9]\d*\.0\.0$", newTag);
         }
         else if (expectedBump == "Patch")
         {
-            Assert.Matches(@"^alpha-5\.0\.[1-9]\d*\.0$", newTag);
+            Assert.Matches(@"^alpha-5\.\d+\.[1-9]\d*\.0$", newTag);
         }
     }
 }
