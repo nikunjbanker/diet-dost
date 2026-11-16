@@ -477,11 +477,12 @@ The full architectural blueprint is codified in the following repository visual 
 - **Existing Resources**: A normal deployment reapplies the Basic SKU to existing Azure SQL databases. The operator must back up the database and confirm that the data fits within Basic's 2 GB maximum before deploying. Application networking, authentication, and Key Vault connection handling are unchanged.
 - **Regression Guard**: `SqlBicep_ProvisionsBasicDtuTier_AndExcludesServerlessConfiguration` checks the exact Bicep SKU and prevents serverless-only settings or outdated workflow labels from returning.
 
-### 8.19 Automated Release Pipeline, Semantic Tagging & Azure Deployment (ADR-161)
-- **Problem**: Release tagging (`alpha-1.0.0.0` through `alpha-5.0.0.0`) and branch creation were manual, lacking automated triggers upon merge to `main`, Conventional Commit semantic bump detection, and end-to-end integration with the Aspire ACA deployment workflow.
+### 8.19 Automated Release Pipeline, Semantic Tagging & Azure Deployment (ADR-161, ADR-163)
+- **Problem**: Release tagging (`alpha-1.0.0.0` through `alpha-5.0.0.0`) and branch creation were manual, lacking automated Conventional Commit semantic bump detection and end-to-end integration with the Aspire ACA deployment workflow. Additionally, auto-deploying on every PR merge risked unintended cloud costs and lacked human maintainer release discretion.
 - **Architectural Solution**:
-  1. **Event-Driven Merge Workflow (`.github/workflows/auto-release-on-merge.yml`)**:
-     - Auto-triggers on `push: branches: [main]` whenever a PR is merged.
+  1. **On-Demand Release Orchestrator (`.github/workflows/auto-release-on-merge.yml`)**:
+     - Configured for strictly on-demand execution via `workflow_dispatch` (ADR-163).
+     - **Maintainer Actor Gating**: Strictly gated to `@nikunjbanker` (`github.actor == 'nikunjbanker'`) across all stages. Unauthorized triggers are immediately skipped.
      - Pushes new release tags to `refs/tags/alpha-*` and branches to `refs/heads/release-alpha-*`, ensuring 100% immunity from recursive trigger loops against `main`.
   2. **Conventional Commits Semantic Bump Engine (`scripts/release-deploy.ps1`)**:
      - Dynamically discovers the highest `alpha-X.Y.Z.B` tag in the repository.
