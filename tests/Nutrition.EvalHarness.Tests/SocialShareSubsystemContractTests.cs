@@ -91,8 +91,9 @@ public partial class SocialShareSubsystemContractTests
         Assert.Contains("copyTextToClipboard", content);
         Assert.Contains("generateMealShareText", content);
         Assert.Contains("generateDailyShareText", content);
-        // Assert web app link inclusion per user feedback
-        Assert.Contains("https://dietdost.app", content);
+        // Assert official dev link attribution per user specification
+        Assert.Contains("https://dev.diet-dost.in", content);
+        Assert.DoesNotContain("https://dietdost.app", content);
     }
 
     [Fact]
@@ -106,7 +107,50 @@ public partial class SocialShareSubsystemContractTests
         Assert.Contains("renderMealCard", content);
         Assert.Contains("renderDailyCard", content);
         Assert.Contains("1080", content);
-        Assert.Contains("dietdost.app", content);
+        Assert.Contains("https://dev.diet-dost.in", content);
+        Assert.DoesNotContain("dietdost.app", content);
+    }
+
+    [Fact]
+    public void ShareButtons_UseFuturisticSvgIcon_AndAvoidLegacyOutboxEmoji()
+    {
+        var hudPath = Path.Combine(_wwwroot, "partials", "hero-hud.html");
+        var reviewPath = Path.Combine(_wwwroot, "partials", "review-modal.html");
+        var diaryPath = Path.Combine(_wwwroot, "js", "ui", "MealDiaryView.js");
+
+        var hudContent = File.ReadAllText(hudPath);
+        var reviewContent = File.ReadAllText(reviewPath);
+        var diaryContent = File.ReadAllText(diaryPath);
+
+        // Disallow legacy clunky outbox emoji
+        Assert.DoesNotContain("📤", hudContent);
+        Assert.DoesNotContain("📤", reviewContent);
+        Assert.DoesNotContain("📤", diaryContent);
+
+        // Require futuristic SVG share icon class
+        Assert.Contains("icon-share-futuristic", hudContent);
+        Assert.Contains("icon-share-futuristic", reviewContent);
+        Assert.Contains("icon-share-futuristic", diaryContent);
+    }
+
+    [Fact]
+    public void ShareSubsystem_PreventsDuplicateLinkInSharedScreens()
+    {
+        var servicePath = Path.Combine(_wwwroot, "js", "services", "share-service.js");
+        var modalJsPath = Path.Combine(_wwwroot, "js", "ui", "share-modal.js");
+        var modalHtmlPath = Path.Combine(_wwwroot, "partials", "share-modal.html");
+
+        var serviceContent = File.ReadAllText(servicePath);
+        var modalJsContent = File.ReadAllText(modalJsPath);
+        var modalHtmlContent = File.ReadAllText(modalHtmlPath);
+
+        // Verify share-modal.html uses https://dev.diet-dost.in and no dietdost.app
+        Assert.Contains("https://dev.diet-dost.in", modalHtmlContent);
+        Assert.DoesNotContain("dietdost.app", modalHtmlContent);
+
+        // Ensure navigator.share calls in share-service.js and share-modal.js do not pass url: this._appUrl alongside text (preventing OS concatenation duplication)
+        Assert.DoesNotContain("url: this._appUrl", serviceContent);
+        Assert.DoesNotContain("url: this._service.appUrl", modalJsContent);
     }
 
     [Fact]

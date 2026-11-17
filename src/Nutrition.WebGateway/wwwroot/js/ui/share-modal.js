@@ -137,8 +137,7 @@ export class ShareModalController {
     if (el.btnFacebook) {
       el.btnFacebook.addEventListener('click', () => {
         const shareUrl = encodeURIComponent(this._service.appUrl);
-        const quote = encodeURIComponent(this._currentText);
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}&quote=${quote}`, '_blank', 'noopener,noreferrer');
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`, '_blank', 'noopener,noreferrer');
       });
     }
 
@@ -168,14 +167,12 @@ export class ShareModalController {
             await navigator.share({
               title: 'Diet Dost Nutrition Report',
               text: this._currentText,
-              files: [file],
-              url: this._service.appUrl
+              files: [file]
             });
           } else if (navigator.share) {
             await navigator.share({
               title: 'Diet Dost Nutrition Report',
-              text: this._currentText,
-              url: this._service.appUrl
+              text: this._currentText
             });
           }
         } catch (err) {

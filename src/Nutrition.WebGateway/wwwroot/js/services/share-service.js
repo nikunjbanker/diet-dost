@@ -28,9 +28,7 @@ export class ShareService {
     this._toast = toastService;
     this._bus = eventBus;
     this._renderer = new ShareCardRenderer();
-    this._appUrl = typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost')
-      ? window.location.origin
-      : 'https://dietdost.app';
+    this._appUrl = 'https://dev.diet-dost.in';
   }
 
   get renderer() {
@@ -183,8 +181,7 @@ export class ShareService {
         await navigator.share({
           title: `Diet Dost - ${meal.dishName || 'Meal Entry'}`,
           text: shareText,
-          files: [file],
-          url: this._appUrl
+          files: [file]
         });
         return;
       } catch (err) {
@@ -223,8 +220,7 @@ export class ShareService {
         await navigator.share({
           title: 'Diet Dost - Daily Nutrition Pulse',
           text: shareText,
-          files: [file],
-          url: this._appUrl
+          files: [file]
         });
         return;
       } catch (err) {

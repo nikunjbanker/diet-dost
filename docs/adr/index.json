@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-16T16:19:26.628383+00:00",
-  "totalAdrs": 131,
+  "generatedAt": "2026-11-17T08:09:29.481810+00:00",
+  "totalAdrs": 132,
   "categoryCounts": {
     "architecture": 41,
     "security": 26,
     "devops": 33,
-    "presentation": 18,
+    "presentation": 19,
     "governance": 13
   },
   "records": [
@@ -1581,6 +1581,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261116-165-cross-platform-social-share-and-export-subsystem.md",
       "relativePath": "docs/adr/presentation/ADR-20261116-165-cross-platform-social-share-and-export-subsystem.md"
+    },
+    {
+      "id": "ADR-166",
+      "number": 166,
+      "title": "Futuristic Share Button Icon, Exact Dev Link Attribution, and Shared Link Deduplication",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-11-17",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261117-166-futuristic-share-button-icon-and-link-deduplication.md",
+      "relativePath": "docs/adr/presentation/ADR-20261117-166-futuristic-share-button-icon-and-link-deduplication.md"
     }
   ]
 }
