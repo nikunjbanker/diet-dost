@@ -10,7 +10,7 @@
         </div>
       </div>
       <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <button type="button" class="btn btn-sm" onclick="window.print()" title="Print or save as PDF">🖨️ Print One-Pager</button>
+        <button type="button" class="btn btn-sm" onclick="window.print()" title="Print or save as PDF" style="display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-printer"></use></svg>Print One-Pager</button>
         <button id="btn-close-transparency" class="btn btn-sm btn-modal-close" onclick="closeTransparencyModal()" aria-label="Close Transparency"><svg class="icon-modal-close" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg></button>
       </div>
     </div>
@@ -24,8 +24,8 @@
             <strong style="color: var(--accent-brand-hover); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.05em;">
               Active Profile Live Audit Trail
             </strong>
-            <span id="tp-sync-status" class="brand-tag tabular" style="background: rgba(39, 195, 128, 0.15); border-color: rgba(39, 195, 128, 0.4); color: var(--status-emerald); font-size: 0.7rem; padding: 2px 7px;">
-              ✓ Live Synced
+            <span id="tp-sync-status" class="brand-tag tabular" style="background: rgba(39, 195, 128, 0.15); border-color: rgba(39, 195, 128, 0.4); color: var(--status-emerald); font-size: 0.7rem; padding: 2px 7px; display: inline-flex; align-items: center; gap: 3px;">
+              <svg class="icon-svg" width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg>Live Synced
             </span>
           </div>
           <span class="brand-tag tabular" id="tp-user-summary">Aarav Sharma · Male, 32y · 175cm (5'9") · 82kg</span>

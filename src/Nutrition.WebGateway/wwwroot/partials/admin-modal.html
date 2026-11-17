@@ -11,11 +11,11 @@
 
     <!-- Admin Navigation Tabs -->
     <div class="mode-switcher" style="margin-bottom: 1rem; align-self: flex-start; flex-shrink: 0;">
-      <button type="button" id="btn-admin-tab-users" class="mode-btn active">👥 User Directory</button>
-      <button type="button" id="btn-admin-tab-active" class="mode-btn">🟢 Active Users</button>
-      <button type="button" id="btn-admin-tab-tiers" class="mode-btn">⚙️ Tier Configurations</button>
-      <button type="button" id="btn-admin-tab-logs" class="mode-btn">📡 AI Usage Telemetry</button>
-      <button type="button" id="btn-admin-tab-deleted" class="mode-btn">🗑️ Deleted Audit</button>
+      <button type="button" id="btn-admin-tab-users" class="mode-btn active"><svg class="icon-tab" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-users"></use></svg>User Directory</button>
+      <button type="button" id="btn-admin-tab-active" class="mode-btn"><svg class="icon-tab icon-status-online" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-activity"></use></svg>Active Users</button>
+      <button type="button" id="btn-admin-tab-tiers" class="mode-btn"><svg class="icon-tab" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-settings"></use></svg>Tier Configurations</button>
+      <button type="button" id="btn-admin-tab-logs" class="mode-btn"><svg class="icon-tab" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-telemetry"></use></svg>AI Usage Telemetry</button>
+      <button type="button" id="btn-admin-tab-deleted" class="mode-btn"><svg class="icon-tab" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-delete"></use></svg>Deleted Audit</button>
     </div>
 
     <!-- Pane 1: User Directory -->
@@ -29,8 +29,8 @@
           <option value="2">Premium</option>
           <option value="3">SuperAdmin</option>
         </select>
-        <button type="button" id="btn-admin-create-user" class="btn btn-sm btn-primary">➕ Create User</button>
-        <button type="button" id="btn-admin-refresh-users" class="btn btn-sm btn-outline">🔄 Refresh</button>
+        <button type="button" id="btn-admin-create-user" class="btn btn-sm btn-primary"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-plus"></use></svg>Create User</button>
+        <button type="button" id="btn-admin-refresh-users" class="btn btn-sm btn-outline"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Refresh</button>
       </div>
 
       <div class="table-responsive">
@@ -68,7 +68,7 @@
           </select>
           <span id="admin-active-count-badge" class="badge" style="background: rgba(34, 197, 94, 0.15); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3);">0 Online</span>
         </div>
-        <button type="button" id="btn-admin-refresh-active" class="btn btn-sm btn-outline">🔄 Refresh</button>
+        <button type="button" id="btn-admin-refresh-active" class="btn btn-sm btn-outline"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Refresh</button>
       </div>
 
       <div class="table-responsive">
@@ -102,7 +102,7 @@
     <div id="admin-pane-logs" class="admin-pane" style="display: none; flex: 1; overflow-y: auto; min-height: 0;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
         <div style="font-size: 0.85rem; color: var(--text-secondary);">Realtime immutable audit trail from <code>AiUsageLogs</code></div>
-        <button type="button" id="btn-admin-refresh-logs" class="btn btn-sm btn-outline">🔄 Refresh Logs</button>
+        <button type="button" id="btn-admin-refresh-logs" class="btn btn-sm btn-outline"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Refresh Logs</button>
       </div>
       <div class="table-responsive">
         <table class="admin-table">
@@ -138,7 +138,7 @@
           </select>
           <input type="text" id="admin-search-deleted-user" class="text-input" placeholder="Filter by User ID..." style="min-width: 200px;">
         </div>
-        <button type="button" id="btn-admin-refresh-deleted" class="btn btn-sm btn-outline">🔄 Refresh Deleted Records</button>
+        <button type="button" id="btn-admin-refresh-deleted" class="btn btn-sm btn-outline"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Refresh Deleted Records</button>
       </div>
       <div class="table-responsive">
         <table class="admin-table">
@@ -170,7 +170,7 @@
     <div class="review-header" style="margin-bottom: 1rem;">
       <div>
         <div class="hud-title">User Governance</div>
-        <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">➕ Create New User</h3>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px;"><svg class="icon-heading" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-plus"></use></svg>Create New User</h3>
       </div>
       <button type="button" id="btn-close-create-user-modal" class="btn btn-sm btn-modal-close" aria-label="Close Create User Modal"><svg class="icon-modal-close" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg></button>
     </div>
@@ -243,7 +243,7 @@
     <div class="review-header" style="margin-bottom: 1rem;">
       <div>
         <div class="hud-title">User Governance</div>
-        <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0;">✏️ Update User</h3>
+        <h3 style="font-size: 1.15rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px;"><svg class="icon-heading" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-edit"></use></svg>Update User</h3>
       </div>
       <button type="button" id="btn-close-edit-user-modal" class="btn btn-sm btn-modal-close" aria-label="Close Edit User Modal"><svg class="icon-modal-close" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg></button>
     </div>

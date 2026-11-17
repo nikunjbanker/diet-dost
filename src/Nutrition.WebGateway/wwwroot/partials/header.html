@@ -11,25 +11,25 @@
   </div>
   <div class="header-actions">
     <button id="btn-open-progress-header" class="btn header-btn-desktop" title="Visual Transformation, Face Slimming & Full Body Progress" onclick="openProgressModal('pane-face-progress')">
-      🧍 Visual Progress
+      <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-body"></use></svg>Visual Progress
     </button>
     <button id="btn-open-transparency" class="btn header-btn-desktop" title="View all clinical formulas and one-pager calculation sheet" onclick="openTransparencyModal()">
-      📐 Calculation Transparency
+      <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-target"></use></svg>Calculation Transparency
     </button>
     <button id="btn-open-profile" class="btn header-btn-desktop" title="View or edit clinical metrics" onclick="openProfileModal()">
-      ⚙️ Clinical Intake
+      <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-settings"></use></svg>Clinical Intake
     </button>
 
     <!-- Real-time In-App Notification Bell (SuperAdmin / User Alerts) -->
     <div id="notification-bell-container" class="notification-bell-wrapper" style="position: relative; display: none;">
       <button type="button" id="btn-notification-bell" class="btn btn-outline" style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; padding: 0; position: relative;" title="In-App Notifications">
-        <span style="font-size: 1.15rem; line-height: 1;">🔔</span>
+        <svg class="icon-svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bell"></use></svg>
         <span id="notification-badge-count" style="display: none; position: absolute; top: -5px; right: -5px; background: #ef4444; color: #ffffff; font-size: 0.65rem; font-weight: 700; border-radius: 9999px; min-width: 18px; height: 18px; line-height: 18px; text-align: center; padding: 0 4px; border: 2px solid #0d1117;">0</span>
       </button>
       <div id="notification-dropdown" class="user-dropdown" style="display: none; width: 340px; right: 0; max-height: 420px; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
         <div style="padding: 10px 14px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
           <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 6px;">
-            <span>🔔</span> Notifications
+            <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bell"></use></svg>Notifications
           </div>
           <button type="button" id="btn-mark-all-read" style="background: none; border: none; color: var(--accent); font-size: 0.72rem; cursor: pointer; text-decoration: underline;">Mark all read</button>
         </div>
@@ -42,9 +42,9 @@
     <!-- User Account & Tier Entitlements Dropdown -->
     <div class="user-menu-wrapper" style="position: relative;">
       <button type="button" id="btn-user-menu" class="btn btn-outline" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px;">
-        <span id="header-user-avatar">👤</span>
+        <span id="header-user-avatar" style="display: flex; align-items: center;"><svg class="icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-user"></use></svg></span>
         <span id="header-user-name" style="font-size: 0.85rem; font-weight: 600;">Account</span>
-        <span id="header-tier-pill" class="tier-badge-pill">⚡ Premium</span>
+        <span id="header-tier-pill" class="tier-badge-pill" style="display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bolt"></use></svg>Premium</span>
         <span id="ai-quota-badge" class="tier-badge-pill quota-badge" style="font-size: 0.72rem; padding: 2px 8px; background: rgba(56, 189, 248, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.25); display: none;">1 scan remaining today</span>
       </button>
 
@@ -54,16 +54,16 @@
           <div id="dropdown-user-email" style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">user@domain.com</div>
         </div>
         <div class="user-dropdown-divider"></div>
-        <a href="javascript:void(0)" id="menu-open-quota" class="user-dropdown-item">
-          <span>📊 AI Quota & Telemetry</span>
-          <span id="menu-quota-preview" style="font-size: 0.72rem; color: var(--accent); font-family: monospace;">--</span>
+        <a href="javascript:void(0)" id="menu-open-quota" class="user-dropdown-item" style="display: flex; align-items: center; gap: 6px;">
+          <span style="display: flex; align-items: center; gap: 6px;"><svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-telemetry"></use></svg>AI Quota & Telemetry</span>
+          <span id="menu-quota-preview" style="font-size: 0.72rem; color: var(--accent); font-family: monospace; margin-left: auto;">--</span>
         </a>
-        <a href="javascript:void(0)" id="menu-open-admin" class="user-dropdown-item" style="display: none;">
-          <span>👑 Admin Governance</span>
+        <a href="javascript:void(0)" id="menu-open-admin" class="user-dropdown-item" style="display: none; align-items: center; gap: 6px;">
+          <span style="display: flex; align-items: center; gap: 6px;"><svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-shield-check"></use></svg>Admin Governance</span>
         </a>
         <div class="user-dropdown-divider"></div>
-        <a href="javascript:void(0)" id="menu-btn-signout" class="user-dropdown-item" style="color: #ff6b6b;">
-          <span>🚪 Sign Out</span>
+        <a href="javascript:void(0)" id="menu-btn-signout" class="user-dropdown-item" style="color: #ff6b6b; display: flex; align-items: center; gap: 6px;">
+          <span style="display: flex; align-items: center; gap: 6px;"><svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #ff6b6b;"><use href="assets/icons/sprite.svg#icon-signout"></use></svg>Sign Out</span>
         </a>
       </div>
     </div>

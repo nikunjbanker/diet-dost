@@ -241,9 +241,16 @@ export class MealLoggerController {
 
     const mealType = this.detectMealTypeByTime();
     const timeStr = this.getClockTimeString();
-    const typeIcons = { 'Breakfast': '🌅', 'Lunch': '☀️', 'Snack': '☕', 'Dinner': '🌙' };
-
-    if (el.clockIcon) el.clockIcon.textContent = typeIcons[mealType] || '☀️';
+    const typeSymbols = {
+      'Breakfast': 'icon-meal-breakfast',
+      'Lunch': 'icon-meal-lunch',
+      'Snack': 'icon-meal-snack',
+      'Dinner': 'icon-meal-dinner'
+    };
+    const symId = typeSymbols[mealType] || 'icon-meal-lunch';
+    if (el.clockIcon) {
+      el.clockIcon.innerHTML = `<svg class="icon-meal-type" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#${symId}"></use></svg>`;
+    }
     el.clockText.textContent = `Auto: ${mealType} (${timeStr})`;
     el.clockBadge.title = `Auto-detected ${mealType} based on current clock (${timeStr}, ${this._state.userTimezone || 'Asia/Kolkata'})`;
   }
@@ -499,7 +506,7 @@ export class MealLoggerController {
 
   showRetakePrompt(score, advice) {
     alert(
-      `📸 Low Visual Confidence (${Math.round(score * 100)}% < 70% required threshold)\n\n${advice}\n\nPlease click OK to retake under better lighting or use Voice / Smart Search.`
+      `Low Visual Confidence (${Math.round(score * 100)}% < 70% required threshold)\n\n${advice}\n\nPlease click OK to retake under better lighting or use Voice / Smart Search.`
     );
   }
 }

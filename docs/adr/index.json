@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-17T11:02:51.822854+00:00",
-  "totalAdrs": 133,
+  "generatedAt": "2026-11-17T13:32:55.421034+00:00",
+  "totalAdrs": 134,
   "categoryCounts": {
     "architecture": 41,
     "security": 26,
     "devops": 33,
-    "presentation": 20,
+    "presentation": 21,
     "governance": 13
   },
   "records": [
@@ -1605,6 +1605,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261117-167-centralized-svg-icon-asset-and-sprite-architecture.md",
       "relativePath": "docs/adr/presentation/ADR-20261117-167-centralized-svg-icon-asset-and-sprite-architecture.md"
+    },
+    {
+      "id": "ADR-168",
+      "number": 168,
+      "title": "Solution-Wide Futuristic Vector Iconography Modernization",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-11-17",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261117-168-solution-wide-futuristic-vector-iconography.md",
+      "relativePath": "docs/adr/presentation/ADR-20261117-168-solution-wide-futuristic-vector-iconography.md"
     }
   ]
 }

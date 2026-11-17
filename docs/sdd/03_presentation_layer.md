@@ -375,3 +375,34 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
     - **Data Log Layout Toggles**: Modernized Cards view (`#icon-view-cards`), Grid view (`#icon-view-grid`), and Excel export (`#icon-export-excel`) with emerald `#27c380` hover glow.
 * **Agent & Skill Memory Codification**:
   - Codified Rule 7 in `.agents/rules/ui-ux-design-system.md` and added procedural standards in `.agents/skills/design-system-enforcer/SKILL.md` and `DESIGN.md`, ensuring all future AI agent iterations strictly maintain the centralized SVG asset and sprite standard.
+
+## 22. Solution-Wide Vector Iconography & Zero-Emoji Modernization Standard (`ADR-168`)
+
+* **Exhaustive Elimination of System Emojis**:
+  - Completely eradicated all legacy system emojis (`👥`, `🟢`, `⚙️`, `📡`, `🗑️`, `➕`, `🔄`, `✏️`, `🔒`, `🔓`, `👑`, `⭐`, `💎`, `🛡️`, `📸`, `🎙️`, `🔥`, `💪`, `🌾`, `🥑`, `🥗`, `🍬`, `🧂`, `🩺`, `🎯`, `👍`, `👎`, `👨‍⚕️`, `🖨️`, `💻`) across all user-facing views, navigation headers, category tabs, macro chips, modal dialogs, and JavaScript UI controllers.
+  - Replaced legacy text-rendered glyphs with pixel-perfect, cybernetic vector icons rendered via SVG `<use href="assets/icons/sprite.svg#icon-<id>">`.
+* **Unified 65-Symbol Vector Sprite Registry (`sprite.svg`)**:
+  - Maintained 65 standalone vector assets in `src/Nutrition.WebGateway/wwwroot/assets/icons/` and consolidated them into `sprite.svg`.
+  - Icon categories:
+    - **Navigation & Telemetry**: `#icon-users`, `#icon-activity`, `#icon-settings`, `#icon-telemetry`, `#icon-bell`, `#icon-shield-check`, `#icon-signout`, `#icon-desktop`, `#icon-phone`, `#icon-printer`.
+    - **User Tiers & Authentication**: `#icon-tier-free`, `#icon-tier-basic`, `#icon-tier-premium`, `#icon-tier-superadmin`, `#icon-user`, `#icon-lock`, `#icon-unlock`, `#icon-bolt`, `#icon-key`.
+    - **Meal Logging & Inputs**: `#icon-camera`, `#icon-mic`, `#icon-image`, `#icon-scan`, `#icon-search`, `#icon-clock`, `#icon-folder`, `#icon-plus`, `#icon-refresh`.
+    - **Macro Nutrients & Clinical**: `#icon-fire` (calories), `#icon-muscle` (protein), `#icon-grain` (carbs), `#icon-lipid` (fats), `#icon-leaf` (fiber), `#icon-cube` (sugar), `#icon-shaker` (sodium), `#icon-stethoscope` (companion/dietitian).
+    - **Biometrics & Progress**: `#icon-face`, `#icon-body`, `#icon-target`, `#icon-thumb-up`, `#icon-thumb-down`, `#icon-bot`, `#icon-info`, `#icon-check`.
+    - **Social & Share Studio**: `#icon-share-futuristic`, `#icon-x-twitter`, `#icon-whatsapp`, `#icon-facebook`, `#icon-clipboard-copy`, `#icon-download`, `#icon-copy-text`, `#icon-email`, `#icon-system-share`, `#icon-view-cards`, `#icon-view-grid`, `#icon-export-excel`, `#icon-close`.
+    - **Astronomical Meals**: `#icon-meal-breakfast`, `#icon-meal-lunch`, `#icon-meal-snack`, `#icon-meal-dinner`.
+* **8 Audited Presentation Surfaces & Controllers**:
+  1. **User & Tier Management (`admin-modal.html` & `admin-modal.js`)**: Modernized navigation tabs (`#icon-users`, `#icon-activity`, `#icon-settings`, `#icon-telemetry`, `#icon-delete`), table status badges (`.icon-status-online`, `.icon-status-recent`), user tier badges, and action buttons (`#icon-edit`, `#icon-delete`, `#icon-lock`, `#icon-unlock`, `#icon-plus`, `#icon-refresh`).
+  2. **Application Shell & Header (`header.html` & `main.js`)**: Modernized profile dropdown triggers, biometrics modal launcher (`#icon-body`), target goals (`#icon-target`), telemetry launcher, sign-out button, notification hub, and dynamic tier pills.
+  3. **Meal Logger Workspace (`meal-logger.html` & `meal-logger.js`)**: Modernized meal time selector (`#icon-clock`), camera/voice mode selectors (`#icon-camera`, `#icon-mic`), sample thali quick loader (`#icon-tier-free`), food suggestion chips (`#icon-leaf`, `#icon-grain`, `#icon-meal-*`), and scanning HUD (`#icon-scan`).
+  4. **Auth Gate & Mobile Bridge (`auth-gate.html` & `auth-gate.js`)**: Modernized desktop notice banner (`#icon-desktop`), QR/credential tabs (`#icon-bolt`, `#icon-key`), demo tier selector pills (`#icon-tier-*`), phone instructions (`#icon-phone`), refresh/scan buttons, disabled banner (`#icon-lock`), alpha notice (`#icon-info`), and recovery key dropzone (`#icon-folder`).
+  5. **Progress & Biometrics HUD (`progress-modal.html` & `progress-modal.js`)**: Modernized header body icon (`#icon-body`), tabs (`#icon-face`, `#icon-body`, `#icon-image`, `#icon-plus`), camera upload dropzone, locked tier overlay (`#icon-lock`, `#icon-bolt`), and submit buttons.
+  6. **Review & Plate Lightbox (`review-modal.html`)**: Modernized AI model badge (`#icon-bot`), confidence badge (`#icon-check`), 6-macro breakdown chips (`#icon-fire`, `#icon-muscle`, `#icon-grain`, `#icon-lipid`, `#icon-leaf`, `#icon-cube`), search optic, log time clock, clinical advice badge (`#icon-stethoscope`), AI feedback bullseye & thumbs (`#icon-target`, `#icon-thumb-up`, `#icon-thumb-down`), and retrain bolt.
+  7. **Delete Meal Confirmation & Diary (`delete-meal-modal.html` & `MealDiaryView.js`)**: Modernized macro preview mini-pills (`#icon-fire`, `#icon-muscle`, `#icon-grain`, `#icon-lipid`, `#icon-leaf`, `#icon-cube`), advisory notice (`#icon-info`), card macro chips, verified table badge, and action buttons.
+  8. **Companion Card & Transparency Modal (`companion-card.html`, `transparency-modal.html`, `index.html`)**: Modernized companion avatar (`#icon-stethoscope`), streak flame (`#icon-fire`), print report button (`#icon-printer`), and live sync check badge (`#icon-check`).
+* **CSS Cybernetic Styling & Theme Conformance (`styles.css`)**:
+  - Implemented modular helper classes: `.icon-svg`, `.icon-tab`, `.icon-btn`, `.icon-heading`, `.icon-status-online`, `.icon-status-recent`, and cybernetic pulsation keyframes `@keyframes statusPulse`.
+  - Configured `fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round;` ensuring icons adapt seamlessly to light/dark themes and hover accent glows.
+* **Automated Contract Assertions (`FuturisticIconographyAssetContractTests.cs`)**:
+  - Contract tests verify presence of all 65 standalone SVG asset files and symbol definitions in `sprite.svg`.
+  - Assert zero occurrences of legacy emojis across all 8 modernized HTML partials and JavaScript view controllers.

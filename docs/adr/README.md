@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 133 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 134 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -34,7 +34,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **41** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **26** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **33** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
-| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **20** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
+| **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **21** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
 ---
@@ -184,6 +184,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-165** | Cross-Platform Social Share and Export Subsystem | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261116-165-cross-platform-social-share-and-export-subsystem.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261116-165-cross-platform-social-share-and-export-subsystem.md) |
 | **ADR-166** | Futuristic Share Button Icon, Exact Dev Link Attribution, and Shared Link Deduplication | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261117-166-futuristic-share-button-icon-and-link-deduplication.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261117-166-futuristic-share-button-icon-and-link-deduplication.md) |
 | **ADR-167** | Centralized SVG Icon Asset and Sprite Architecture for Futuristic Iconography | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261117-167-centralized-svg-icon-asset-and-sprite-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261117-167-centralized-svg-icon-asset-and-sprite-architecture.md) |
+| **ADR-168** | Solution-Wide Futuristic Vector Iconography Modernization | `[PRESENTATION]` | `ACCEPTED` | [`ADR-20261117-168-solution-wide-futuristic-vector-iconography.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/ADR-20261117-168-solution-wide-futuristic-vector-iconography.md) |
 
 ### ⚖️ Governance, Standards & Agentic Workflows (`docs/adr/governance/`)
 > *Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing.*

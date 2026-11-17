@@ -9,7 +9,7 @@
         <div class="review-dish-title-row">
           <div class="review-dish-heading-wrap">
             <input type="text" id="review-dish-name-input" class="review-dish-heading-input" placeholder="Enter meal name..." title="Click to rename meal" spellcheck="false" autocomplete="off" />
-            <span class="review-dish-heading-pencil" title="Editable meal title">✏️</span>
+            <span class="review-dish-heading-pencil" title="Editable meal title"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #818cf8;"><use href="assets/icons/sprite.svg#icon-edit"></use></svg></span>
           </div>
           <!-- Hidden fallback for backwards compatibility -->
           <h2 style="display: none;" id="review-dish-name">Meal</h2>
@@ -18,10 +18,10 @@
       </div>
       <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
         <div id="review-model-badge" class="model-badge" style="display: none; font-size: 0.72rem; padding: 4px 10px; border-radius: 6px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.35); color: #818cf8; font-weight: 600; align-items: center; gap: 4px;">
-          🤖 <span id="review-model-name">Model</span>
+          <svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bot"></use></svg> <span id="review-model-name">Model</span>
         </div>
-        <div id="review-confidence-badge" class="confidence-badge confidence-pass">
-          ✓ 91% Confidence
+        <div id="review-confidence-badge" class="confidence-badge confidence-pass" style="display: inline-flex; align-items: center; gap: 4px;">
+          <svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg> 91% Confidence
         </div>
         <button type="button" id="btn-share-review-meal" class="btn btn-sm btn-card-action btn-share-meal" aria-label="Share Meal" title="Share Meal (WhatsApp, Instagram, Socials)">
           <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -38,27 +38,27 @@
     <!-- Aggregated Nutrition Summary Bar (Live Synced on any food item update) -->
     <div class="review-macro-summary-bar" id="review-macro-summary-bar">
       <div class="macro-stat-chip macro-stat-kcal" title="Total Caloric Energy">
-        <span class="macro-label">🔥 Calories</span>
+        <span class="macro-label"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fb923c; margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-fire"></use></svg>Calories</span>
         <span class="macro-val tabular" id="review-total-kcal">0 kcal</span>
       </div>
       <div class="macro-stat-chip macro-stat-protein" title="Total Protein">
-        <span class="macro-label">💪 Protein</span>
+        <span class="macro-label"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f87171; margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-muscle"></use></svg>Protein</span>
         <span class="macro-val tabular" id="review-total-protein">0.0g</span>
       </div>
       <div class="macro-stat-chip macro-stat-carbs" title="Total Carbohydrates">
-        <span class="macro-label">🌾 Carbs</span>
+        <span class="macro-label"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fbbf24; margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-grain"></use></svg>Carbs</span>
         <span class="macro-val tabular" id="review-total-carbs">0.0g</span>
       </div>
       <div class="macro-stat-chip macro-stat-fat" title="Total Fats & Lipids">
-        <span class="macro-label">🥑 Fat</span>
+        <span class="macro-label"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #34d399; margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-lipid"></use></svg>Fat</span>
         <span class="macro-val tabular" id="review-total-fat">0.0g</span>
       </div>
       <div class="macro-stat-chip macro-stat-fiber" title="Total Dietary Fiber">
-        <span class="macro-label">🥗 Fiber</span>
+        <span class="macro-label"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e; margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>Fiber</span>
         <span class="macro-val tabular" id="review-total-fiber">0.0g</span>
       </div>
       <div class="macro-stat-chip macro-stat-sugar" title="Total Free & Natural Sugars">
-        <span class="macro-label">🍬 Sugar</span>
+        <span class="macro-label"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f472b6; margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-cube"></use></svg>Sugar</span>
         <span class="macro-val tabular" id="review-total-sugar">0.0g</span>
       </div>
     </div>
@@ -72,9 +72,9 @@
           <div class="review-photo-wrapper" id="review-photo-wrapper" title="Click to inspect photo in high-resolution lightbox">
             <img id="review-meal-photo" src="" alt="Uploaded Meal Evidence" class="review-meal-img" onerror="this.onerror=null; this.src='/assets/placeholder-meal.svg';" />
             <div class="review-photo-overlay-top">
-              <span class="review-photo-badge">📸 Plate Photo</span>
+              <span class="review-photo-badge"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-camera"></use></svg>Plate Photo</span>
               <button type="button" class="review-photo-zoom-btn" id="btn-zoom-meal-photo" title="Click to open full photo in high-res lightbox">
-                🔍 <span id="photo-zoom-label">Inspect</span>
+                <svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-search"></use></svg><span id="photo-zoom-label">Inspect</span>
               </button>
             </div>
             <div class="review-photo-caption">
@@ -111,7 +111,7 @@
           <div class="review-log-time-row">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
               <label for="review-log-time-input" style="font-size: 0.74rem; color: var(--text-secondary); font-weight: 600; display: flex; align-items: center; gap: 4px; cursor: pointer;">
-                <span>🕒</span> <span>Consumption Date & Time:</span>
+                <svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8;"><use href="assets/icons/sprite.svg#icon-clock"></use></svg> <span>Consumption Date & Time:</span>
               </label>
             </div>
             <input type="datetime-local" id="review-log-time-input" class="review-log-time-input" title="Customize meal date and consumption time" />
@@ -121,7 +121,7 @@
         <!-- Clinical Dietitian Insight -->
         <div class="review-dietitian-box">
           <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px; font-weight: 600; color: var(--text-primary); font-size: 0.75rem;">
-            <span>🩺</span> <span>Clinical Dietitian Insight (ICMR-NIN 2024)</span>
+            <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e;"><use href="assets/icons/sprite.svg#icon-stethoscope"></use></svg> <span>Clinical Dietitian Insight (ICMR-NIN 2024)</span>
             <span style="margin-left: auto; font-size: 0.65rem; color: var(--status-emerald); background: rgba(39, 195, 128, 0.1); padding: 1px 6px; border-radius: 4px; border: 1px solid rgba(39, 195, 128, 0.25);">Live Sync</span>
           </div>
           <div id="review-dietitian-advice" style="color: var(--text-secondary); line-height: 1.45;">
@@ -135,16 +135,16 @@
         <!-- AI Detection Feedback & Continuous Retraining Bar -->
         <div class="ai-feedback-bar" id="review-ai-feedback-bar">
           <div class="ai-feedback-header">
-            <div class="ai-feedback-label">
-              <span>🎯</span>
+            <div class="ai-feedback-label" style="display: flex; align-items: center; gap: 6px;">
+              <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8;"><use href="assets/icons/sprite.svg#icon-target"></use></svg>
               <span><strong>AI Accuracy Feedback:</strong> Was this identification accurate?</span>
             </div>
             <div class="ai-feedback-buttons">
               <button type="button" class="btn-feedback-thumb" id="btn-feedback-up" title="Accurate AI detection (Thumbs Up)">
-                👍 <span class="feedback-thumb-label">Accurate</span>
+                <svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e;"><use href="assets/icons/sprite.svg#icon-thumb-up"></use></svg><span class="feedback-thumb-label">Accurate</span>
               </button>
               <button type="button" class="btn-feedback-thumb" id="btn-feedback-down" title="Needs correction (Thumbs Down)">
-                👎 <span class="feedback-thumb-label">Needs Fix</span>
+                <svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f87171;"><use href="assets/icons/sprite.svg#icon-thumb-down"></use></svg><span class="feedback-thumb-label">Needs Fix</span>
               </button>
             </div>
           </div>
@@ -155,7 +155,7 @@
                    placeholder="Add remarks to retrain model (e.g. 'Dal was Toor Dal', 'Subzi was Lauki', 'Portion was 3 rotis')..." 
                    maxlength="200" />
             <button type="button" class="btn btn-sm btn-feedback-submit" id="btn-submit-feedback" title="Submit feedback & retrain model">
-              ⚡ Retrain AI
+              <svg class="icon-btn" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bolt"></use></svg>Retrain AI
             </button>
           </div>
 
@@ -166,7 +166,7 @@
         <!-- Model Training & Memory Notice -->
         <div class="training-banner" id="training-banner" style="display: flex; align-items: center; gap: 0.5rem; justify-content: space-between;">
           <div style="display: flex; align-items: flex-start; gap: 0.4rem; flex: 1;">
-            <span style="font-size: 0.95rem;">🧠</span>
+            <svg class="icon-svg" width="15" height="15" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #c084fc; flex-shrink: 0; margin-top: 2px;"><use href="assets/icons/sprite.svg#icon-bot"></use></svg>
             <div>
               <strong>Continuous Smart Training Active:</strong> If AI misidentified your homestyle preparation, correct the item name below. Visual evidence takes precedence.
             </div>
@@ -179,21 +179,21 @@
         <!-- Dedicated Textual Food AI Search Box (Same as Meal Logger Smart Search) -->
         <div class="review-search-bar" id="review-search-bar">
           <div class="review-search-input-wrap">
-            <span class="review-search-icon">🔍</span>
+            <span class="review-search-icon"><svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-search"></use></svg></span>
             <input type="text" id="review-search-input" class="review-search-input" 
                    placeholder="Search or describe food item (e.g. 2 Phulkas with ghee, 1 Cup Dal Makhani, Paneer Bhurji)..."
                    title="Type any food item with portion to perform instant textual food AI search"
                    autocomplete="off" spellcheck="false" />
             <button type="button" id="btn-review-search-ai" class="btn btn-primary btn-sm btn-review-search-submit">
-              ⚡ AI Search
+              <svg class="icon-btn" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bolt"></use></svg>AI Search
             </button>
           </div>
           <div class="review-search-chips">
-            <span class="suggest-chip review-search-chip" data-query="2 Phulkas with Ghee">🫓 2 Phulkas + Ghee</span>
-            <span class="suggest-chip review-search-chip" data-query="1 Bowl Moong Dal Tadka">🥣 1 Bowl Dal Tadka</span>
-            <span class="suggest-chip review-search-chip" data-query="1 Katori Palak Paneer">🥬 Palak Paneer</span>
-            <span class="suggest-chip review-search-chip" data-query="1 Cup Dahi / Curd">🥛 1 Cup Curd</span>
-            <span class="suggest-chip review-search-chip" data-query="Fresh Cucumber Salad">🥒 Cucumber Salad</span>
+            <span class="suggest-chip review-search-chip" data-query="2 Phulkas with Ghee"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fbbf24; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-grain"></use></svg>2 Phulkas + Ghee</span>
+            <span class="suggest-chip review-search-chip" data-query="1 Bowl Moong Dal Tadka"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fb923c; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-fire"></use></svg>1 Bowl Dal Tadka</span>
+            <span class="suggest-chip review-search-chip" data-query="1 Katori Palak Paneer"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>Palak Paneer</span>
+            <span class="suggest-chip review-search-chip" data-query="1 Cup Dahi / Curd"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-meal-lunch"></use></svg>1 Cup Curd</span>
+            <span class="suggest-chip review-search-chip" data-query="Fresh Cucumber Salad"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #34d399; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>Cucumber Salad</span>
           </div>
         </div>
 
@@ -236,7 +236,7 @@
     <!-- Pinned Modal Footer (Always directly visible without scrolling) -->
     <div class="review-footer">
       <button type="button" id="btn-cancel-review" class="btn">Cancel</button>
-      <button type="button" id="btn-confirm-meal" class="btn btn-primary">Looks Great! Log Meal 🎉</button>
+      <button type="button" id="btn-confirm-meal" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 6px;"><svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg>Looks Great! Log Meal</button>
     </div>
   </div>
 
@@ -244,7 +244,7 @@
   <div class="review-lightbox-overlay" id="review-lightbox" style="display: none;">
     <div class="review-lightbox-frame">
       <div class="review-lightbox-topbar">
-        <span class="review-lightbox-title" id="review-lightbox-title">📸 Plate Photo Inspection</span>
+        <span class="review-lightbox-title" id="review-lightbox-title" style="display: flex; align-items: center;"><svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 6px;"><use href="assets/icons/sprite.svg#icon-camera"></use></svg>Plate Photo Inspection</span>
         <button type="button" class="review-lightbox-close" id="btn-close-lightbox" title="Close inspector (Esc)"><svg class="icon-modal-close" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg> <span>Close</span></button>
       </div>
       <div class="review-lightbox-image-container">

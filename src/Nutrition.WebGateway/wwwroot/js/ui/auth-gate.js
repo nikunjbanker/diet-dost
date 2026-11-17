@@ -304,7 +304,7 @@ export class AuthGateController {
     let score = 0;
     // Banned chars (mirrors server regex [<>;'"\\\/`~\x00-\x1F\x7F])
     const hasBanned = /[<>;'"\\\/`~\x00-\x1F\x7F]/.test(password);
-    if (hasBanned) return { score: 0, label: '❌ Contains disallowed characters (< > ; \' " \\ / ` ~)', color: '#ef4444' };
+    if (hasBanned) return { score: 0, label: 'Contains disallowed characters (< > ; \' " \\ / ` ~)', color: '#ef4444' };
 
     if (password.length >= 10) score++;
     if (password.length >= 14) score++;
@@ -314,10 +314,10 @@ export class AuthGateController {
     if (/[!@#$%^&*()\-_=+\[\]{}|:,.?]/.test(password)) score++;
     if (password.length > 20) score++;
 
-    if (score <= 2) return { score: 2, label: '🔴 Weak — add length, uppercase, digit & special char', color: '#ef4444' };
-    if (score <= 4) return { score: 4, label: '🟡 Fair — getting better, keep going', color: '#f59e0b' };
-    if (score <= 5) return { score: 5, label: '🟢 Good password', color: '#22c55e' };
-    return { score: 7, label: '💪 Strong password', color: '#27c380' };
+    if (score <= 2) return { score: 2, label: 'Weak — add length, uppercase, digit & special char', color: '#ef4444' };
+    if (score <= 4) return { score: 4, label: 'Fair — getting better, keep going', color: '#f59e0b' };
+    if (score <= 5) return { score: 5, label: 'Good password', color: '#22c55e' };
+    return { score: 7, label: 'Strong password', color: '#27c380' };
   }
 
   updateStrengthMeter(password, fillId, labelId) {
@@ -338,10 +338,10 @@ export class AuthGateController {
     if (!label) return;
     if (!confirm) { label.textContent = ''; return; }
     if (password === confirm) {
-      label.textContent = '✅ Passwords match';
+      label.textContent = 'Passwords match';
       label.style.color = '#27c380';
     } else {
-      label.textContent = '❌ Passwords do not match';
+      label.textContent = 'Passwords do not match';
       label.style.color = '#ef4444';
     }
   }
@@ -367,7 +367,7 @@ export class AuthGateController {
     try {
       const res = await this.authService.login(identifier, password);
       this.hide();
-      try { this.toastService?.success(`Welcome back, ${res.user?.name || 'Friend'}! 🥑`); } catch { /* noop */ }
+      try { this.toastService?.success(`Welcome back, ${res.user?.name || 'Friend'}!`); } catch { /* noop */ }
       this.eventBus?.emit('auth:success', res.user);
     } catch (err) {
       if (err.status === 403 && (err.data?.code === 'AccountPendingApproval' || err.data?.error?.includes('pending review') || err.data?.error?.includes('not activated'))) {
@@ -485,7 +485,7 @@ export class AuthGateController {
       this.setButtonLoading(submitBtn, true);
       try {
         const res = await this.authService.registerAnonymous(displayName, acceptTerms, acceptHealthConsent);
-        this.toastService?.success('🛡️ Anonymous account created! Safeguard your Disaster Recovery Kit.');
+        this.toastService?.success('Anonymous account created! Safeguard your Disaster Recovery Kit.');
         this.qrController.showRecoveryModal(res);
       } catch (err) {
         this.showError(this.registerError, err.data?.error || err.message || 'Anonymous registration failed.');
@@ -528,7 +528,7 @@ export class AuthGateController {
             this.notificationService.joinApplicantChannel(res.registrationTicket);
           }
           this.notificationService.on('AccountApproved', () => {
-            this.toastService?.success('🎉 Your account has been approved by the application owner! You may now sign in.');
+            this.toastService?.success('Your account has been approved by the application owner! You may now sign in.');
             this.switchTab('signin');
             const idInput = document.getElementById('signin-identifier');
             const pwdInput = document.getElementById('signin-password');
@@ -576,7 +576,7 @@ export class AuthGateController {
     try {
       const res = await this.authService.verifyOtp(this.pendingEmail, 0, code); // 0 = Email
       this.hide();
-      try { this.toastService?.success('Account verified and activated successfully! 🎉'); } catch { /* noop */ }
+      try { this.toastService?.success('Account verified and activated successfully!'); } catch { /* noop */ }
       this.eventBus?.emit('auth:success', res.user);
     } catch (err) {
       this.showError(this.verifyError, err.data?.error || err.message || 'Invalid or expired OTP code.');
@@ -669,11 +669,11 @@ export class AuthGateController {
     this.setButtonLoading(btn, true);
     try {
       await this.authService.resetPassword(this.pendingResetEmail, otpCode, newPassword, confirmPassword);
-      this.showSuccess(this.resetSuccess, '✅ Password reset successful! Please sign in with your new password.');
+      this.showSuccess(this.resetSuccess, 'Password reset successful! Please sign in with your new password.');
       // Hide the form inputs, redirect to sign-in after a short delay
       document.getElementById('reset-step-newpwd').style.display = 'none';
       setTimeout(() => this.switchTab('signin'), 2500);
-      this.toastService?.success('Password reset! Sign in with your new credentials. 🔑');
+      this.toastService?.success('Password reset! Sign in with your new credentials.');
     } catch (err) {
       this.showError(this.resetError, err.data?.error || err.data?.message || err.message || 'Reset failed. Check the code and try again.');
     } finally {
