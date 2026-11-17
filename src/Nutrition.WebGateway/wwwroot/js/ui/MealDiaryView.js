@@ -197,7 +197,14 @@ export class MealDiaryView {
               <span class="meal-card-time">${dateFormatted} · ${timeFormatted}</span>
               <div class="meal-card-actions">
                 <button type="button" class="btn-card-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal">
-                  <span class="action-icon">📤</span> Share
+                  <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="18" cy="5" r="3" class="share-node share-node-top"></circle>
+                    <circle cx="6" cy="12" r="3" class="share-node share-node-hub"></circle>
+                    <circle cx="18" cy="19" r="3" class="share-node share-node-bottom"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" class="share-beam share-beam-bottom"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" class="share-beam share-beam-top"></line>
+                  </svg>
+                  <span class="share-card-btn-text">Share</span>
                 </button>
                 <button type="button" class="btn-card-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal">
                   <span class="action-icon">✏️</span> Edit
@@ -305,7 +312,15 @@ export class MealDiaryView {
           </td>
           <td class="action-col" style="text-align: center; white-space: nowrap;">
             <div class="table-actions-wrap">
-              <button type="button" class="btn-table-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal">📤</button>
+              <button type="button" class="btn-table-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal" aria-label="Share Meal">
+                <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="18" cy="5" r="3" class="share-node share-node-top"></circle>
+                  <circle cx="6" cy="12" r="3" class="share-node share-node-hub"></circle>
+                  <circle cx="18" cy="19" r="3" class="share-node share-node-bottom"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" class="share-beam share-beam-bottom"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" class="share-beam share-beam-top"></line>
+                </svg>
+              </button>
               <button type="button" class="btn-table-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal">✏️</button>
               <button type="button" class="btn-table-action btn-delete-meal" data-meal-id="${meal.id}" title="Delete Meal">🗑️</button>
             </div>

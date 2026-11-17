@@ -352,4 +352,8 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
   - Meal History Diary (`MealDiaryView.js`): Action button `.btn-share-meal` on timeline cards and data grid rows.
 * **DPDPA 2023 Compliance & Zero PII Leakage**:
   - Excludes all personal identifiers (user IDs, emails, phone numbers, exact body weight, medications) from card rendering and formatted share text.
-  - Displays authoritative web application link: `https://dietdost.app`.
+  - Displays authoritative web application link: `https://dev.diet-dost.in`.
+* **Futuristic Share Iconography & Footer Deduplication (`ADR-166`)**:
+  - Replaced legacy outbox tray emojis (`📤`) with high-precision, standard, futuristic SVG quantum node share iconography (`.icon-share-futuristic`) featuring interconnected telemetry nodes and animated link beam (`shareBeamFlow`).
+  - Standardized application attribution URL to `https://dev.diet-dost.in` across card canvas footers, share studio modals, and share payloads.
+  - Deduplicated shared screen links by omitting the `url` parameter in `navigator.share` when `text` already contains the application URL, preventing OS-level duplicate link concatenation in WhatsApp and native share sheets.

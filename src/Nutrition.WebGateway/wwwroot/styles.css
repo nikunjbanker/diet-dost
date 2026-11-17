@@ -7321,38 +7321,125 @@ h2 {
    ========================================================================== */
 
 /* HUD Share Button */
+/* Futuristic & Innovative Share Iconography */
+.icon-share-futuristic {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  color: currentColor;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease;
+}
+
+.icon-share-futuristic .share-node {
+  fill: rgba(94, 106, 210, 0.35);
+  stroke: #818cf8;
+  stroke-width: 1.8;
+  transition: fill 0.2s ease, stroke 0.2s ease;
+}
+
+.icon-share-futuristic .share-node-hub {
+  fill: rgba(39, 195, 128, 0.45);
+  stroke: #27c380;
+}
+
+.icon-share-futuristic .share-beam {
+  stroke: rgba(165, 180, 252, 0.7);
+  stroke-width: 1.8;
+  stroke-dasharray: 6 2;
+  animation: shareBeamFlow 3.5s linear infinite;
+}
+
+@keyframes shareBeamFlow {
+  from { stroke-dashoffset: 16; }
+  to { stroke-dashoffset: 0; }
+}
+
+/* Hover glow micro-interaction */
+.btn-hud-share:hover .icon-share-futuristic,
+.btn-card-action.btn-share-meal:hover .icon-share-futuristic,
+.btn-table-action.btn-share-meal:hover .icon-share-futuristic,
+#btn-share-review-meal:hover .icon-share-futuristic {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.8)) drop-shadow(0 0 10px rgba(39, 195, 128, 0.5));
+}
+
+.btn-hud-share:hover .icon-share-futuristic .share-node-hub,
+.btn-card-action.btn-share-meal:hover .icon-share-futuristic .share-node-hub,
+.btn-table-action.btn-share-meal:hover .icon-share-futuristic .share-node-hub,
+#btn-share-review-meal:hover .icon-share-futuristic .share-node-hub {
+  fill: #27c380;
+  stroke: #34d399;
+}
+
+.btn-hud-share:hover .icon-share-futuristic .share-node,
+.btn-card-action.btn-share-meal:hover .icon-share-futuristic .share-node,
+.btn-table-action.btn-share-meal:hover .icon-share-futuristic .share-node,
+#btn-share-review-meal:hover .icon-share-futuristic .share-node {
+  fill: #818cf8;
+  stroke: #c7d2fe;
+}
+
+/* Futuristic Obsidian Share Button Styling */
 .btn-hud-share {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: rgba(94, 106, 210, 0.15);
-  border: 1px solid rgba(94, 106, 210, 0.35);
-  color: #a5b4fc;
+  gap: 7px;
+  background: linear-gradient(135deg, rgba(94, 106, 210, 0.16) 0%, rgba(39, 195, 128, 0.10) 100%);
+  border: 1px solid rgba(94, 106, 210, 0.38);
+  color: #e0e7ff;
   font-size: 0.78rem;
   font-weight: 600;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-hud-share:hover {
-  background: rgba(94, 106, 210, 0.28);
-  border-color: rgba(94, 106, 210, 0.6);
+  background: linear-gradient(135deg, rgba(94, 106, 210, 0.28) 0%, rgba(39, 195, 128, 0.20) 100%);
+  border-color: rgba(94, 106, 210, 0.65);
   color: #ffffff;
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(94, 106, 210, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .btn-card-action.btn-share-meal {
-  background: rgba(94, 106, 210, 0.12);
-  border: 1px solid rgba(94, 106, 210, 0.3);
-  color: #a5b4fc;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, rgba(94, 106, 210, 0.14) 0%, rgba(39, 195, 128, 0.08) 100%);
+  border: 1px solid rgba(94, 106, 210, 0.32);
+  color: #e0e7ff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-card-action.btn-share-meal:hover {
-  background: rgba(94, 106, 210, 0.25);
-  border-color: rgba(94, 106, 210, 0.55);
+  background: linear-gradient(135deg, rgba(94, 106, 210, 0.26) 0%, rgba(39, 195, 128, 0.18) 100%);
+  border-color: rgba(94, 106, 210, 0.6);
   color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(94, 106, 210, 0.24);
+}
+
+.btn-table-action.btn-share-meal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(94, 106, 210, 0.12);
+  border: 1px solid rgba(94, 106, 210, 0.3);
+  color: #a5b4fc;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.btn-table-action.btn-share-meal:hover {
+  background: rgba(94, 106, 210, 0.25);
+  border-color: rgba(94, 106, 210, 0.6);
+  color: #ffffff;
+  transform: scale(1.08);
 }
 
 /* Share Modal Overlay */

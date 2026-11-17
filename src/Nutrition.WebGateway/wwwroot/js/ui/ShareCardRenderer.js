@@ -16,7 +16,7 @@
  */
 export class ShareCardRenderer {
   constructor() {
-    this._appUrl = 'https://dietdost.app';
+    this._appUrl = 'https://dev.diet-dost.in';
   }
 
   /**
@@ -354,11 +354,13 @@ export class ShareCardRenderer {
 
     ctx.fillStyle = '#8a8f98';
     ctx.font = '500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Track your Indian meals on web:', 76, footerY);
+    const mealFooterLabel = 'Track your Indian meals on web:';
+    ctx.fillText(mealFooterLabel, 76, footerY);
+    const mealLabelW = ctx.measureText(mealFooterLabel).width;
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(this._appUrl, 385, footerY);
+    ctx.fillText(this._appUrl, 76 + mealLabelW + 12, footerY);
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#62666d';
@@ -644,11 +646,13 @@ export class ShareCardRenderer {
 
     ctx.fillStyle = '#8a8f98';
     ctx.font = '500 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText('Track your Indian diet on web:', 76, footerY);
+    const dailyFooterLabel = 'Track your Indian diet on web:';
+    ctx.fillText(dailyFooterLabel, 76, footerY);
+    const dailyLabelW = ctx.measureText(dailyFooterLabel).width;
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 20px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(this._appUrl, 365, footerY);
+    ctx.fillText(this._appUrl, 76 + dailyLabelW + 12, footerY);
 
     ctx.textAlign = 'right';
     ctx.fillStyle = '#62666d';
