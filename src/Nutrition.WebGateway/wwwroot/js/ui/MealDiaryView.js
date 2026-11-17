@@ -148,13 +148,13 @@ export class MealDiaryView {
 
     const mealTypeNames = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
     const mealTypeClasses = ['breakfast', 'lunch', 'snack', 'dinner'];
-    const mealTypeIcons = ['🌅', '☀️', '☕', '🌙'];
+    const mealTypeIconIds = ['icon-meal-breakfast', 'icon-meal-lunch', 'icon-meal-snack', 'icon-meal-dinner'];
 
     this._cardsContainer.innerHTML = meals.map(meal => {
       const typeIndex = typeof meal.mealType === 'number' ? meal.mealType : 1;
       const typeName = mealTypeNames[typeIndex] || meal.mealType || 'Meal';
       const typeClass = mealTypeClasses[typeIndex] || 'lunch';
-      const typeIcon = mealTypeIcons[typeIndex] || '🍽️';
+      const typeIconId = mealTypeIconIds[typeIndex] || 'icon-meal-lunch';
 
       const d = new Date(meal.loggedAt || meal.LoggedAt);
       const dateFormatted = !isNaN(d)
@@ -191,26 +191,23 @@ export class MealDiaryView {
         <div class="meal-card" data-meal-id="${meal.id}">
           <div class="meal-card-top">
             <span class="meal-card-type-badge ${typeClass}">
-              <span>${typeIcon}</span> ${typeName}
+              <svg class="icon-meal-type" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#${typeIconId}"></use></svg>
+              <span>${typeName}</span>
             </span>
             <div class="meal-card-top-right">
               <span class="meal-card-time">${dateFormatted} · ${timeFormatted}</span>
               <div class="meal-card-actions">
                 <button type="button" class="btn-card-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal">
-                  <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="18" cy="5" r="3" class="share-node share-node-top"></circle>
-                    <circle cx="6" cy="12" r="3" class="share-node share-node-hub"></circle>
-                    <circle cx="18" cy="19" r="3" class="share-node share-node-bottom"></circle>
-                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" class="share-beam share-beam-bottom"></line>
-                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" class="share-beam share-beam-top"></line>
+                  <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                    <use href="assets/icons/sprite.svg#icon-share"></use>
                   </svg>
                   <span class="share-card-btn-text">Share</span>
                 </button>
                 <button type="button" class="btn-card-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal">
-                  <span class="action-icon">✏️</span> Edit
+                  <svg class="icon-action-edit" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-edit"></use></svg> Edit
                 </button>
                 <button type="button" class="btn-card-action btn-delete-meal" data-meal-id="${meal.id}" title="Delete Meal">
-                  <span class="action-icon">🗑️</span> Delete
+                  <svg class="icon-action-delete" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-delete"></use></svg> Delete
                 </button>
               </div>
             </div>
@@ -249,6 +246,7 @@ export class MealDiaryView {
 
     const mealTypeNames = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
     const mealTypeClasses = ['breakfast', 'lunch', 'snack', 'dinner'];
+    const mealTypeIconIds = ['icon-meal-breakfast', 'icon-meal-lunch', 'icon-meal-snack', 'icon-meal-dinner'];
 
     let sumCals = 0, sumProtein = 0, sumCarbs = 0, sumFat = 0, sumFiber = 0, sumSugar = 0, sumSodium = 0;
 
@@ -256,6 +254,7 @@ export class MealDiaryView {
       const typeIndex = typeof meal.mealType === 'number' ? meal.mealType : 1;
       const typeName = mealTypeNames[typeIndex] || meal.mealType || 'Meal';
       const typeClass = mealTypeClasses[typeIndex] || 'lunch';
+      const typeIconId = mealTypeIconIds[typeIndex] || 'icon-meal-lunch';
 
       const d = new Date(meal.loggedAt || meal.LoggedAt);
       const dateFormatted = !isNaN(d)
@@ -293,7 +292,10 @@ export class MealDiaryView {
             <div>${timeFormatted}</div>
           </td>
           <td>
-            <span class="table-meal-badge ${typeClass}">${typeName}</span>
+            <span class="table-meal-badge ${typeClass}">
+              <svg class="icon-meal-type" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px;"><use href="assets/icons/sprite.svg#${typeIconId}"></use></svg>
+              <span>${typeName}</span>
+            </span>
           </td>
           <td>
             <div class="table-dish-name">${meal.dishName || meal.DishName || 'Logged Meal'}</div>
@@ -313,16 +315,16 @@ export class MealDiaryView {
           <td class="action-col" style="text-align: center; white-space: nowrap;">
             <div class="table-actions-wrap">
               <button type="button" class="btn-table-action btn-share-meal" data-meal-id="${meal.id}" title="Share Meal" aria-label="Share Meal">
-                <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="18" cy="5" r="3" class="share-node share-node-top"></circle>
-                  <circle cx="6" cy="12" r="3" class="share-node share-node-hub"></circle>
-                  <circle cx="18" cy="19" r="3" class="share-node share-node-bottom"></circle>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" class="share-beam share-beam-bottom"></line>
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" class="share-beam share-beam-top"></line>
+                <svg class="icon-share-futuristic" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+                  <use href="assets/icons/sprite.svg#icon-share"></use>
                 </svg>
               </button>
-              <button type="button" class="btn-table-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal">✏️</button>
-              <button type="button" class="btn-table-action btn-delete-meal" data-meal-id="${meal.id}" title="Delete Meal">🗑️</button>
+              <button type="button" class="btn-table-action btn-edit-meal" data-meal-id="${meal.id}" title="Edit Meal" aria-label="Edit Meal">
+                <svg class="icon-action-edit" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-edit"></use></svg>
+              </button>
+              <button type="button" class="btn-table-action btn-delete-meal" data-meal-id="${meal.id}" title="Delete Meal" aria-label="Delete Meal">
+                <svg class="icon-action-delete" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-delete"></use></svg>
+              </button>
             </div>
           </td>
         </tr>
@@ -434,15 +436,15 @@ export class MealDiaryView {
 
       const mealTypeNames = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
       const mealTypeClasses = ['breakfast', 'lunch', 'snack', 'dinner'];
-      const mealTypeIcons = ['🌅', '☀️', '☕', '🌙'];
+      const mealTypeIconIds = ['icon-meal-breakfast', 'icon-meal-lunch', 'icon-meal-snack', 'icon-meal-dinner'];
       const typeIndex = typeof meal.mealType === 'number' ? meal.mealType : 1;
       const typeName = mealTypeNames[typeIndex] || meal.mealType || 'Meal';
       const typeClass = mealTypeClasses[typeIndex] || 'lunch';
-      const typeIcon = mealTypeIcons[typeIndex] || '🍽️';
+      const typeIconId = mealTypeIconIds[typeIndex] || 'icon-meal-lunch';
 
       if (badgeEl) {
         badgeEl.className = `delete-preview-type-badge ${typeClass}`;
-        badgeEl.innerHTML = `${typeIcon} ${typeName}`;
+        badgeEl.innerHTML = `<svg class="icon-meal-type" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px;"><use href="assets/icons/sprite.svg#${typeIconId}"></use></svg><span>${typeName}</span>`;
       }
 
       const d = new Date(meal.loggedAt || meal.LoggedAt);
@@ -472,7 +474,7 @@ export class MealDiaryView {
 
       if (btnConfirm) {
         btnConfirm.disabled = false;
-        btnConfirm.innerHTML = `<span class="btn-delete-icon">🗑️</span><span class="btn-delete-text">Delete Meal</span>`;
+        btnConfirm.innerHTML = `<svg class="icon-action-delete" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 6px;"><use href="assets/icons/sprite.svg#icon-delete"></use></svg><span class="btn-delete-text">Delete Meal</span>`;
       }
 
       let isClosed = false;

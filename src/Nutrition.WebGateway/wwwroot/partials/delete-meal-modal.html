@@ -1,10 +1,14 @@
 <!-- Obsidian Dark Delete Confirmation Modal -->
 <div class="modal-overlay delete-modal-overlay" id="delete-meal-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" style="display: none;">
   <div class="delete-modal-card">
-    <button type="button" class="delete-modal-close-btn" id="btn-close-delete-modal" aria-label="Close modal">✕</button>
+    <button type="button" class="delete-modal-close-btn" id="btn-close-delete-modal" aria-label="Close modal">
+      <svg class="icon-modal-close" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg>
+    </button>
 
     <div class="delete-modal-icon-wrap">
-      <div class="delete-modal-icon">🗑️</div>
+      <div class="delete-modal-icon">
+        <svg class="icon-action-delete" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-delete"></use></svg>
+      </div>
     </div>
 
     <div class="delete-modal-header">
@@ -15,7 +19,10 @@
     <!-- Dish Preview Card -->
     <div class="delete-meal-preview" id="delete-meal-preview">
       <div class="delete-preview-top">
-        <span class="delete-preview-type-badge lunch" id="delete-preview-badge">☀️ Lunch</span>
+        <span class="delete-preview-type-badge lunch" id="delete-preview-badge">
+          <svg class="icon-meal-type" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-meal-lunch"></use></svg>
+          <span>Lunch</span>
+        </span>
         <span class="delete-preview-time" id="delete-preview-time">Sep 18 · 01:47 PM</span>
       </div>
       <div class="delete-preview-dish" id="delete-preview-dish">North Indian Thali</div>
@@ -41,7 +48,7 @@
     <div class="delete-modal-actions">
       <button type="button" class="btn-delete-cancel" id="btn-cancel-delete">Cancel</button>
       <button type="button" class="btn-delete-confirm" id="btn-confirm-delete">
-        <span class="btn-delete-icon">🗑️</span>
+        <svg class="icon-action-delete" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 6px;"><use href="assets/icons/sprite.svg#icon-delete"></use></svg>
         <span class="btn-delete-text">Delete Meal</span>
       </button>
     </div>

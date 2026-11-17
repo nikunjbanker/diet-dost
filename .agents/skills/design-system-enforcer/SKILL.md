@@ -299,6 +299,20 @@ When UI does not match the intended design, classify before patching:
 
 Do not accumulate CSS overrides without identifying the root cause.
 
+## Iconography & Vector Asset Architecture Standard
+
+All UI affordances, action buttons, category badges, and modal controls must adhere to the centralized vector iconography architecture:
+
+1. **Zero-Duplication Asset Pattern**:
+   - Never embed raw multi-line SVG markup directly into HTML partials, components, or JavaScript string templates.
+   - Store all icons as standalone vector SVG files in `src/Nutrition.WebGateway/wwwroot/assets/icons/<name>.svg`.
+   - Maintain the unified symbol sprite sheet in `src/Nutrition.WebGateway/wwwroot/assets/icons/sprite.svg`.
+2. **Standard Consumer Reference**:
+   - Reference icons via `<svg class="..."><use href="assets/icons/sprite.svg#icon-<name>"></use></svg>` (or `#icon-<name>` when the sprite is in the DOM).
+3. **Zero-Emoji UI Control Rule**:
+   - System emojis (`✏️`, `🗑️`, `🌅`, `☀️`, `☕`, `🌙`, `🐦`, `✕`, etc.) are strictly prohibited for interactive buttons, table actions, modal dismissals, social intents, and category indicators.
+   - Use clean, futuristic vector SVGs with `currentColor` stroke or fill that inherit parent color tokens and support glowing hover micro-interactions.
+
 ## Agent safety
 
 Never:

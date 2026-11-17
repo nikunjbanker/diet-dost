@@ -1,12 +1,12 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-17T08:09:29.481810+00:00",
-  "totalAdrs": 132,
+  "generatedAt": "2026-11-17T11:02:51.822854+00:00",
+  "totalAdrs": 133,
   "categoryCounts": {
     "architecture": 41,
     "security": 26,
     "devops": 33,
-    "presentation": 19,
+    "presentation": 20,
     "governance": 13
   },
   "records": [
@@ -1593,6 +1593,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261117-166-futuristic-share-button-icon-and-link-deduplication.md",
       "relativePath": "docs/adr/presentation/ADR-20261117-166-futuristic-share-button-icon-and-link-deduplication.md"
+    },
+    {
+      "id": "ADR-167",
+      "number": 167,
+      "title": "Centralized SVG Icon Asset and Sprite Architecture for Futuristic Iconography",
+      "category": "presentation",
+      "status": "ACCEPTED",
+      "changeType": "[PRESENTATION]",
+      "date": "2026-11-17",
+      "subsystem": "Presentation",
+      "filename": "ADR-20261117-167-centralized-svg-icon-asset-and-sprite-architecture.md",
+      "relativePath": "docs/adr/presentation/ADR-20261117-167-centralized-svg-icon-asset-and-sprite-architecture.md"
     }
   ]
 }

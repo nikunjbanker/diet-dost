@@ -357,3 +357,21 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
   - Replaced legacy outbox tray emojis (`📤`) with high-precision, standard, futuristic SVG quantum node share iconography (`.icon-share-futuristic`) featuring interconnected telemetry nodes and animated link beam (`shareBeamFlow`).
   - Standardized application attribution URL to `https://dev.diet-dost.in` across card canvas footers, share studio modals, and share payloads.
   - Deduplicated shared screen links by omitting the `url` parameter in `navigator.share` when `text` already contains the application URL, preventing OS-level duplicate link concatenation in WhatsApp and native share sheets.
+
+## 21. Centralized SVG Iconography & Sprite Sheet Architecture (`ADR-167`)
+
+* **Zero-Duplication Asset & Symbol Architecture**:
+  - Centralized all SVG icon assets into `src/Nutrition.WebGateway/wwwroot/assets/icons/` as individual standalone SVG files for isolated asset delivery, and compiled them into the unified symbol sprite sheet `src/Nutrition.WebGateway/wwwroot/assets/icons/sprite.svg`.
+  - Added preload and DOM registration of the sprite sheet in `index.html` via `<div data-include="assets/icons/sprite.svg"></div>`, ensuring instant local and remote symbol resolution.
+* **Universal Symbol Usage Protocol**:
+  - Standardized all UI affordances and components on `<svg class="..."><use href="assets/icons/sprite.svg#icon-<id>"></use></svg>`.
+  - Eliminates thousands of redundant lines of inline SVG string duplicates across HTML partials and JavaScript rendering loops.
+* **Zero-Emoji UI Control Standard & Futuristic Modernization**:
+  - Eliminated all legacy glyphs and system emojis (`✏️`, `🗑️`, `🌅`, `☀️`, `☕`, `🌙`, `🐦`, `✕`, etc.) across interactive controls and category indicators:
+    - **Modal Dismiss Crosshair**: Replaced raw `✕` characters across all 10 modal dialogs with precision vector crosshairs (`#icon-close` / `.icon-modal-close`) featuring smooth 90° hover rotation.
+    - **Action Controls**: Modernized Edit (`#icon-edit` stylus with cyan `#38bdf8` glow) and Delete (`#icon-delete` laser purge bin with crimson `#f87171` glow) in `MealDiaryView.js` and `delete-meal-modal.html`.
+    - **Astronomical Meal Timing**: Upgraded raw weather/beverage emojis into geometric astronomical vectors: Breakfast (`#icon-meal-breakfast` dawn sunrise), Lunch (`#icon-meal-lunch` zenith sun), Snack (`#icon-meal-snack` beverage cup), and Dinner (`#icon-meal-dinner` crescent moon & star) in `MealDiaryView.js`, `review-modal.html`, and `delete-meal-modal.html`.
+    - **Social & Share Intents**: Upgraded Twitter bird emoji to the official minimalist geometric vector `X` logo (`#icon-x-twitter`), updated WhatsApp to clean vector hub (`#icon-whatsapp`), and added crisp vectors for Clipboard, Download, Copy Text, Facebook, Email, and System Share.
+    - **Data Log Layout Toggles**: Modernized Cards view (`#icon-view-cards`), Grid view (`#icon-view-grid`), and Excel export (`#icon-export-excel`) with emerald `#27c380` hover glow.
+* **Agent & Skill Memory Codification**:
+  - Codified Rule 7 in `.agents/rules/ui-ux-design-system.md` and added procedural standards in `.agents/skills/design-system-enforcer/SKILL.md` and `DESIGN.md`, ensuring all future AI agent iterations strictly maintain the centralized SVG asset and sprite standard.

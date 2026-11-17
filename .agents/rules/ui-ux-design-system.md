@@ -42,3 +42,10 @@ This rule mandates that `DESIGN.md` in the solution root is the **single authori
    - [ ] Tested responsive behavior on Desktop (1440px), Tablet (768px), and Mobile (375px/390px).
    - [ ] Verified accessibility (contrast, ARIA roles, keyboard focus indicators).
    - [ ] Executed visual verification via `browser_subagent` or headless CDP inspection.
+
+7. **Mandatory Centralized SVG Icon Asset & Zero-Duplication Standard**:
+   - **Zero-Duplication Asset Rule**: Never embed raw multi-line SVG strings inline inside HTML partials, components, or JavaScript renderers.
+   - **Asset Storage**: Store all icons as standalone vector SVG files in `src/Nutrition.WebGateway/wwwroot/assets/icons/<name>.svg` and compile them into the unified symbol sprite sheet `src/Nutrition.WebGateway/wwwroot/assets/icons/sprite.svg`.
+   - **Consumer Reference**: Consumers (HTML partials, JS renderers) must reference icons using `<svg class="..."><use href="assets/icons/sprite.svg#icon-<name>"></use></svg>` (or `#icon-<name>` when the sprite is loaded into the DOM).
+   - **Zero-Emoji UI Control Rule**: Never use system emojis (`✏️`, `🗑️`, `🌅`, `☀️`, `☕`, `🌙`, `🐦`, `✕`, etc.) for UI controls, affordances, modal close buttons, social intents, or meal category badges. All UI controls and categorization badges must use clean, futuristic vector SVGs following the Linear / Obsidian dark aesthetic with `currentColor` stroke or fill and glowing hover micro-interactions.
+

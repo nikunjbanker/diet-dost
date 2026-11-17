@@ -38,20 +38,24 @@
 
       <div class="meal-log-toolbar">
         <button class="btn-clear-filter hidden" id="meal-log-clear-filter" title="Clear Day Filter">
-          <span>✕</span> Show All (<span id="meal-log-clear-period">7D</span>)
+          <svg class="icon-modal-close" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg>
+          <span>Show All (<span id="meal-log-clear-period">7D</span>)</span>
         </button>
 
         <div class="view-toggle-group" role="group" aria-label="Meal log layout switcher">
           <button class="btn-toggle-view active" id="btn-view-cards" data-view="cards" title="Visual Cards View">
-            <span class="toggle-icon">🎴</span> Cards
+            <svg class="toggle-icon icon-view-cards" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-view-cards"></use></svg>
+            <span>Cards</span>
           </button>
           <button class="btn-toggle-view" id="btn-view-grid" data-view="grid" title="Detailed Grid Table View">
-            <span class="toggle-icon">📊</span> Grid
+            <svg class="toggle-icon icon-view-grid" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-view-grid"></use></svg>
+            <span>Grid</span>
           </button>
         </div>
 
         <button class="btn-export-excel" id="btn-export-excel" title="Export all meal & nutrition data to Microsoft Excel">
-          <span class="export-icon">📥</span> Export Excel
+          <svg class="export-icon icon-export-excel" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-export-excel"></use></svg>
+          <span>Export Excel</span>
         </button>
       </div>
     </div>
