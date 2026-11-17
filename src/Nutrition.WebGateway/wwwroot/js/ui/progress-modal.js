@@ -493,10 +493,10 @@ export class ProgressModalController {
         lockedOverlay.id = 'face-progress-locked-overlay';
         lockedOverlay.style.cssText = 'padding: 2.5rem 1rem; text-align: center; background: rgba(18, 22, 28, 0.7); border-radius: 12px; border: 1px dashed rgba(255, 255, 255, 0.1); margin-top: 1rem;';
         lockedOverlay.innerHTML = `
-          <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔒</div>
+          <div style="margin-bottom: 0.5rem;"><svg class="icon-svg" width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #c084fc;"><use href="assets/icons/sprite.svg#icon-lock"></use></svg></div>
           <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 0.25rem;">Visual Photo Comparison is a Premium Feature</div>
           <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 420px; margin: 0 auto 1.25rem;">Track facial slimming, non-scale victories, and side-by-side milestone transformation with automated weight delta calculations.</div>
-          <button type="button" class="btn btn-sm btn-primary" onclick="openQuotaModal()">⚡ Upgrade to Premium</button>
+          <button type="button" class="btn btn-sm btn-primary" onclick="openQuotaModal()"><svg class="icon-btn" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bolt"></use></svg>Upgrade to Premium</button>
         `;
         faceCard.appendChild(lockedOverlay);
       } else if (lockedOverlay) {
@@ -686,10 +686,10 @@ export class ProgressModalController {
 
       if (btnSubmit) {
         btnSubmit.disabled = false;
-        btnSubmit.textContent = 'Save Progress Check-In 🎉';
+        btnSubmit.textContent = 'Save Progress Check-In';
       }
 
-      this._toast.show({ title: 'Progress Check-In Saved! 🎉', message: data.message });
+      this._toast.show({ title: 'Progress Check-In Saved!', message: data.message });
       this._confetti.burst();
 
       // Reset form
@@ -704,7 +704,7 @@ export class ProgressModalController {
     } catch (err) {
       if (btnSubmit) {
         btnSubmit.disabled = false;
-        btnSubmit.textContent = 'Save Progress Check-In 🎉';
+        btnSubmit.textContent = 'Save Progress Check-In';
       }
       this._toast.show({ title: 'Upload Failed', message: err.message || 'Could not save progress photo.' });
     }

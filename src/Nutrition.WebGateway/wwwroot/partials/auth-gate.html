@@ -13,7 +13,7 @@
     <!-- Mobile Viewport Experience Advisory Notice -->
     <div class="mobile-experience-advisory" role="note" aria-label="Desktop recommendation">
       <div class="mobile-advisory-badge">
-        <span class="advisory-icon" aria-hidden="true">💻</span>
+        <span class="advisory-icon" aria-hidden="true"><svg class="icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-desktop"></use></svg></span>
         <span class="advisory-tag">Desktop Recommended</span>
       </div>
       <p class="mobile-advisory-text">
@@ -24,9 +24,9 @@
     <!-- Navigation Tabs -->
     <div class="auth-tabs">
       <button type="button" id="btn-tab-signin" class="auth-tab-btn active">Sign In</button>
-      <button type="button" id="btn-tab-qr" class="auth-tab-btn">⚡ QR Login</button>
+      <button type="button" id="btn-tab-qr" class="auth-tab-btn"><svg class="icon-tab" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bolt"></use></svg>QR Login</button>
       <button type="button" id="btn-tab-register" class="auth-tab-btn">Create Account</button>
-      <button type="button" id="btn-tab-recover" class="auth-tab-btn" title="Sign in using your 12-word recovery mnemonic phrase or JSON file">🔑 Phrase / Key</button>
+      <button type="button" id="btn-tab-recover" class="auth-tab-btn" title="Sign in using your 12-word recovery mnemonic phrase or JSON file"><svg class="icon-tab" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-key"></use></svg>Phrase / Key</button>
       <button type="button" id="btn-tab-verify" class="auth-tab-btn" style="display: none;">Verify OTP</button>
       <button type="button" id="btn-tab-reset" class="auth-tab-btn" style="display: none;">Reset Password</button>
     </div>
@@ -50,7 +50,7 @@
 
       <button type="submit" id="btn-submit-signin" class="btn btn-primary auth-submit-btn">
         <span class="btn-text">Sign In ➔</span>
-        <span class="btn-spinner" style="display: none;">⏳ Signing in...</span>
+        <span class="btn-spinner" style="display: none;"><svg class="icon-svg" width="13" height="13" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Signing in...</span>
       </button>
 
       <!-- Alpha Preview Notice & Demo Accounts Selector (DESIGN.md compliant) -->
@@ -63,19 +63,19 @@
         </p>
         <div class="demo-account-grid">
           <button type="button" class="demo-pill-btn" id="btn-demo-free" aria-label="Sign in as Free Tier user">
-            <span class="demo-title">⭐ Free Tier</span>
+            <span class="demo-title"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px; stroke: #94a3b8;"><use href="assets/icons/sprite.svg#icon-tier-free"></use></svg>Free Tier</span>
             <span class="demo-role">free@dietdost.app</span>
           </button>
           <button type="button" class="demo-pill-btn" id="btn-demo-basic" aria-label="Sign in as Basic Tier user">
-            <span class="demo-title">⭐ Basic Tier</span>
+            <span class="demo-title"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px; stroke: #38bdf8;"><use href="assets/icons/sprite.svg#icon-tier-basic"></use></svg>Basic Tier</span>
             <span class="demo-role">basic@dietdost.app</span>
           </button>
           <button type="button" class="demo-pill-btn" id="btn-demo-premium" aria-label="Sign in as Premium Tier user">
-            <span class="demo-title">👑 Premium Tier</span>
+            <span class="demo-title"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px; stroke: #c084fc;"><use href="assets/icons/sprite.svg#icon-tier-premium"></use></svg>Premium Tier</span>
             <span class="demo-role">premium@dietdost.app</span>
           </button>
           <button type="button" class="demo-pill-btn" id="btn-demo-admin" aria-label="Sign in as Admin user">
-            <span class="demo-title">🛡️ Admin Portal</span>
+            <span class="demo-title"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px; stroke: #fbbf24;"><use href="assets/icons/sprite.svg#icon-shield-check"></use></svg>Admin Portal</span>
             <span class="demo-role">admin.demo@dietdost.app</span>
           </button>
         </div>
@@ -90,7 +90,7 @@
       <div id="qr-error" class="auth-error-alert" style="display: none;"></div>
 
       <div class="otp-instruction-box">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📱</div>
+        <div style="margin-bottom: 0.25rem;"><svg class="icon-svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8;"><use href="assets/icons/sprite.svg#icon-phone"></use></svg></div>
         <div style="font-weight: 600; font-size: 0.95rem;">Cross-Device QR Sign In</div>
         <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">
           Point your phone camera or Google Lens at this code to approve login on mobile.
@@ -114,16 +114,16 @@
         </div>
 
         <div class="qr-timer-pill" id="qr-timer-pill">
-          <span>⏳ Expires in: </span><strong id="qr-countdown-seconds">90</strong>s
+          <span><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 3px; stroke: #eab308;"><use href="assets/icons/sprite.svg#icon-clock"></use></svg>Expires in: </span><strong id="qr-countdown-seconds">90</strong>s
         </div>
       </div>
 
       <div style="display: flex; gap: 8px; justify-content: center; margin-top: 0.5rem;">
         <button type="button" id="btn-refresh-qr" class="btn btn-outline btn-sm">
-          🔄 Refresh Code
+          <svg class="icon-btn" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Refresh Code
         </button>
         <button type="button" id="btn-simulate-mobile-scan" class="btn btn-primary btn-sm" title="Simulates a mobile device scanning and approving the QR code for local demo / CFT testing">
-          📲 Simulate Mobile Scan (Demo)
+          <svg class="icon-btn" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-phone"></use></svg>Simulate Mobile Scan (Demo)
         </button>
       </div>
 
@@ -135,7 +135,7 @@
     <!-- Tab 2: Create Account -->
     <form id="form-register" class="auth-form" style="display: none;">
       <div class="auth-disabled-banner" id="auth-disabled-banner" style="display: none;">
-        <div class="disabled-icon">🔒</div>
+        <div class="disabled-icon"><svg class="icon-svg" width="28" height="28" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #818cf8;"><use href="assets/icons/sprite.svg#icon-lock"></use></svg></div>
         <div class="disabled-heading">Sign-up Temporarily Closed</div>
         <div>New account registrations are closed for this preview. Please sign in with one of our demo accounts.</div>
         <button type="button" class="btn btn-secondary btn-sm" id="btn-goto-signin-from-disabled" style="margin-top: 10px;">Return to Sign In</button>
@@ -146,7 +146,7 @@
       <!-- Alpha Preview Registration Notice -->
       <div class="auth-notice-card" style="margin-bottom: 1.25rem; border-left: 3px solid #3b82f6; background: rgba(59, 130, 246, 0.08); padding: 12px 14px; border-radius: 8px;">
         <div class="auth-notice-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-          <span style="font-size: 1.1rem;">ℹ️</span>
+          <svg class="icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8; flex-shrink: 0;"><use href="assets/icons/sprite.svg#icon-info"></use></svg>
           <strong style="color: var(--text-primary); font-size: 0.88rem;">Alpha Preview Access Notice</strong>
         </div>
         <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0; line-height: 1.45;">
@@ -157,7 +157,7 @@
       <!-- Registration Mode Switcher (Hidden in Alpha) -->
       <div id="reg-mode-switcher" style="display: none; gap: 8px; margin-bottom: 1.25rem; background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: 8px;">
         <button type="button" id="btn-reg-mode-standard" class="btn btn-xs btn-primary" style="flex: 1;">Standard (Email)</button>
-        <button type="button" id="btn-reg-mode-anon" class="btn btn-xs btn-outline" style="flex: 1;">🛡️ Emergency Recovery Key (No Email)</button>
+        <button type="button" id="btn-reg-mode-anon" class="btn btn-xs btn-outline" style="flex: 1;"><svg class="icon-btn" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-shield-check"></use></svg>Emergency Recovery Key (No Email)</button>
       </div>
 
       <!-- Anonymous Zero-PII Mode Fields -->
@@ -229,7 +229,7 @@
 
       <button type="submit" id="btn-submit-register" class="btn btn-primary auth-submit-btn">
         <span class="btn-text">Create Account</span>
-        <span class="btn-spinner" style="display: none;">⏳ Creating Account...</span>
+        <span class="btn-spinner" style="display: none;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Creating Account...</span>
       </button>
 
       <div class="auth-footer-prompt">
@@ -240,7 +240,7 @@
     <!-- Tab: Registration Pending Owner Approval Screen -->
     <div id="form-pending-approval" class="auth-form" style="display: none;">
       <div class="otp-instruction-box" style="border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.08); padding: 18px; border-radius: 8px; text-align: center;">
-        <div style="font-size: 2.4rem; margin-bottom: 0.5rem;">⏳</div>
+        <div style="margin-bottom: 0.5rem;"><svg class="icon-svg" width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f59e0b;"><use href="assets/icons/sprite.svg#icon-clock"></use></svg></div>
         <div style="font-weight: 700; font-size: 1.05rem; margin-bottom: 6px; color: var(--text-primary);">Registration Received</div>
         <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
           Your account (<strong id="pending-user-email-display" style="color: var(--text-primary);">user@domain.com</strong>) has been submitted for review.
@@ -251,7 +251,7 @@
       </div>
 
       <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; margin: 1.25rem 0; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 1.2rem;">📡</span>
+        <svg class="icon-svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8; flex-shrink: 0;"><use href="assets/icons/sprite.svg#icon-telemetry"></use></svg>
         <span><strong>Live Status:</strong> Leave this tab open. When the owner activates your account, this screen will automatically refresh to sign you in.</span>
       </div>
 
@@ -265,7 +265,7 @@
       <div id="recover-error" class="auth-error-alert" style="display: none;"></div>
 
       <div class="otp-instruction-box">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔑</div>
+        <div style="margin-bottom: 0.25rem;"><svg class="icon-svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fbbf24;"><use href="assets/icons/sprite.svg#icon-key"></use></svg></div>
         <div style="font-weight: 600; font-size: 0.95rem;">Emergency Disaster Recovery Sign In</div>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
           Sign in or restore your account using your 12-word BIP-39 mnemonic phrase or Recovery JSON file.
@@ -273,7 +273,7 @@
       </div>
 
       <div class="recovery-dropzone" id="recovery-dropzone">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">📂</div>
+        <div style="margin-bottom: 0.25rem;"><svg class="icon-svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #818cf8;"><use href="assets/icons/sprite.svg#icon-folder"></use></svg></div>
         <div style="font-size: 0.85rem; font-weight: 600; color: var(--text-primary);">Drag &amp; Drop Recovery JSON File</div>
         <div style="font-size: 0.75rem; color: var(--text-muted);">or click to browse from device</div>
         <input type="file" id="recovery-file-input" accept=".json,application/json" style="display: none;">
@@ -286,7 +286,7 @@
 
       <button type="submit" id="btn-submit-recover" class="btn btn-primary auth-submit-btn">
         <span class="btn-text">Sign In with Phrase or Key ➔</span>
-        <span class="btn-spinner" style="display: none;">⏳ Verifying Mnemonic...</span>
+        <span class="btn-spinner" style="display: none;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Verifying Mnemonic...</span>
       </button>
 
       <div class="auth-footer-prompt">
@@ -299,7 +299,7 @@
       <div id="verify-error" class="auth-error-alert" style="display: none;"></div>
 
       <div class="otp-instruction-box">
-        <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔐</div>
+        <div style="margin-bottom: 0.25rem;"><svg class="icon-svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e;"><use href="assets/icons/sprite.svg#icon-shield-check"></use></svg></div>
         <div style="font-weight: 600; font-size: 0.95rem;">Verify Your Account</div>
         <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
           Enter the 6-digit code sent to <span id="otp-target-display" style="color: var(--text-primary); font-weight: 600;">your email</span>
@@ -308,7 +308,7 @@
 
       <!-- Development OTP Helper Banner -->
       <div id="dev-otp-helper" class="dev-otp-banner" style="display: none;">
-        <span>🛠️ Local Dev Code:</span>
+        <span><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:3px; stroke:#fbbf24;"><use href="assets/icons/sprite.svg#icon-settings"></use></svg>Local Dev Code:</span>
         <strong id="dev-otp-code" style="letter-spacing: 2px;">------</strong>
         <button type="button" id="btn-fill-dev-otp" class="btn btn-xs btn-outline">Auto-Fill</button>
       </div>
@@ -319,7 +319,7 @@
 
       <button type="submit" id="btn-submit-verify" class="btn btn-primary auth-submit-btn">
         <span class="btn-text">Verify &amp; Activate Account ➔</span>
-        <span class="btn-spinner" style="display: none;">⏳ Verifying...</span>
+        <span class="btn-spinner" style="display: none;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Verifying...</span>
       </button>
 
       <div class="otp-resend-row">
@@ -337,7 +337,7 @@
       <!-- Step A: Enter email to receive reset OTP -->
       <div id="reset-step-email">
         <div class="otp-instruction-box">
-          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔑</div>
+          <div style="margin-bottom: 0.25rem;"><svg class="icon-svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fbbf24;"><use href="assets/icons/sprite.svg#icon-key"></use></svg></div>
           <div style="font-weight: 600; font-size: 0.95rem;">Reset Your Password</div>
           <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
             Enter your registered email address. We'll send a 6-digit reset code if an active account exists.
@@ -349,13 +349,13 @@
         </div>
         <!-- Dev OTP helper for reset flow -->
         <div id="dev-reset-otp-helper" class="dev-otp-banner" style="display: none;">
-          <span>🛠️ Local Dev Code:</span>
+          <span><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:3px; stroke:#fbbf24;"><use href="assets/icons/sprite.svg#icon-settings"></use></svg>Local Dev Code:</span>
           <strong id="dev-reset-otp-code" style="letter-spacing: 2px;">------</strong>
           <button type="button" id="btn-fill-dev-reset-otp" class="btn btn-xs btn-outline">Auto-Fill</button>
         </div>
         <button type="button" id="btn-send-reset-otp" class="btn btn-primary auth-submit-btn">
           <span class="btn-text">Send Reset Code ➔</span>
-          <span class="btn-spinner" style="display: none;">⏳ Sending...</span>
+          <span class="btn-spinner" style="display: none;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Sending...</span>
         </button>
         <div class="auth-footer-prompt">
           Remember your password? <a href="javascript:void(0)" id="link-back-to-signin-from-reset">Sign In</a>
@@ -365,7 +365,7 @@
       <!-- Step B: Enter OTP + new password + confirm -->
       <div id="reset-step-newpwd" style="display: none;">
         <div class="otp-instruction-box">
-          <div style="font-size: 1.5rem; margin-bottom: 0.25rem;">🔒</div>
+          <div style="margin-bottom: 0.25rem;"><svg class="icon-svg" width="32" height="32" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #818cf8;"><use href="assets/icons/sprite.svg#icon-lock"></use></svg></div>
           <div style="font-weight: 600; font-size: 0.95rem;">Enter Reset Code &amp; New Password</div>
           <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
             Code sent to <span id="reset-otp-email-display" style="color: var(--text-primary); font-weight: 600;"></span>
@@ -396,7 +396,7 @@
         </div>
         <button type="button" id="btn-submit-reset" class="btn btn-primary auth-submit-btn">
           <span class="btn-text">Reset Password ➔</span>
-          <span class="btn-spinner" style="display: none;">⏳ Resetting...</span>
+          <span class="btn-spinner" style="display: none;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="animation: spin 1s linear infinite;"><use href="assets/icons/sprite.svg#icon-refresh"></use></svg>Resetting...</span>
         </button>
         <div class="otp-resend-row">
           <span>Didn't receive the code?</span>
@@ -479,7 +479,7 @@
     </div>
     <div class="legal-modal-body">
       <div class="auth-error-alert" style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; display: block; margin-bottom: 1rem;">
-        ⚠️ <strong>Critical Custodianship Notice:</strong> Diet-Dost does not store your recovery phrase. The JSON file contains your key in plaintext; protect it in encrypted storage. If you lose the kit, the account and health data may be unrecoverable.
+        <svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f87171; margin-right: 4px; vertical-align: text-bottom;"><use href="assets/icons/sprite.svg#icon-info"></use></svg><strong>Critical Custodianship Notice:</strong> Diet-Dost does not store your recovery phrase. The JSON file contains your key in plaintext; protect it in encrypted storage. If you lose the kit, the account and health data may be unrecoverable.
       </div>
 
       <p id="recovery-kit-subtitle" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.75rem;"></p>
@@ -493,11 +493,11 @@
       </div>
 
       <div style="display: flex; gap: 8px; margin: 1rem 0;">
-        <button type="button" id="btn-download-recovery-json" class="btn btn-primary btn-sm" style="flex: 1;">
-          💾 Download Backup JSON
+        <button type="button" id="btn-download-recovery-json" class="btn btn-primary btn-sm" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+          <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-download"></use></svg>Download Backup JSON
         </button>
-        <button type="button" id="btn-copy-mnemonic-phrase" class="btn btn-outline btn-sm" style="flex: 1;">
-          📋 Copy 12 Words
+        <button type="button" id="btn-copy-mnemonic-phrase" class="btn btn-outline btn-sm" style="flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+          <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-clipboard"></use></svg>Copy 12 Words
         </button>
       </div>
 

@@ -8002,3 +8002,71 @@ h2 {
   stroke: currentColor;
   flex-shrink: 0;
 }
+
+/* ==========================================================================
+   Centralized Futuristic Vector Iconography (ADR-168)
+   ========================================================================== */
+.icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+}
+
+.icon-tab {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  margin-right: 6px;
+  stroke: currentColor;
+  transition: transform 0.18s ease;
+}
+
+.mode-btn:hover .icon-tab,
+.progress-tab-btn:hover .icon-tab,
+.auth-tab-btn:hover .icon-tab {
+  transform: scale(1.1);
+}
+
+.icon-btn {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  margin-right: 4px;
+  stroke: currentColor;
+}
+
+.icon-heading {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.icon-status-online {
+  stroke: #22c55e !important;
+  filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.65));
+  animation: statusPulse 2s infinite ease-in-out;
+}
+
+@keyframes statusPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+.macro-stat-chip .macro-label,
+.meal-macro-pill,
+.macro-mini-pill,
+.review-photo-badge,
+.btn-feedback-thumb {
+  display: inline-flex;
+  align-items: center;
+}

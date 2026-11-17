@@ -4,13 +4,13 @@
     <div style="display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;">
       <div class="hud-title">Instant Meal Logger</div>
       <span class="badge" id="logger-clock-badge" style="font-size: 0.72rem; padding: 2px 9px; border-radius: 9999px; background: rgba(94, 106, 210, 0.12); border: 1px solid rgba(94, 106, 210, 0.28); color: var(--brand-indigo); display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 500;" title="Auto-detected meal type based on your current time">
-        <span id="logger-clock-icon">☀️</span>
+        <span id="logger-clock-icon"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-clock"></use></svg></span>
         <span id="logger-clock-text">Auto: Lunch</span>
       </span>
     </div>
     <div class="mode-switcher">
-      <button class="mode-btn active" id="btn-mode-camera">📸 AI Camera</button>
-      <button class="mode-btn" id="btn-mode-text">🎙️ Voice & Smart Search</button>
+      <button class="mode-btn active" id="btn-mode-camera"><svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-camera"></use></svg>AI Camera</button>
+      <button class="mode-btn" id="btn-mode-text"><svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-mic"></use></svg>Voice & Smart Search</button>
     </div>
   </div>
 
@@ -18,25 +18,25 @@
   <div class="dropzone" id="photo-dropzone">
     <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp" style="display: none;">
     <input type="file" id="camera-file-fallback" accept="image/*" capture="environment" style="display: none;">
-    <span class="dropzone-icon">🍲</span>
+    <span class="dropzone-icon"><svg class="icon-svg" width="48" height="48" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #818cf8; opacity: 0.85;"><use href="assets/icons/sprite.svg#icon-camera"></use></svg></span>
     <div class="dropzone-text">Snap or Drag & Drop Indian Meal Photo</div>
     <div class="dropzone-sub">Microsoft Agent AI with Google AI Pro · Verified against ICMR-NIN standards (Confidence ≥ 70%)</div>
     <div style="margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.65rem; flex-wrap: wrap;">
       <button type="button" class="btn btn-primary btn-sm" id="btn-take-photo" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 6px 16px;">
-        📸 Take Photo
+        <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-camera"></use></svg>Take Photo
       </button>
       <button type="button" class="btn btn-secondary btn-sm" id="btn-choose-gallery" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 6px 14px;">
-        🖼️ Choose from Gallery
+        <svg class="icon-btn" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-image"></use></svg>Choose from Gallery
       </button>
-      <button type="button" class="btn btn-sm btn-sample-photo" id="btn-sample-thali" style="background: rgba(94, 106, 210, 0.15); border: 1px solid rgba(94, 106, 210, 0.35); color: #818cf8; font-size: 0.75rem; padding: 5px 14px; border-radius: var(--radius-pill); cursor: pointer; transition: all 0.15s ease;">
-        ✨ Try Sample Thali
+      <button type="button" class="btn btn-sm btn-sample-photo" id="btn-sample-thali" style="background: rgba(94, 106, 210, 0.15); border: 1px solid rgba(94, 106, 210, 0.35); color: #818cf8; font-size: 0.75rem; padding: 5px 14px; border-radius: var(--radius-pill); cursor: pointer; transition: all 0.15s ease; display: inline-flex; align-items: center; gap: 0.4rem;">
+        <svg class="icon-btn" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-tier-free"></use></svg>Try Sample Thali
       </button>
     </div>
   </div>
 
   <!-- Shimmer Scanning State -->
   <div class="scanning-state" id="scanning-state">
-    <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🔍</div>
+    <div style="margin-bottom: 0.5rem;"><svg class="icon-svg" width="36" height="36" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #38bdf8; animation: pulseWave 1.8s infinite ease-in-out;"><use href="assets/icons/sprite.svg#icon-scan"></use></svg></div>
     <div style="font-weight: 600;">Diet Dost AI is analyzing your delicious plate...</div>
     <div class="shimmer-bar"></div>
     <div style="font-size: 0.8rem; color: var(--text-muted);">Detecting rotis, dal tadka, subzis, and cooking medium</div>
@@ -50,11 +50,11 @@
     </div>
 
     <div class="suggestion-pills">
-      <span class="suggest-chip" data-query="2 Phulkas + 1 Katori Dal Tadka + Cucumber Salad">🥗 2 Phulkas + Dal Tadka + Salad</span>
-      <span class="suggest-chip" data-query="1 Masala Dosa with Sambar & Coconut Chutney">🥞 Masala Dosa + Sambar</span>
-      <span class="suggest-chip" data-query="Palak Paneer with 2 Whole Wheat Rotis">🥬 Palak Paneer + 2 Rotis</span>
-      <span class="suggest-chip" data-query="1 Cup Poha with roasted peanuts & chai">🥜 Poha + Peanuts</span>
-      <span class="suggest-chip" data-query="1 Bowl Moong Dal Khichdi with fresh curd">🥣 Moong Dal Khichdi + Curd</span>
+      <span class="suggest-chip" data-query="2 Phulkas + 1 Katori Dal Tadka + Cucumber Salad"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:4px; stroke:#22c55e;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>2 Phulkas + Dal Tadka + Salad</span>
+      <span class="suggest-chip" data-query="1 Masala Dosa with Sambar & Coconut Chutney"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:4px; stroke:#fbbf24;"><use href="assets/icons/sprite.svg#icon-grain"></use></svg>Masala Dosa + Sambar</span>
+      <span class="suggest-chip" data-query="Palak Paneer with 2 Whole Wheat Rotis"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:4px; stroke:#34d399;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>Palak Paneer + 2 Rotis</span>
+      <span class="suggest-chip" data-query="1 Cup Poha with roasted peanuts & chai"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:4px; stroke:#fb923c;"><use href="assets/icons/sprite.svg#icon-meal-breakfast"></use></svg>Poha + Peanuts</span>
+      <span class="suggest-chip" data-query="1 Bowl Moong Dal Khichdi with fresh curd"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right:4px; stroke:#38bdf8;"><use href="assets/icons/sprite.svg#icon-meal-dinner"></use></svg>Moong Dal Khichdi + Curd</span>
     </div>
   </div>
 </section>

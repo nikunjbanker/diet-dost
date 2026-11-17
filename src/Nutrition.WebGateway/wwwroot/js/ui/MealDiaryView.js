@@ -216,13 +216,13 @@ export class MealDiaryView {
           <div class="meal-card-dish">${meal.dishName || meal.DishName || 'Logged Meal'}</div>
 
           <div class="meal-card-macros">
-            <span class="meal-macro-pill cals" title="Calories">🔥 ${cals} kcal</span>
-            <span class="meal-macro-pill protein" title="Protein">💪 ${protein}g</span>
-            <span class="meal-macro-pill carbs" title="Carbs">🌾 ${carbs}g</span>
-            <span class="meal-macro-pill fat" title="Fat">🥑 ${fat}g</span>
-            <span class="meal-macro-pill fiber" title="Dietary Fiber">🥗 ${fiber}g</span>
-            <span class="meal-macro-pill sugar" title="Sugars">🍬 ${sugar}g</span>
-            <span class="meal-macro-pill sodium" title="Sodium">🧂 ${sodium}mg</span>
+            <span class="meal-macro-pill cals" title="Calories"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fb923c; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-fire"></use></svg>${cals} kcal</span>
+            <span class="meal-macro-pill protein" title="Protein"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f87171; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-muscle"></use></svg>${protein}g</span>
+            <span class="meal-macro-pill carbs" title="Carbs"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fbbf24; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-grain"></use></svg>${carbs}g</span>
+            <span class="meal-macro-pill fat" title="Fat"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #34d399; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-lipid"></use></svg>${fat}g</span>
+            <span class="meal-macro-pill fiber" title="Dietary Fiber"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>${fiber}g</span>
+            <span class="meal-macro-pill sugar" title="Sugars"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f472b6; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-cube"></use></svg>${sugar}g</span>
+            <span class="meal-macro-pill sodium" title="Sodium"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #93c5fd; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-shaker"></use></svg>${sodium}mg</span>
           </div>
 
           <div class="meal-card-items-wrap">
@@ -309,7 +309,7 @@ export class MealDiaryView {
           <td class="num-col" style="color: #f472b6;">${sugar.toFixed(1)}</td>
           <td class="num-col" style="color: #94a3b8;">${Math.round(sodium)}</td>
           <td style="font-size: 0.7rem; white-space: nowrap;">
-            <span style="color: var(--status-emerald);">✓ Verified</span>
+            <span style="color: var(--status-emerald); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg>Verified</span>
             <span style="color: var(--text-muted);">(${conf}%)</span>
           </td>
           <td class="action-col" style="text-align: center; white-space: nowrap;">
@@ -465,12 +465,12 @@ export class MealDiaryView {
       const fiber = (meal.totalFiberGrams || 0).toFixed(1);
       const sugar = (meal.totalSugarGrams || 0).toFixed(1);
 
-      if (calsEl) calsEl.textContent = `🔥 ${cals} kcal`;
-      if (proteinEl) proteinEl.textContent = `💪 ${protein}g P`;
-      if (carbsEl) carbsEl.textContent = `🌾 ${carbs}g C`;
-      if (fatEl) fatEl.textContent = `🥑 ${fat}g F`;
-      if (fiberEl) fiberEl.textContent = `🥗 ${fiber}g Fib`;
-      if (sugarEl) sugarEl.textContent = `🍬 ${sugar}g Sug`;
+      if (calsEl) calsEl.innerHTML = `<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fb923c; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-fire"></use></svg>${cals} kcal`;
+      if (proteinEl) proteinEl.innerHTML = `<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f87171; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-muscle"></use></svg>${protein}g P`;
+      if (carbsEl) carbsEl.innerHTML = `<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #fbbf24; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-grain"></use></svg>${carbs}g C`;
+      if (fatEl) fatEl.innerHTML = `<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #34d399; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-lipid"></use></svg>${fat}g F`;
+      if (fiberEl) fiberEl.innerHTML = `<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #22c55e; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-leaf"></use></svg>${fiber}g Fib`;
+      if (sugarEl) sugarEl.innerHTML = `<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f472b6; margin-right: 3px;"><use href="assets/icons/sprite.svg#icon-cube"></use></svg>${sugar}g Sug`;
 
       if (btnConfirm) {
         btnConfirm.disabled = false;

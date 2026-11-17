@@ -28,7 +28,7 @@ export class AdminModalController {
     if (!this.notificationService) return;
     this.notificationService.on('NewRegistration', (data) => {
       const email = data.email || 'Applicant';
-      this.toastService?.info(`🔔 New Alpha Registration: ${email} is awaiting activation!`);
+      this.toastService?.info(`New Alpha Registration: ${email} is awaiting activation!`);
       if (this.modal && this.modal.style.display === 'flex' && this.paneUsers && this.paneUsers.style.display !== 'none') {
         this.loadUsers();
       }
@@ -218,8 +218,8 @@ export class AdminModalController {
       const rowsHtml = activeUsers.map(u => {
         const isOnline = u.isCurrentlyOnline;
         const statusBadge = isOnline
-          ? '<span class="badge" style="background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4);">🟢 Online Now</span>'
-          : '<span class="badge" style="background: rgba(234, 179, 8, 0.2); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.4);">🟡 Recent</span>';
+          ? '<span class="badge" style="background: rgba(34, 197, 94, 0.18); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.4); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-svg icon-status-online" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-activity"></use></svg>Online Now</span>'
+          : '<span class="badge" style="background: rgba(234, 179, 8, 0.18); color: #eab308; border: 1px solid rgba(234, 179, 8, 0.4); display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #eab308;"><use href="assets/icons/sprite.svg#icon-clock"></use></svg>Recent</span>';
 
         const roleStr = typeof u.role === 'number' ? (u.role === 2 ? 'SuperAdmin' : u.role === 1 ? 'Admin' : 'User') : u.role;
         const tierStr = typeof u.tier === 'number' ? (u.tier === 3 ? 'SuperAdmin' : u.tier === 2 ? 'Premium' : u.tier === 1 ? 'Basic' : 'Free') : u.tier;
@@ -286,12 +286,12 @@ export class AdminModalController {
         const roleStr = typeof u.role === 'number' ? (u.role === 2 ? 'SuperAdmin' : u.role === 1 ? 'Admin' : 'User') : u.role;
         const tierStr = typeof u.tier === 'number' ? (u.tier === 3 ? 'SuperAdmin' : u.tier === 2 ? 'Premium' : u.tier === 1 ? 'Basic' : 'Free') : u.tier;
         const statusBadge = u.isActive
-          ? `<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px;">Active</span>`
-          : `<span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35);">⏳ Pending Review</span>`;
+          ? `<span class="badge badge-success" style="font-size: 0.7rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-svg" width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg>Active</span>`
+          : `<span class="badge" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-svg" width="10" height="10" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #f59e0b;"><use href="assets/icons/sprite.svg#icon-clock"></use></svg>Pending Review</span>`;
 
         const emailBadge = u.isEmailVerified
-          ? `<span title="Email Verified" style="color: var(--accent); margin-right: 4px;">✓ Email</span>`
-          : `<span title="Email Unverified" style="color: var(--text-muted); margin-right: 4px;">✗ Email</span>`;
+          ? `<span title="Email Verified" style="color: var(--accent); margin-right: 4px; display: inline-flex; align-items: center; gap: 2px;"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg>Email</span>`
+          : `<span title="Email Unverified" style="color: var(--text-muted); margin-right: 4px; display: inline-flex; align-items: center; gap: 2px;"><svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg>Email</span>`;
 
         const dpdpaDate = u.termsAcceptedAtUtc
           ? new Date(u.termsAcceptedAtUtc).toLocaleDateString()
@@ -331,11 +331,11 @@ export class AdminModalController {
               ${statusBadge}
             </td>
             <td style="padding: 8px 10px; white-space: nowrap;">
-              <button type="button" class="btn btn-xs btn-outline btn-edit-user" data-user-id="${u.id}" style="margin-right: 4px;">✏️ Edit</button>
-              ${canDelete ? `<button type="button" class="btn btn-xs btn-outline btn-delete-user" data-user-id="${u.id}" data-user-email="${this.escapeHtml(u.email)}" style="margin-right: 4px; color: #f87171; border-color: rgba(239, 68, 68, 0.4);" title="Delete User">🗑️ Delete</button>` : ''}
+              <button type="button" class="btn btn-xs btn-outline btn-edit-user" data-user-id="${u.id}" style="margin-right: 4px; display: inline-flex; align-items: center; gap: 3px;"><svg class="icon-btn" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-edit"></use></svg>Edit</button>
+              ${canDelete ? `<button type="button" class="btn btn-xs btn-outline btn-delete-user" data-user-id="${u.id}" data-user-email="${this.escapeHtml(u.email)}" style="margin-right: 4px; color: #f87171; border-color: rgba(239, 68, 68, 0.4); display: inline-flex; align-items: center; gap: 3px;" title="Delete User"><svg class="icon-btn" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-delete"></use></svg>Delete</button>` : ''}
               ${isSuper ? '<span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 4px;">Protected</span>' : `
-                <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-user-id="${u.id}" data-active="${u.isActive}" title="${u.isActive ? 'Deactivate Account' : 'Activate & Enable Account'}">
-                  ${u.isActive ? '🔒 Lock' : '🔓 Activate & Approve'}
+                <button type="button" class="btn btn-xs ${u.isActive ? 'btn-outline' : 'btn-primary'} btn-toggle-status" data-user-id="${u.id}" data-active="${u.isActive}" style="display: inline-flex; align-items: center; gap: 3px;" title="${u.isActive ? 'Deactivate Account' : 'Activate & Enable Account'}">
+                  ${u.isActive ? '<svg class="icon-btn" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-lock"></use></svg>Lock' : '<svg class="icon-btn" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-unlock"></use></svg>Activate & Approve'}
                 </button>
               `}
             </td>
@@ -585,7 +585,7 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
 
       const bannerHtml = !canEdit ? `
         <div class="tier-admin-readonly-banner" style="grid-column: 1/-1; background: rgba(94, 106, 210, 0.08); border: 1px solid var(--hairline); border-radius: var(--radius-md); padding: 0.75rem 1rem; color: var(--text-secondary); font-size: 0.82rem; display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem;">
-          <span style="font-size: 1.1rem;">🔒</span>
+          <svg class="icon-svg" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #818cf8; flex-shrink: 0;"><use href="assets/icons/sprite.svg#icon-lock"></use></svg>
           <div>
             <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">Read-Only Tier Governance</div>
             <div>Only <strong>SuperAdmin</strong> accounts are authorized to modify global tier quotas, entitlements, and policies. Standard Administrators have audit-only visibility.</div>
@@ -593,7 +593,7 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
         </div>
       ` : `
         <div class="tier-admin-write-banner" style="grid-column: 1/-1; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-md); padding: 0.6rem 1rem; color: #34d399; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-          <span>⚡</span>
+          <svg class="icon-svg" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="stroke: #34d399; flex-shrink: 0;"><use href="assets/icons/sprite.svg#icon-bolt"></use></svg>
           <span><strong>SuperAdmin Mode:</strong> You have full write authority to adjust tier quotas, retention policies, and feature paywalls. Changes invalidate cache cluster-wide.</span>
         </div>
       `;
@@ -611,7 +611,7 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
               <h3 style="font-size: 1rem; font-weight: 700; margin: 0;">${tierName} Tier</h3>
               <div style="display: flex; gap: 6px; align-items: center;">
-                ${!canEdit ? '<span class="badge" style="background: rgba(94, 106, 210, 0.15); color: #818cf8; font-size: 0.68rem; padding: 2px 6px;">🔒 Read-Only</span>' : ''}
+                ${!canEdit ? '<span class="badge" style="background: rgba(94, 106, 210, 0.15); color: #818cf8; font-size: 0.68rem; padding: 2px 6px; display: inline-flex; align-items: center; gap: 4px;"><svg class="icon-svg" width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-lock"></use></svg>Read-Only</span>' : ''}
                 <span class="badge" style="font-size: 0.7rem; padding: 2px 6px;">Tier #${c.tier}</span>
               </div>
             </div>
@@ -655,10 +655,10 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
               </button>
             ` : `
               <div style="width: 100%; text-align: center; padding: 7px 12px; font-size: 0.75rem; color: var(--text-muted); background: rgba(255, 255, 255, 0.02); border: 1px dashed var(--hairline); border-radius: var(--radius-sm); margin-top: 4px; display: flex; align-items: center; justify-content: center; gap: 5px;">
-                <span>🔒</span> <span>Read-Only View</span>
+                <svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-lock"></use></svg> <span>Read-Only View</span>
               </div>
               <button type="button" class="btn btn-sm btn-outline btn-save-tier" style="display: none;" disabled title="Only SuperAdmin can modify tier configurations">
-                🔒 SuperAdmin Only
+                <svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px;"><use href="assets/icons/sprite.svg#icon-lock"></use></svg>SuperAdmin Only
               </button>
             `}
           </div>
@@ -745,8 +745,8 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
             <td style="padding: 6px 8px; font-family: monospace;">${l.estimatedTokensUsed}</td>
             <td style="padding: 6px 8px; font-family: monospace;">${l.latencyMs}ms</td>
             <td style="padding: 6px 8px;">
-              <span style="color: ${l.isSuccess ? 'var(--accent)' : '#f87171'};">
-                ${l.isSuccess ? '✓ OK' : '✗ ' + (l.errorReason || 'Failed')}
+              <span style="color: ${l.isSuccess ? 'var(--accent)' : '#f87171'}; display: inline-flex; align-items: center; gap: 3px;">
+                ${l.isSuccess ? '<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-check"></use></svg>OK' : '<svg class="icon-svg" width="11" height="11" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg>' + this.escapeHtml(l.errorReason || 'Failed')}
               </span>
             </td>
           </tr>
@@ -813,8 +813,8 @@ this.usersTableBody?.querySelectorAll('.btn-toggle-status').forEach(btn => {
               ${deletedTime}
             </td>
             <td style="padding: 8px 10px;">
-              <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(239, 68, 68, 0.2); color: #f87171;">
-                🗑️ DELETED
+              <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 6px; background: rgba(239, 68, 68, 0.2); color: #f87171; display: inline-flex; align-items: center; gap: 3px;">
+                <svg class="icon-svg" width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-delete"></use></svg>DELETED
               </span>
             </td>
           </tr>

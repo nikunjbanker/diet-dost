@@ -584,7 +584,9 @@ async function initApp() {
       : (user.tier || 'Free');
 
     if (tierPillEl) {
-      tierPillEl.textContent = tierName === 'SuperAdmin' ? '👑 Super' : tierName === 'Premium' ? '⚡ Premium' : tierName === 'Basic' ? '⭐ Basic' : '🆓 Free';
+      const tierIconId = tierName === 'SuperAdmin' ? 'icon-tier-superadmin' : tierName === 'Premium' ? 'icon-tier-premium' : tierName === 'Basic' ? 'icon-tier-basic' : 'icon-tier-free';
+      const tierLabel = tierName === 'SuperAdmin' ? 'Super' : tierName;
+      tierPillEl.innerHTML = `<svg class="icon-svg" width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" style="margin-right: 4px;"><use href="assets/icons/sprite.svg#${tierIconId}"></use></svg>${tierLabel}`;
       tierPillEl.className = `tier-badge-pill tier-${tierName.toLowerCase()}`;
     }
 
@@ -681,7 +683,9 @@ async function initApp() {
       const timeStr = n.createdAtUtc ? new Date(n.createdAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       const bg = n.isRead ? 'transparent' : 'rgba(56, 189, 248, 0.08)';
       const border = n.isRead ? 'var(--border-subtle)' : 'rgba(56, 189, 248, 0.3)';
-      const icon = n.type === 'NewRegistration' ? '🆕' : '🔔';
+      const icon = n.type === 'NewRegistration'
+        ? '<svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-user"></use></svg>'
+        : '<svg class="icon-svg" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-bell"></use></svg>';
 
       return `
         <div class="notification-item" data-id="${n.id}" style="padding: 10px; border-radius: 6px; margin-bottom: 6px; background: ${bg}; border: 1px solid ${border}; cursor: pointer; transition: background 0.2s;">
@@ -764,7 +768,7 @@ async function initApp() {
     });
     updateNotificationBadge();
     renderNotifications();
-    try { toastService.info(`🔔 New Registration: ${data.email} is awaiting approval!`); } catch {}
+    try { toastService.info(`New Registration: ${data.email} is awaiting approval!`); } catch {}
   });
 
   // User menu dropdown toggle
