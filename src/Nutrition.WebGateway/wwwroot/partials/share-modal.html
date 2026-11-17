@@ -13,7 +13,7 @@
         <div class="hud-title" id="share-modal-title">Share & Export Studio</div>
         <div class="share-modal-subtitle" id="share-modal-subtitle">Generate high-DPI social nutrition cards</div>
       </div>
-      <button type="button" class="btn btn-sm" id="btn-close-share-modal" aria-label="Close Share Studio" title="Close (Esc)">✕</button>
+      <button type="button" class="btn btn-sm btn-modal-close" id="btn-close-share-modal" aria-label="Close Share Studio" title="Close (Esc)"><svg class="icon-modal-close" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-close"></use></svg></button>
     </div>
 
     <div class="share-studio-layout">
@@ -24,10 +24,12 @@
           <span class="share-control-label">Format:</span>
           <div class="share-aspect-pills">
             <button type="button" class="share-aspect-pill active" id="btn-aspect-square" data-aspect="square">
-              🔲 Square (1:1)
+              <svg class="icon-aspect" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-aspect-square"></use></svg>
+              <span>Square (1:1)</span>
             </button>
             <button type="button" class="share-aspect-pill" id="btn-aspect-story" data-aspect="story">
-              📱 Story (9:16)
+              <svg class="icon-aspect" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-aspect-story"></use></svg>
+              <span>Story (9:16)</span>
             </button>
           </div>
         </div>
@@ -62,7 +64,7 @@
       <div class="share-actions-rail">
         <!-- Desktop Hero 1-Click Clipboard Action -->
         <button type="button" class="btn btn-primary btn-hero-share" id="btn-copy-share-image" title="Copy high-res image to clipboard for instant Ctrl+V pasting">
-          <span class="hero-share-icon">📋</span>
+          <svg class="hero-share-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-clipboard"></use></svg>
           <div class="hero-share-text">
             <strong>Copy Card Image (Ctrl+V)</strong>
             <span>Paste directly into WhatsApp Web, Slack, Discord or Facebook</span>
@@ -76,37 +78,37 @@
         <!-- Social Action Buttons Grid -->
         <div class="share-buttons-grid">
           <button type="button" class="btn-share-grid-action btn-share-whatsapp" id="btn-share-whatsapp-web" title="Share formatted summary to WhatsApp Web">
-            <span class="share-btn-icon">💬</span>
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-whatsapp"></use></svg>
             <span class="share-btn-label">WhatsApp Web</span>
           </button>
 
           <button type="button" class="btn-share-grid-action btn-share-download" id="btn-download-share-card" title="Download high-resolution 300 DPI PNG file">
-            <span class="share-btn-icon">📥</span>
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-download"></use></svg>
             <span class="share-btn-label">Download PNG</span>
           </button>
 
-          <button type="button" class="btn-share-grid-action btn-share-copy" id="btn-copy-share-text" title="Copy formatted text summary with emojis">
-            <span class="share-btn-icon">📝</span>
+          <button type="button" class="btn-share-grid-action btn-share-copy" id="btn-copy-share-text" title="Copy formatted text summary">
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-copy-text"></use></svg>
             <span class="share-btn-label">Copy Text</span>
           </button>
 
           <button type="button" class="btn-share-grid-action btn-share-facebook" id="btn-share-facebook" title="Share on Facebook">
-            <span class="share-btn-icon">👥</span>
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-facebook"></use></svg>
             <span class="share-btn-label">Facebook</span>
           </button>
 
           <button type="button" class="btn-share-grid-action btn-share-twitter" id="btn-share-twitter" title="Share on X (Twitter)">
-            <span class="share-btn-icon">🐦</span>
-            <span class="share-btn-label">X / Twitter</span>
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-x-twitter"></use></svg>
+            <span class="share-btn-label">X (Twitter)</span>
           </button>
 
           <button type="button" class="btn-share-grid-action btn-share-email" id="btn-share-email" title="Share nutrition report via email">
-            <span class="share-btn-icon">✉️</span>
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-email"></use></svg>
             <span class="share-btn-label">Email Report</span>
           </button>
 
           <button type="button" class="btn-share-grid-action btn-share-system" id="btn-system-share" style="display: none;" title="Open device system share sheet">
-            <span class="share-btn-icon">📱</span>
+            <svg class="share-btn-icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons/sprite.svg#icon-system-share"></use></svg>
             <span class="share-btn-label">System Share...</span>
           </button>
         </div>

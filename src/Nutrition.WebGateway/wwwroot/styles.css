@@ -7757,7 +7757,17 @@ h2 {
 }
 
 .share-btn-icon {
-  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.btn-share-grid-action:hover .share-btn-icon {
+  transform: scale(1.15);
 }
 
 .share-app-link-box {
@@ -7839,4 +7849,156 @@ h2 {
   .share-card-preview-frame {
     max-width: 320px;
   }
+}
+
+/* ==========================================================================
+   Centralized Futuristic SVG Iconography System (ADR-167)
+   ========================================================================== */
+
+/* Universal Modal Close Crosshair */
+.btn-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: var(--radius-sm, 6px);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted, #71717a);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  line-height: 1;
+}
+
+.btn-modal-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: var(--text-primary, #ffffff);
+  transform: rotate(90deg) scale(1.08);
+}
+
+.icon-modal-close {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  transition: stroke 0.15s ease;
+}
+
+/* Action Button Icons (Edit & Delete) */
+.icon-action-edit {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  transition: all 0.18s ease;
+}
+
+.btn-card-action.btn-edit-meal:hover .icon-action-edit,
+.btn-table-action.btn-edit-meal:hover .icon-action-edit {
+  stroke: #38bdf8;
+  filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.7));
+  transform: rotate(-10deg) scale(1.12);
+}
+
+.icon-action-delete {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  transition: all 0.18s ease;
+}
+
+.btn-card-action.btn-delete-meal:hover .icon-action-delete,
+.btn-table-action.btn-delete-meal:hover .icon-action-delete,
+.btn-delete-confirm:hover .icon-action-delete {
+  stroke: #f87171;
+  filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.8));
+  transform: scale(1.15);
+}
+
+/* View Mode Toggles & Excel Export */
+.icon-view-cards,
+.icon-view-grid {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  margin-right: 5px;
+  transition: all 0.18s ease;
+}
+
+.btn-toggle-view.active .icon-view-cards,
+.btn-toggle-view.active .icon-view-grid {
+  stroke: var(--accent-brand, #6366f1);
+  filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.6));
+}
+
+.icon-export-excel {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  margin-right: 5px;
+  transition: all 0.18s ease;
+}
+
+.btn-export-excel:hover .icon-export-excel {
+  stroke: #27c380;
+  filter: drop-shadow(0 0 6px rgba(39, 195, 128, 0.7));
+  transform: translateY(-1px);
+}
+
+/* Meal Type Astronomical Icons */
+.icon-meal-type {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  transition: all 0.18s ease;
+}
+
+.meal-card-type-badge.breakfast .icon-meal-type,
+.table-meal-badge.breakfast .icon-meal-type,
+.meal-pill[data-type="Breakfast"] .icon-meal-type {
+  stroke: #fb923c;
+}
+
+.meal-card-type-badge.lunch .icon-meal-type,
+.table-meal-badge.lunch .icon-meal-type,
+.meal-pill[data-type="Lunch"] .icon-meal-type {
+  stroke: #facc15;
+}
+
+.meal-card-type-badge.snack .icon-meal-type,
+.table-meal-badge.snack .icon-meal-type,
+.meal-pill[data-type="Snack"] .icon-meal-type {
+  stroke: #38bdf8;
+}
+
+.meal-card-type-badge.dinner .icon-meal-type,
+.table-meal-badge.dinner .icon-meal-type,
+.meal-pill[data-type="Dinner"] .icon-meal-type {
+  stroke: #c084fc;
+}
+
+.meal-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.meal-pill:hover .icon-meal-type {
+  transform: scale(1.15);
+  filter: drop-shadow(0 0 5px currentColor);
+}
+
+/* Share Studio Aspect & Hero Icons */
+.icon-aspect {
+  display: inline-block;
+  vertical-align: middle;
+  stroke: currentColor;
+  margin-right: 5px;
+}
+
+.hero-share-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  stroke: currentColor;
+  flex-shrink: 0;
 }

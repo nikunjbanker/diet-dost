@@ -507,6 +507,24 @@ Linear's depth is carried by surface ladder + hairline borders. The brand resist
 |---|---|---|---|
 | **Concept: The Clinical DD Pulse & Living Thali (Recommended)** | Bold interlocking DD monogram with an inner living green leaf, set against a warm golden turmeric thali halo and an AI vitality rhythm pulse. | Unites clinical authority with cultural food pride. The double "D" anchors the name Diet Dost, while the pulse highlights AI vitality and the leaf honors fresh Indian produce. | Master app icon, browser favicon, and high-tech health dashboard |
 
+### Vector Iconography Asset & Sprite Sheet Architecture (ADR-167)
+
+To ensure zero code duplication, ultra-fast rendering, and consistent styling across desktop, tablet, and mobile viewports, all UI icons adhere to the centralized vector asset standard:
+
+1. **Asset Storage**:
+   - Standalone vector SVGs reside in `src/Nutrition.WebGateway/wwwroot/assets/icons/<name>.svg`.
+   - The unified SVG symbol sprite sheet resides in `src/Nutrition.WebGateway/wwwroot/assets/icons/sprite.svg`.
+2. **Standard Reference**:
+   - All consumer templates reference icons via `<svg class="..."><use href="assets/icons/sprite.svg#icon-<name>"></use></svg>` (or `#icon-<name>`).
+3. **Zero-Emoji UI Control Rule**:
+   - System emojis are strictly prohibited for interactive buttons, table actions, modal dismissals, social intents, and category indicators.
+   - All interactive controls use clean, futuristic vector SVGs with `currentColor` stroke or fill that inherit parent color tokens and support glowing hover micro-interactions.
+4. **Canonical Icon Registry**:
+   - Actions: `icon-share`, `icon-edit`, `icon-delete`, `icon-close`
+   - Data & Layouts: `icon-view-cards`, `icon-view-grid`, `icon-export-excel`, `icon-aspect-square`, `icon-aspect-story`
+   - Sharing & Clipboard: `icon-clipboard`, `icon-x-twitter`, `icon-whatsapp`, `icon-download`, `icon-copy-text`, `icon-facebook`, `icon-email`, `icon-system-share`
+   - Astronomical Meal Timing: `icon-meal-breakfast` (dawn sunrise), `icon-meal-lunch` (zenith sun), `icon-meal-snack` (beverage cup), `icon-meal-dinner` (crescent moon & star)
+
 ## Responsive Behavior
 
 ### Breakpoints
