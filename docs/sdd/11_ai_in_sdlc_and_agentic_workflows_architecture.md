@@ -643,3 +643,18 @@ This specification serves as the authoritative architectural blueprint for human
 * **Visual Prompt Injection Isolation (OWASP LLM01)**:
   - `MicrosoftAgentFoodVisionService.cs`: Injected explicit adversarial vision guardrails instructing vision models that text depicted inside meal photographs (napkins, menus, receipts, screens) must be treated strictly as passive visual objects, not executable system instructions (GAP-14).
   - Pre-flight PromptShield validation remains strictly enforced before multimodal payloads reach Gemini or Azure OpenAI models.
+
+## 12. Model Context Protocol (MCP) C# SDK & Human-in-the-Loop Agent Workflows (`ADR-172`)
+
+* **Model Context Protocol (MCP) Integration**:
+  - Exposes Diet-Dost as a standardized MCP Tool Server using `ModelContextProtocol.AspNetCore` v2.4.0.
+  - Implements clean protocol abstraction: all MCP tools dispatch Native CQRS commands/queries via `IDispatcher`, ensuring zero duplicate business logic.
+* **Human-in-the-Loop (HITL) Clinical Gate (Zero-Assumption Intake)**:
+  - Enforces clinical safety: autonomous agents cannot write unverified food detections directly to the user's permanent health ledger.
+  - `add_meal_entry` returns an `InputRequiredResult` elicitation response containing a user-bound AES-256 continuation token (`IDataProtector` scoped with `UserId`, 15-minute TTL, and nonce).
+  - Cross-user token substitution and replay are cryptographically rejected.
+* **Multi-Transport & Zero-Cost Cloud Deployment**:
+  - Remote HTTP/SSE endpoint co-hosted directly at `/mcp` on `Nutrition.WebGateway` ($0 additional Azure Container App cost, preserving SQLite SMB single-writer lock guarantees).
+  - Local Stdio CLI transport (`Nutrition.Tools.McpCli`) for Claude Desktop `stdin`/`stdout` JSON-RPC piping.
+* **Autonomous Companion Agent Runner (`Nutrition.AgentClient`)**:
+  - Validates full agent loops using `Microsoft.Extensions.AI` (`IChatClient`), auto-probing local Ollama with seamless Google Gemini fallback.

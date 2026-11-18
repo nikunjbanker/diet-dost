@@ -5,6 +5,8 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Aspire.Hosting.Dotnet;
+using Microsoft.Extensions.Configuration;
 using Nutrition.AppHost.Extensions;
 
 // .NET Aspire Distributed Application Host (.NET 11 / Aspire 17 Project Resource v2)
@@ -30,6 +32,14 @@ var keyVault = builder.ExecutionContext.IsPublishMode || !string.IsNullOrWhiteSp
 // When Azure SQL resource orchestration is enabled in Aspire:
 //   var sql = builder.AddAzureSqlServer("dietdost-sql").AddDatabase("dietdost");
 //   builder.AddWebGateway(keyVault, database: sql);
-builder.AddWebGateway(keyVault);
+var webGateway = builder.AddWebGateway(keyVault);
+
+// 5. Optional Agent Client Runner for End-to-End Autonomous Agent Verification in local development
+if (!builder.ExecutionContext.IsPublishMode && builder.Configuration.GetValue<bool>("RunAgentClient"))
+{
+    builder.AddDotnetProject("agent-client", "../Nutrition.AgentClient/Nutrition.AgentClient.csproj")
+        .WithEnvironment("MCP_SERVER_URL", "http://localhost:5240/mcp")
+        .WaitFor(webGateway);
+}
 
 builder.Build().Run();

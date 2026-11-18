@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Mcp;
 using Nutrition.WebGateway.Middleware;
 
 namespace Nutrition.WebGateway.Extensions;
@@ -100,6 +101,15 @@ public static class WebApplicationExtensions
         {
             Predicate = r => r.Tags.Contains("ready")
         });
+
+        // Official Model Context Protocol (MCP) Remote Endpoint (/mcp)
+        // OWASP ASVS Governance: Authenticated via JWT Bearer in deployed environments;
+        // Allows local developer testing in Development environment.
+        var mcpEndpoint = app.MapDietDostMcpEndpoint();
+        if (!app.Environment.IsDevelopment())
+        {
+            mcpEndpoint.RequireAuthorization();
+        }
 
         // Controller Endpoints & SPA Fallback
         // Real-time In-App Notification SignalR Hub

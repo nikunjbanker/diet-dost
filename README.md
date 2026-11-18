@@ -18,7 +18,8 @@
 - **🛡️ Debug-Only Demo User Security Isolation**: Prevents production data breaches by restricting seeded demo accounts (`free@`, `basic@`, `premium@`, `admin.demo@`, `superadmin@dietdost.app`) strictly to Debug builds in Development hosting environments. In Release mode, demo user seeding is suppressed, login attempts are blocked with `HTTP 403 DemoAccessForbidden`, and any pre-existing demo accounts are proactively deactivated with revoked security stamps.
 - **⚡ Dual SmartScheme Auth & Tier Quota Engine**: RFC 7519 JWT Bearer + HttpOnly Cookie dual authentication with India DPDPA 2023 forensic consent audit logging. Features dynamic tier quotas (`Free`: 1/day, `Basic`: 7/day, `Premium`: 30/day, `SuperAdmin`: Unlimited) with automated feature gating (visual progress comparisons and meal data exports).
 - **🌐 Web BFF Composite Hydration**: High-performance Backend for Frontend (`/api/web/v1/dashboard`) dispatching CQRS queries concurrently via `Task.WhenAll` across isolated DI scopes for sub-50ms execution.
-- **🧪 Mandatory End-to-End Tier Verification Harness**: 417 automated unit/eval tests (381 EvalHarness + 36 Domain) plus an automated live E2E PowerShell test harness (`pwsh -File tests/validate_e2e_tiers.ps1`) verifying all 5 demo user tiers, quotas, feature gating, and admin permissions on the running WebGateway.
+- **🤖 Agentic Workflows & Model Context Protocol (MCP)**: Official C# Model Context Protocol SDK (`ModelContextProtocol.AspNetCore` & `ModelContextProtocol.Client` v2.4.0) with Aspire 17 Project Resource v2 orchestration. Exposes 5 clinical tools (`view_meal_logs`, `view_daily_ledger`, `estimate_food_portion`, `add_meal_entry`, `confirm_meal_entry`) over remote HTTP/SSE (`/mcp`) and local Stdio transport (`Nutrition.Tools.McpCli`). Features cryptographic Human-in-the-Loop (HITL) continuation tokens (15-min TTL, user-bound purpose strings) enforcing the clinical Zero-Assumption Intake rule.
+- **🧪 Mandatory End-to-End Tier Verification Harness**: 501 automated unit/eval tests (423 EvalHarness + 65 Domain + 13 Mcp) plus an automated live E2E PowerShell test harness (`pwsh -File tests/validate_e2e_tiers.ps1`) verifying all 5 demo user tiers, quotas, feature gating, and admin permissions on the running WebGateway.
 - **🇮🇳 South Asian & Indian Phenotype Specific**: Tailored for Indian dietary realities—including dal, sabzi, roti, rice, street snacks, and regional preparations—calibrated with WHO Asian-Indian BMI cutoffs (Normal: 18.5–22.9, Overweight: 23–24.9, Obese: $\ge$ 25 kg/m²).
 - **🔬 Zero-Assumption Clinical Engine**: Zero hallucination or guesswork. Requires complete clinical profile metrics (age, biological sex, height, weight, activity multiplier, health conditions) before issuing caloric and macronutrient targets.
 - **📸 Multimodal AI Meal Vision**: Upload or take photos of Indian dishes. Powered by Microsoft Agent Framework + Google Gemini multimodal vision with a strict $\ge 70\%$ confidence gating floor and editable 1-tap review modals.
@@ -272,7 +273,11 @@ diet-dost/
 │   ├── Nutrition.Domain/            # DDD core entities, clinical calculators, AppSecret, password policy
 │   ├── Nutrition.Application/       # Native CQRS commands, queries, handlers, ISecretStore, IAppEnvironment
 │   ├── Nutrition.Infrastructure/    # DatabaseSecretStore, DatabaseConfigurationProvider, EF Core DbContext, AI Agent
-│   └── Nutrition.WebGateway/        # ASP.NET Core WebGateway, thin controllers, SmartScheme auth, PWA static files
+│   ├── Nutrition.Mcp/               # Model Context Protocol (MCP) server, clinical tools, HITL continuation token protector
+│   ├── Nutrition.Tools.McpCli/      # Stdio MCP transport CLI runner for Claude Desktop & VS Code
+│   ├── Nutrition.AgentClient/       # Autonomous Agent Client & verification harness (MEAI / Ollama / Gemini)
+│   ├── Nutrition.Tools.DataMigrator/# Database schema and migration management utility
+│   └── Nutrition.WebGateway/        # ASP.NET Core WebGateway, thin controllers, SmartScheme auth, PWA static files, /mcp
 │       └── wwwroot/
 │           ├── assets/              # SVG vectors (placeholder-meal.svg, placeholder-progress.svg)
 │           ├── css/                 # Linear.app glassmorphic stylesheets
@@ -280,8 +285,9 @@ diet-dost/
 │           ├── partials/            # 11 modular HTML components (auth-gate, review-modal, delete-meal-modal, HUD, etc.)
 │           └── index.html           # Single Page App shell
 ├── tests/
-│   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & medical safeguards (36 tests)
-│   ├── Nutrition.EvalHarness.Tests/ # AI Vision evals, auth, rate limiting, media streaming, and security tests (381 tests)
+│   ├── Nutrition.Domain.Tests/      # Unit tests for clinical formulas & medical safeguards (65 tests)
+│   ├── Nutrition.EvalHarness.Tests/ # AI Vision evals, auth, rate limiting, media streaming, and security tests (423 tests)
+│   ├── Nutrition.Mcp.Tests/         # MCP tool dispatch, token protector, and schema tests (13 tests)
 │   └── validate_e2e_tiers.ps1       # Automated live end-to-end user tier validation test harness
 ├── docs/
 │   ├── architecture/diagrams/       # Standalone synchronized Mermaid architecture diagrams
@@ -362,7 +368,7 @@ dotnet run --project src/Nutrition.AppHost
 
 ## 🧪 Running Tests & Validation
 
-### 1. Automated Test Suite (136 Tests, 0 Warnings, 0 Errors)
+### 1. Automated Test Suite (501 Tests, 0 Warnings, 0 Errors)
 Execute the comprehensive domain, clinical, security, and AI evaluation suite:
 
 ```bash
@@ -370,18 +376,23 @@ dotnet test
 ```
 
 Test coverage includes:
-- **Clinical & Safeguards (`Nutrition.Domain.Tests` - 36 tests)**:
+- **Clinical & Safeguards (`Nutrition.Domain.Tests` - 65 tests)**:
   - Mifflin-St Jeor South Asian BMR/TDEE calculations.
   - WHO Asian-Indian BMI boundaries and cardiometabolic cutoffs.
   - ICMR-NIN 2024 starvation caloric floors (1,200 kcal F / 1,500 kcal M).
   - Health condition macro adjustments (Diabetes, HTN, Thyroid, NAFLD).
-- **Security & Infrastructure (`Nutrition.EvalHarness.Tests` - 100 tests)**:
+- **Security, Web & AI Infrastructure (`Nutrition.EvalHarness.Tests` - 423 tests)**:
   - Multimodal AI food vision prompt defense, confidence gating ($\ge 70\%$), and fallback cascade.
   - PBKDF2 password hashing (HMAC-SHA512) and strict password policy validation.
   - RFC 7519 JWT Bearer authentication and HttpOnly session validation.
   - Polly sliding-window rate limiting resilience pipelines.
   - Database Secret Store (`AppSecrets` table, `ISecretStore` port, and caching).
   - Debug-only demo user isolation and release mode login rejection (`HTTP 403 DemoAccessForbidden`).
+  - Living SDD, link integrity, and architectural synchronization contract tests.
+- **Model Context Protocol & HITL Elicitation (`Nutrition.Mcp.Tests` - 13 tests)**:
+  - Cryptographic user-bound continuation token protection, expiration TTL, and replay rejection.
+  - Tool routing and parameter marshalling across meal logging, estimation, and daily ledgers.
+  - Strongly-typed DTO result contracts adhering to Clean Architecture CQRS envelopes.
 
 ### 2. Live End-to-End User Tier Validation Harness
 Run the automated end-to-end product verification across all 5 demo user tiers on the running WebGateway (`http://localhost:5240`):

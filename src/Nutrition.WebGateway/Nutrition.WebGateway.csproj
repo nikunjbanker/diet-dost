@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Nutrition.Infrastructure\Nutrition.Infrastructure.csproj" />
+    <ProjectReference Include="..\Nutrition.Mcp\Nutrition.Mcp.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1135,3 +1135,22 @@ To prevent startup container crashes and primary key constraint collisions (`PK_
 * **Idempotent Dual-Database Schema Reconciliation**:
   - `DatabaseInitializationExtensions.cs` incrementally reconciles `IsOnboarded` (`INTEGER NOT NULL DEFAULT 0` for SQLite; `BIT NOT NULL DEFAULT 0` for Azure SQL) on existing `Users` and `Profiles` tables.
   - Seeds all standard demo users (`free@dietdost.app`, `basic@dietdost.app`, `premium@dietdost.app`, `admin.demo@dietdost.app`, `superadmin@dietdost.app`, and `usr_87c369c1e3f8`) with `IsOnboarded = true` to preserve automated CFT and E2E test suites.
+
+## 19. Agentic Workflows Architecture with ModelContextProtocol (MCP) C# SDK & Aspire 17 (`ADR-172`)
+
+* **Architecture & Protocol Boundary**:
+  - Exposes Diet-Dost clinical dietetics, nutritional diary history, and meal analysis to autonomous AI agents through the official `ModelContextProtocol.AspNetCore` & `ModelContextProtocol` v2.4.0 SDKs.
+  - Native CQRS Integration: MCP tools (`MealTools`, `AnalyticsTools`) directly dispatch commands and queries (`GetMealHistoryQuery`, `GetDailyLedgerQuery`, `AnalyzeTextMealCommand`, `UploadAndAnalyzeMealCommand`, `ConfirmMealCommand`) via `IDispatcher`, ensuring 100% domain code reuse with zero duplicate logic.
+* **Zero-Cost Unified Deployment ($0 Incremental Cloud Spend)**:
+  - The remote HTTP/SSE `/mcp` endpoint is co-hosted directly within `Nutrition.WebGateway` on Azure Container Apps (`https://dev.diet-dost.in/mcp`).
+  - Eliminates secondary Container App provisioning costs and guarantees the SQLite single-writer invariant across the Azure SMB volume mount (`/app/data`).
+* **Dual Transport Architecture**:
+  - **HTTP/SSE Transport**: Available on `/mcp` for ChatGPT Custom Actions, remote Claude Web, VS Code GitHub Copilot, Web PWA, and Aspire Orchestrator.
+  - **Local Stdio Transport**: Provided via a lightweight CLI console executable (`Nutrition.Tools.McpCli`) allowing Claude Desktop to pipe JSON-RPC over standard I/O without web browser requirements.
+* **Human-in-the-Loop (HITL) Clinical Gate (Zero-Assumption Intake)**:
+  - Unverified AI food detections (`IsVerifiedByUser = false`) are never written directly to the health ledger.
+  - Returns `InputRequiredResult` elicitation with a user-bound AES-256-GCM continuation token (`IDataProtector` scoped to `UserId`) featuring a 15-minute TTL and JTI nonce.
+  - Token replay across user boundaries is cryptographically blocked.
+  - Only upon explicit human confirmation (`approved == "yes"`) is `ConfirmMealCommand` dispatched with `IsVerifiedByUser = true`.
+* **Auto-Detecting Agent Client (`Nutrition.AgentClient`)**:
+  - Autonomous test runner that probes local Ollama (`llama3.2`) and seamlessly falls back to Google Gemini using Diet-Dost's existing configuration.
