@@ -23,11 +23,15 @@ var builder = DistributedApplication.CreateBuilder(args);
 // 1. Declare Azure Container Apps Environment deployment target
 var acaEnv = builder.AddAzureContainerAppEnvironment("cae-dietdost");
 
-// 2. Declare Azure Storage for persistent SQLite SMB file share
-var storage = builder.AddAzureStorage("dietdost-storage");
+// 2. Declare Azure Storage for persistent SQLite SMB file share in deployed environments
+var storage = builder.ExecutionContext.IsPublishMode || !string.IsNullOrWhiteSpace(builder.Configuration["Azure:SubscriptionId"])
+    ? builder.AddAzureStorage("dietdost-storage")
+    : null;
 
 // 3. Declare Azure Key Vault for application secrets in deployed environments
-var keyVault = builder.AddAzureKeyVault("dietdost-kv");
+var keyVault = builder.ExecutionContext.IsPublishMode || !string.IsNullOrWhiteSpace(builder.Configuration["Azure:SubscriptionId"])
+    ? builder.AddAzureKeyVault("dietdost-kv")
+    : null;
 
 // 4. Register Web Gateway via Project Resource v2 with dual-database persistence support (SQLite & Azure SQL)
 builder.AddWebGateway(keyVault);
@@ -52,7 +56,10 @@ public static IResourceBuilder<DotnetProjectResource> AddWebGateway(
         .WithEnvironment("ConnectionStrings__DefaultConnection", defaultConn);
 
     if (database != null) webGateway.WithReference(database);
-    if (keyVault != null) webGateway.WithReference(keyVault);
+    if (keyVault != null && (builder.ExecutionContext.IsPublishMode || !string.IsNullOrWhiteSpace(builder.Configuration["Azure:SubscriptionId"])))
+    {
+        webGateway.WithReference(keyVault);
+    }
 
     return webGateway;
 }

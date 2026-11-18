@@ -70,9 +70,21 @@ public static class WebGatewayResourceExtensions
             webGateway.WithReference(database);
         }
 
-        if (keyVault != null)
+        if (keyVault != null && (builder.ExecutionContext.IsPublishMode || !string.IsNullOrWhiteSpace(builder.Configuration["Azure:SubscriptionId"])))
         {
             webGateway.WithReference(keyVault);
+        }
+        else
+        {
+            // In local run mode without Azure subscription provisioning, forward any explicitly configured Key Vault URI
+            var kvUri = builder.Configuration["KeyVault:VaultUri"]
+                ?? builder.Configuration["KEY_VAULT_URI"]
+                ?? builder.Configuration.GetConnectionString("dietdost-kv");
+
+            if (!string.IsNullOrWhiteSpace(kvUri))
+            {
+                webGateway.WithEnvironment("KeyVault__VaultUri", kvUri);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(aiOptions.AzureApiKey))
