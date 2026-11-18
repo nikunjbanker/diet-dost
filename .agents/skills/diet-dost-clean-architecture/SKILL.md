@@ -25,7 +25,7 @@ description: >-
 # Diet Dost — Clean Architecture, Native CQRS & Web BFF Rulebook
 > **Specification Version**: `v1.2.0-WEB-BFF-SPEC`  
 > **Architecture Pattern**: Clean Architecture (Hexagonal / Ports & Adapters) + Web BFF + Native .NET 11 CQRS  
-> **Target Framework**: `.NET 11` (`net11.0`) · Standalone `.NET Aspire 13.5.4`  
+> **Target Framework**: `.NET 11` (`net11.0`) · .NET Aspire 17 (Project Resource v2)  
 > **Framework Primitives**: Pure `Microsoft.Extensions.DependencyInjection` (Zero MediatR / Zero Commercial License)  
 > **Standards Compliance**: SOLID Principles, Zero Duplicate Domain Code, OWASP ASVS v4.0, ICMR-NIN 2024  
 

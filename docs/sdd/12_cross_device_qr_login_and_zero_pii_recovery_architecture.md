@@ -19,7 +19,7 @@
 > &bull; **BIP-39**: Mnemonic Code for Deterministic Key Derivation (Unicode NFKD Normalization)  
 > &bull; **India DPDPA 2023**: Section 6 Explicit Unbundled Consent & Section 12 Right to Erasure  
 > **Final Certified Confidence Score**: **98.5%** *(Surpasses 98.0% industry standard benchmark across all 8 security dimensions)*  
-> **Target Framework**: `.NET 11` (`net11.0`) &bull; Standalone `.NET Aspire 13.5.4`  
+> **Target Framework**: `.NET 11` (`net11.0`) &bull; .NET Aspire 17 (Project Resource v2)  
 > **Primary Database Provider**: Azure SQL Database Serverless Free Tier (`fda1b36`) with SQLite fallback  
 
 ---

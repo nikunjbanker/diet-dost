@@ -11,8 +11,8 @@
 > **Document Reference**: `docs/sdd/10_configuration_and_secret_management_architecture.md`  
 > **Classification**: Authoritative System Design Document & Living Architecture Proof  
 > **Status**: `APPROVED & LIVING`  
-> **Last Synchronized**: 2026-10-09  
-> **Target Framework**: `.NET 11` (`net11.0`), `.NET Aspire 13.5.4`, `Azure Container Apps`, `Azure Key Vault`  
+> **Last Synchronized**: 2026-11-18  
+> **Target Framework**: `.NET 11` (`net11.0`), `.NET Aspire 17` (Project Resource v2), `Azure Container Apps`, `Azure Key Vault`  
 
 ---
 
@@ -73,7 +73,7 @@ graph TD
 ### 3.1 The Process Boundary Problem
 - **Process Memory Isolation**: An operating system does not automatically propagate arbitrary terminal or shell environment variables to child processes unless explicitly instructed.
 - When `dotnet run --project src/Nutrition.AppHost` is executed, shell variables (such as `GEMINI_API_KEY` or `GOOGLE_AI_KEY`) reside exclusively within `AppHost`'s process memory.
-- When Aspire launches `Nutrition.WebGateway` as a subprocess via `.AddProject<Projects.Nutrition_WebGateway>("web-gateway")`, it creates an isolated process table. Without explicit forwarding, the child process starts without knowledge of keys set in the parent shell.
+- When Aspire launches `Nutrition.WebGateway` as a subprocess via `.AddDotnetProject(ResourceName, "../Nutrition.WebGateway/Nutrition.WebGateway.csproj")`, it creates an isolated process table. Without explicit forwarding, the child process starts without knowledge of keys set in the parent shell.
 
 ### 3.2 Candidate Key Normalization
 In real-world environments, developers and cloud tools set API keys under various naming conventions:
@@ -93,19 +93,28 @@ var geminiKey = ResolveUsableKey(
 ```
 It discards dummy values (`*******`), unconfigured templates (`YOUR_API_KEY`), and truncated strings ($< 20$ chars).
 
-### 3.3 Child Environment Injection
-In [`src/Nutrition.AppHost/Extensions/WebGatewayResourceExtensions.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.AppHost/Extensions/WebGatewayResourceExtensions.cs), the orchestrator injects normalized configuration into the child process:
+### 3.3 Child Environment Injection & Dual-Database Support
+In [`src/Nutrition.AppHost/Extensions/WebGatewayResourceExtensions.cs`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/src/Nutrition.AppHost/Extensions/WebGatewayResourceExtensions.cs), the orchestrator injects normalized configuration and dual-database settings into the child process:
 ```csharp
-var webGateway = builder.AddProject<Projects.Nutrition_WebGateway>(ResourceName)
+var dbProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+var defaultConn = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
+var azureSqlConn = builder.Configuration.GetConnectionString("AzureSqlConnection");
+
+var webGateway = builder.AddDotnetProject(ResourceName, "../Nutrition.WebGateway/Nutrition.WebGateway.csproj")
     .WithHttpEndpoint(port: GatewayPort, isProxied: false)
     .WithExternalHttpEndpoints()
-    .WithEnvironment("Database__Provider", "Sqlite")
-    .WithEnvironment("ConnectionStrings__DefaultConnection", "Data Source=diettracker.db")
+    .WithEnvironment("Database__Provider", dbProvider)
+    .WithEnvironment("ConnectionStrings__DefaultConnection", defaultConn)
     .WithEnvironment("AI__Provider", aiOptions.Provider)
     .WithEnvironment("AI__GoogleAI__ApiKey", aiOptions.GeminiApiKey ?? string.Empty)
     .WithEnvironment("AI__ApiKey", aiOptions.GeminiApiKey ?? string.Empty)
     .WithEnvironment("AI__GoogleAI__ModelId", aiOptions.GeminiModelId)
     .WithEnvironment("AI__GoogleAI__FallbackModelId", aiOptions.GeminiFallbackModelId);
+
+if (!string.IsNullOrWhiteSpace(azureSqlConn))
+{
+    webGateway.WithEnvironment("ConnectionStrings__AzureSqlConnection", azureSqlConn);
+}
 ```
 **Conclusion**: `.WithEnvironment(...)` instructs the Aspire process launcher to inject these normalized keys into the child `WebGateway` process's environment table upon startup.
 

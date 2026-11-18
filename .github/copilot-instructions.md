@@ -14,7 +14,7 @@ This file provides system context, architectural guidelines, and engineering sta
 
 ## 1. Solution Overview & Technology Stack
 - **Framework & Runtime**: Strictly **.NET 11** (`<TargetFramework>net11.0</TargetFramework>`) across all projects.
-- **Orchestration**: .NET Aspire (`Aspire.AppHost.Sdk/13.5.4`). Solution file: `DietDost.slnx`.
+- **Orchestration**: .NET Aspire 17 (Project Resource v2 / `builder.AddDotnetProject(...)`). Solution file: `DietDost.slnx`.
 - **Database & Persistence**: Entity Framework Core with SQLite (Universal UTC `ValueConverter`, `PRAGMA journal_mode=DELETE` on network SMB share). Swappable via `StorageInfrastructureExtensions`.
 - **Frontend / PWA**: Native ES Modules, Vanilla CSS with custom properties (`styles.css`), HTML partials loader (`main.js` with `[data-include]`), Linear.app Obsidian dark design system (`DESIGN.md`).
 - **AI & Multimodal Vision**: Microsoft Agent Framework with Google AI Gemini multimodal cascade (Gemini 3 Flash $\to$ Gemini 2.5 Flash $\to$ Gemini 2.5 Pro) with `PromptShieldValidator` content safety.

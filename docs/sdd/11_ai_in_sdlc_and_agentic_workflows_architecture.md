@@ -10,7 +10,7 @@
 > **Specification Version**: `v1.7.0 (Production & Living SDD)`
 > **Classification**: Solution Architecture, Engineering Lifecycles & Governance Standard  
 > **Approved Domain Focus**: SDLC vs. AI SDLC vs. Agentic SDLC, Role Evolution, DevSecOps & Closed-Loop Workflows  
-> **Target Framework**: .NET 11, .NET Aspire 13.5.4, OpenTelemetry, GitHub Actions, OWASP Top 10 for LLM  
+> **Target Framework**: .NET 11, .NET Aspire 17, OpenTelemetry, GitHub Actions, OWASP Top 10 for LLM  
 > **Authoritative Companion Standards**: [AGENTS.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/AGENTS.md), [SECURITY.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/SECURITY.md), [00_sdd_index.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/00_sdd_index.md), [04_security_and_compliance.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/04_security_and_compliance.md), [05_devops_and_infrastructure.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md), [06_test_harness_and_evals.md](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md)  
 
 ---

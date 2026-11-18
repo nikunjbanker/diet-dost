@@ -10,7 +10,7 @@
 > **Specification Version**: `v1.4.0 (Production & Living SDD)`  
 > **Classification**: Master Software Design Document (SDD) Index  
 > **Approved Domain Focus**: Indian Population, ICMR-NIN 2024 & WHO Medical Standards  
-> **Tech Stack**: .NET 11, .NET Aspire 13.5.4, Azure Container Apps, Azure Files SMB Persistent SQLite, Azure Key Vault, Google AI Gemini Multimodal, OWASP ASVS, Linear.app Design System  
+> **Tech Stack**: .NET 11, .NET Aspire 17, Azure Container Apps, Azure Files SMB Persistent SQLite, Azure Key Vault, Google AI Gemini Multimodal, OWASP ASVS, Linear.app Design System  
 
 ---
 
@@ -32,7 +32,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | [`03_presentation_layer.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/03_presentation_layer.md) | **Presentation Layer & Web UI Architecture** | Linear Obsidian design tokens, brand iconography (ADR-114), zero-CLS splash screen, ES modules | `APPROVED` |
 | [`03_data_models_and_contracts.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/03_data_models_and_contracts.md) | **Data Models & Contracts** | DDD aggregates, value objects, EF Core schema, JSON contract schema | `APPROVED` |
 | [`04_security_and_compliance.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/04_security_and_compliance.md) | **Security & Compliance (OWASP & AI Defense)** | OWASP ASVS blueprint, 8-job security pipeline, PromptShield content safety, Key Vault purge protection | `APPROVED` |
-| [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 13.5.4, Azure Container Apps Bicep IaC, persistent SQLite SMB mount, custom domain TLS | `APPROVED` |
+| [`05_devops_and_infrastructure.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/05_devops_and_infrastructure.md) | **DevOps & Infrastructure** | .NET Aspire 17, Azure Container Apps Bicep IaC, persistent SQLite SMB mount, custom domain TLS | `APPROVED` |
 | [`06_test_harness_and_evals.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/06_test_harness_and_evals.md) | **Test Harnesses & Vision Evals** | Closed-loop testing, 234 automated tests across 7 projects, multi-tier CFT execution, AI defense validator | `APPROVED` |
 | [`07_living_documentation_log.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/sdd/07_living_documentation_log.md) | **Living Documentation Index** | Living documentation standard, index, and bridge to authoritative ADR registry | `SYNCHRONIZED` |
 | [`../adr/README.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/README.md) | **Architectural Decision Records (ADRs)** | Canonical registry of atomic MADR decisions (`docs/adr/`) and historical archive | `ACTIVE ADRs` |

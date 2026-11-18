@@ -162,7 +162,7 @@ This solution-level instruction file defines mandatory engineering and Git workf
 ## 2. Technical & Architecture Standards
 1. **Target Framework**: Strictly target `.NET 11` (`<TargetFramework>net11.0</TargetFramework>`) across all projects.
 2. **Zero-Warning Standard**: 0 warnings, 0 errors. Eliminate nullability warnings and resolve vulnerabilities.
-3. **Standalone Aspire AppHost**: Use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">`.
+3. **Aspire 17 AppHost & Project Resource v2**: Use `<Project Sdk="Microsoft.NET.Sdk">` with Aspire 17 packages (`Aspire.Hosting.AppHost`, `Aspire.Hosting.Dotnet`, `Aspire.Hosting.Azure.Sql`) and decouple child services using Project Resource v2 (`builder.AddDotnetProject(...)`).
 4. **Clinical Dietetics Governance**: Adhere strictly to the Indian Medical Standards (ICMR-NIN 2024 & WHO guidelines) and the Zero-Assumption Rule specified in the solution skill.
 5. **Mandatory End-to-End Tier Verification**: No refactoring, new feature implementation, or bug fix is complete without verifying actual product behavior across all user tiers using the seeded demo accounts.
 6. **Zero Documentation Drift Standard**: Never omit synchronizing README, Mermaid diagrams, SDD docs, ADRs, and agent skills after implementing major architectural or security enhancements.

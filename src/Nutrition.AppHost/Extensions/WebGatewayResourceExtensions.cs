@@ -8,6 +8,7 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Azure;
+using Aspire.Hosting.Dotnet;
 using Microsoft.Extensions.Configuration;
 using Nutrition.AppHost.Configuration;
 
@@ -15,6 +16,7 @@ namespace Nutrition.AppHost.Extensions;
 
 /// <summary>
 /// Extension methods for registering and configuring the WebGateway project resource within Aspire AppHost.
+/// Supports Project Resource v2 (DotnetProjectResource) and dual-database persistence parameterization (SQLite & Azure SQL).
 /// Follows Single Responsibility and Open/Closed principles.
 /// </summary>
 public static class WebGatewayResourceExtensions
@@ -24,26 +26,49 @@ public static class WebGatewayResourceExtensions
 
     /// <summary>
     /// Adds and configures the Nutrition.WebGateway project with its HTTP endpoints,
-    /// persistence settings, AI provider environment variables, and optional Azure Key Vault reference.
+    /// persistence settings (SQLite or Azure SQL), AI provider environment variables, optional database resource, and optional Azure Key Vault reference.
     /// </summary>
-    public static IResourceBuilder<ProjectResource> AddWebGateway(
+    public static IResourceBuilder<DotnetProjectResource> AddWebGateway(
         this IDistributedApplicationBuilder builder,
-        IResourceBuilder<AzureKeyVaultResource>? keyVault = null)
+        IResourceBuilder<AzureKeyVaultResource>? keyVault = null,
+        IResourceBuilder<IResourceWithConnectionString>? database = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
         var aiOptions = AppHostAiOptions.FromConfiguration(builder.Configuration);
 
-        var webGateway = builder.AddProject<Projects.Nutrition_WebGateway>(ResourceName)
+        // Resolve Dual Database Provider (Sqlite vs AzureSql/SqlServer)
+        var dbProvider = builder.Configuration["Database:Provider"]
+            ?? builder.Configuration["Database__Provider"]
+            ?? "Sqlite";
+
+        var defaultConn = builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? "Data Source=diettracker.db";
+
+        var azureSqlConn = builder.Configuration.GetConnectionString("AzureSqlConnection")
+            ?? builder.Configuration["ConnectionStrings:AzureSqlConnection"];
+
+        var webGateway = builder.AddDotnetProject(ResourceName, "../Nutrition.WebGateway/Nutrition.WebGateway.csproj")
             .WithHttpEndpoint(port: GatewayPort, isProxied: false)
             .WithExternalHttpEndpoints()
-            .WithEnvironment("Database__Provider", "Sqlite")
-            .WithEnvironment("ConnectionStrings__DefaultConnection", "Data Source=diettracker.db")
+            .WithEnvironment("Database__Provider", dbProvider)
+            .WithEnvironment("ConnectionStrings__DefaultConnection", defaultConn)
             .WithEnvironment("AI__Provider", aiOptions.Provider)
             .WithEnvironment("AI__GoogleAI__ApiKey", aiOptions.GeminiApiKey ?? string.Empty)
             .WithEnvironment("AI__ApiKey", aiOptions.GeminiApiKey ?? string.Empty)
             .WithEnvironment("AI__GoogleAI__ModelId", aiOptions.GeminiModelId)
             .WithEnvironment("AI__GoogleAI__FallbackModelId", aiOptions.GeminiFallbackModelId);
+
+        // Forward Azure SQL connection string if configured
+        if (!string.IsNullOrWhiteSpace(azureSqlConn))
+        {
+            webGateway.WithEnvironment("ConnectionStrings__AzureSqlConnection", azureSqlConn);
+        }
+
+        if (database != null)
+        {
+            webGateway.WithReference(database);
+        }
 
         if (keyVault != null)
         {
@@ -75,4 +100,3 @@ public static class WebGatewayResourceExtensions
         return webGateway;
     }
 }
-

@@ -7,9 +7,9 @@
  */
 using Nutrition.AppHost.Extensions;
 
-// .NET Aspire Distributed Application Host (NET 11 RC / Aspire.AppHost.Sdk 13.5.4)
+// .NET Aspire Distributed Application Host (.NET 11 / Aspire 17 Project Resource v2)
 // Coordinates distributed components, environment forwarding, local developer telemetry,
-// and Azure Container Apps / Azure Storage infrastructure provisioning.
+// dual-database persistence (SQLite & Azure SQL), and Azure Container Apps infrastructure provisioning.
 var builder = DistributedApplication.CreateBuilder(args);
 
 // 1. Declare Azure Container Apps Environment deployment target
@@ -22,7 +22,10 @@ var storage = builder.AddAzureStorage("dietdost-storage");
 var keyVault = builder.AddAzureKeyVault("dietdost-kv");
 
 // 4. Register Web Gateway (Linear-style PWA, API endpoints & AI Vision subsystem)
+// Supports dual-database persistence: SQLite (default local / SMB share) or Azure SQL (Serverless / Basic DTU).
+// When Azure SQL resource orchestration is enabled in Aspire:
+//   var sql = builder.AddAzureSqlServer("dietdost-sql").AddDatabase("dietdost");
+//   builder.AddWebGateway(keyVault, database: sql);
 builder.AddWebGateway(keyVault);
 
 builder.Build().Run();
-
