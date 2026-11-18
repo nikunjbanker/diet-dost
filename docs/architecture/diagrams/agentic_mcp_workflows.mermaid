@@ -1,3 +1,4 @@
+graph TB
 %%
 %% Copyright (c) 2026 diet-dost and/or its contributors.
 %% Licensed under the "GNU Affero General Public License v3.0 only" and
@@ -6,10 +7,9 @@
 %% License v3.0 only" or the "Server Side Public License, v 1".
 %%
 
-flowchart TB
-%% =========================================================================
-%% HARDENED DIET-DOST AGENTIC MCP TOPOLOGY (ZERO-COST CONTAINER DEPLOYMENT)
-%% =========================================================================
+    %% =========================================================================
+    %% HARDENED DIET-DOST AGENTIC MCP TOPOLOGY (ZERO-COST CONTAINER DEPLOYMENT)
+    %% =========================================================================
 
     subgraph CLIENTS ["1. CLIENT ECOSYSTEM (Local & Cloud)"]
         direction TB
@@ -25,7 +25,7 @@ flowchart TB
         CLI_TOOL["Nutrition.Tools.McpCli (dietdost-mcp)<br/>Headless Stdio JSON-RPC Bridge"]
     end
 
-    subgraph CLOUD_ACA ["3. AZURE CONTAINER APP: app-dietdost-web (Unified Ingress - $0 Extra Cost)"]
+    subgraph CLOUD_ACA ["3. AZURE CONTAINER APP: app-dietdost-web (Unified Ingress - Zero Extra Cost)"]
         direction TB
         
         subgraph GATEWAY ["Nutrition.WebGateway (Port 5240 / 5100)"]
@@ -40,7 +40,7 @@ flowchart TB
         end
 
         subgraph DATA_PROTECTION ["Cryptographic Security"]
-            PROTECTOR["IDataProtector (AES-256-GCM)<br/>Purpose: DietDost.Mcp.Elicitation.{UserId}<br/>15-Minute Expiration TTL"]
+            PROTECTOR["IDataProtector (AES-256-GCM)<br/>Purpose: DietDost.Mcp.Elicitation (User Bound)<br/>15-Minute Expiration TTL"]
         end
 
         subgraph TOOLS ["DietDost MCP Tool Suite"]
@@ -51,8 +51,14 @@ flowchart TB
             T_Confirm["confirm_meal_entry"]
         end
 
-        MCP_ENDPOINT --> TOOLS
-        TOOLS -.-> PROTECTOR
+        MCP_ENDPOINT --> T_Logs
+        MCP_ENDPOINT --> T_Ledger
+        MCP_ENDPOINT --> T_Add
+        MCP_ENDPOINT --> T_Propose
+        MCP_ENDPOINT --> T_Confirm
+
+        T_Add -.-> PROTECTOR
+        T_Confirm -.-> PROTECTOR
     end
 
     subgraph CQRS ["4. CLEAN ARCHITECTURE APPLICATION CORE (Zero Code Duplication)"]
@@ -87,11 +93,15 @@ flowchart TB
     end
 
     %% Connections
-    C_CLAUDE -->|Stdio JSON-RPC| CLI_TOOL
-    CLI_TOOL -->|Local HTTP / Direct DI| DISPATCHER
-    C_VSCODE -->|HTTP / SSE| INGRESS
-    C_CHATGPT -->|HTTPS / Bearer Auth| INGRESS
-    C_INSPECT -->|HTTP / SSE| INGRESS
-    C_RUNNER -->|McpClient / HTTP| INGRESS
+    C_CLAUDE -->|"Stdio JSON-RPC"| CLI_TOOL
+    CLI_TOOL -->|"Direct CQRS Execution"| DISPATCHER
+    C_VSCODE -->|"HTTP / SSE"| INGRESS
+    C_CHATGPT -->|"HTTPS / Bearer Auth"| INGRESS
+    C_INSPECT -->|"HTTP / SSE"| INGRESS
+    C_RUNNER -->|"McpClient / HTTP"| INGRESS
 
-    TOOLS -->|Dispatch Queries & Commands| DISPATCHER
+    T_Logs -->|"GetMealHistoryQuery"| DISPATCHER
+    T_Ledger -->|"GetDailyLedgerQuery"| DISPATCHER
+    T_Add -->|"AnalyzeText / Photo"| DISPATCHER
+    T_Propose -->|"AnalyzeTextCommand"| DISPATCHER
+    T_Confirm -->|"ConfirmMealCommand"| DISPATCHER
