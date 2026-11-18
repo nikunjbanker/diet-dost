@@ -309,6 +309,7 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "FoodItems", "SugarGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
+        await EnsureColumnExistsAsync(db, "Ledgers", "HealthScoreStatusText", "TEXT NOT NULL DEFAULT 'Awaiting First Meal 🌅'");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
         string boolColDef = db.Database.IsSqlServer() ? "BIT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
         await EnsureColumnExistsAsync(db, "Profiles", "IsOnboarded", boolColDef);
@@ -907,6 +908,7 @@ public static partial class DatabaseInitializationExtensions
         await EnsureColumnExistsAsync(db, "FoodItems", "SugarGrams", "REAL NOT NULL DEFAULT 0");
         await EnsureColumnExistsAsync(db, "Ledgers", "TargetSugarGrams", "REAL NOT NULL DEFAULT 25.0");
         await EnsureColumnExistsAsync(db, "Ledgers", "ConsumedSugarGrams", "REAL NOT NULL DEFAULT 0.0");
+        await EnsureColumnExistsAsync(db, "Ledgers", "HealthScoreStatusText", "TEXT NOT NULL DEFAULT 'Awaiting First Meal 🌅'");
         await EnsureColumnExistsAsync(db, "Profiles", "Timezone", "TEXT NOT NULL DEFAULT 'Asia/Kolkata'");
         string boolColDef = db.Database.IsSqlServer() ? "BIT NOT NULL DEFAULT 0" : "INTEGER NOT NULL DEFAULT 0";
         await EnsureColumnExistsAsync(db, "Profiles", "IsOnboarded", boolColDef);

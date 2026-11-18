@@ -337,7 +337,7 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
 * **Client-Side High-DPI Graphics Engine (`ShareCardRenderer.js`)**:
   - Leverages offscreen HTML5 2D Canvas to generate high-DPI (1080x1080 Square and 1080x1920 Story) social nutrition cards in <50ms without external server-side rendering dependencies.
   - Implements **Meal Log Entry Cards** (dish title, meal type badge, plate photo with rounded clip, 5-macro distribution matrix, portion pill tags, ICMR-NIN 2024 Dost clinical advice, web app link).
-  - Implements **Daily Nutrition Pulse Cards** (consumed vs budgeted gauge, deficit remaining badge, 4-column macro meters, Daily Health Score 88/100, consistency streak, earned Indian badges, companion reflection, web app link).
+  - Implements **Daily Nutrition Pulse Cards** (consumed vs budgeted gauge, deficit remaining badge, 4-column macro meters, Dynamic Daily Health Score 0-100, circadian consistency streak with active grace window, earned Indian badges, companion reflection, web app link).
 * **Device-Adaptive Dispatching & Mobile Ergonomics (`ShareService.js`)**:
   - Automatically feature-detects **Web Share API Level 2** (`navigator.canShare({ files })`).
   - On Mobile (<640px), dispatches generated PNG files directly to the native OS share sheet (WhatsApp, Instagram Stories, Facebook, AirDrop, Camera Roll).
@@ -357,6 +357,19 @@ The frontend follows SOLID principles with explicit Dependency Injection via `sr
   - Replaced legacy outbox tray emojis (`📤`) with high-precision, standard, futuristic SVG quantum node share iconography (`.icon-share-futuristic`) featuring interconnected telemetry nodes and animated link beam (`shareBeamFlow`).
   - Standardized application attribution URL to `https://dev.diet-dost.in` across card canvas footers, share studio modals, and share payloads.
   - Deduplicated shared screen links by omitting the `url` parameter in `navigator.share` when `text` already contains the application URL, preventing OS-level duplicate link concatenation in WhatsApp and native share sheets.
+
+---
+
+## 21. Dynamic Daily Health Score & Circadian Streak Presentation Engine (`ADR-169`)
+
+* **Hero HUD Zero-CLS Dynamic Hydration (`hero-hud.html`, `daily-hud.js`)**:
+  - Initial HTML renders neutral placeholders (`#score-circle-val` displays `--`, `#score-status-text` displays `Awaiting First Meal 🌅`, and `#badges-container` displays `<span class="badge-chip empty">Log meals to earn badges ✨</span>`), eliminating content flicker and Cumulative Layout Shift (CLS).
+  - Synchronous hydration from `WebDashboardCompositeDto.TodayLedger` updates points, status text, and dynamically earned badges.
+* **Companion Card Streak Pill Preservation (`companion-card.html`, `daily-hud.js`)**:
+  - Targets `#streak-counter-text` to update text dynamically without overwriting the futuristic SVG fire icon (`#icon-fire`).
+  - Reflects the active grace window: displays `🔥 N-Day Consistency Streak` when yesterday was logged, encouraging daily adherence before midnight.
+* **Dynamic Social Card & Share Text Sync (`ShareCardRenderer.js`, `share-service.js`)**:
+  - Eliminates hardcoded fallbacks (`|| 7` and `|| 88`), rendering exact dynamic health scores and active consistency streaks across 1080x1080 social card exports and plain text sharing payloads.
 
 ## 21. Centralized SVG Iconography & Sprite Sheet Architecture (`ADR-167`)
 

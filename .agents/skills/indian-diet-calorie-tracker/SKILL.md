@@ -824,16 +824,33 @@ To prevent tracking fatigue and make daily calorie logging delightful and reward
 2. **Micro-Celebrations & Delightful Feedback**:
    - **Confetti Micro-Burst**: Subtly sparkles for 1 second upon completing a meal log or achieving daily targets.
    - **Haptic Feedback**: Satisfying tactile confirmation on mobile PWA browsers when tapping 'Log Meal'.
-3. **Daily Habit Streaks & Milestone Badges**:
-   - Minimalist Linear-styled streak HUD: `🔥 7-Day Consistency Streak` with a glowing gradient ring.
-   - Culturally Resonant Achievement Badges:
-     - 🥷 **Tadka Ninja**: 5 consecutive days staying within the 20g visible cooking fat allowance.
-     - 🛡️ **Sugar Rakshak**: 7 consecutive days without refined sweets or sweetened sodas.
-     - 🥗 **Salad Starter Pro**: Consistently eating raw cucumber/kakdi salad prior to main meals.
-     - 💧 **Hydration Maharaja**: Reached the 3.5L daily hydration target.
-     - 🎯 **Deficit Sniper**: Landed within ±50 kcal of the daily caloric deficit target.
-4. **Daily Health Score (0–100) & Evening Snapshot**:
-   - A single composite metric combining caloric deficit, protein goal adherence, and WHO sodium/sugar compliance.
+3. **Dynamic Circadian Consistency Streak Engine**:
+   - **Local Timezone Alignment**: Evaluates streaks using the user's localized civil day (`profile.Timezone ?? "Asia/Kolkata"`), preventing server-UTC boundary splits.
+   - **Qualifying Day Threshold**: At least 1 logged, non-deleted meal with $\ge 100\text{ kcal}$.
+   - **Active Grace Window**: If a user logged yesterday but hasn't logged yet today, the streak remains displayed as active (`🔥 N-Day Consistency Streak`) until local midnight to encourage daily adherence.
+   - **Reset Condition**: Resets to 0 only if both today and yesterday have no qualifying meal logs.
+   - **Culturally Resonant Achievement Badges** (Dynamic in `DailyCalorieLedger`):
+     - 🥷 **Tadka Ninja**: Visible cooking oil $\le 25\text{g}$ allowance (with $\ge 500\text{ kcal}$ logged).
+     - 🛡️ **Salt Sentry**: Daily sodium $\le 2,000\text{mg}$ ($\le 1,500\text{mg}$ for hypertensive users).
+     - 🏆 **Protein Champion**: Reached $\ge 85\%$ of personalized daily protein target.
+     - 🌾 **Fiber Crusader**: Reached $\ge 25\text{g}$ dietary fiber (or $\ge 80\%$ of target).
+     - 🎯 **Deficit Sniper**: Consumed calories within $\pm 10\%$ of budgeted caloric allowance.
+     - 🍯 **Sugar Guardian**: Free/added sugars kept strictly within $\le 25\text{g}$ ceiling.
+     - 💧 **Hydration Maharaja**: Logged $\ge 3,000\text{ml}$ of daily water intake.
+4. **Dynamic Daily Health Score (0–100) & Qualitative Status (ICMR-NIN 2024 / HEI-2020)**:
+   - **Morning Baseline / Zero Logs State**: Displays `--` with qualitative status `"Awaiting First Meal 🌅"` until the first meal is logged. Badges container displays `<span class="badge-chip empty">Log meals to earn badges ✨</span>`.
+   - **Multi-Pillar Evidence-Based Formula**:
+     1. *Caloric Envelope Adherence (30 pts)*: Target budget adherence ($\pm 10\% \implies 30\text{ pts}$), progressive deduction for over-budget or starvation ($< 50\%$ budget).
+     2. *Protein Adequacy (25 pts)*: Ratio of consumed protein to target ($\ge 85\% \implies 25\text{ pts}$, down to $6\text{ pts}$).
+     3. *Clinical Moderation (25 pts)*: Harm reduction across visible cooking oil $\le 25\text{g}$ (10 pts), free sugar $\le 25\text{g}$ (8 pts), and sodium $\le 2,000\text{mg}$ (7 pts). Pro-rated if underfed ($< 500$ kcal).
+     4. *Dietary Fiber & Gut Health (10 pts)*: Target $\ge 30\text{g}$ ($\ge 25\text{g} \implies 10\text{ pts}$, $15\text{g}-24\text{g} \implies 6\text{ pts}$, $< 15\text{g} \implies 2\text{ pts}$).
+     5. *Hydration & Habits (10 pts)*: Water intake ($\ge 2,500\text{ml} \implies 5\text{ pts}$) + circadian cadence ($\ge 2$ meal types logged $\implies 5\text{ pts}$).
+   - **Qualitative Brackets**:
+     - `0`: `"Awaiting First Meal 🌅"`
+     - `1 – 49`: `"Needs Attention ⚠️"`
+     - `50 – 69`: `"Fair Adherence ⚖️"`
+     - `70 – 84`: `"Good Progress 🥗"`
+     - `85 – 100`: `"Optimal ICMR Adherence 🌟"`
    - 15-Second Evening Snapshot: *"Today: 1,480 / 1,600 kcal consumed. Deficit achieved: -420 kcal! 1 step closer to your 70 kg goal. Sleep well! 🌙"*
 
 ### 5.4 Modular Component Architecture & 11 UI Partials

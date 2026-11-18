@@ -98,3 +98,43 @@
 - When `IsIntakeComplete()` returns `false`, `CalculateCaloricBudget` and `CalculateMacroDistribution` are strictly withheld.
 - System queries (`GetProfileQuery`, `GetDailyLedgerQuery`, `GetProjectionsQuery`, and `WebBffController.GetDashboardComposite`) return `budget: null`, `macros: null`, and a conservative standard maintenance floor of **1,600 kcal** with neutral macros (200g carb, 60g protein, 53g fat, 25g fiber, 2,000mg sodium, 25g sugar).
 - Prevents HTTP 500 runtime exceptions while signaling `isIntakePending: true` to prompt user clinical onboarding.
+
+---
+
+## 5. Dynamic Daily Health Score & Circadian Consistency Streak Engine (ICMR-NIN 2024)
+
+### 5.1 Multi-Pillar Daily Health Score Formula ($S \in [0, 100]$)
+Evidence-based dietary quality model derived from ICMR-NIN 2024 guidelines and USDA/NIH Healthy Eating Index (HEI-2020):
+
+$$S = \begin{cases} 0, & \text{if } N_{\text{meals}} = 0 \text{ or } C_{\text{consumed}} < 50 \\ \operatorname{clamp}\Big(P_{\text{calorie}} + P_{\text{protein}} + P_{\text{moderation}} + P_{\text{fiber}} + P_{\text{habits}}, 0, 100\Big), & \text{otherwise} \end{cases}$$
+
+1. **$P_{\text{calorie}}$ (Max 30 Points) - Caloric Budget Envelope**:
+   - Ideal: $|C_{\text{consumed}} - C_{\text{budget}}| \le 0.15 \times C_{\text{budget}} \implies 30\text{ pts}$.
+   - Over-budget penalty: Deducts $1\text{ pt}$ per $25\text{ kcal}$ in excess.
+   - Starvation penalty: Underfeeding ($< 500\text{ kcal}$) is heavily scaled down to prevent anorexic/crash diet exploits.
+2. **$P_{\text{protein}}$ (Max 25 Points) - Protein Adequacy**:
+   - $R_{\text{protein}} = \frac{\text{Consumed Protein (g)}}{\text{Target Protein (g)}}$.
+   - $R_{\text{protein}} \ge 0.85 \implies 25\text{ pts}$; $0.65 \le R < 0.85 \implies 18\text{ pts}$; $0.45 \le R < 0.65 \implies 12\text{ pts}$; $< 0.45 \implies 6\text{ pts}$.
+3. **$P_{\text{moderation}}$ (Max 25 Points) - ICMR-NIN 2024 Harm Reduction**:
+   - **Visible Cooking Oil (10 pts)**: Maximum $25\text{g/day}$. Deducts $2\text{ pts}$ per $5\text{g}$ over ceiling.
+   - **Free Added Sugar (8 pts)**: Maximum $25\text{g/day}$. Deducts $2\text{ pts}$ per $5\text{g}$ over limit.
+   - **Sodium Moderation (7 pts)**: Standard $2,000\text{mg/day}$ ($1,500\text{mg/day}$ hypertensive). Deducts $2\text{ pts}$ per $300\text{mg}$ over limit.
+   - Moderation points scale proportionally if calories $< 500\text{ kcal}$ so empty days cannot claim unearned points.
+4. **$P_{\text{fiber}}$ (Max 10 Points) - Dietary Fiber (Gut Microbiome)**:
+   - Target $\ge 30\text{g/day}$. $\ge 25\text{g} \implies 10\text{ pts}$; $\ge 15\text{g} \implies 6\text{ pts}$; $< 15\text{g} \implies 2\text{ pts}$.
+5. **$P_{\text{habits}}$ (Max 10 Points) - Hydration & Circadian Cadence**:
+   - Water intake: $\ge 2,500\text{ml} \implies 5\text{ pts}$; $\ge 1,500\text{ml} \implies 3\text{ pts}$.
+   - Meal cadence: $\ge 2$ distinct meal types logged $\implies 5\text{ pts}$.
+
+### 5.2 Qualitative Classification & Zero-Log Morning State
+- **0 / No Logs**: `"Awaiting First Meal 🌅"` (neutral slate token).
+- **1 – 49**: `"Needs Attention ⚠️"` (status rose token).
+- **50 – 69**: `"Fair Adherence ⚖️"` (status amber token).
+- **70 – 84**: `"Good Progress 🥗"` (status blue token).
+- **85 – 100**: `"Optimal ICMR Adherence 🌟"` (status emerald token).
+
+### 5.3 Circadian Consistency Streak & Active Grace Window
+- **Civil Day Boundary**: Aligned to user's localized timezone (`profile.Timezone ?? "Asia/Kolkata"`).
+- **Qualifying Day Threshold**: $\ge 1$ logged, non-deleted meal with $\ge 100\text{ kcal}$.
+- **Active Grace Window**: If a user logged yesterday but has not logged yet today, the streak is maintained as active (`🔥 N-Day Consistency Streak`) until midnight local time.
+- **Zero-Roundtrip Pure Domain Engine**: Implemented via `ClinicalCalculators.CalculateConsistencyStreak` and persisted into `DailyCalorieLedger.ConsistencyStreakDays`.

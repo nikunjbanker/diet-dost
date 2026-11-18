@@ -156,6 +156,7 @@ public class ClinicalDietitianService
             return userLocalDate == date || utcDate == date;
         }).ToList();
         ledger.RecalculateLedger(dayMeals);
+        ledger.ConsistencyStreakDays = ClinicalCalculators.CalculateConsistencyStreak(allUserMeals, userTz, date);
         await _ledgerRepo.UpdateAsync(ledger, ct);
         await _uow.SaveChangesAsync(ct);
 

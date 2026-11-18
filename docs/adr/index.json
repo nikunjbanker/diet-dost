@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-17T13:32:55.421034+00:00",
-  "totalAdrs": 134,
+  "generatedAt": "2026-11-18T06:30:52.299897+00:00",
+  "totalAdrs": 135,
   "categoryCounts": {
-    "architecture": 41,
+    "architecture": 42,
     "security": 26,
     "devops": 33,
     "presentation": 21,
@@ -1617,6 +1617,18 @@
       "subsystem": "Presentation",
       "filename": "ADR-20261117-168-solution-wide-futuristic-vector-iconography.md",
       "relativePath": "docs/adr/presentation/ADR-20261117-168-solution-wide-futuristic-vector-iconography.md"
+    },
+    {
+      "id": "ADR-169",
+      "number": 169,
+      "title": "Dynamic Daily Health Score & Circadian Consistency Streak Engine",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-18",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261118-169-dynamic-daily-health-score-and-circadian-consistency-streak-engine.md",
+      "relativePath": "docs/adr/architecture/ADR-20261118-169-dynamic-daily-health-score-and-circadian-consistency-streak-engine.md"
     }
   ]
 }

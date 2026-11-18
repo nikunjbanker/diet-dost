@@ -36,7 +36,9 @@ export class DailyHudController {
       progressFill: document.getElementById('calorie-progress-fill'),
       dostSpeech: document.getElementById('companion-speech'),
       streakCounter: document.getElementById('streak-counter'),
+      streakText: document.getElementById('streak-counter-text'),
       scoreCircle: document.getElementById('score-circle-val'),
+      scoreStatusText: document.getElementById('score-status-text'),
       badges: document.getElementById('badges-container'),
       btnShare: document.getElementById('btn-share-daily-hud'),
       proteinVal: document.getElementById('macro-protein-val'),
@@ -115,13 +117,32 @@ export class DailyHudController {
     }
 
     // Health Score & Speech
-    if (el.scoreCircle) el.scoreCircle.textContent = ledger.healthScore ?? 85;
+    const hasMeals = (ledger.consumedCalories || 0) > 0;
+    if (el.scoreCircle) {
+      el.scoreCircle.textContent = (hasMeals && ledger.healthScore !== undefined && ledger.healthScore !== null)
+        ? ledger.healthScore
+        : '--';
+    }
+    if (el.scoreStatusText) {
+      el.scoreStatusText.textContent = ledger.healthScoreStatusText || (hasMeals ? 'Good Progress 🥗' : 'Awaiting First Meal 🌅');
+    }
     if (el.dostSpeech) el.dostSpeech.textContent = ledger.dostMessage || "Namaste! I am Diet Dost, your AI clinical nutrition companion.";
-    if (el.streakCounter) el.streakCounter.textContent = `🔥 ${ledger.consistencyStreakDays || 0}-Day Consistency Streak`;
+
+    // Streak Counter
+    const streakDays = ledger.consistencyStreakDays || 0;
+    if (el.streakText) {
+      el.streakText.textContent = `${streakDays}-Day Consistency Streak`;
+    } else if (el.streakCounter) {
+      el.streakCounter.textContent = `🔥 ${streakDays}-Day Consistency Streak`;
+    }
 
     // Earned badges
-    if (el.badges && ledger.earnedBadges && ledger.earnedBadges.length > 0) {
-      el.badges.innerHTML = ledger.earnedBadges.map(b => `<span class="badge-chip">${b}</span>`).join('');
+    if (el.badges) {
+      if (ledger.earnedBadges && ledger.earnedBadges.length > 0) {
+        el.badges.innerHTML = ledger.earnedBadges.map(b => `<span class="badge-chip">${b}</span>`).join('');
+      } else {
+        el.badges.innerHTML = '<span class="badge-chip empty">Log meals to earn badges ✨</span>';
+      }
     }
   }
 

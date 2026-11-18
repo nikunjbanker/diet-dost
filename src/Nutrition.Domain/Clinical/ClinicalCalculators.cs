@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -289,5 +289,53 @@ public static class ClinicalCalculators
             SodiumLimitMg: sodiumLimit,
             SugarCeilingGrams: MaxFreeSugarLimitGrams
         );
+    }
+
+    /// <summary>
+    /// Calculates the user's active consistency streak in days based on meal logging history.
+    /// Aligns day boundaries to the user's local timezone.
+    /// Implements an Active Grace Window: if today has no meals yet, but yesterday was logged,
+    /// the streak up through yesterday is preserved until midnight.
+    /// </summary>
+    /// <param name="meals">The user's meal log history.</param>
+    /// <param name="userTz">The user's local timezone (fallback to Asia/Kolkata).</param>
+    /// <param name="targetDate">The reference date (typically today).</param>
+    /// <param name="minCaloriesPerDay">Minimum calories on a day to qualify as tracked (default 100 kcal).</param>
+    /// <returns>The consecutive number of days tracked.</returns>
+    public static int CalculateConsistencyStreak(
+        IEnumerable<Model.Meal.MealLog> meals,
+        TimeZoneInfo userTz,
+        DateOnly targetDate,
+        double minCaloriesPerDay = 100.0)
+    {
+        if (meals == null) return 0;
+
+        var nowUtc = DateTime.UtcNow;
+        var userNow = TimeZoneInfo.ConvertTimeFromUtc(nowUtc, userTz);
+        var userToday = DateOnly.FromDateTime(userNow);
+
+        // Filter valid meals: not deleted, not in future, >= minCaloriesPerDay
+        var validMealDates = meals
+            .Where(m => !m.IsDeleted && m.LoggedAt <= nowUtc.AddHours(1) && m.TotalCalories >= minCaloriesPerDay)
+            .Select(m => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz)))
+            .ToHashSet();
+
+        int streak = 0;
+        var checkDate = targetDate;
+
+        // Active Grace Window: if checking today and today has no meals yet, but yesterday does,
+        // preserve the streak from yesterday
+        if (!validMealDates.Contains(checkDate) && checkDate == userToday)
+        {
+            checkDate = checkDate.AddDays(-1);
+        }
+
+        while (validMealDates.Contains(checkDate))
+        {
+            streak++;
+            checkDate = checkDate.AddDays(-1);
+        }
+
+        return streak;
     }
 }
