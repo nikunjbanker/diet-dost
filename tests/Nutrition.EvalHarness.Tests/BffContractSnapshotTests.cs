@@ -78,6 +78,12 @@ public class BffContractSnapshotTests
         Assert.False(flagsProp.GetProperty("canComparePhotos").GetBoolean());
         Assert.False(flagsProp.GetProperty("canExportData").GetBoolean());
         Assert.Equal(7, flagsProp.GetProperty("historyDayLimit").GetInt32());
+
+        // Verify ledger dynamic health score and consistency streak contracts
+        Assert.True(ledgerProp.TryGetProperty("healthScoreStatusText", out var statusProp));
+        Assert.Equal("Awaiting First Meal 🌅", statusProp.GetString());
+        Assert.True(ledgerProp.TryGetProperty("consistencyStreakDays", out _));
+        Assert.True(ledgerProp.TryGetProperty("healthScore", out _));
     }
 
     [Fact]

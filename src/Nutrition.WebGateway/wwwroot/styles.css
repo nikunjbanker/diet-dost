@@ -617,6 +617,12 @@ html, body {
   color: var(--text-primary);
 }
 
+.badge-chip.empty {
+  color: var(--text-tertiary);
+  border-style: dashed;
+  background: transparent;
+}
+
 /* Logging Area */
 .logging-card {
   display: flex;

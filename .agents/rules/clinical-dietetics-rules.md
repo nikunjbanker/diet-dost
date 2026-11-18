@@ -35,3 +35,20 @@
 - **Hypertension (HTN)**: Sodium ceiling $< 2,000$ mg/day (5g table salt), potassium-rich whole foods promoted (unless on ACE/ARB).
 - **Hypothyroidism**: TDEE multiplier reduced by 10–12% to reflect lowered basal metabolic rate.
 - **NAFLD / Fatty Liver**: Saturated fat $< 7\%$ of daily energy, zero high-fructose syrups or refined sugars.
+
+## 4. Dynamic Daily Health Score Rules (ICMR-NIN 2024 & HEI-2020)
+- **Zero-Log Morning Baseline**: Score MUST display `--` with status `"Awaiting First Meal 🌅"` when zero meals are logged. Never display 85 or 100 on an empty day.
+- **Multi-Pillar Evaluation (100 Points)**: Evaluates Caloric Envelope (30 pts), Protein Adequacy (25 pts), Clinical Moderation (Oil $\le 25\text{g}$, Sugar $< 25\text{g}$, Sodium $\le 2000\text{mg}$ / $1500\text{mg}$) (25 pts), Dietary Fiber $\ge 30\text{g}$ (10 pts), and Hydration/Habits (10 pts).
+- **Starvation Penalty**: Severely underfed intake ($< 50\%$ budget) must be heavily penalized to prevent eating disorder / crash diet gaming.
+- **Qualitative Status Brackets**:
+  - `0`: `"Awaiting First Meal 🌅"`
+  - `1–49`: `"Needs Attention ⚠️"`
+  - `50–69`: `"Fair Adherence ⚖️"`
+  - `70–84`: `"Good Progress 🥗"`
+  - `85–100`: `"Optimal ICMR Adherence 🌟"`
+
+## 5. Circadian Consistency Streak Rules
+- **Local Timezone Mandate**: Day boundaries MUST be calculated in the user's local timezone (`profile.Timezone ?? "Asia/Kolkata"`). Never use server UTC.
+- **Qualifying Day Threshold**: At least 1 logged, verified meal with $\ge 100\text{ kcal}$. Soft-deleted meals (`IsDeleted = true`) are strictly excluded.
+- **Active Grace Window**: If yesterday was logged, today's streak remains displayed as active (`🔥 N-Day Consistency Streak`) until midnight local time.
+- **Reset Condition**: Resets to 0 only if both today and yesterday have no qualifying meals.

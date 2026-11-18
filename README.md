@@ -147,7 +147,7 @@ graph TB
             AGG_User["ApplicationUser (Aggregate Root)<br/>(DPDPA Consent, SecurityStamp, Active & Pending Recovery Key Hashes, Tier, Role)"]
             AGG_Profile["UserProfile (Aggregate Root)<br/>(Height, Weight, Pace, Dietary Preference, IANA Timezone)"]
             AGG_Meal["MealLog (Aggregate Root)<br/>(MealType, PhotoUri, Status: Uploaded->Analyzed->Verified)"]
-            AGG_Ledger["DailyCalorieLedger (Aggregate Root)<br/>(Date, Consumed, Budget, Pending Deficit)"]
+            AGG_Ledger["DailyCalorieLedger (Aggregate Root)<br/>(Date, Consumed, Budget, Dynamic Health Score 0-100, Circadian Streak)"]
             ENT_Secret["AppSecret Entity<br/>(Key, Value, Description, CreatedAtUtc, UpdatedAtUtc)"]
             ENT_TierConfig["TierFeatureConfiguration<br/>(DailyAiLimit: 1, 7, 30, -1; PhotoCompare; DataExport)"]
             ENT_Notification["AppNotification Entity<br/>(RecipientRole, RecipientUserId, Type, IsRead, MetadataJson)"]
@@ -158,6 +158,7 @@ graph TB
             CLIN_Floors["Starvation Floors (1200 kcal F / 1500 kcal M)"]
             CLIN_Rules["Clinical Matrix (Diabetes, HTN, Thyroid, NAFLD Adjustments)"]
             CLIN_WHO["WHO Asian-Indian Cutoffs & 3:1 Cereal:Pulse Ratio"]
+            CLIN_Score["Dynamic Daily Health Score (5 Pillars: Calorie, Protein, Moderation, Fiber, Habits) & Circadian Streak Engine"]
         end
     end
 

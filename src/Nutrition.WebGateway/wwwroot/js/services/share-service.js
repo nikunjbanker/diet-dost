@@ -104,8 +104,8 @@ export class ShareService {
     const c = Math.round(ledger.consumedCarbsGrams || 0);
     const f = Math.round(ledger.consumedFatGrams || 0);
     const fib = Math.round(ledger.consumedFiberGrams || 0);
-    const streak = ledger.consistencyStreakDays || 7;
-    const score = ledger.healthScore ?? 88;
+    const streak = ledger.consistencyStreakDays ?? 0;
+    const score = (ledger.healthScore !== undefined && ledger.healthScore !== null) ? ledger.healthScore : 0;
 
     const deficitStr = pending >= 0 ? `🎯 ${pending} kcal Deficit` : `⚠️ ${Math.abs(pending)} kcal Surplus`;
 

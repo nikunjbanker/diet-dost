@@ -434,7 +434,7 @@ export class ShareCardRenderer {
     ctx.fillText('· Daily Nutrition Pulse', 285, 95);
 
     // Streak Pill (Top Right)
-    const streak = ledger.consistencyStreakDays || 7;
+    const streak = ledger.consistencyStreakDays ?? 0;
     ctx.fillStyle = 'rgba(245, 166, 35, 0.18)';
     this._roundRect(ctx, width - 360, 64, 284, 46, 23);
     ctx.fill();
@@ -443,7 +443,8 @@ export class ShareCardRenderer {
 
     ctx.fillStyle = '#fbbf24';
     ctx.font = '600 22px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-    ctx.fillText(`🔥 ${streak}-Day Streak Active`, width - 338, 95);
+    const streakText = streak > 0 ? `🔥 ${streak}-Day Streak Active` : '🌱 Start Your Streak';
+    ctx.fillText(streakText, width - 338, 95);
 
     // Date
     const today = new Date();
@@ -572,7 +573,7 @@ export class ShareCardRenderer {
     ctx.stroke();
 
     // Score Circle
-    const scoreVal = ledger.healthScore ?? 88;
+    const scoreVal = (ledger.healthScore !== undefined && ledger.healthScore !== null) ? ledger.healthScore : 0;
     ctx.fillStyle = 'rgba(39, 195, 128, 0.15)';
     ctx.beginPath();
     ctx.arc(148, healthY + healthH / 2, 48, 0, Math.PI * 2);
