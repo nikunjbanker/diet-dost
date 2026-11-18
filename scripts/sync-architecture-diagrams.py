@@ -43,7 +43,8 @@ CANONICAL_DIAGRAMS = {
     "azure_zero_trust_infra_architecture": os.path.join(DIAGRAMS_DIR, "azure_zero_trust_infra_architecture.mermaid"),
     "devops_observability": os.path.join(DIAGRAMS_DIR, "devops_observability.mermaid"),
     "frontend_modular_architecture": os.path.join(DIAGRAMS_DIR, "frontend_modular_architecture.mermaid"),
-    "functional_meal_flow": os.path.join(DIAGRAMS_DIR, "functional_meal_flow.mermaid")
+    "functional_meal_flow": os.path.join(DIAGRAMS_DIR, "functional_meal_flow.mermaid"),
+    "agentic_mcp_workflows": os.path.join(DIAGRAMS_DIR, "agentic_mcp_workflows.mermaid")
 }
 
 REQUIRED_ROOT_DIRECTIVES = [

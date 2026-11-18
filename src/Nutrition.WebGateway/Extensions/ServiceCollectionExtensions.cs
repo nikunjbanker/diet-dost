@@ -14,6 +14,7 @@ using Nutrition.Infrastructure.AI;
 using Nutrition.Infrastructure.Configuration;
 using Nutrition.Infrastructure.Persistence;
 using Nutrition.Infrastructure.Security;
+using Nutrition.Mcp;
 
 namespace Nutrition.WebGateway.Extensions;
 
@@ -88,6 +89,9 @@ public static class ServiceCollectionExtensions
         services.AddHealthChecks()
             .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("WebGateway service is live."), tags: ["live"])
             .AddCheck<Health.DatabaseHealthCheck>("database", tags: ["ready"]);
+
+        // Official Model Context Protocol (MCP) Server with HTTP/SSE Transport
+        services.AddDietDostMcpServer();
 
         return services;
     }

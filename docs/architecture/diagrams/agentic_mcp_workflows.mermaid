@@ -1,0 +1,107 @@
+graph TB
+%%
+%% Copyright (c) 2026 diet-dost and/or its contributors.
+%% Licensed under the "GNU Affero General Public License v3.0 only" and
+%% the "Server Side Public License, v 1"; you may not use this file except
+%% in compliance with, at your election, the "GNU Affero General Public
+%% License v3.0 only" or the "Server Side Public License, v 1".
+%%
+
+    %% =========================================================================
+    %% HARDENED DIET-DOST AGENTIC MCP TOPOLOGY (ZERO-COST CONTAINER DEPLOYMENT)
+    %% =========================================================================
+
+    subgraph CLIENTS ["1. CLIENT ECOSYSTEM (Local & Cloud)"]
+        direction TB
+        C_CLAUDE["Claude Desktop<br/>(Local Stdio Transport)"]
+        C_VSCODE["VS Code / Copilot<br/>(HTTP / SSE Transport)"]
+        C_CHATGPT["ChatGPT Custom Actions<br/>(Remote HTTPS / Bearer Auth)"]
+        C_INSPECT["MCP Inspector / Antigravity<br/>(Local Dev HTTP Testing)"]
+        C_RUNNER["Nutrition.AgentClient<br/>(Ollama / Gemini Auto-Detect)"]
+    end
+
+    subgraph LOCAL_CLI ["2. LOCAL WORKSTATION CLI (Stdio Bridge)"]
+        direction TB
+        CLI_TOOL["Nutrition.Tools.McpCli (dietdost-mcp)<br/>Headless Stdio JSON-RPC Bridge"]
+    end
+
+    subgraph CLOUD_ACA ["3. AZURE CONTAINER APP: app-dietdost-web (Unified Ingress - Zero Extra Cost)"]
+        direction TB
+        
+        subgraph GATEWAY ["Nutrition.WebGateway (Port 5240 / 5100)"]
+            INGRESS["HTTPS Ingress (dev.diet-dost.in)"]
+            AUTH_FILTER["Auth & Security Filter<br/>(Entra ID | JWT SmartScheme | API Key)"]
+            MCP_ENDPOINT["MapMcp('/mcp')<br/>(ModelContextProtocol.AspNetCore)"]
+            PWA_UI["Linear.app PWA Diary<br/>(AGUI FunctionApprovalBlock)"]
+            
+            INGRESS --> AUTH_FILTER
+            AUTH_FILTER --> MCP_ENDPOINT
+            AUTH_FILTER --> PWA_UI
+        end
+
+        subgraph DATA_PROTECTION ["Cryptographic Security"]
+            PROTECTOR["IDataProtector (AES-256-GCM)<br/>Purpose: DietDost.Mcp.Elicitation (User Bound)<br/>15-Minute Expiration TTL"]
+        end
+
+        subgraph TOOLS ["DietDost MCP Tool Suite"]
+            T_Logs["view_meal_logs"]
+            T_Ledger["view_daily_ledger"]
+            T_Add["add_meal_entry (HITL Elicitation)"]
+            T_Propose["propose_meal_entry (Fallback)"]
+            T_Confirm["confirm_meal_entry"]
+        end
+
+        MCP_ENDPOINT --> T_Logs
+        MCP_ENDPOINT --> T_Ledger
+        MCP_ENDPOINT --> T_Add
+        MCP_ENDPOINT --> T_Propose
+        MCP_ENDPOINT --> T_Confirm
+
+        T_Add -.-> PROTECTOR
+        T_Confirm -.-> PROTECTOR
+    end
+
+    subgraph CQRS ["4. CLEAN ARCHITECTURE APPLICATION CORE (Zero Code Duplication)"]
+        direction TB
+        DISPATCHER["IDispatcher (NativeDispatcher)"]
+        Q_Logs["GetMealHistoryQuery"]
+        Q_Ledger["GetDailyLedgerQuery"]
+        CMD_Text["AnalyzeTextMealCommand"]
+        CMD_Photo["UploadAndAnalyzeMealCommand"]
+        CMD_Confirm["ConfirmMealCommand (IsVerifiedByUser = true)"]
+        QUOTA["IAiQuotaService (OWASP LLM04 Tier Gating)"]
+
+        DISPATCHER --> Q_Logs
+        DISPATCHER --> Q_Ledger
+        DISPATCHER --> CMD_Text
+        DISPATCHER --> CMD_Photo
+        DISPATCHER --> CMD_Confirm
+        CMD_Text --> QUOTA
+        CMD_Photo --> QUOTA
+    end
+
+    subgraph PERSISTENCE ["5. PERSISTENCE & CLINICAL ENGINE"]
+        direction TB
+        SMB["Azure SMB Volume (/app/data)<br/>diettracker.db (Single-Writer SQLite)"]
+        VISION["MicrosoftAgentFoodVisionService<br/>(Google Gemini 2.5/3.8 Flash)"]
+        CLINICAL["ICMR-NIN 2024 / IFCT 2017 Engine"]
+
+        CMD_Confirm --> SMB
+        CMD_Text --> VISION
+        CMD_Photo --> VISION
+        VISION --> CLINICAL
+    end
+
+    %% Connections
+    C_CLAUDE -->|"Stdio JSON-RPC"| CLI_TOOL
+    CLI_TOOL -->|"Direct CQRS Execution"| DISPATCHER
+    C_VSCODE -->|"HTTP / SSE"| INGRESS
+    C_CHATGPT -->|"HTTPS / Bearer Auth"| INGRESS
+    C_INSPECT -->|"HTTP / SSE"| INGRESS
+    C_RUNNER -->|"McpClient / HTTP"| INGRESS
+
+    T_Logs -->|"GetMealHistoryQuery"| DISPATCHER
+    T_Ledger -->|"GetDailyLedgerQuery"| DISPATCHER
+    T_Add -->|"AnalyzeText / Photo"| DISPATCHER
+    T_Propose -->|"AnalyzeTextCommand"| DISPATCHER
+    T_Confirm -->|"ConfirmMealCommand"| DISPATCHER

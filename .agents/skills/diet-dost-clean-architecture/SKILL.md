@@ -319,6 +319,12 @@ public interface ICurrentUserService
 }
 ```
 
+### 4.3 Model Context Protocol (MCP) Server & Tool Execution Layer (`src/Nutrition.Mcp/`)
+Exposes Diet-Dost operations to local autonomous agents (Claude Desktop, VS Code) and remote LLM clients (ChatGPT Custom Actions) with **zero duplicate domain logic**:
+- **Pure CQRS Delegation**: Every MCP tool (`view_meal_logs`, `view_daily_ledger`, `estimate_food_portion`, `add_meal_entry`, `confirm_meal_entry`) resolves `IDispatcher` from DI and dispatches existing Application queries and commands (`GetMealHistoryQuery`, `GetDailyLedgerQuery`, `AnalyzeTextMealCommand`, `ConfirmMealCommand`).
+- **Clinical Zero-Assumption Intake**: `add_meal_entry` returns an encrypted continuation token (`IMcpContinuationTokenProtector`) with 15-minute TTL and user-bound purpose strings (`DietDost.Mcp.Elicitation.v2.{UserId}`). No writes are committed to the diary until `confirm_meal_entry` (or approved continuation) is invoked.
+- **Dual Transport Support**: Remote HTTP/SSE transport on `/mcp` (co-hosted inside `Nutrition.WebGateway` for $0 incremental cloud cost) and local Stdio transport (`Nutrition.Tools.McpCli`).
+
 ---
 
 ## 5. Standard Feature Slices in `Nutrition.Application`

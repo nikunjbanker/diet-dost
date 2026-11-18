@@ -3,12 +3,16 @@
     <Project Path="src/Nutrition.Domain/Nutrition.Domain.csproj" />
     <Project Path="src/Nutrition.Application/Nutrition.Application.csproj" />
     <Project Path="src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj" />
+    <Project Path="src/Nutrition.Mcp/Nutrition.Mcp.csproj" />
     <Project Path="src/Nutrition.WebGateway/Nutrition.WebGateway.csproj" />
     <Project Path="src/Nutrition.AppHost/Nutrition.AppHost.csproj" />
     <Project Path="src/Nutrition.Tools.DataMigrator/Nutrition.Tools.DataMigrator.csproj" />
+    <Project Path="src/Nutrition.Tools.McpCli/Nutrition.Tools.McpCli.csproj" />
+    <Project Path="src/Nutrition.AgentClient/Nutrition.AgentClient.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Nutrition.Domain.Tests/Nutrition.Domain.Tests.csproj" />
     <Project Path="tests/Nutrition.EvalHarness.Tests/Nutrition.EvalHarness.Tests.csproj" />
+    <Project Path="tests/Nutrition.Mcp.Tests/Nutrition.Mcp.Tests.csproj" />
   </Folder>
 </Solution>
