@@ -21,7 +21,7 @@ description: >-
 > **Specification Version**: `v1.4.0 (Production & Living SDD)`  
 > **Classification**: Production Software Design Document (SDD), Architecture Blueprint & Clinical Rulebook  
 > **Approved Domain Focus**: Indian Population, ICMR-NIN & WHO Medical Standards, Zero-Assumption Clinical Logic  
-> **Tech Architecture**: .NET 11 (Exclusive, Zero Warnings, General Availability Packages), Standalone Aspire.AppHost.Sdk 13.5.4+, Swappable SQLite V1 (PWA Offline-First), Multi-Provider AI Engine (Google Gemini 3.6-Flash / 3-Flash-Preview & Azure OpenAI gpt-5.6-luna), Podman 5.7.0 & Azure Container Apps, OWASP ASVS, Linear.app Design System (11 Modular UI Partials)  
+> **Tech Architecture**: .NET 11 (Exclusive, Zero Warnings, General Availability Packages), .NET Aspire 17 (Project Resource v2), Swappable SQLite V1 (PWA Offline-First), Multi-Provider AI Engine (Google Gemini 3.6-Flash / 3-Flash-Preview & Azure OpenAI gpt-5.6-luna), Podman 5.7.0 & Azure Container Apps, OWASP ASVS, Linear.app Design System (11 Modular UI Partials)  
 > **Documentation Governance**: Mandatory `docs/sdd/*.md` deliverables, Multi-Dimensional Solution Architecture Mermaid Diagrams, Living Documentation Protocol for All Features & Bug Fixes  
 > **Development Methodology**: Harness Engineering (`Aspire.Hosting.Testing`, Eval Harnesses), Git Branching & PR-Only Merge Mandate, Closed-Loop Feedback Cycles  
 
@@ -29,13 +29,13 @@ This skill guides the design, architecture, documentation, and development of a 
 
 ### Mandatory .NET 11 & Package Governance Standard
 1. **Exclusive .NET 11 Target**: All C# projects across the solution (`src/` and `tests/`) must strictly target `<TargetFramework>net11.0</TargetFramework>`. Do not dual-target with older versions like `.NET 10`.
-2. **Package Policy**: All core projects are instructed to use official Microsoft .NET 11 General Availability packages (`11.0.0`, `Aspire.AppHost.Sdk 13.5.*`, `SQLitePCLRaw 3.*`).
+2. **Package Policy**: All core projects are instructed to use official Microsoft .NET 11 General Availability packages (`11.0.0`, `Aspire 17.0.0`, `SQLitePCLRaw 3.*`).
 3. **Zero-Warning & Zero-Vulnerability Build Standard**:
    - The solution must build with **0 Warnings and 0 Errors**.
    - Redundant implicit packages (e.g. `System.Net.Http.Json`) must be omitted.
    - Known transitive vulnerabilities (such as older `SQLitePCLRaw.lib.e_sqlite3 2.1.10`) must be explicitly resolved by referencing modern, patched versions (`SQLitePCLRaw.bundle_e_sqlite3 3.0.5+`).
    - Any compiler nullability warnings (e.g. `CS8602`) must be eliminated with defensive null-checks.
-4. **Standalone Aspire AppHost SDK**: Aspire AppHost projects must use `<Project Sdk="Aspire.AppHost.Sdk/13.5.4">` directly instead of deprecated workload-dependent project SDKs.
+4. **Aspire 17 AppHost & Project Resource v2**: Aspire AppHost projects must use standard `<Project Sdk="Microsoft.NET.Sdk">` referencing `Aspire.Hosting.AppHost` and `Aspire.Hosting.Dotnet` (17.0.0+), decoupling child services via `builder.AddDotnetProject(...)` instead of MSBuild ProjectReferences.
 5. **Mandatory Git Branching & PR-Only Merge Mandate (Stale-Branch Prevention)**:
    - **Never commit directly to the `main` (or default production) branch**.
    - **Step 0 Pre-Flight Remote Fetch & Dedicated Branch Creation**:
@@ -627,7 +627,7 @@ graph TB
 
     subgraph LAYER_DEVOPS ["7. DEVOPS, INFRASTRUCTURE & OBSERVABILITY LAYER (.NET Aspire 11)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (NET 11 & Aspire.AppHost.Sdk 13.5.4)<br/>(Standalone Orchestration & Environment Injector)"]
+        ASPIRE_Host[".NET Aspire AppHost (NET 11 & Aspire 17)<br/>(Project Resource v2 & Polyglot Orchestrator)"]
         ASPIRE_Dash["Aspire Developer Dashboard<br/>(Real-Time Health, Distributed Traces, Console Logs, OTLP 18888)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(HttpPayloadTelemetryMiddleware, NutritionTelemetry GenAI Spans)"]
         STORE_Cache[("Redis Cache Cluster<br/>(Session Store, Token Bucket, Query Acceleration)")]

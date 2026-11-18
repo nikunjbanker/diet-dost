@@ -32,8 +32,8 @@ graph TD
         ACA -.->|"Application Logs Only (Entra ID)"| AppInsights_Cloud
     end
 
-    subgraph Aspire_AppHost [".NET Aspire Local Orchestration & Observability"]
-        Host["Aspire.Hosting.AppHost (net11.0 / Sdk 13.5.4)"]
+    subgraph Aspire_AppHost [".NET Aspire Local Orchestration & Observability (Aspire 17)"]
+        Host["Aspire.Hosting.AppHost (net11.0 / Aspire 17 Project Resource v2)"]
         OTel["OpenTelemetry OTLP Collector"]
         Dash["Aspire Observability Dashboard (Port 18888)<br/>(Virtualize JS Patched: 0 Interop Errors)"]
         TestSuites["Validation Test Suites<br/>- 259 Automated Tests (Domain & Eval Harness)<br/>- Multi-Tier E2E CFT Suite Across 5 User Tiers<br/>- AI Security Defense Pre-Commit Validator"]

@@ -181,9 +181,9 @@ graph TB
         AZURE_ALERT["Azure Monitor Threat Metric Alert<br/>Key Vault 401/403 Unauthorized Spikes (>5 in 5m)"]
     end
 
-    subgraph LAYER_ORCHESTRATION ["7. DEVOPS, GOVERNANCE & OBSERVABILITY (.NET Aspire 13.5.4)"]
+    subgraph LAYER_ORCHESTRATION ["7. DEVOPS, GOVERNANCE & OBSERVABILITY (.NET Aspire 17)"]
         direction TB
-        ASPIRE_Host[".NET Aspire AppHost (net11.0 / Sdk 13.5.4)<br/>(Distributed Orchestration & Typed Topology)"]
+        ASPIRE_Host[".NET Aspire AppHost (net11.0 / Aspire 17)<br/>(Project Resource v2 & Polyglot Orchestration)"]
         ASPIRE_Dash["Aspire Developer Dashboard (:18888)<br/>(Live Resources, Distributed Traces, GenAI Semantic Spans)"]
         OTEL_Collector["OpenTelemetry (OTel) Pipeline<br/>(NutritionTelemetry ActivitySource 'Nutrition.DietDost')"]
         TEST_Harness["Validation Harnesses<br/>(259 Automated Tests across 7 Projects + validate_e2e_tiers.ps1 Across 5 Demo User Tiers)"]
@@ -252,7 +252,7 @@ graph TB
 |---|---|
 | **Platform** | [.NET 11 (General Availability)](https://dotnet.microsoft.com/) (`net11.0`) / C# 13 |
 | **Architecture** | Clean Architecture (Onion/Hexagonal), Native CQRS via `Microsoft.Extensions.DependencyInjection` (Zero MediatR) |
-| **Orchestration & Dashboard** | [.NET Aspire 13.5.4](https://learn.microsoft.com/dotnet/aspire/) (Standalone AppHost SDK) |
+| **Orchestration & Dashboard** | [.NET Aspire 17](https://learn.microsoft.com/dotnet/aspire/) (Project Resource v2 / Microsoft.NET.Sdk) |
 | **Secrets Management** | Database Secret Store (`AppSecrets` table, `ISecretStore` port, `DatabaseConfigurationProvider`) |
 | **Security & Environment** | `IAppEnvironment` dual-guard (#if DEBUG & `IHostEnvironment`), Dual SmartScheme JWT Bearer + HttpOnly Cookies |
 | **Observability** | OpenTelemetry, `HttpPayloadTelemetryMiddleware`, GenAI Semantic Conventions |
@@ -268,7 +268,7 @@ graph TB
 ```
 diet-dost/
 ├── src/
-│   ├── Nutrition.AppHost/           # Standalone .NET Aspire 13.5.4 AppHost orchestration topology
+│   ├── Nutrition.AppHost/           # .NET Aspire 17 AppHost orchestration topology (Project Resource v2)
 │   ├── Nutrition.Domain/            # DDD core entities, clinical calculators, AppSecret, password policy
 │   ├── Nutrition.Application/       # Native CQRS commands, queries, handlers, ISecretStore, IAppEnvironment
 │   ├── Nutrition.Infrastructure/    # DatabaseSecretStore, DatabaseConfigurationProvider, EF Core DbContext, AI Agent

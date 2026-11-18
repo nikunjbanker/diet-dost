@@ -8,24 +8,54 @@
 
 # DevOps, Infrastructure & Aspire Orchestration
 > **Specification Version**: `v1.4.0 (Production & Living SDD)`  
-> **Host Framework**: .NET Aspire 13.5.4 (`Aspire.Hosting.AppHost`) & Azure Container Apps  
+> **Host Framework**: .NET Aspire 17 (`Aspire.Hosting.AppHost` & `Aspire.Hosting.Dotnet`) & Azure Container Apps  
 > **Runtime**: .NET 11 (`net11.0`)  
 
 ---
 
-## 1. Aspire AppHost Topology
+## 1. Aspire AppHost Topology (Project Resource v2)
+
+In .NET Aspire 17, project orchestration uses **Project Resource v2 (`DotnetProjectResource`)**, decoupling the AppHost from the MSBuild build graph of child services. Child projects are referenced dynamically by relative path rather than static MSBuild `<ProjectReference>` tags, enabling instantaneous AppHost compilation and independent service build graphs.
 
 ```csharp
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Web Gateway hosting the Linear.app PWA and microservice endpoints
-builder.AddProject<Projects.Nutrition_WebGateway>("web-gateway")
-       .WithHttpEndpoint(port: 5240, isProxied: false)
-       .WithExternalHttpEndpoints()
-       .WithEnvironment("Database__Provider", "Sqlite")
-       .WithEnvironment("ConnectionStrings__DefaultConnection", "Data Source=diettracker.db");
+// 1. Declare Azure Container Apps Environment deployment target
+var acaEnv = builder.AddAzureContainerAppEnvironment("cae-dietdost");
+
+// 2. Declare Azure Storage for persistent SQLite SMB file share
+var storage = builder.AddAzureStorage("dietdost-storage");
+
+// 3. Declare Azure Key Vault for application secrets in deployed environments
+var keyVault = builder.AddAzureKeyVault("dietdost-kv");
+
+// 4. Register Web Gateway via Project Resource v2 with dual-database persistence support (SQLite & Azure SQL)
+builder.AddWebGateway(keyVault);
 
 builder.Build().Run();
+```
+
+Inside `WebGatewayResourceExtensions.cs`:
+```csharp
+public static IResourceBuilder<DotnetProjectResource> AddWebGateway(
+    this IDistributedApplicationBuilder builder,
+    IResourceBuilder<AzureKeyVaultResource>? keyVault = null,
+    IResourceBuilder<IResourceWithConnectionString>? database = null)
+{
+    var dbProvider = builder.Configuration["Database:Provider"] ?? "Sqlite";
+    var defaultConn = builder.Configuration.GetConnectionString("DefaultConnection") ?? "Data Source=diettracker.db";
+
+    var webGateway = builder.AddDotnetProject("web-gateway", "../Nutrition.WebGateway/Nutrition.WebGateway.csproj")
+        .WithHttpEndpoint(port: 5240, isProxied: false)
+        .WithExternalHttpEndpoints()
+        .WithEnvironment("Database__Provider", dbProvider)
+        .WithEnvironment("ConnectionStrings__DefaultConnection", defaultConn);
+
+    if (database != null) webGateway.WithReference(database);
+    if (keyVault != null) webGateway.WithReference(keyVault);
+
+    return webGateway;
+}
 ```
 
 ### 1.1 Local Launch Configuration (`launchSettings.json`)
