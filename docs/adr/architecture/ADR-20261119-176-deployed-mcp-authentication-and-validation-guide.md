@@ -13,7 +13,7 @@
 - **Domain**: architecture
 - **Deciders**: Solution Architecture, AI Agentic SDLC, Clinical Dietetics Engineering
 - **Supercedes**: None
-- **Related PR**: Pending
+- **Related PR**: #180
 - **Closes Issue**: #179
 
 ---
