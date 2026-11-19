@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-19T05:45:46.641376+00:00",
-  "totalAdrs": 139,
+  "generatedAt": "2026-11-19T07:00:46.745591+00:00",
+  "totalAdrs": 140,
   "categoryCounts": {
     "architecture": 45,
     "security": 26,
-    "devops": 34,
+    "devops": 35,
     "presentation": 21,
     "governance": 13
   },
@@ -1677,6 +1677,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261118-173-containerfile-mcp-restore-cache.md",
       "relativePath": "docs/adr/devops/ADR-20261118-173-containerfile-mcp-restore-cache.md"
+    },
+    {
+      "id": "ADR-174",
+      "number": 174,
+      "title": "Auto-Approve Deployment Daemon Release Branch Allowance",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-19",
+      "subsystem": "Devops",
+      "filename": "ADR-20261119-174-auto-approve-daemon-release-branches.md",
+      "relativePath": "docs/adr/devops/ADR-20261119-174-auto-approve-daemon-release-branches.md"
     }
   ]
 }
