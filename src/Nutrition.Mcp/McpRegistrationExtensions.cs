@@ -25,6 +25,7 @@ public static class McpRegistrationExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddDataProtection();
         services.AddHttpContextAccessor();
         services.AddTransient<ClaimsPrincipal>(sp =>
             sp.GetService<IHttpContextAccessor>()?.HttpContext?.User ?? new ClaimsPrincipal());
@@ -49,6 +50,7 @@ public static class McpRegistrationExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.AddDataProtection();
         services.AddTransient<ClaimsPrincipal>(_ => new ClaimsPrincipal());
         services.AddScoped<IMcpContinuationTokenProtector, McpContinuationTokenProtector>();
         services.AddScoped<MealTools>();

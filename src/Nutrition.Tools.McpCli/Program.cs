@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -62,5 +63,19 @@ builder.Services.AddApplicationServices();
 builder.Services.AddDietDostMcpStdioServer();
 
 var app = builder.Build();
+
+// Ensure local SQLite database and schema exist for CLI execution
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+    await db.Database.EnsureCreatedAsync();
+
+    if (db.Database.IsSqlite())
+    {
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN HealthScoreStatusText TEXT NOT NULL DEFAULT 'Awaiting First Meal 🌅';"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN TargetSugarGrams REAL NOT NULL DEFAULT 25.0;"); } catch { }
+        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN ConsumedSugarGrams REAL NOT NULL DEFAULT 0.0;"); } catch { }
+    }
+}
 
 await app.RunAsync();
