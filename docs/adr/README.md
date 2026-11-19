@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 140 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 141 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **45** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **46** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **26** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **35** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **21** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -91,6 +91,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-170** | Aspire 17 and Project Resource v2 Migration with Dual-Database Orchestration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261118-170-aspire-17-project-resource-v2-migration.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261118-170-aspire-17-project-resource-v2-migration.md) |
 | **ADR-171** | Aspire Local Run Mode Azure Key Vault Provisioning Guard | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261118-171-aspire-local-run-keyvault-provisioning-guard.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261118-171-aspire-local-run-keyvault-provisioning-guard.md) |
 | **ADR-172** | Agentic Workflows Architecture with ModelContextProtocol C# SDK and Aspire 17 | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md) |
+| **ADR-175** | Local MCP Developer Testing Guide and Stdio CLI Default Configuration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261119-175-local-mcp-developer-and-testing-guide.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261119-175-local-mcp-developer-and-testing-guide.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*
