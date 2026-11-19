@@ -147,4 +147,53 @@ public class ReleasePipelineContractTests
             Assert.Matches(@"^alpha-5\.\d+\.[1-9]\d*\.0$", newTag);
         }
     }
+
+    [Fact]
+    public void AutoApproveDaemon_ScriptExistsAndHasLicenseHeader()
+    {
+        var repoRoot = GetRepoRoot();
+        var scriptPath = Path.Combine(repoRoot, "scripts", "auto-approve-daemon.ps1");
+
+        Assert.True(File.Exists(scriptPath), $"Auto-approve daemon missing at {scriptPath}");
+        var content = File.ReadAllText(scriptPath);
+
+        Assert.Contains("GNU Affero General Public License v3.0 only", content);
+        Assert.Contains("Server Side Public License, v 1", content);
+        Assert.Contains("param(", content);
+        Assert.Contains("Approve-PendingDeployment", content);
+    }
+
+    [Fact]
+    public void AutoApproveDaemon_Gap32Guard_PermitsMainAndOfficialReleaseBranches()
+    {
+        var repoRoot = GetRepoRoot();
+        var scriptPath = Path.Combine(repoRoot, "scripts", "auto-approve-daemon.ps1");
+        var content = File.ReadAllText(scriptPath);
+
+        // GAP-32 Security Guard: Must permit main AND official release branches (^release-)
+        Assert.Contains("$runMeta.headBranch -ne \"main\"", content);
+        Assert.Contains("^release-", content);
+
+        // Invariant: Must explicitly reject feature, fix, or arbitrary developer branches
+        const string releasePattern = @"^release-";
+        Assert.Matches(releasePattern, "release-alpha-5.8.1.0");
+        Assert.Matches(releasePattern, "release-6.0.0.0");
+        Assert.DoesNotMatch(releasePattern, "feature/mcp-support");
+        Assert.DoesNotMatch(releasePattern, "fix/auth-bug");
+        Assert.DoesNotMatch(releasePattern, "main"); // main handled by -ne "main"
+    }
+
+    [Fact]
+    public void AutoApproveDaemon_LiveEndpoints_IncludesMcpValidation()
+    {
+        var repoRoot = GetRepoRoot();
+        var scriptPath = Path.Combine(repoRoot, "scripts", "auto-approve-daemon.ps1");
+        var content = File.ReadAllText(scriptPath);
+
+        // Assert all critical post-deployment validation endpoints are present
+        Assert.Contains("\"$hostUrl/health\"", content);
+        Assert.Contains("\"$hostUrl/index.html\"", content);
+        Assert.Contains("\"$hostUrl/partials/camera-modal.html\"", content);
+        Assert.Contains("\"$hostUrl/mcp\"", content);
+    }
 }

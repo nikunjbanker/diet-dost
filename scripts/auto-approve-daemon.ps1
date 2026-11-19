@@ -27,12 +27,12 @@ Write-Host "==========================================================" -Foregro
 
 function Approve-PendingDeployment([string]$targetRunId, [string]$workflowTitle) {
     try {
-        # GAP-32 Security Guard: Verify run is on protected 'main' branch, event is push/workflow_dispatch, and all prior jobs succeeded
+        # GAP-32 Security Guard: Verify run is on protected 'main' branch or official release branch, event is push/workflow_dispatch, and all prior jobs succeeded
         $runMetaRaw = gh run view $targetRunId --json headBranch,event,jobs 2>$null
         if ($runMetaRaw) {
             $runMeta = $runMetaRaw | ConvertFrom-Json
-            if ($runMeta.headBranch -ne "main") {
-                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] [GAP-32] Skipping auto-approval for run ${targetRunId}: branch '$($runMeta.headBranch)' is not protected 'main'." -ForegroundColor DarkYellow
+            if ($runMeta.headBranch -ne "main" -and -not ($runMeta.headBranch -match '^release-')) {
+                Write-Host "[$((Get-Date).ToString('HH:mm:ss'))] [GAP-32] Skipping auto-approval for run ${targetRunId}: branch '$($runMeta.headBranch)' is not protected 'main' or official release branch." -ForegroundColor DarkYellow
                 return
             }
             if ($runMeta.event -notin @("push", "workflow_dispatch")) {
@@ -80,7 +80,8 @@ function Test-LiveEndpoints([string]$hostUrl) {
     $endpoints = @(
         "$hostUrl/health",
         "$hostUrl/index.html",
-        "$hostUrl/partials/camera-modal.html"
+        "$hostUrl/partials/camera-modal.html",
+        "$hostUrl/mcp"
     )
 
     $allPassed = $true
