@@ -21,6 +21,7 @@ COPY Directory.Build.props ./
 COPY src/Nutrition.Domain/Nutrition.Domain.csproj src/Nutrition.Domain/
 COPY src/Nutrition.Application/Nutrition.Application.csproj src/Nutrition.Application/
 COPY src/Nutrition.Infrastructure/Nutrition.Infrastructure.csproj src/Nutrition.Infrastructure/
+COPY src/Nutrition.Mcp/Nutrition.Mcp.csproj src/Nutrition.Mcp/
 COPY src/Nutrition.WebGateway/Nutrition.WebGateway.csproj src/Nutrition.WebGateway/
 
 # Restore dependencies

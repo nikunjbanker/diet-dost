@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-18T14:10:11.491716+00:00",
-  "totalAdrs": 138,
+  "generatedAt": "2026-11-19T05:45:46.641376+00:00",
+  "totalAdrs": 139,
   "categoryCounts": {
     "architecture": 45,
     "security": 26,
-    "devops": 33,
+    "devops": 34,
     "presentation": 21,
     "governance": 13
   },
@@ -1665,6 +1665,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md",
       "relativePath": "docs/adr/architecture/ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md"
+    },
+    {
+      "id": "ADR-173",
+      "number": 173,
+      "title": "Containerfile Layer Cache Optimization for Nutrition.Mcp Project Reference",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-18",
+      "subsystem": "Devops",
+      "filename": "ADR-20261118-173-containerfile-mcp-restore-cache.md",
+      "relativePath": "docs/adr/devops/ADR-20261118-173-containerfile-mcp-restore-cache.md"
     }
   ]
 }
