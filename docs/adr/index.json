@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-19T09:50:22.775652+00:00",
-  "totalAdrs": 141,
+  "generatedAt": "2026-11-19T11:54:45.533121+00:00",
+  "totalAdrs": 142,
   "categoryCounts": {
-    "architecture": 46,
+    "architecture": 47,
     "security": 26,
     "devops": 35,
     "presentation": 21,
@@ -1701,6 +1701,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261119-175-local-mcp-developer-and-testing-guide.md",
       "relativePath": "docs/adr/architecture/ADR-20261119-175-local-mcp-developer-and-testing-guide.md"
+    },
+    {
+      "id": "ADR-176",
+      "number": 176,
+      "title": "Deployed Remote MCP Authentication, Stream Negotiation, and CLI Auto-Reconciliation",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-19",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261119-176-deployed-mcp-authentication-and-validation-guide.md",
+      "relativePath": "docs/adr/architecture/ADR-20261119-176-deployed-mcp-authentication-and-validation-guide.md"
     }
   ]
 }

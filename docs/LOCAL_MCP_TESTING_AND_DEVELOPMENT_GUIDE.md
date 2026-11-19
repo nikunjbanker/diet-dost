@@ -6,9 +6,9 @@
   License v3.0 only" or the "Server Side Public License, v 1".
 -->
 
-# Local Model Context Protocol (MCP) Testing & Development Guide
+# Model Context Protocol (MCP) Local & Deployed Testing Guide
 
-> **Authoritative Specification**: [ADR-172](../adr/architecture/ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md)  
+> **Authoritative Specification**: [ADR-172](../adr/architecture/ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md) & [ADR-175](../adr/architecture/ADR-20261119-175-local-mcp-developer-and-testing-guide.md)  
 > **CFT Acceptance Matrix**: [cft_agentic_mcp_workflows.md](cft/cft_agentic_mcp_workflows.md)  
 > **Architecture Diagram**: [agentic_mcp_workflows.mermaid](architecture/diagrams/agentic_mcp_workflows.mermaid)  
 > **Target Framework**: .NET 11, Aspire 17, ModelContextProtocol C# SDK v2.4.0  
@@ -170,35 +170,180 @@ npx @modelcontextprotocol/inspector dotnet run --project src/Nutrition.Tools.Mcp
 
 ---
 
-## 7. Testing Methodology 5: Raw JSON-RPC Testing via Stdio Pipe or cURL
+## 7. Testing Methodology 5: Interactive JSON-RPC Testing via Stdio Process (`Nutrition.Tools.McpCli`)
 
-### Option A: Piping JSON-RPC Frames into `Nutrition.Tools.McpCli` (PowerShell)
-You can directly send JSON-RPC protocol frames to verify Stdio transport without external UI tools:
+You can send raw JSON-RPC 2.0 frames directly into the headless Stdio transport. Because `Nutrition.Tools.McpCli` separates diagnostic logging to `stderr` and JSON-RPC responses to `stdout`, use bidirectional process streaming in PowerShell to capture and format responses:
+
+### Interactive PowerShell Script (Tools Discovery & Execution)
 
 ```powershell
-$inputJson = @'
-{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"manual-pipe","version":"1.0.0"}}}
-{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}
-'@
+$psi = New-Object System.Diagnostics.ProcessStartInfo
+$psi.FileName = "dotnet"
+$psi.Arguments = "run --project src/Nutrition.Tools.McpCli/Nutrition.Tools.McpCli.csproj --no-launch-profile"
+$psi.RedirectStandardInput = $true
+$psi.RedirectStandardOutput = $true
+$psi.RedirectStandardError = $true
+$psi.UseShellExecute = $false
+$p = [System.Diagnostics.Process]::Start($psi)
 
-$inputJson | dotnet run --project src/Nutrition.Tools.McpCli/Nutrition.Tools.McpCli.csproj --no-launch-profile
+# 1. Handshake: initialize
+$p.StandardInput.WriteLine('{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"manual-pipe","version":"1.0.0"}}}')
+$initResponse = $p.StandardOutput.ReadLine()
+
+# 2. Tool Discovery: tools/list
+$p.StandardInput.WriteLine('{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}')
+$toolsResponse = $p.StandardOutput.ReadLine()
+
+# 3. Clean Shutdown
+$p.Kill()
+
+# 4. Format registered tools as a console table
+($toolsResponse | ConvertFrom-Json).result.tools | Format-Table name, description
 ```
 
-### Option B: Probing the Live Remote Endpoint via cURL
-Test the deployed or local HTTP endpoint:
-
-```bash
-# Local development server
-curl -i http://localhost:5240/mcp
-
-# Live Azure Container Apps staging/production host
-curl -i https://dev.diet-dost.in/mcp
-```
-*Expected Response*: HTTP 200 with SSE stream initialization or diagnostic information.
+> [!NOTE]
+> **Stream Separation & Pipeline EOF**:
+> If you pipe strings directly (e.g. `$inputJson | dotnet run`), PowerShell closes `stdin` immediately upon streaming the text. The MCP SDK senses EOF and immediately initiates host shutdown. Diagnostic logs appear on `stderr`, but the process terminates before `stdout` is captured. The bidirectional script above keeps `stdin` open and synchronously reads `stdout` lines.
 
 ---
 
-## 8. Clinical Safety & Security Guardrails
+## 8. Testing Methodology 6: Testing & Validating the Deployed Remote MCP Server (with Authentication)
+
+In cloud environments (Azure Container Apps / Kubernetes), the remote endpoint at **`https://dev.diet-dost.in/mcp`** (or production `https://diet-dost.in/mcp`) is protected by **OWASP ASVS authorization policies** (`mcpEndpoint.RequireAuthorization()`).
+
+Unlike local development mode, any caller accessing the deployed MCP endpoint **must authenticate** via Diet-Dost's Dual SmartScheme (JWT Bearer Token RFC 7519 or `DietDost_Session` cookie).
+
+### Protocol & Header Requirements
+
+| Requirement | Value / Format | Purpose |
+| :--- | :--- | :--- |
+| **Endpoint URL** | `https://dev.diet-dost.in/mcp` | Deployed ASP.NET Core MCP route |
+| **Authorization** | `Bearer <JWT_TOKEN>` | Cryptographic user identification & tier enforcement |
+| **Accept** | `application/json, text/event-stream` | **Mandatory** per MCP HTTP Stream spec (omitting returns HTTP 406) |
+| **Content-Type** | `application/json` | JSON-RPC 2.0 payload format |
+
+---
+
+### Step 1: Obtain an Authenticated JWT Bearer Token
+
+Authenticate against the Identity Gateway using any seeded demo user account:
+
+```powershell
+$loginBody = @{
+    emailOrMobile = "premium@dietdost.app"
+    password      = "DietDost@Demo2026!"
+} | ConvertTo-Json
+
+$loginResponse = Invoke-RestMethod -Uri "https://dev.diet-dost.in/api/auth/login" `
+    -Method Post -Body $loginBody -ContentType "application/json"
+
+$jwt = $loginResponse.token
+Write-Host "Authenticated as: $($loginResponse.user.email) (Tier: $($loginResponse.user.tier))"
+```
+
+#### Demo Account Roster for Testing
+| Account | Password | Tier | Quota Limit |
+| :--- | :--- | :--- | :--- |
+| `free@dietdost.app` | `DietDost@Demo2026!` | Free | 3 AI entries / day |
+| `basic@dietdost.app` | `DietDost@Demo2026!` | Basic | 15 AI entries / day |
+| `premium@dietdost.app` | `DietDost@Demo2026!` | Premium | Unlimited |
+| `admin.demo@dietdost.app` | `DietDost@Demo2026!` | Admin | Administrative Access |
+| `superadmin@dietdost.app` | `DietDost@Demo2026!` | SuperAdmin | Full System Authority |
+
+---
+
+### Step 2: Automated End-to-End Deployed Validation Script
+
+Execute this complete PowerShell script to authenticate, list tools, and invoke `estimate_food_portion` against the live deployed cloud host:
+
+```powershell
+# 1. Login to obtain JWT Token
+$loginBody = @{ emailOrMobile = "premium@dietdost.app"; password = "DietDost@Demo2026!" } | ConvertTo-Json
+$auth = Invoke-RestMethod -Uri "https://dev.diet-dost.in/api/auth/login" -Method Post -Body $loginBody -ContentType "application/json"
+$jwt = $auth.token
+
+$headers = @{
+    Authorization = "Bearer $jwt"
+    Accept        = "application/json, text/event-stream"
+}
+
+# 2. Query registered tools via MCP Stream Transport
+$toolsPayload = @{ jsonrpc = "2.0"; id = 1; method = "tools/list"; params = @{} } | ConvertTo-Json
+$toolsRaw = Invoke-RestMethod -Uri "https://dev.diet-dost.in/mcp" -Method Post -Headers $headers -Body $toolsPayload -ContentType "application/json"
+
+Write-Host "`nDiscovered Clinical Tools on Deployed Server:"
+$toolsJson = ($toolsRaw -split "`n" | Where-Object { $_ -match "^data:" }) -replace "^data:\s*", "" | ConvertFrom-Json
+$toolsJson.result.tools | Format-Table name, description
+
+# 3. Call tool: estimate_food_portion
+$callPayload = @{
+    jsonrpc = "2.0"
+    id      = 2
+    method  = "tools/call"
+    params  = @{
+        name      = "estimate_food_portion"
+        arguments = @{ foodName = "Crispy Masala Dosa"; portion = "1 Dosa (150g)" }
+    }
+} | ConvertTo-Json -Depth 5
+
+$callRaw = Invoke-RestMethod -Uri "https://dev.diet-dost.in/mcp" -Method Post -Headers $headers -Body $callPayload -ContentType "application/json"
+$callJson = ($callRaw -split "`n" | Where-Object { $_ -match "^data:" }) -replace "^data:\s*", "" | ConvertFrom-Json
+
+Write-Host "Tool Execution Result:"
+$callJson.result.content[0].text
+```
+
+---
+
+### Step 3: Adversarial Security & Negative Validation Tests
+
+Verify that OWASP ASVS access controls and protocol negotiation guards reject unauthorized or malformed requests:
+
+1. **Unauthenticated Access (Missing Bearer Token)**:
+   ```bash
+   curl -i -X POST https://dev.diet-dost.in/mcp \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json, text/event-stream" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"probe","version":"1.0"}}}'
+   ```
+   *Expected Response*: **`HTTP/1.1 401 Unauthorized`** (Protected against unauthorized access).
+
+2. **Protocol Negotiation Guard (Missing `text/event-stream` in Accept Header)**:
+   ```bash
+   curl -i -X POST https://dev.diet-dost.in/mcp \
+     -H "Authorization: Bearer <TOKEN>" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{...}}'
+   ```
+   *Expected Response*: **`HTTP/1.1 406 Not Acceptable`** (`Client must accept both application/json and text/event-stream`).
+
+---
+
+### Step 4: Connecting Remote Desktop Clients (Claude Desktop / Cursor)
+
+To connect Claude Desktop to the live cloud endpoint with authentication, configure an SSE-to-Stdio proxy (such as `mcp-proxy`) in `%APPDATA%\Claude\claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "diet-dost-cloud": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-proxy",
+        "--transport", "sse",
+        "--url", "https://dev.diet-dost.in/mcp",
+        "--header", "Authorization=Bearer <YOUR_GENERATED_JWT_TOKEN>"
+      ]
+    }
+  }
+}
+```
+
+---
+
+## 9. Clinical Safety & Security Guardrails
 
 When testing, keep in mind Diet-Dost's clinical and security guardrails:
 
@@ -215,11 +360,14 @@ When testing, keep in mind Diet-Dost's clinical and security guardrails:
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Probable Cause | Resolution |
 | :--- | :--- | :--- |
+| `HTTP 401 Unauthorized` on deployed `/mcp` | Missing or expired JWT Bearer token | Call `POST /api/auth/login` to obtain a fresh token and pass `Authorization: Bearer <token>`. |
+| `HTTP 406 Not Acceptable` on deployed `/mcp` | Missing `text/event-stream` in HTTP `Accept` header | Set `Accept: application/json, text/event-stream` on all MCP HTTP requests. |
+| `HTTP 400 Bad Request` on `/api/auth/login` | Incorrect JSON property name | Use `emailOrMobile` instead of `email` in the login payload. |
 | `Jwt:Key is mandatory and cannot be empty` | Missing `appsettings.json` in CLI project or unset environment | Ensure `src/Nutrition.Tools.McpCli/appsettings.json` exists, or pass `$env:ASPNETCORE_ENVIRONMENT="Development"`. |
 | `Cannot connect to http://localhost:5240/mcp` | `Nutrition.WebGateway` is not running | Start the WebGateway in a separate terminal via `dotnet run --project src/Nutrition.WebGateway`. |
 | Claude Desktop shows red exclamation mark on `diet-dost` | Malformed JSON in `claude_desktop_config.json` or path contains unescaped backslashes | Use double backslashes (`\\\\`) for all Windows paths in `claude_desktop_config.json`. |
-| `Connection reset` or HTTP 401 when calling `/mcp` | Missing authorization headers on secured remote endpoints | In local Development mode, `/mcp` auto-authenticates to the default demo user `free@dietdost.app`. In production, supply a valid Bearer token or SmartScheme session cookie. |
+| `no such column: l.HealthScoreStatusText` | Outdated SQLite database file | `Nutrition.Tools.McpCli` now automatically applies schema reconciliation on startup. |
