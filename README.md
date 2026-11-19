@@ -462,6 +462,7 @@ Diet Dost strictly adheres to living documentation practices. Every architectura
 - **[06: Test Harness & AI Vision Evals (v1.3.1)](docs/sdd/06_test_harness_and_evals.md)**
 - **[07: Living Documentation & Audit Log (Synchronized)](docs/sdd/07_living_documentation_log.md)**
 - **[Local Indian Food Text/Vision SLM Training Guide](docs/LOCAL_INDIAN_FOOD_SLM_TRAINING_GUIDE.md)** — dataset design, local QLoRA training, Microsoft Agent Framework + Ollama integration, and evaluation gates
+- **[Local MCP Testing & Development Guide](docs/LOCAL_MCP_TESTING_AND_DEVELOPMENT_GUIDE.md)** — Step-by-step developer guide for testing MCP tools locally via unit tests, AgentClient, Claude Desktop, Cursor, and MCP Inspector
 
 ---
 

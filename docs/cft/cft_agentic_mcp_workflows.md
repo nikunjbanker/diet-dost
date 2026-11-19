@@ -44,3 +44,8 @@ dotnet test tests/Nutrition.Mcp.Tests/Nutrition.Mcp.Tests.csproj --configuration
 ```powershell
 pwsh -File tests/validate_e2e_tiers.ps1
 ```
+
+### Comprehensive Step-by-Step Developer Testing Guide
+For a full developer walkthrough across Unit Tests, `Nutrition.AgentClient`, Claude Desktop, Cursor, and MCP Inspector, consult:
+- **[Local MCP Testing & Development Guide](../LOCAL_MCP_TESTING_AND_DEVELOPMENT_GUIDE.md)**
+

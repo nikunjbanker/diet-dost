@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-19T07:00:46.745591+00:00",
-  "totalAdrs": 140,
+  "generatedAt": "2026-11-19T09:50:22.775652+00:00",
+  "totalAdrs": 141,
   "categoryCounts": {
-    "architecture": 45,
+    "architecture": 46,
     "security": 26,
     "devops": 35,
     "presentation": 21,
@@ -1689,6 +1689,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261119-174-auto-approve-daemon-release-branches.md",
       "relativePath": "docs/adr/devops/ADR-20261119-174-auto-approve-daemon-release-branches.md"
+    },
+    {
+      "id": "ADR-175",
+      "number": 175,
+      "title": "Local MCP Developer Testing Guide and Stdio CLI Default Configuration",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-19",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261119-175-local-mcp-developer-and-testing-guide.md",
+      "relativePath": "docs/adr/architecture/ADR-20261119-175-local-mcp-developer-and-testing-guide.md"
     }
   ]
 }
