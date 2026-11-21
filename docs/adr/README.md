@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 142 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 143 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **47** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **48** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **26** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **35** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **21** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -93,6 +93,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-172** | Agentic Workflows Architecture with ModelContextProtocol C# SDK and Aspire 17 | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261118-172-agentic-mcp-csharp-sdk-architecture.md) |
 | **ADR-175** | Local MCP Developer Testing Guide and Stdio CLI Default Configuration | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261119-175-local-mcp-developer-and-testing-guide.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261119-175-local-mcp-developer-and-testing-guide.md) |
 | **ADR-176** | Deployed Remote MCP Authentication, Stream Negotiation, and CLI Auto-Reconciliation | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261119-176-deployed-mcp-authentication-and-validation-guide.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261119-176-deployed-mcp-authentication-and-validation-guide.md) |
+| **ADR-177** | Azure DocumentDB (Free Tier) Persistence Provider & Tri-Database Data Migration Engine | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*

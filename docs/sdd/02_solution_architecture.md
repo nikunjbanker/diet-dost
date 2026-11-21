@@ -1154,3 +1154,29 @@ To prevent startup container crashes and primary key constraint collisions (`PK_
   - Only upon explicit human confirmation (`approved == "yes"`) is `ConfirmMealCommand` dispatched with `IsVerifiedByUser = true`.
 * **Auto-Detecting Agent Client (`Nutrition.AgentClient`)**:
   - Autonomous test runner that probes local Ollama (`llama3.2`) and seamlessly falls back to Google Gemini using Diet-Dost's existing configuration.
+
+---
+
+## 20. Azure DocumentDB (Free Tier) Persistence Engine & Tri-Database Data Migration Architecture (ADR-177)
+
+Per [ADR-20261121-177](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md) and [Azure DocumentDB Free Tier Specification](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DOCUMENTDB_AND_TRI_DATABASE_MIGRATION_PLAN.md), Diet-Dost establishes an authoritative Tri-Database persistence foundation:
+
+1. **Third Authoritative Database Provider (Azure DocumentDB Free Tier)**:
+   - **Capacity & Cost**: **32 GB Dedicated Storage** free for the lifetime of the Azure subscription ($0.00/month).
+   - **Dedicated vCore Architecture**: Operates on native MongoDB wire protocol (v6.0/7.0 compatible via `MongoDB.Driver` 3.14.0) with **zero Request Unit (RU/s) limits** and **zero RU throttling (HTTP 429 / code 16500)**.
+   - **Strict Service Distinction**: Completely separate from Azure Cosmos DB for MongoDB (no partition-key constraints or RU billing).
+   - **60-Day Inactivity Auto-Pause**: Pauses clusters after 60 days of complete inactivity. Inbound connections trigger auto-resume, hardened by Polly reconnection retry policies (`connectTimeoutMS=60000`).
+   - **Security**: Native SCRAM-SHA-256 credentials protected strictly in **Azure Key Vault** (`ConnectionStrings:DocumentDbConnection`); TLS 1.2+ encryption in transit.
+
+2. **Clean Architecture Persistence Abstraction**:
+   - `DocumentDbRepository<T>` implements `IRepository<T>` over `IMongoCollection<T>` with automatic soft-delete filtering (`e.IsDeleted == false`).
+   - `DocumentDbUnitOfWork` implements `IUnitOfWork`.
+   - `DocumentDbBsonMappings.Register()` guarantees exact BSON mapping for string GUIDs (`Id` $\leftrightarrow$ `_id`) and UTC DateTimes.
+
+3. **Tri-Database Data Migration Engine (`Nutrition.Tools.DataMigrator`)**:
+   - Supports pairwise and round-trip streaming across all three providers:
+     - `SQLite` $\longleftrightarrow$ `Azure SQL`
+     - `Azure SQL` $\longleftrightarrow$ `Azure DocumentDB`
+     - `SQLite` $\longleftrightarrow$ `Azure DocumentDB`
+   - Real-time Obsidian-dark ASCII console table and timestamped Markdown reports in `docs/migration-reports/`.
+
