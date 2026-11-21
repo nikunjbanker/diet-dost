@@ -7,6 +7,8 @@
  */
 using System.Globalization;
 using System.Text.Json;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
 
 namespace Nutrition.Tools.DataMigrator.Services;
 
@@ -45,6 +47,7 @@ public class DataConversionEngine
 {
     private static readonly HashSet<string> KnownJsonColumns = new(StringComparer.OrdinalIgnoreCase)
     {
+        "Items",
         "DiagnosedConditions",
         "Medications",
         "WhoComplianceFlags",
@@ -469,5 +472,231 @@ public class DataConversionEngine
         }
 
         return string.Empty;
+    }
+
+    /// <summary>
+    /// Converts a dictionary of tabular relational column values into a native BSON document
+    /// for insertion/upsert into Azure DocumentDB collections.
+    /// Maps primary key 'Id' (or 'Key' for AppSecret) to '_id'.
+    /// Deserializes JSON array strings into native BsonArray documents for richer querying.
+    /// </summary>
+    public BsonDocument ConvertToBsonDocument(
+        string tableName,
+        Dictionary<string, object?> row,
+        string rowKey,
+        TableConversionStats stats)
+    {
+        var doc = new BsonDocument();
+
+        // Determine primary key name for this table
+        var isAppSecret = tableName.Equals("AppSecrets", StringComparison.OrdinalIgnoreCase);
+        var pkName = isAppSecret ? "Key" : "Id";
+
+        foreach (var (colName, colVal) in row)
+        {
+            var isPk = colName.Equals(pkName, StringComparison.OrdinalIgnoreCase);
+            var targetPropName = isPk ? "_id" : colName;
+
+            if (colVal == null || colVal == DBNull.Value)
+            {
+                doc[targetPropName] = BsonNull.Value;
+                continue;
+            }
+
+            // 1. JSON Array / Document expansion
+            if (KnownJsonColumns.Contains(colName))
+            {
+                var jsonStr = colVal.ToString();
+                if (!string.IsNullOrWhiteSpace(jsonStr))
+                {
+                    var trimmed = jsonStr.Trim();
+                    if (trimmed.StartsWith('['))
+                    {
+                        try
+                        {
+                            var wrapped = BsonDocument.Parse($"{{\"_items\": {trimmed}}}");
+                            doc[targetPropName] = wrapped["_items"].AsBsonArray;
+                            continue;
+                        }
+                        catch
+                        {
+                            // fallback below
+                        }
+                    }
+                    else if (trimmed.StartsWith('{'))
+                    {
+                        try
+                        {
+                            var parsedBson = BsonDocument.Parse(trimmed);
+                            doc[targetPropName] = parsedBson;
+                            continue;
+                        }
+                        catch
+                        {
+                            // fallback below
+                        }
+                    }
+                }
+                var normalizedJson = ConvertToJson(colVal, tableName, colName, rowKey, stats);
+                try
+                {
+                    var trimmedNorm = normalizedJson.Trim();
+                    if (trimmedNorm.StartsWith('['))
+                    {
+                        var wrapped = BsonDocument.Parse($"{{\"_items\": {trimmedNorm}}}");
+                        doc[targetPropName] = wrapped["_items"].AsBsonArray;
+                    }
+                    else if (trimmedNorm.StartsWith('{'))
+                    {
+                        doc[targetPropName] = BsonDocument.Parse(trimmedNorm);
+                    }
+                    else
+                    {
+                        doc[targetPropName] = new BsonString(normalizedJson);
+                    }
+                }
+                catch
+                {
+                    doc[targetPropName] = new BsonString(normalizedJson);
+                }
+                continue;
+            }
+
+            // 2. Boolean Conversion
+            if (colVal is bool b)
+            {
+                doc[targetPropName] = BsonBoolean.Create(b);
+                continue;
+            }
+            if (colName.StartsWith("Is", StringComparison.OrdinalIgnoreCase) ||
+                colName.StartsWith("Has", StringComparison.OrdinalIgnoreCase) ||
+                colName.StartsWith("Allow", StringComparison.OrdinalIgnoreCase))
+            {
+                var convertedBool = ConvertToBoolean(colVal, tableName, colName, rowKey, stats);
+                doc[targetPropName] = BsonBoolean.Create(convertedBool);
+                continue;
+            }
+
+            // 3. DateTime Conversion
+            if (colVal is DateTime dt)
+            {
+                var utcDt = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
+                doc[targetPropName] = new BsonDateTime(utcDt);
+                continue;
+            }
+            if (colName.EndsWith("Utc", StringComparison.OrdinalIgnoreCase) ||
+                colName.EndsWith("Date", StringComparison.OrdinalIgnoreCase) ||
+                colName.EndsWith("At", StringComparison.OrdinalIgnoreCase))
+            {
+                var convertedDt = ConvertToDateTime(colVal, tableName, colName, isNullable: true, rowKey, stats);
+                if (convertedDt is DateTime validDt)
+                {
+                    var utcDt = validDt.Kind == DateTimeKind.Utc ? validDt : validDt.ToUniversalTime();
+                    doc[targetPropName] = new BsonDateTime(utcDt);
+                    continue;
+                }
+                doc[targetPropName] = BsonNull.Value;
+                continue;
+            }
+
+            // 4. Numeric Floats / Doubles
+            if (colVal is double d)
+            {
+                doc[targetPropName] = double.IsNaN(d) || double.IsInfinity(d) ? BsonDouble.Create(0.0) : BsonDouble.Create(d);
+                continue;
+            }
+            if (colVal is float f)
+            {
+                doc[targetPropName] = float.IsNaN(f) || float.IsInfinity(f) ? BsonDouble.Create(0.0) : BsonDouble.Create(f);
+                continue;
+            }
+            if (colVal is decimal dec)
+            {
+                doc[targetPropName] = BsonDouble.Create((double)dec);
+                continue;
+            }
+
+            // 5. Integers
+            if (colVal is int iVal)
+            {
+                doc[targetPropName] = BsonInt32.Create(iVal);
+                continue;
+            }
+            if (colVal is long lVal)
+            {
+                doc[targetPropName] = BsonInt64.Create(lVal);
+                continue;
+            }
+            if (colVal is short sVal)
+            {
+                doc[targetPropName] = BsonInt32.Create(sVal);
+                continue;
+            }
+            if (colVal is byte byteVal)
+            {
+                doc[targetPropName] = BsonInt32.Create(byteVal);
+                continue;
+            }
+
+            // Fallback: String representation
+            doc[targetPropName] = new BsonString(colVal.ToString() ?? string.Empty);
+        }
+
+        return doc;
+    }
+
+    /// <summary>
+    /// Converts a native BSON document extracted from Azure DocumentDB back into a tabular
+    /// relational dictionary suitable for writing into SQLite or Azure SQL.
+    /// Maps '_id' back to 'Id' (or 'Key' for AppSecret) and serializes BSON arrays back to JSON strings.
+    /// </summary>
+    public Dictionary<string, object?> ConvertFromBsonDocument(string tableName, BsonDocument doc)
+    {
+        var row = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        var isAppSecret = tableName.Equals("AppSecrets", StringComparison.OrdinalIgnoreCase);
+        var targetPkName = isAppSecret ? "Key" : "Id";
+
+        foreach (var element in doc.Elements)
+        {
+            var colName = element.Name.Equals("_id", StringComparison.OrdinalIgnoreCase)
+                ? targetPkName
+                : element.Name;
+
+            var val = element.Value;
+            if (val.IsBsonNull)
+            {
+                row[colName] = null;
+            }
+            else if (val.IsBsonDateTime)
+            {
+                row[colName] = val.ToUniversalTime();
+            }
+            else if (val.IsBoolean)
+            {
+                row[colName] = val.AsBoolean;
+            }
+            else if (val.IsInt32)
+            {
+                row[colName] = val.AsInt32;
+            }
+            else if (val.IsInt64)
+            {
+                row[colName] = val.AsInt64;
+            }
+            else if (val.IsDouble)
+            {
+                row[colName] = val.AsDouble;
+            }
+            else if (val.IsBsonArray || val.IsBsonDocument)
+            {
+                row[colName] = val.ToJson();
+            }
+            else
+            {
+                row[colName] = val.AsString;
+            }
+        }
+
+        return row;
     }
 }

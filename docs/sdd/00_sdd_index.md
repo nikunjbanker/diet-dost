@@ -97,6 +97,7 @@ The solution adheres to Domain-Driven Design (DDD) bounded contexts, zero-assump
 | **Azure Key Vault Purge Protection** | SDD §04, ADR-081 | Complete (Purge protection, Sole Authority `@nikunjbanker`, Managed Identity ACR pull) | Infrastructure Audit Passed |
 | **Subsystem Domain ADR Hierarchy & Index** | SDD §07, ADR-083 | Complete (5 domain directories, `index.json` ~4 KB, `scripts/sync-adr-index.ps1`) | 100% Automated Sync |
 | **Agentic MCP Workflows & Developer Guide** | SDD §11, ADR-172 | Complete ([`LOCAL_MCP_TESTING_AND_DEVELOPMENT_GUIDE.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/LOCAL_MCP_TESTING_AND_DEVELOPMENT_GUIDE.md), Dual HTTP/Stdio transport) | 100% Tested & Verified |
+| **Azure DocumentDB (Free Tier) & Tri-DB Migration** | [`docs/AZURE_DOCUMENTDB_AND_TRI_DATABASE_MIGRATION_PLAN.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/AZURE_DOCUMENTDB_AND_TRI_DATABASE_MIGRATION_PLAN.md), ADR-177 | Complete (32 GB Free Tier, dedicated vCore, 60d pause handling, pairwise migration) | Specification & Living SDD Verified |
 
 ---
 

@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-19T11:56:59.617766+00:00",
-  "totalAdrs": 142,
+  "generatedAt": "2026-11-21T06:37:26.303271+00:00",
+  "totalAdrs": 143,
   "categoryCounts": {
-    "architecture": 47,
+    "architecture": 48,
     "security": 26,
     "devops": 35,
     "presentation": 21,
@@ -1713,6 +1713,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261119-176-deployed-mcp-authentication-and-validation-guide.md",
       "relativePath": "docs/adr/architecture/ADR-20261119-176-deployed-mcp-authentication-and-validation-guide.md"
+    },
+    {
+      "id": "ADR-177",
+      "number": 177,
+      "title": "Azure DocumentDB (Free Tier) Persistence Provider & Tri-Database Data Migration Engine",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-21T11:28:00+05:30",
+      "subsystem": "WebGateway | Application | Infrastructure | Tools.DataMigrator | EvalHarness.Tests",
+      "filename": "ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md",
+      "relativePath": "docs/adr/architecture/ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md"
     }
   ]
 }
