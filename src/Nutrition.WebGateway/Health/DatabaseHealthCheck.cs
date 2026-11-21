@@ -6,21 +6,32 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Nutrition.Infrastructure.Persistence;
 
 namespace Nutrition.WebGateway.Health;
 
 /// <summary>
 /// Health check that verifies database connectivity and schema readiness.
+/// Supports SQLite, Azure SQL, and Azure DocumentDB (Free Tier).
 /// </summary>
 public class DatabaseHealthCheck : IHealthCheck
 {
     private readonly DietTrackerDbContext _dbContext;
+    private readonly IMongoDatabase? _mongoDatabase;
 
     public DatabaseHealthCheck(DietTrackerDbContext dbContext)
+        : this(dbContext, null)
+    {
+    }
+
+    public DatabaseHealthCheck(DietTrackerDbContext dbContext, IServiceProvider? serviceProvider)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _mongoDatabase = serviceProvider?.GetService<IMongoDatabase>();
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
@@ -29,6 +40,20 @@ public class DatabaseHealthCheck : IHealthCheck
     {
         try
         {
+            if (_mongoDatabase != null)
+            {
+                var pingCmd = new BsonDocument("ping", 1);
+                await _mongoDatabase.RunCommandAsync<BsonDocument>(pingCmd, cancellationToken: cancellationToken);
+                var docDbData = new Dictionary<string, object>
+                {
+                    ["provider"] = "DocumentDb",
+                    ["database"] = _mongoDatabase.DatabaseNamespace.DatabaseName,
+                    ["isDocumentDb"] = true
+                };
+
+                return HealthCheckResult.Healthy($"Azure DocumentDB is connected and ready (Database: {_mongoDatabase.DatabaseNamespace.DatabaseName}).", docDbData);
+            }
+
             var canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);
             if (canConnect)
             {

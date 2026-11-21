@@ -9,6 +9,8 @@ using System.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Polly;
 using Polly.Retry;
 using Nutrition.Application.Common;
@@ -43,10 +45,17 @@ public static partial class DatabaseInitializationExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         using var scope = app.ApplicationServices.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseInitialization");
-
         var appEnv = scope.ServiceProvider.GetRequiredService<Nutrition.Application.Common.Interfaces.IAppEnvironment>();
+
+        var mongoDatabase = scope.ServiceProvider.GetService<MongoDB.Driver.IMongoDatabase>();
+        if (mongoDatabase != null)
+        {
+            await EnsureDocumentDbCreatedAndMigratedAsync(mongoDatabase, scope.ServiceProvider, configuration, appEnv, logger);
+            return;
+        }
+
+        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
 
         try
         {
@@ -1771,6 +1780,549 @@ public static partial class DatabaseInitializationExtensions
         catch (Exception ex)
         {
             logger.LogWarning(ex, "[STORAGE] Non-fatal warning while mirroring seed media assets to persistent volume.");
+        }
+    }
+
+    public static async Task EnsureDocumentDbCreatedAndMigratedAsync(
+        IMongoDatabase mongoDatabase,
+        IServiceProvider serviceProvider,
+        IConfiguration configuration,
+        IAppEnvironment appEnv,
+        ILogger logger)
+    {
+        var docDbRetryPipeline = new ResiliencePipelineBuilder()
+            .AddRetry(new RetryStrategyOptions
+            {
+                ShouldHandle = new PredicateBuilder()
+                    .Handle<MongoConnectionException>()
+                    .Handle<TimeoutException>(),
+                MaxRetryAttempts = 6,
+                BackoffType = DelayBackoffType.Constant,
+                Delay = TimeSpan.FromSeconds(10),
+                OnRetry = args =>
+                {
+                    if (logger.IsEnabled(LogLevel.Warning))
+                    {
+                        var attempt = args.AttemptNumber + 1;
+                        var delaySeconds = (int)args.RetryDelay.TotalSeconds;
+                        logger.LogWarning(args.Outcome.Exception, "[WARMUP] Azure DocumentDB Free Tier is auto-resuming from pause (attempt {Attempt}/6). Waiting {DelaySeconds}s for cluster to become online...", attempt, delaySeconds);
+                    }
+                    return ValueTask.CompletedTask;
+                }
+            })
+            .Build();
+
+        await docDbRetryPipeline.ExecuteAsync(async _ =>
+        {
+            var pingCmd = new BsonDocument("ping", 1);
+            await mongoDatabase.RunCommandAsync<BsonDocument>(pingCmd);
+        });
+
+        await EnsureDocumentDbIndexesAsync(mongoDatabase, logger);
+        await SeedDocumentDbAppSecretsAsync(mongoDatabase, configuration, appEnv, logger);
+        await SeedDocumentDbTierConfigurationsAsync(mongoDatabase, logger);
+        await EnsureDocumentDbSuperAdminAsync(mongoDatabase, serviceProvider, configuration, logger);
+
+        if (appEnv.AllowsDemoUsers)
+        {
+            await SeedDocumentDbDemoUsersAsync(mongoDatabase, serviceProvider, configuration, appEnv, logger);
+        }
+        else
+        {
+            logger.LogWarning("[SECURITY] Release mode or non-Development environment detected. Demo user seeding skipped in Azure DocumentDB.");
+        }
+
+        EnsureSeedMediaAssetsMirrored(serviceProvider, logger);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Azure DocumentDB collections and indexes verified and initialized successfully with 0 errors (Database: '{DatabaseName}').", mongoDatabase.DatabaseNamespace.DatabaseName);
+        }
+    }
+
+    private static async Task EnsureDocumentDbIndexesAsync(IMongoDatabase mongoDb, ILogger logger)
+    {
+        try
+        {
+            var usersCol = mongoDb.GetCollection<ApplicationUser>("users");
+            var usersIndexBuilder = Builders<ApplicationUser>.IndexKeys;
+            await usersCol.Indexes.CreateManyAsync(new[]
+            {
+                new CreateIndexModel<ApplicationUser>(
+                    usersIndexBuilder.Ascending(u => u.NormalizedEmail),
+                    new CreateIndexOptions { Unique = true, Sparse = true }),
+                new CreateIndexModel<ApplicationUser>(
+                    usersIndexBuilder.Ascending(u => u.NormalizedMobileNumber),
+                    new CreateIndexOptions { Sparse = true }),
+                new CreateIndexModel<ApplicationUser>(
+                    usersIndexBuilder.Ascending(u => u.RecoveryLookupId),
+                    new CreateIndexOptions { Sparse = true })
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "[INDEX] Azure DocumentDB users index check completed.");
+        }
+
+        try
+        {
+            var mealsCol = mongoDb.GetCollection<MealLog>("meals");
+            var mealsIndexBuilder = Builders<MealLog>.IndexKeys;
+            await mealsCol.Indexes.CreateManyAsync(new[]
+            {
+                new CreateIndexModel<MealLog>(mealsIndexBuilder.Ascending(m => m.UserId)),
+                new CreateIndexModel<MealLog>(mealsIndexBuilder.Ascending(m => m.UserId).Descending(m => m.LoggedAt))
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "[INDEX] Azure DocumentDB meals index check completed.");
+        }
+
+        try
+        {
+            var tierCol = mongoDb.GetCollection<TierFeatureConfiguration>("tier_configurations");
+            var tierIndexBuilder = Builders<TierFeatureConfiguration>.IndexKeys;
+            await tierCol.Indexes.CreateOneAsync(
+                new CreateIndexModel<TierFeatureConfiguration>(
+                    tierIndexBuilder.Ascending(t => t.Tier),
+                    new CreateIndexOptions { Unique = true }));
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "[INDEX] Azure DocumentDB tier_configurations index check completed.");
+        }
+    }
+
+    private static async Task SeedDocumentDbAppSecretsAsync(
+        IMongoDatabase mongoDatabase,
+        IConfiguration configuration,
+        IAppEnvironment appEnv,
+        ILogger logger)
+    {
+        if (!appEnv.IsDevelopment)
+        {
+            return;
+        }
+
+        var secretsCol = mongoDatabase.GetCollection<AppSecret>("app_secrets");
+        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
+        var aiOptions = configuration.GetSection(AiOptions.SectionName).Get<AiOptions>() ?? new AiOptions();
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+
+        var devJwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
+            ? jwtOptions.Key
+            : "DietDost_SecretKey_For_Jwt_HMAC_SHA256_Authentication_2026_Minimum32BytesRequired!";
+
+        var defaultSecrets = new List<(string Key, string FallbackValue, string Description)>
+        {
+            ("Jwt:Key", devJwtKey, "Cryptographic signing key for JWT HMAC-SHA256 tokens (Development Only)"),
+            ("AI:GoogleAI:ApiKey", aiOptions.GoogleAI?.ApiKey ?? string.Empty, "Google Gemini Vision API Key"),
+            ("AI:AzureOpenAI:ApiKey", aiOptions.AzureOpenAI?.ApiKey ?? string.Empty, "Azure OpenAI API Key")
+        };
+
+        if (appEnv.AllowsDemoUsers)
+        {
+            defaultSecrets.Add(("Auth:DemoPassword", authOptions.DemoPassword, "Deterministic password for seeded demo tier accounts (Debug/Dev only)"));
+        }
+
+        foreach (var (key, fallbackValue, description) in defaultSecrets)
+        {
+            var existing = await secretsCol.Find(s => s.Key == key).FirstOrDefaultAsync();
+            if (existing == null)
+            {
+                await secretsCol.InsertOneAsync(new AppSecret
+                {
+                    Key = key,
+                    Value = fallbackValue,
+                    Description = description,
+                    CreatedAtUtc = DateTime.UtcNow,
+                    UpdatedAtUtc = DateTime.UtcNow
+                });
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("Seeded secret into Azure DocumentDB app_secrets: {Key}", key);
+                }
+            }
+        }
+    }
+
+    private static async Task SeedDocumentDbTierConfigurationsAsync(IMongoDatabase mongoDb, ILogger logger)
+    {
+        var tierCol = mongoDb.GetCollection<TierFeatureConfiguration>("tier_configurations");
+        var count = await tierCol.CountDocumentsAsync(FilterDefinition<TierFeatureConfiguration>.Empty);
+        if (count == 0)
+        {
+            var defaultConfigs = TierFeatureConfiguration.GetDefaultConfigurations();
+            await tierCol.InsertManyAsync(defaultConfigs);
+            logger.LogInformation("Default tier configurations seeded successfully into Azure DocumentDB.");
+        }
+    }
+
+    private static async Task EnsureDocumentDbSuperAdminAsync(
+        IMongoDatabase mongoDb,
+        IServiceProvider serviceProvider,
+        IConfiguration configuration,
+        ILogger logger)
+    {
+        var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+        var primarySuperAdminEmail = !string.IsNullOrWhiteSpace(authOptions.SuperAdminEmail)
+            ? authOptions.SuperAdminEmail.Trim()
+            : (!string.IsNullOrWhiteSpace(configuration["SUPER_ADMIN_EMAIL"])
+                ? configuration["SUPER_ADMIN_EMAIL"]!.Trim()
+                : "nikunj_banker@hotmail.com");
+
+        var superAdminPassword = !string.IsNullOrWhiteSpace(authOptions.SuperAdminPassword)
+            ? authOptions.SuperAdminPassword
+            : (!string.IsNullOrWhiteSpace(configuration["SUPER_ADMIN_PASSWORD"])
+                ? configuration["SUPER_ADMIN_PASSWORD"]!
+                : (!string.IsNullOrWhiteSpace(authOptions.DemoPassword)
+                    ? authOptions.DemoPassword
+                    : "DietDost@Demo2026!"));
+
+        var normalizedEmail = ApplicationUser.NormalizeEmailAddress(primarySuperAdminEmail);
+        var usersCol = mongoDb.GetCollection<ApplicationUser>("users");
+        var existing = await usersCol.Find(u => u.NormalizedEmail == normalizedEmail || u.Id == "superadmin-root").FirstOrDefaultAsync();
+
+        if (existing == null)
+        {
+            var superAdmin = new ApplicationUser
+            {
+                Id = "superadmin-root",
+                Email = primarySuperAdminEmail,
+                NormalizedEmail = normalizedEmail,
+                MobileNumber = "+919999999990",
+                NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber("+919999999990"),
+                PasswordHash = passwordHasher.HashPassword(superAdminPassword),
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                Role = UserRole.SuperAdmin,
+                Tier = UserTier.SuperAdmin,
+                IsEmailVerified = true,
+                IsMobileVerified = true,
+                IsActive = true,
+                IsOnboarded = true,
+                TermsAcceptedAtUtc = DateTime.UtcNow,
+                TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
+                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                HealthConsentVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.HealthConsentVersion) ? authOptions.HealthConsentVersion : "v1.0-202609",
+                ConsentIpAddress = "127.0.0.1",
+                ConsentUserAgent = "SystemBootstrap",
+                CreatedAtUtc = DateTime.UtcNow
+            };
+            await usersCol.InsertOneAsync(superAdmin);
+
+            var profilesCol = mongoDb.GetCollection<UserProfile>("user_profiles");
+            var profile = new UserProfile
+            {
+                Id = superAdmin.Id,
+                Name = "System SuperAdmin",
+                Sex = BiologicalSex.Male,
+                Age = 35,
+                HeightCm = 175,
+                CurrentWeightKg = 75,
+                TargetWeightKg = 72,
+                DesiredPaceKgPerWeek = 0.5,
+                ActivityLevel = ActivityLevel.Moderate,
+                DietaryPreference = DietaryPreference.LactoVeg,
+                RegionalCuisine = "Gujarati",
+                Timezone = "Asia/Kolkata",
+                DiagnosedConditions = new List<string>(),
+                Medications = new List<MedicationEntry>(),
+                IsOnboarded = true
+            };
+            await profilesCol.InsertOneAsync(profile);
+
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("[SECURITY] Created root SuperAdmin account in Azure DocumentDB for {Email}.", superAdmin.Email);
+            }
+        }
+    }
+
+    private static async Task SeedDocumentDbDemoUsersAsync(
+        IMongoDatabase mongoDb,
+        IServiceProvider serviceProvider,
+        IConfiguration configuration,
+        IAppEnvironment appEnv,
+        ILogger logger)
+    {
+        var passwordHasher = serviceProvider.GetRequiredService<IPasswordHasher>();
+        var dietitian = serviceProvider.GetRequiredService<ClinicalDietitianService>();
+        var authOptions = configuration.GetSection(AuthOptions.SectionName).Get<AuthOptions>() ?? new AuthOptions();
+
+        var demoSpecs = new List<DemoUserSpec>
+        {
+            new(
+                Id: "user-free",
+                Email: "free@dietdost.app",
+                Name: "Free Tier User (Demo)",
+                Mobile: "+919876500001",
+                Role: UserRole.User,
+                Tier: UserTier.Free,
+                Cuisine: "North Indian",
+                Conditions: new List<string>(),
+                Medications: new List<MedicationEntry>()
+            ),
+            new(
+                Id: "user-basic",
+                Email: "basic@dietdost.app",
+                Name: "Basic Tier User (Demo)",
+                Mobile: "+919876500002",
+                Role: UserRole.User,
+                Tier: UserTier.Basic,
+                Cuisine: "South Indian",
+                Conditions: new List<string> { "Hypertension" },
+                Medications: new List<MedicationEntry>
+                {
+                    new() { DrugName = "Telmisartan 40mg", Dosage = "40mg", Frequency = "Morning" }
+                }
+            ),
+            new(
+                Id: "user-premium",
+                Email: "premium@dietdost.app",
+                Name: "Premium Tier User (Demo)",
+                Mobile: "+919876500003",
+                Role: UserRole.User,
+                Tier: UserTier.Premium,
+                Cuisine: "Gujarati",
+                Conditions: new List<string> { "Pre-Diabetes" },
+                Medications: new List<MedicationEntry>
+                {
+                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                }
+            )
+        };
+
+        if (appEnv.AllowsAdminDemoUsers)
+        {
+            demoSpecs.Add(new(
+                Id: "user-admin",
+                Email: "admin.demo@dietdost.app",
+                Name: "Admin Tier User (Demo)",
+                Mobile: "+919876500004",
+                Role: UserRole.Admin,
+                Tier: UserTier.Premium,
+                Cuisine: "Maharashtrian",
+                Conditions: new List<string>(),
+                Medications: new List<MedicationEntry>()
+            ));
+
+            demoSpecs.Add(new(
+                Id: "user-superadmin-demo",
+                Email: "superadmin@dietdost.app",
+                Name: "SuperAdmin Tier User (Demo)",
+                Mobile: "+919999999999",
+                Role: UserRole.SuperAdmin,
+                Tier: UserTier.SuperAdmin,
+                Cuisine: "North Indian",
+                Conditions: new List<string> { "Pre-Diabetes" },
+                Medications: new List<MedicationEntry>
+                {
+                    new() { DrugName = "Metformin 500mg", Dosage = "500mg", Frequency = "With Dinner" }
+                }
+            ));
+        }
+
+        var demoPassword = !string.IsNullOrWhiteSpace(authOptions.DemoPassword)
+            ? authOptions.DemoPassword
+            : "DietDost@Demo2026!";
+
+        var usersCol = mongoDb.GetCollection<ApplicationUser>("users");
+        var profilesCol = mongoDb.GetCollection<UserProfile>("user_profiles");
+        var mealsCol = mongoDb.GetCollection<MealLog>("meals");
+
+        var userTz = ClinicalDietitianService.GetUserTimeZoneInfo("Asia/Kolkata");
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, userTz));
+
+        foreach (var spec in demoSpecs)
+        {
+            var normEmail = ApplicationUser.NormalizeEmailAddress(spec.Email);
+            var user = await usersCol.Find(u => u.NormalizedEmail == normEmail || u.Id == spec.Id).FirstOrDefaultAsync();
+
+            if (user == null)
+            {
+                user = new ApplicationUser
+                {
+                    Id = spec.Id,
+                    Email = spec.Email,
+                    NormalizedEmail = normEmail,
+                    MobileNumber = spec.Mobile,
+                    NormalizedMobileNumber = ApplicationUser.NormalizePhoneNumber(spec.Mobile),
+                    PasswordHash = passwordHasher.HashPassword(demoPassword),
+                    SecurityStamp = Guid.NewGuid().ToString("N"),
+                    Role = spec.Role,
+                    Tier = spec.Tier,
+                    IsEmailVerified = true,
+                    IsMobileVerified = true,
+                    IsActive = true,
+                    IsOnboarded = true,
+                    TermsAcceptedAtUtc = DateTime.UtcNow,
+                    TermsVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.TermsVersion) ? authOptions.TermsVersion : "v1.0-202609",
+                    HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                    HealthConsentVersionAccepted = !string.IsNullOrWhiteSpace(authOptions.HealthConsentVersion) ? authOptions.HealthConsentVersion : "v1.0-202609",
+                    ConsentIpAddress = "127.0.0.1",
+                    ConsentUserAgent = "SystemBootstrap",
+                    CreatedAtUtc = DateTime.UtcNow
+                };
+                await usersCol.InsertOneAsync(user);
+            }
+            else
+            {
+                var update = Builders<ApplicationUser>.Update
+                    .Set(u => u.PasswordHash, passwordHasher.HashPassword(demoPassword))
+                    .Set(u => u.Role, spec.Role)
+                    .Set(u => u.Tier, spec.Tier)
+                    .Set(u => u.IsActive, true)
+                    .Set(u => u.IsOnboarded, true)
+                    .Set(u => u.IsDeleted, false)
+                    .Set(u => u.DeletedAtUtc, null);
+                await usersCol.UpdateOneAsync(u => u.Id == user.Id, update);
+            }
+
+            var profile = await profilesCol.Find(p => p.Id == user.Id).FirstOrDefaultAsync();
+            if (profile == null)
+            {
+                profile = new UserProfile
+                {
+                    Id = user.Id,
+                    Name = spec.Name,
+                    Sex = BiologicalSex.Male,
+                    Age = 32,
+                    HeightCm = 175,
+                    CurrentWeightKg = 80,
+                    TargetWeightKg = 72,
+                    DesiredPaceKgPerWeek = 0.5,
+                    ActivityLevel = ActivityLevel.Sedentary,
+                    DietaryPreference = DietaryPreference.LactoVeg,
+                    RegionalCuisine = spec.Cuisine,
+                    Timezone = "Asia/Kolkata",
+                    DiagnosedConditions = spec.Conditions,
+                    Medications = spec.Medications,
+                    IsOnboarded = true
+                };
+                await profilesCol.InsertOneAsync(profile);
+            }
+
+            await dietitian.GetOrCreateDailyLedgerAsync(user.Id, today);
+        }
+
+        // Seed sample meals for user-free
+        var freeUserMealCount = await mealsCol.CountDocumentsAsync(m => m.UserId == "user-free");
+        if (freeUserMealCount == 0)
+        {
+            var now = DateTime.UtcNow;
+            var sampleMeals = new List<MealLog>
+            {
+                new()
+                {
+                    UserId = "user-free",
+                    LoggedAt = now.AddHours(-3),
+                    MealType = MealType.Lunch,
+                    DishName = "North Indian Thali (Phulkas, Dal & Bhindi Masala)",
+                    PhotoUri = "/uploads/meals/sample_lunch_thali.jpg",
+                    OverallConfidenceScore = 0.96,
+                    IsVerifiedByUser = true,
+                    DietitianAdvice = "Balanced meal with adequate protein and high-fiber okra. Great portion control under 550 kcal.",
+                    Items = new List<FoodItemRecord>
+                    {
+                        new() { Name = "Whole Wheat Roti", HindiOrRegionalName = "Phulka / Roti", EstimatedPortion = "2 Phulkas", Quantity = 2, Grams = 60, Calories = 70, ProteinGrams = 2.2, CarbsGrams = 15.0, FatGrams = 0.4, FiberGrams = 2.2, SugarGrams = 0.25, SodiumMg = 5 },
+                        new() { Name = "Yellow Moong Dal Tadka", HindiOrRegionalName = "Moong Dal Fry", EstimatedPortion = "1 Katori", Quantity = 1, Grams = 150, Calories = 135, ProteinGrams = 7.2, CarbsGrams = 19.0, FatGrams = 4.5, FiberGrams = 5.2, SugarGrams = 0.8, SodiumMg = 320 },
+                        new() { Name = "Bhindi Masala (Okra Subzi)", HindiOrRegionalName = "Bhindi ki Sabzi", EstimatedPortion = "1 Katori", Quantity = 1, Grams = 120, Calories = 115, ProteinGrams = 2.8, CarbsGrams = 9.5, FatGrams = 7.2, FiberGrams = 4.8, SugarGrams = 1.5, SodiumMg = 180 },
+                        new() { Name = "Green Salad (Cucumber & Tomato)", HindiOrRegionalName = "Kachumber Salad", EstimatedPortion = "1 Plate", Quantity = 1, Grams = 100, Calories = 30, ProteinGrams = 1.0, CarbsGrams = 6.0, FatGrams = 0.2, FiberGrams = 0.8, SugarGrams = 5.9, SodiumMg = 20 }
+                    }
+                },
+                new()
+                {
+                    UserId = "user-free",
+                    LoggedAt = now.AddHours(-7),
+                    MealType = MealType.Breakfast,
+                    DishName = "Kanda Poha with Roasted Peanuts",
+                    OverallConfidenceScore = 0.92,
+                    IsVerifiedByUser = true,
+                    DietitianAdvice = "Wholesome complex carbs. Peanuts provide good monounsaturated fats.",
+                    Items = new List<FoodItemRecord>
+                    {
+                        new() { Name = "Kanda Poha", HindiOrRegionalName = "Poha", EstimatedPortion = "1 Plate (150g)", Quantity = 1, Grams = 150, Calories = 220, ProteinGrams = 4.5, CarbsGrams = 38.0, FatGrams = 5.5, FiberGrams = 3.2, SugarGrams = 1.8, SodiumMg = 260 },
+                        new() { Name = "Roasted Peanuts", HindiOrRegionalName = "Moongphali", EstimatedPortion = "1 Tbsp (15g)", Quantity = 1, Grams = 15, Calories = 85, ProteinGrams = 3.8, CarbsGrams = 2.4, FatGrams = 7.2, FiberGrams = 1.2, SugarGrams = 0.6, SodiumMg = 10 },
+                        new() { Name = "Masala Chai (Low Sugar)", HindiOrRegionalName = "Chai", EstimatedPortion = "1 Cup (120ml)", Quantity = 1, Grams = 120, Calories = 65, ProteinGrams = 2.2, CarbsGrams = 8.5, FatGrams = 2.4, FiberGrams = 0.0, SugarGrams = 5.0, SodiumMg = 40 }
+                    }
+                }
+            };
+
+            foreach (var meal in sampleMeals)
+            {
+                meal.RecalculateTotals();
+            }
+
+            await mealsCol.InsertManyAsync(sampleMeals);
+        }
+
+        // Seed demo anonymous zero-PII user
+        var demoMnemonic = "suspect vintage animal morning require leader genre youth very home trust jump";
+        Bip39Mnemonic.ValidateMnemonic(demoMnemonic, out var masterEntropy);
+        var derivedLookupId = RecoveryKit.DeriveLookupId(masterEntropy);
+        var derivedSaltBytes = Convert.FromHexString(string.Concat("a1b2c3d4", "e5f67890", "12345678", "9abcdef0"));
+        var derivedHashHex = RecoveryKit.ComputeKeyHash(masterEntropy, derivedSaltBytes);
+        var derivedSaltHex = Convert.ToHexString(derivedSaltBytes).ToLowerInvariant();
+
+        var existingAnon = await usersCol.Find(u => u.Id == "usr_87c369c1e3f8" || u.RecoveryLookupId == derivedLookupId).FirstOrDefaultAsync();
+        if (existingAnon == null)
+        {
+            var anonUser = new ApplicationUser
+            {
+                Id = "usr_87c369c1e3f8",
+                Email = "usr_87c369c1e3f8@dietdost.local",
+                NormalizedEmail = "USR_87C369C1E3F8@DIETDOST.LOCAL",
+                DisplayName = "Nikunj QR",
+                MobileNumber = "ANONYMOUS",
+                NormalizedMobileNumber = "ANONYMOUS",
+                IsAnonymous = true,
+                Role = UserRole.User,
+                Tier = UserTier.Free,
+                IsEmailVerified = true,
+                IsMobileVerified = false,
+                PasswordHash = "ANONYMOUS_NO_PASSWORD",
+                SecurityStamp = Guid.NewGuid().ToString("N"),
+                CreatedAtUtc = DateTime.UtcNow,
+                TermsAcceptedAtUtc = DateTime.UtcNow,
+                TermsVersionAccepted = "v1.0-202609",
+                HealthConsentAcceptedAtUtc = DateTime.UtcNow,
+                HealthConsentVersionAccepted = "v1.0-202609",
+                ConsentIpAddress = "127.0.0.1",
+                ConsentUserAgent = "DietDost-Seed/1.0",
+                RecoveryLookupId = derivedLookupId,
+                RecoverySalt = derivedSaltHex,
+                RecoveryKeyHash = derivedHashHex,
+                RecoveryKeyCreatedAtUtc = DateTime.UtcNow,
+                IsOnboarded = true
+            };
+            await usersCol.InsertOneAsync(anonUser);
+
+            var anonProfile = await profilesCol.Find(p => p.Id == anonUser.Id).FirstOrDefaultAsync();
+            if (anonProfile == null)
+            {
+                anonProfile = new UserProfile
+                {
+                    Id = anonUser.Id,
+                    Name = "Nikunj QR",
+                    Sex = BiologicalSex.Male,
+                    Age = 35,
+                    HeightCm = 175,
+                    CurrentWeightKg = 78.0,
+                    TargetWeightKg = 72.0,
+                    DesiredPaceKgPerWeek = 0.5,
+                    ActivityLevel = ActivityLevel.Sedentary,
+                    DietaryPreference = DietaryPreference.LactoVeg,
+                    RegionalCuisine = "Gujarati",
+                    Timezone = "Asia/Kolkata",
+                    DiagnosedConditions = new List<string>(),
+                    Medications = new List<MedicationEntry>(),
+                    IsOnboarded = true
+                };
+                await profilesCol.InsertOneAsync(anonProfile);
+            }
+            logger.LogInformation("[SEED] Seeded demo zero-PII user 'usr_87c369c1e3f8' in Azure DocumentDB.");
         }
     }
 }

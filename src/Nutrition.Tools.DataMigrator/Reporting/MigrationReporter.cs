@@ -26,7 +26,7 @@ public class MigrationReporter
     {
         Console.WriteLine();
         Console.WriteLine("===============================================================================================================");
-        Console.WriteLine("  DIET-DOST DATA MIGRATION ENGINE : SQLITE -> AZURE SQL REPORT");
+        Console.WriteLine("  DIET-DOST TRI-DATABASE MIGRATION ENGINE REPORT");
         Console.WriteLine("===============================================================================================================");
         Console.WriteLine($"  Source SQLite File:    {summary.SourceDbPath}");
         Console.WriteLine($"  Target Database:       {summary.TargetDatabaseName}");

@@ -1172,6 +1172,7 @@ Per [ADR-20261121-177](file:///c:/Users/nikunj.banker/source/repos/diet-dost/doc
    - `DocumentDbRepository<T>` implements `IRepository<T>` over `IMongoCollection<T>` with automatic soft-delete filtering (`e.IsDeleted == false`).
    - `DocumentDbUnitOfWork` implements `IUnitOfWork`.
    - `DocumentDbBsonMappings.Register()` guarantees exact BSON mapping for string GUIDs (`Id` $\leftrightarrow$ `_id`) and UTC DateTimes.
+   - `DatabaseOptions.Provider` supports values `"DocumentDb"`, `"DocumentDB"`, `"MongoDb"`, `"Sqlite"`, and `"AzureSql"`. Automated health check via `DatabaseHealthCheck` issues `{ ping: 1 }` against the configured cluster.
 
 3. **Tri-Database Data Migration Engine (`Nutrition.Tools.DataMigrator`)**:
    - Supports pairwise and round-trip streaming across all three providers:
