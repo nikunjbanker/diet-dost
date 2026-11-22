@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-22T12:02:07.670506+00:00",
-  "totalAdrs": 146,
+  "generatedAt": "2026-11-22T22:24:27.262678+00:00",
+  "totalAdrs": 147,
   "categoryCounts": {
     "architecture": 48,
     "security": 27,
-    "devops": 37,
+    "devops": 38,
     "presentation": 21,
     "governance": 13
   },
@@ -1761,6 +1761,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261122-181-azure-documentdb-arm-schema-sharding-and-high-availability.md",
       "relativePath": "docs/adr/devops/ADR-20261122-181-azure-documentdb-arm-schema-sharding-and-high-availability.md"
+    },
+    {
+      "id": "ADR-182",
+      "number": 182,
+      "title": "Tri-Database DataMigrator CLI Harmonization and Dynamic Reporting",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-22",
+      "subsystem": "Devops",
+      "filename": "ADR-20261122-182-datamigrator-cli-harmonization-and-dynamic-reporting.md",
+      "relativePath": "docs/adr/devops/ADR-20261122-182-datamigrator-cli-harmonization-and-dynamic-reporting.md"
     }
   ]
 }

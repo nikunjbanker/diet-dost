@@ -7,6 +7,7 @@
  */
 using System.Diagnostics;
 using Microsoft.Data.SqlClient;
+using Nutrition.Tools.DataMigrator.Configuration;
 using Nutrition.Tools.DataMigrator.Reporting;
 using Nutrition.Tools.DataMigrator.Services;
 
@@ -17,6 +18,15 @@ public enum DatabaseEngineType
     Sqlite,
     AzureSql,
     DocumentDb
+}
+
+public enum MigrationMode
+{
+    Upsert,
+    CleanInsert,
+    SkipExisting,
+    InsertOnly = SkipExisting,
+    TruncateTarget = CleanInsert
 }
 
 public static class Program
@@ -50,66 +60,16 @@ public static class Program
                                                                           /___/                          
         ");
 
-        var parsed = ParseCommandLineArgs(args);
+        var parsed = MigrationCommandLineParser.Parse(args);
         if (parsed.ShowHelp)
         {
             PrintHelp();
             return 0;
         }
 
-        // Resolve source settings
         var sourceType = parsed.SourceType;
-        var sourcePathOrConn = parsed.Source;
-
-        if (string.IsNullOrWhiteSpace(sourcePathOrConn))
-        {
-            if (sourceType == DatabaseEngineType.Sqlite)
-            {
-                sourcePathOrConn = parsed.SqlitePath;
-                if (string.IsNullOrWhiteSpace(sourcePathOrConn))
-                {
-                    sourcePathOrConn = Path.Combine(Directory.GetCurrentDirectory(), "src", "Nutrition.WebGateway", "diettracker.db");
-                    if (!File.Exists(sourcePathOrConn))
-                    {
-                        sourcePathOrConn = Path.Combine(Directory.GetCurrentDirectory(), "diettracker.db");
-                    }
-                }
-            }
-            else if (sourceType == DatabaseEngineType.AzureSql)
-            {
-                sourcePathOrConn = parsed.AzureSqlConn
-                                   ?? Environment.GetEnvironmentVariable("SOURCE_AZURE_SQL_CONNECTION_STRING")
-                                   ?? Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING");
-            }
-            else if (sourceType == DatabaseEngineType.DocumentDb)
-            {
-                sourcePathOrConn = parsed.DocumentDbConn
-                                   ?? Environment.GetEnvironmentVariable("SOURCE_DOCUMENT_DB_CONNECTION_STRING")
-                                   ?? Environment.GetEnvironmentVariable("DOCUMENT_DB_CONNECTION_STRING");
-            }
-        }
-
-        // Resolve target settings
         var targetType = parsed.TargetType;
-        var targetConn = parsed.Target;
-
-        if (string.IsNullOrWhiteSpace(targetConn))
-        {
-            if (targetType == DatabaseEngineType.AzureSql)
-            {
-                targetConn = parsed.AzureSqlConn
-                             ?? Environment.GetEnvironmentVariable("TARGET_AZURE_SQL_CONNECTION_STRING")
-                             ?? Environment.GetEnvironmentVariable("AZURE_SQL_CONNECTION_STRING")
-                             ?? Environment.GetEnvironmentVariable("ConnectionStrings__AzureSqlConnection");
-            }
-            else if (targetType == DatabaseEngineType.DocumentDb)
-            {
-                targetConn = parsed.DocumentDbConn
-                             ?? Environment.GetEnvironmentVariable("TARGET_DOCUMENT_DB_CONNECTION_STRING")
-                             ?? Environment.GetEnvironmentVariable("DOCUMENT_DB_CONNECTION_STRING")
-                             ?? Environment.GetEnvironmentVariable("ConnectionStrings__DocumentDbConnection");
-            }
-        }
+        var (sourcePathOrConn, targetConn) = MigrationCommandLineParser.ResolveConnectionEndpoints(parsed);
 
         if (sourceType == DatabaseEngineType.Sqlite && !File.Exists(sourcePathOrConn))
         {
@@ -311,7 +271,9 @@ public static class Program
                 IsDryRun: parsed.IsDryRun,
                 StartedAtUtc: startTime,
                 CompletedAtUtc: DateTime.UtcNow,
-                TableResults: tableResults
+                TableResults: tableResults,
+                SourceEngine: sourceType.ToString(),
+                TargetEngine: targetType.ToString()
             );
 
             MigrationReporter.PrintConsoleReport(summary);
@@ -332,121 +294,6 @@ public static class Program
         }
     }
 
-    private record CliArgs(
-        DatabaseEngineType SourceType,
-        string? Source,
-        DatabaseEngineType TargetType,
-        string? Target,
-        string? SqlitePath,
-        string? AzureSqlConn,
-        string? DocumentDbConn,
-        MigrationMode Mode,
-        bool IsDryRun,
-        bool EnsureSchema,
-        string? ReportPath,
-        bool ShowHelp
-    );
-
-    private static CliArgs ParseCommandLineArgs(string[] args)
-    {
-        DatabaseEngineType sourceType = DatabaseEngineType.Sqlite;
-        DatabaseEngineType targetType = DatabaseEngineType.AzureSql;
-        string? source = null;
-        string? target = null;
-        string? sqlitePath = null;
-        string? azureSqlConn = null;
-        string? documentDbConn = null;
-        MigrationMode mode = MigrationMode.Upsert;
-        bool isDryRun = false;
-        bool ensureSchema = false;
-        string? reportPath = null;
-        bool showHelp = false;
-
-        for (int i = 0; i < args.Length; i++)
-        {
-            var arg = args[i];
-            if (arg.Equals("--source-type", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                if (Enum.TryParse<DatabaseEngineType>(args[++i], true, out var parsedSourceType))
-                {
-                    sourceType = parsedSourceType;
-                }
-            }
-            else if (arg.Equals("--target-type", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                if (Enum.TryParse<DatabaseEngineType>(args[++i], true, out var parsedTargetType))
-                {
-                    targetType = parsedTargetType;
-                }
-            }
-            else if (arg.Equals("--source", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                source = args[++i];
-            }
-            else if (arg.Equals("--target", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                target = args[++i];
-            }
-            else if (arg.Equals("--sqlite", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                sqlitePath = args[++i];
-                source = sqlitePath;
-                sourceType = DatabaseEngineType.Sqlite;
-            }
-            else if (arg.Equals("--azure-sql", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                azureSqlConn = args[++i];
-                target = azureSqlConn;
-                targetType = DatabaseEngineType.AzureSql;
-            }
-            else if (arg.Equals("--document-db", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                documentDbConn = args[++i];
-                target = documentDbConn;
-                targetType = DatabaseEngineType.DocumentDb;
-            }
-            else if (arg.Equals("--mode", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                var modeStr = args[++i];
-                if (Enum.TryParse<MigrationMode>(modeStr, true, out var parsedMode))
-                {
-                    mode = parsedMode;
-                }
-            }
-            else if (arg.Equals("--dry-run", StringComparison.OrdinalIgnoreCase))
-            {
-                isDryRun = true;
-            }
-            else if (arg.Equals("--ensure-schema", StringComparison.OrdinalIgnoreCase))
-            {
-                ensureSchema = true;
-            }
-            else if (arg.Equals("--report-path", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length)
-            {
-                reportPath = args[++i];
-            }
-            else if (arg.Equals("-h", StringComparison.OrdinalIgnoreCase) || arg.Equals("--help", StringComparison.OrdinalIgnoreCase))
-            {
-                showHelp = true;
-            }
-        }
-
-        return new CliArgs(
-            sourceType,
-            source,
-            targetType,
-            target,
-            sqlitePath,
-            azureSqlConn,
-            documentDbConn,
-            mode,
-            isDryRun,
-            ensureSchema,
-            reportPath,
-            showHelp
-        );
-    }
-
     private static void PrintHelp()
     {
         Console.WriteLine(@"
@@ -465,21 +312,22 @@ Pairwise Migration Scenarios:
      dotnet run --project src/Nutrition.Tools.DataMigrator -- --source-type Sqlite --target-type DocumentDb --source diettracker.db --target ""<docdb-conn>""
 
 Options:
-  --source-type <type>   Source provider: Sqlite, AzureSql, DocumentDb (Default: Sqlite)
-  --target-type <type>   Target provider: AzureSql, DocumentDb, Sqlite (Default: AzureSql)
-  --source <conn|path>   Source connection string or SQLite database path
-  --target <conn|path>   Target connection string or SQLite database path
-  --sqlite <path>        Alias for SQLite path (Default: src/Nutrition.WebGateway/diettracker.db)
-  --azure-sql <conn>     Alias for Azure SQL Connection String
-  --document-db <conn>   Alias for Azure DocumentDB Connection String
-  --mode <strategy>      Migration conflict strategy:
-                         - Upsert (Default): Updates existing records by PK, inserts new records
-                         - CleanInsert: Clears target table/collection before inserting records
-                         - SkipExisting: Inserts new records only, skips if PK already exists
-  --dry-run              Runs schema discovery and data conversions without committing writes
-  --ensure-schema        Auto-creates missing domain tables/collections and indexes before migration
-  --report-path <path>   Custom path to output the timestamped Markdown report
-  -h, --help             Show this help screen and usage details
+  --source-type <type>        Source provider: Sqlite, AzureSql, DocumentDb (Default: Sqlite)
+  --target-type <type>        Target provider: AzureSql, DocumentDb, Sqlite, None (Default: AzureSql)
+  --source <conn|path>        Source connection string or SQLite database path
+  --target <conn|path>        Target connection string or SQLite database path
+  --sqlite, --sqlite-path     Path to SQLite database file (Default: src/Nutrition.WebGateway/diettracker.db)
+  --azure-sql, --azure-sql-conn Connection string for Azure SQL
+  --docdb-conn, --document-db, --docdb Connection string for Azure DocumentDB (MongoDB vCore)
+  --mode <strategy>           Migration conflict strategy:
+                              - Upsert (Default): Updates existing records by PK, inserts new records
+                              - CleanInsert / TruncateTarget: Clears target table/collection before inserting records
+                              - SkipExisting / InsertOnly: Inserts new records only, skips if PK already exists
+  --dry-run                   Runs schema discovery and data conversions without committing writes
+  --ensure-schema             Auto-creates missing domain tables/collections and indexes before migration
+  --batch-size <size>         Number of records per bulk insertion batch (Default: 100)
+  --report, --report-path     Custom path to output the timestamped Markdown report
+  -h, --help                  Show this help screen and usage details
         ");
     }
 }

@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Nutrition.Tools.DataMigrator.Reporting;
 
 namespace Nutrition.Tools.DataMigrator.Services;
 

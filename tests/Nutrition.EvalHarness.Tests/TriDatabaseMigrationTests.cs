@@ -180,4 +180,67 @@ public class TriDatabaseMigrationTests
         Assert.False(reader.IsDomainCollection("system.indexes"));
         Assert.False(reader.IsDomainCollection("system.views"));
     }
+
+    [Fact]
+    public void CommandLineParser_RecognizesAllPairwiseConnectionAliases()
+    {
+        // Arrange
+        var args = new[]
+        {
+            "--source-type", "AzureSql",
+            "--target-type", "DocumentDb",
+            "--azure-sql-conn", "Server=tcp:sql-server.database.windows.net;Database=dietdost;",
+            "--docdb-conn", "mongodb://docdb-cluster.mongocluster.cosmos.azure.com:27017/",
+            "--mode", "Upsert",
+            "--ensure-schema",
+            "--dry-run"
+        };
+
+        // Act
+        var parsed = Nutrition.Tools.DataMigrator.Configuration.MigrationCommandLineParser.Parse(args);
+        var (source, target) = Nutrition.Tools.DataMigrator.Configuration.MigrationCommandLineParser.ResolveConnectionEndpoints(parsed);
+
+        // Assert
+        Assert.Equal(Nutrition.Tools.DataMigrator.DatabaseEngineType.AzureSql, parsed.SourceType);
+        Assert.Equal(Nutrition.Tools.DataMigrator.DatabaseEngineType.DocumentDb, parsed.TargetType);
+        Assert.Equal("Server=tcp:sql-server.database.windows.net;Database=dietdost;", source);
+        Assert.Equal("mongodb://docdb-cluster.mongocluster.cosmos.azure.com:27017/", target);
+        Assert.True(parsed.IsDryRun);
+        Assert.True(parsed.EnsureSchema);
+    }
+
+    [Fact]
+    public async Task MigrationReporter_GeneratesDynamicHeaderAndTableForAzureSqlToDocumentDb()
+    {
+        // Arrange
+        var summary = new Nutrition.Tools.DataMigrator.Reporting.MigrationRunSummary(
+            SourceDbPath: "Server=tcp:sql-server.database.windows.net;Database=dietdost;",
+            TargetDatabaseName: "DocumentDb (Free Tier)",
+            Mode: Nutrition.Tools.DataMigrator.MigrationMode.Upsert,
+            IsDryRun: false,
+            StartedAtUtc: new DateTime(2026, 11, 22, 15, 0, 0, DateTimeKind.Utc),
+            CompletedAtUtc: new DateTime(2026, 11, 22, 15, 0, 10, DateTimeKind.Utc),
+            TableResults:
+            [
+                new Nutrition.Tools.DataMigrator.Reporting.TableMigrationResult(
+                    "Users", 19, 0, 19, 0, 0, 19, TimeSpan.FromSeconds(0.3),
+                    new TableConversionStats { TableName = "Users" },
+                    []
+                )
+            ],
+            SourceEngine: "AzureSql",
+            TargetEngine: "DocumentDb"
+        );
+
+        // Act
+        var markdown = Nutrition.Tools.DataMigrator.Reporting.MigrationReporter.BuildMarkdownReport(summary);
+        var reportPath = await Nutrition.Tools.DataMigrator.Reporting.MigrationReporter.GenerateMarkdownReportAsync(summary);
+        var fileContent = await File.ReadAllTextAsync(reportPath);
+
+        // Assert
+        Assert.Contains("# AzureSql to DocumentDb Data Migration Report", markdown);
+        Assert.Contains("AzureSql Source Rows", markdown);
+        Assert.Contains("All source AzureSql records were successfully converted", markdown);
+        Assert.Equal(markdown, fileContent);
+    }
 }
