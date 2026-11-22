@@ -563,10 +563,15 @@ graph TD
 - Do not configure General Purpose Serverless SKUs, vCore capacity, auto-pause, or free-limit exhaustion properties for the deployed SQL database.
 - The application and infrastructure workflows must identify the Basic DTU tier in their summaries. Bicep applies this SKU to existing databases on the next deployment; operators must back up the database and verify the 2 GB limit before deploying.
 
-### Azure DocumentDB (Free Tier) IaC & CI/CD Governance (ADR-177, ADR-179)
+### Azure DocumentDB (Free Tier) IaC & CI/CD Governance (ADR-177, ADR-179, ADR-180)
 - **Bicep Resource**: `infra/<env>/documentdb.bicep` provisions `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `tier: 'Free'`, `serverVersion: '6.0'`, and `storage.sizeGb = 32`.
 - **Architectural Distinction**: Strictly Azure DocumentDB (Mongo vCore Free Tier) and **NOT** Azure Cosmos DB for MongoDB. Offers dedicated vCore architecture, zero RU limits, and zero RU throttling.
-- **Network Security**: NSG rule `Allow-DocumentDB-Outbound` permits outbound traffic on ports `10255` and `27017` to service tag `AzureCosmosDB`.
+- **Zero-Trust Network Perimeter (ADR-180)**:
+  - Eliminates the wildcard `0.0.0.0` rule (`allowAllAzureServices = false` by default).
+  - Outbound NSG rule `Allow-DocumentDB-Outbound` permits outbound traffic on ports `10255` and `27017` to service tag `AzureCosmosDB`.
+  - Inbound firewall rule `AllowContainerAppOutboundIp` authorizes only the dedicated static outbound IP of the ACA environment (`acaEnvironment.properties.staticIp`), eliminating cross-tenant access.
+  - Subnet service endpoints declare both `Microsoft.Sql` and `Microsoft.AzureCosmosDB` for direct backbone routing.
+  - Strict Port Segregation: Azure SQL (Port 1433 + 11000-11999) vs DocumentDB (Port 27017 + 10255) with zero port collisions.
 - **Sole-Authority Secret Storage**: Connection strings are stored directly into Key Vault as secret `documentdb-connection-string`. Zero plaintext passwords or connection strings are emitted in Bicep outputs.
 - **Workflow Parameters**:
   - `azure-infra-deploy.yml`: inputs `deployDocumentDb` (boolean) and `documentDbAdminLogin` (string).

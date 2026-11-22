@@ -295,6 +295,9 @@ resource vnet 'Microsoft.Network/virtualNetworks@2023-05-01' = {
             {
               service: 'Microsoft.Sql'
             }
+            {
+              service: 'Microsoft.AzureCosmosDB'
+            }
           ]
         }
       }
@@ -640,10 +643,13 @@ module documentdb 'documentdb.bicep' = if (deployDocumentDb) {
     adminPassword: documentDbAdminPassword
     keyVaultName: keyVault.name
     allowedClientIp: allowedClientIp
+    containerAppOutboundIp: acaEnvironment.properties.staticIp
   }
   dependsOn: [
     #disable-next-line no-unnecessary-dependson
     keyVault
+    #disable-next-line no-unnecessary-dependson
+    acaEnvironment
   ]
 }
 
@@ -673,7 +679,9 @@ output appInsightsConnectionString string = appInsights.properties.ConnectionStr
 output sqlServerFqdn string = sql.?outputs.sqlServerFqdn ?? ''
 output sqlServerName string = sql.?outputs.sqlServerName ?? ''
 output sqlDatabaseName string = sql.?outputs.sqlDatabaseName ?? ''
+output sqlPort int = sql.?outputs.databasePort ?? 1433
 output azureSqlConnectionStringSecretName string = sql.?outputs.connectionStringSecretName ?? ''
 output documentDbClusterName string = documentdb.?outputs.clusterName ?? ''
 output documentDbClusterFqdn string = documentdb.?outputs.clusterFqdn ?? ''
+output documentDbPort int = documentdb.?outputs.databasePort ?? 27017
 output documentDbConnectionStringSecretName string = documentdb.?outputs.connectionStringSecretName ?? ''

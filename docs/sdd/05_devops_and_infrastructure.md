@@ -554,9 +554,13 @@ The full architectural blueprint is codified in the following repository visual 
 ### 13.1 Infrastructure as Code Architecture (`infra/dev/documentdb.bicep`)
 - **Resource Definition**: Provisioned via `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `compute.tier = 'Free'`, `serverVersion = '6.0'`, and `storage.sizeGb = 32`.
 - **Architectural Distinction**: Strictly Azure DocumentDB (Mongo vCore Free Tier) and **NOT** Azure Cosmos DB for MongoDB. Provides dedicated vCore architecture, zero Request Unit (RU) limits, zero RU throttling, and full native MongoDB Wire Protocol compatibility.
-- **Perimeter & Network Security**:
+- **Perimeter & Network Security (Zero-Trust Hardening - ADR-180)**:
   - Outbound NSG rule `Allow-DocumentDB-Outbound` targeting destination port ranges `['10255', '27017']` and destination service tag `AzureCosmosDB`.
-  - Inbound firewall rules in `documentdb.bicep` permit Azure Container Apps services (`0.0.0.0`) and optional developer workstation IP (`allowedClientIp`).
+  - Strict Port Segregation: Azure SQL communicates over port `1433` (and redirect `11000-11999`), whereas DocumentDB communicates over port `27017` (and `10255`).
+  - Elimination of Wildcard `0.0.0.0`: The overly permissive `AllowAzureServices` (`0.0.0.0` - `0.0.0.0`) rule is disabled by default (`allowAllAzureServices = false`).
+  - Container Apps Egress Authorization: Inbound firewall rule `AllowContainerAppOutboundIp` authorizes only the dedicated static outbound IP of the ACA environment (`acaEnvironment.properties.staticIp`), eliminating cross-tenant access.
+  - Subnet Service Endpoint: `snet-aca-infra` declares `Microsoft.AzureCosmosDB` service endpoint alongside `Microsoft.Sql`, `Microsoft.KeyVault`, and `Microsoft.Storage`.
+  - Local Developer Ingress: Controlled strictly through explicit `AllowDeveloperWorkstationIp` (`allowedClientIp`).
 - **Zero-Plaintext Key Vault Governance**:
   - Module outputs only Key Vault secret name (`documentdb-connection-string`), never plaintext credentials in ARM deployment outputs.
   - Admin password and constructed connection string are sealed into Azure Key Vault using RBAC and Purge Protection.

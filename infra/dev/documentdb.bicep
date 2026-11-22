@@ -37,6 +37,12 @@ param keyVaultName string
 @description('Optional client IP address of local developer workstation to permit through DocumentDB firewall.')
 param allowedClientIp string = ''
 
+@description('Static outbound public IP address of the Azure Container Apps environment to permit through DocumentDB firewall.')
+param containerAppOutboundIp string = ''
+
+@description('Optional toggle to allow access from all Azure internal services (0.0.0.0). Disabled by default for Zero-Trust compliance.')
+param allowAllAzureServices bool = false
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var actualClusterName = !empty(clusterName) ? toLower(clusterName) : take('docdb-dietdost-${environment}-${uniqueSuffix}', 40)
 
@@ -66,16 +72,17 @@ resource docDbCluster 'Microsoft.DocumentDB/mongoClusters@2024-07-01' = {
 }
 
 // ------------------------------------------------------------------------------
-// 2. Firewall Rules
+// 2. Firewall Rules (Zero-Trust Principle of Least Privilege)
 // ------------------------------------------------------------------------------
 
-// Rule 1: Allow Azure Container Apps and other Azure services
-resource allowAzureServices 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = {
+// Rule 1: Allow Azure Container Apps Environment Dedicated Egress IP (Port 27017)
+// Authorizes only the specific container app environment rather than all of Azure
+resource allowContainerAppOutboundIp 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (!empty(containerAppOutboundIp)) {
   parent: docDbCluster
-  name: 'AllowAzureServices'
+  name: 'AllowContainerAppOutboundIp'
   properties: {
-    startIpAddress: '0.0.0.0'
-    endIpAddress: '0.0.0.0'
+    startIpAddress: containerAppOutboundIp
+    endIpAddress: containerAppOutboundIp
   }
 }
 
@@ -86,6 +93,17 @@ resource allowDeveloperIp 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024
   properties: {
     startIpAddress: allowedClientIp
     endIpAddress: allowedClientIp
+  }
+}
+
+// Rule 3: Optional Wildcard Rule (0.0.0.0 - 0.0.0.0) - Strictly Disabled by Default
+// checkov:skip=CKV_AZURE_11: 0.0.0.0 ingress is disabled by default; only provisioned if explicitly opted-in.
+resource allowAzureServices 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (allowAllAzureServices) {
+  parent: docDbCluster
+  name: 'AllowAzureServices'
+  properties: {
+    startIpAddress: '0.0.0.0'
+    endIpAddress: '0.0.0.0'
   }
 }
 
@@ -123,4 +141,5 @@ output clusterId string = docDbCluster.id
 output clusterName string = docDbCluster.name
 output clusterFqdn string = '${docDbCluster.name}.mongocluster.cosmos.azure.com'
 output databaseName string = databaseName
+output databasePort int = 27017
 output connectionStringSecretName string = 'documentdb-connection-string'

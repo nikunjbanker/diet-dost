@@ -1,10 +1,10 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-22T05:20:56.516651+00:00",
-  "totalAdrs": 144,
+  "generatedAt": "2026-11-22T10:29:43.362797+00:00",
+  "totalAdrs": 145,
   "categoryCounts": {
     "architecture": 48,
-    "security": 26,
+    "security": 27,
     "devops": 36,
     "presentation": 21,
     "governance": 13
@@ -1737,6 +1737,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261121-179-azure-documentdb-bicep-iac-and-cicd-automation.md",
       "relativePath": "docs/adr/devops/ADR-20261121-179-azure-documentdb-bicep-iac-and-cicd-automation.md"
+    },
+    {
+      "id": "ADR-180",
+      "number": 180,
+      "title": "Azure DocumentDB Zero-Trust Network Perimeter Hardening and Port Segregation",
+      "category": "security",
+      "status": "ACCEPTED",
+      "changeType": "[SECURITY]",
+      "date": "2026-11-22",
+      "subsystem": "Security",
+      "filename": "ADR-20261122-180-azure-documentdb-zero-trust-network-security-and-port-segregation.md",
+      "relativePath": "docs/adr/security/ADR-20261122-180-azure-documentdb-zero-trust-network-security-and-port-segregation.md"
     }
   ]
 }

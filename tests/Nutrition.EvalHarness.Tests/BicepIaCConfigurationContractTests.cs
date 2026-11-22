@@ -257,6 +257,56 @@ public class BicepIaCConfigurationContractTests
     }
 
     [Fact]
+    public void DocumentDbBicep_ZeroTrust_FirewallRules_Reject_Wildcard_By_Default_And_Allow_ContainerEgress_And_DeveloperIp()
+    {
+        var docDbBicepPath = GetDocumentDbBicepPath("dev");
+        var bicepContent = File.ReadAllText(docDbBicepPath);
+
+        // Zero-Trust Rule: AllowAzureServices (0.0.0.0) MUST NOT be unconditional
+        Assert.DoesNotContain("name: 'AllowAzureServices'\n  properties:\n    startIpAddress: '0.0.0.0'", bicepContent.Replace("\r\n", "\n"));
+        Assert.Contains("param allowAllAzureServices bool = false", bicepContent);
+        Assert.Contains("resource allowAzureServices 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (allowAllAzureServices)", bicepContent);
+
+        // Dedicated Container App Environment egress IP rule
+        Assert.Contains("param containerAppOutboundIp string = ''", bicepContent);
+        Assert.Contains("resource allowContainerAppOutboundIp 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (!empty(containerAppOutboundIp))", bicepContent);
+        Assert.Contains("startIpAddress: containerAppOutboundIp", bicepContent);
+        Assert.Contains("endIpAddress: containerAppOutboundIp", bicepContent);
+
+        // Developer workstation client IP rule
+        Assert.Contains("resource allowDeveloperIp 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (!empty(allowedClientIp))", bicepContent);
+        Assert.Contains("startIpAddress: allowedClientIp", bicepContent);
+        Assert.Contains("endIpAddress: allowedClientIp", bicepContent);
+
+        // Standard DocumentDB / MongoDB protocol port
+        Assert.Contains("output databasePort int = 27017", bicepContent);
+    }
+
+    [Fact]
+    public void InfraBicep_Enforces_PortSegregation_Between_Sql_And_DocumentDb()
+    {
+        var infraBicepPath = GetInfraBicepPath("dev");
+        var infraContent = File.ReadAllText(infraBicepPath);
+
+        // Subnet service endpoints must declare both Microsoft.Sql and Microsoft.AzureCosmosDB
+        Assert.Contains("service: 'Microsoft.Sql'", infraContent);
+        Assert.Contains("service: 'Microsoft.AzureCosmosDB'", infraContent);
+
+        // SQL uses port 1433 and redirect 11000-11999; DocumentDB uses port 27017 and 10255
+        Assert.Contains("'1433'", infraContent);
+        Assert.Contains("'11000-11999'", infraContent);
+        Assert.Contains("'27017'", infraContent);
+        Assert.Contains("'10255'", infraContent);
+
+        // DocumentDB module must receive ACA static outbound IP
+        Assert.Contains("containerAppOutboundIp: acaEnvironment.properties.staticIp", infraContent);
+
+        // Disjoint port outputs
+        Assert.Contains("output sqlPort int", infraContent);
+        Assert.Contains("output documentDbPort int", infraContent);
+    }
+
+    [Fact]
     public void AppBicep_Declares_DocumentDb_Connection_Configuration()
     {
         var appBicepPath = GetAppBicepPath("dev");
