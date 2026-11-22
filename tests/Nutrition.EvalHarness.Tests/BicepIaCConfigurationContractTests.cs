@@ -283,6 +283,21 @@ public class BicepIaCConfigurationContractTests
     }
 
     [Fact]
+    public void DocumentDbBicep_Enforces_FreeTier_Sharding_And_HighAvailability_SchemaCompliance()
+    {
+        var docDbBicepPath = GetDocumentDbBicepPath("dev");
+        var bicepContent = File.ReadAllText(docDbBicepPath);
+
+        // Required ARM 2024-07-01 properties for mongoClusters
+        Assert.Contains("tier: 'Free'", bicepContent);
+        Assert.Contains("sizeGb: 32", bicepContent);
+        Assert.Contains("sharding:", bicepContent);
+        Assert.Contains("shardCount: 1", bicepContent);
+        Assert.Contains("highAvailability:", bicepContent);
+        Assert.Contains("targetMode: 'Disabled'", bicepContent);
+    }
+
+    [Fact]
     public void InfraBicep_Enforces_PortSegregation_Between_Sql_And_DocumentDb()
     {
         var infraBicepPath = GetInfraBicepPath("dev");

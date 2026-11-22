@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-22T11:06:04.337122+00:00",
-  "totalAdrs": 145,
+  "generatedAt": "2026-11-22T12:02:07.670506+00:00",
+  "totalAdrs": 146,
   "categoryCounts": {
     "architecture": 48,
     "security": 27,
-    "devops": 36,
+    "devops": 37,
     "presentation": 21,
     "governance": 13
   },
@@ -1749,6 +1749,18 @@
       "subsystem": "Security",
       "filename": "ADR-20261122-180-azure-documentdb-zero-trust-network-security-and-port-segregation.md",
       "relativePath": "docs/adr/security/ADR-20261122-180-azure-documentdb-zero-trust-network-security-and-port-segregation.md"
+    },
+    {
+      "id": "ADR-181",
+      "number": 181,
+      "title": "Azure DocumentDB ARM 2024-07-01 Schema Compliance with Sharding and High Availability",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-22",
+      "subsystem": "Devops",
+      "filename": "ADR-20261122-181-azure-documentdb-arm-schema-sharding-and-high-availability.md",
+      "relativePath": "docs/adr/devops/ADR-20261122-181-azure-documentdb-arm-schema-sharding-and-high-availability.md"
     }
   ]
 }

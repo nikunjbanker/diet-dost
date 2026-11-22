@@ -563,8 +563,9 @@ graph TD
 - Do not configure General Purpose Serverless SKUs, vCore capacity, auto-pause, or free-limit exhaustion properties for the deployed SQL database.
 - The application and infrastructure workflows must identify the Basic DTU tier in their summaries. Bicep applies this SKU to existing databases on the next deployment; operators must back up the database and verify the 2 GB limit before deploying.
 
-### Azure DocumentDB (Free Tier) IaC & CI/CD Governance (ADR-177, ADR-179, ADR-180)
-- **Bicep Resource**: `infra/<env>/documentdb.bicep` provisions `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `tier: 'Free'`, `serverVersion: '6.0'`, and `storage.sizeGb = 32`.
+### Azure DocumentDB (Free Tier) IaC & CI/CD Governance (ADR-177, ADR-179, ADR-180, ADR-181)
+- **Bicep Resource**: `infra/<env>/documentdb.bicep` provisions `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `tier: 'Free'`, `serverVersion: '6.0'`, `storage.sizeGb = 32`, `sharding.shardCount = 1`, and `highAvailability.targetMode = 'Disabled'`.
+- **ARM 2024-07-01 Schema Compliance (ADR-181)**: ARM schema mandates `sharding` and `highAvailability` blocks for `mongoClusters`. Single-node Lifetime Free Tier clusters configure `shardCount: 1` and `targetMode: 'Disabled'`.
 - **Architectural Distinction**: Strictly Azure DocumentDB (Mongo vCore Free Tier) and **NOT** Azure Cosmos DB for MongoDB. Offers dedicated vCore architecture, zero RU limits, and zero RU throttling.
 - **Zero-Trust Network Perimeter (ADR-180)**:
   - Azure Container Apps Connectivity: `infra.bicep` sets `allowAllAzureServices: true` on `documentdb.bicep`, deploying the Azure-internal `AllowAzureServices` (`0.0.0.0` - `0.0.0.0`) firewall rule to permit ACA container app egress on port 27017, while blocking all non-Azure internet traffic.
