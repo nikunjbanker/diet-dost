@@ -552,7 +552,8 @@ The full architectural blueprint is codified in the following repository visual 
 ## 13. Azure DocumentDB (Free Tier) IaC Provisioning & Tri-Database CI/CD Architecture (ADR-177, ADR-179)
 
 ### 13.1 Infrastructure as Code Architecture (`infra/dev/documentdb.bicep`)
-- **Resource Definition**: Provisioned via `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `compute.tier = 'Free'`, `serverVersion = '6.0'`, and `storage.sizeGb = 32`.
+- **Resource Definition**: Provisioned via `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `compute.tier = 'Free'`, `serverVersion = '6.0'`, `storage.sizeGb = 32`, `sharding.shardCount = 1`, and `highAvailability.targetMode = 'Disabled'`.
+- **ARM 2024-07-01 Schema Compliance (ADR-181)**: ARM API schema mandates `sharding` and `highAvailability` blocks for `mongoClusters`. Single-node Lifetime Free Tier clusters configure `shardCount: 1` and `targetMode: 'Disabled'`.
 - **Architectural Distinction**: Strictly Azure DocumentDB (Mongo vCore Free Tier) and **NOT** Azure Cosmos DB for MongoDB. Provides dedicated vCore architecture, zero Request Unit (RU) limits, zero RU throttling, and full native MongoDB Wire Protocol compatibility.
 - **Perimeter & Network Security (Zero-Trust Hardening - ADR-180)**:
   - Outbound NSG rule `Allow-DocumentDB-Outbound` targeting destination port ranges `['10255', '27017']` and destination service tag `AzureCosmosDB`.

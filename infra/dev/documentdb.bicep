@@ -60,6 +60,12 @@ resource docDbCluster 'Microsoft.DocumentDB/mongoClusters@2024-07-01' = {
     storage: {
       sizeGb: 32 // 32 GB Dedicated Free Storage
     }
+    sharding: {
+      shardCount: 1 // Single physical shard for Free Tier cluster
+    }
+    highAvailability: {
+      targetMode: 'Disabled' // High availability disabled for single-node Free Tier
+    }
     administrator: {
       userName: adminLogin
       password: adminPassword

@@ -69,3 +69,16 @@
 - [ ] **Step 5.3**: Re-access `https://dev.diet-dost.in` and inspect diary:
   - [ ] **Assert**: Tadka Dal meal remains 100% intact in SQLite database file on persistent Azure Files SMB share.
   - [ ] **Assert**: Zero data loss, zero corrupt database errors, zero write lock deadlocks.
+
+---
+
+## 6. Test Suite 5: Azure DocumentDB (Free Tier) Provisioning & Tri-Database Parity Verification
+- [ ] **Step 6.1**: Verify Bicep ARM schema compliance:
+  - [ ] `infra/dev/documentdb.bicep` declares `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `compute.tier = 'Free'`, `storage.sizeGb = 32`, `sharding.shardCount = 1`, and `highAvailability.targetMode = 'Disabled'`.
+  - [ ] `az deployment group validate` executes with 0 errors.
+- [ ] **Step 6.2**: Verify Zero-Trust port segregation:
+  - [ ] NSG outbound rule `Allow-DocumentDB-Outbound` permits ports `27017` and `10255`.
+  - [ ] Azure SQL uses port `1433` and redirect ports `11000-11999`. Zero port overlap.
+- [ ] **Step 6.3**: Verify Tri-Database Migration Parity:
+  - [ ] Data migrated from source provider (Azure SQL) to DocumentDB using `scripts/migrate-data.ps1`.
+  - [ ] Zero record loss across all domain collections (`users`, `user_profiles`, `user_tiers`, `consents`, `audit_logs`, `food_logs`, `daily_aggregates`, `weight_logs`, `ai_usage_ledger`).
