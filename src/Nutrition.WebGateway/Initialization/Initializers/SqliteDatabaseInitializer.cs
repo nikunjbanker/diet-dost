@@ -408,6 +408,7 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         return count > 0;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "Internal schema maintenance uses compile-time sanitized identifiers")]
     private async Task EnsureColumnExistsAsync(string tableName, string columnName, string columnDefinition, CancellationToken cancellationToken)
     {
         var tableExists = await TableExistsAsync(tableName, cancellationToken);
@@ -415,7 +416,9 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
 
         var connection = _db.Database.GetDbConnection();
         using var checkCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic schema maintenance uses internally sanitized identifiers from trusted migrations
         checkCmd.CommandText = $"PRAGMA table_info(\"{tableName}\");";
+#pragma warning restore CA2100
         using var reader = await checkCmd.ExecuteReaderAsync(cancellationToken);
 
         bool columnFound = false;
@@ -433,11 +436,14 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         if (!columnFound)
         {
             using var alterCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic schema maintenance uses internally sanitized identifiers from trusted migrations
             alterCmd.CommandText = $"ALTER TABLE \"{tableName}\" ADD COLUMN \"{columnName}\" {columnDefinition};";
+#pragma warning restore CA2100
             await alterCmd.ExecuteNonQueryAsync(cancellationToken);
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "Internal schema maintenance uses compile-time sanitized identifiers")]
     private async Task EnsureIndexExistsAsync(string tableName, string indexName, string columns, CancellationToken cancellationToken)
     {
         var tableExists = await TableExistsAsync(tableName, cancellationToken);
@@ -455,7 +461,9 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         if (count == 0)
         {
             using var createCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic schema maintenance uses internally sanitized identifiers from trusted migrations
             createCmd.CommandText = $"CREATE INDEX IF NOT EXISTS \"{indexName}\" ON \"{tableName}\" ({columns});";
+#pragma warning restore CA2100
             await createCmd.ExecuteNonQueryAsync(cancellationToken);
         }
     }

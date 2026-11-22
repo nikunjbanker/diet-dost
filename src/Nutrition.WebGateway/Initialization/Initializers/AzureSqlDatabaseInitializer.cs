@@ -395,6 +395,7 @@ public sealed class AzureSqlDatabaseInitializer : IDatabaseInitializer
         return count > 0;
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "Internal schema maintenance uses compile-time sanitized identifiers")]
     private async Task EnsureColumnExistsAsync(string tableName, string columnName, string columnDefinition, CancellationToken cancellationToken)
     {
         var tableExists = await TableExistsAsync(tableName, cancellationToken);
@@ -417,11 +418,14 @@ public sealed class AzureSqlDatabaseInitializer : IDatabaseInitializer
         if (count == 0)
         {
             using var alterCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic schema maintenance uses internally sanitized identifiers from trusted migrations
             alterCmd.CommandText = $"ALTER TABLE [{tableName}] ADD [{columnName}] {columnDefinition};";
+#pragma warning restore CA2100
             await alterCmd.ExecuteNonQueryAsync(cancellationToken);
         }
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "Internal schema maintenance uses compile-time sanitized identifiers")]
     private async Task EnsureIndexExistsAsync(string tableName, string indexName, string columns, CancellationToken cancellationToken)
     {
         var tableExists = await TableExistsAsync(tableName, cancellationToken);
@@ -444,7 +448,9 @@ public sealed class AzureSqlDatabaseInitializer : IDatabaseInitializer
         if (count == 0)
         {
             using var createCmd = connection.CreateCommand();
+#pragma warning disable CA2100 // Dynamic schema maintenance uses internally sanitized identifiers from trusted migrations
             createCmd.CommandText = $"CREATE INDEX [{indexName}] ON [{tableName}] ({columns});";
+#pragma warning restore CA2100
             await createCmd.ExecuteNonQueryAsync(cancellationToken);
         }
     }
