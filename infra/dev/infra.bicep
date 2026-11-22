@@ -641,6 +641,7 @@ module documentdb 'documentdb.bicep' = if (deployDocumentDb) {
     keyVaultName: keyVault.name
     allowedClientIp: allowedClientIp
     containerAppOutboundIp: acaEnvironment.properties.staticIp
+    allowAllAzureServices: true
   }
   dependsOn: [
     #disable-next-line no-unnecessary-dependson

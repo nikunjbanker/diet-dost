@@ -302,8 +302,9 @@ public class BicepIaCConfigurationContractTests
         Assert.Contains("'27017'", infraContent);
         Assert.Contains("'10255'", infraContent);
 
-        // DocumentDB module must receive ACA static outbound IP
+        // DocumentDB module must receive ACA static outbound IP and enable Azure Services egress
         Assert.Contains("containerAppOutboundIp: acaEnvironment.properties.staticIp", infraContent);
+        Assert.Contains("allowAllAzureServices: true", infraContent);
 
         // Disjoint port outputs
         Assert.Contains("output sqlPort int", infraContent);

@@ -29,9 +29,16 @@ Adversarial security review of the Azure DocumentDB (`Microsoft.DocumentDB/mongo
 
 ## 2. Decision & Implementation
 
-### 2.1 Elimination of Wildcard `0.0.0.0` Firewall Rule by Default
-- The unconditional `AllowAzureServices` (`0.0.0.0` - `0.0.0.0`) rule in `infra/dev/documentdb.bicep` is **removed from default deployment**.
-- Introduced explicit boolean parameter `param allowAllAzureServices bool = false`. Only if an operator explicitly overrides this parameter with `true` will the wildcard rule be deployed (guarded with `# checkov:skip=CKV_AZURE_11`).
+### 2.1 Container Apps Egress & Azure Services Firewall Rule (`AllowAzureServices`)
+- In `infra/dev/documentdb.bicep`, the module defaults `allowAllAzureServices = false` for standalone security.
+- In `infra/dev/infra.bicep`, when deploying the integrated architecture, `allowAllAzureServices: true` is passed to the `documentdb` module.
+- **Why this is required for Azure Container Apps (ACA)**:
+  - In Azure Container Apps integrated into a custom VNet without a dedicated NAT Gateway, `acaEnvironment.properties.staticIp` is the **inbound ingress** IP (for HTTP/custom domain routing).
+  - Outbound container egress traffic to external Azure PaaS services originates dynamically from Azure's datacenter IP pool.
+  - Azure DocumentDB does not support VNet Service Endpoints or `virtualNetworkRules`.
+  - Therefore, the official Microsoft-supported mechanism for ACA compute to reach DocumentDB is the Azure Services firewall rule `AllowAzureServices` (`0.0.0.0` - `0.0.0.0`).
+  - In Azure Resource Manager, `0.0.0.0` to `0.0.0.0` is a special Azure sentinel rule that permits access strictly from Azure-internal compute resources, while completely blocking all non-Azure public internet access.
+  - Developer access remains governed by explicit client IP in `AllowDeveloperWorkstationIp`.
 
 ### 2.2 Dedicated Container App Egress IP Authorization (`AllowContainerAppOutboundIp`)
 - Added parameter `param containerAppOutboundIp string = ''` to `documentdb.bicep`.

@@ -567,10 +567,8 @@ graph TD
 - **Bicep Resource**: `infra/<env>/documentdb.bicep` provisions `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `tier: 'Free'`, `serverVersion: '6.0'`, and `storage.sizeGb = 32`.
 - **Architectural Distinction**: Strictly Azure DocumentDB (Mongo vCore Free Tier) and **NOT** Azure Cosmos DB for MongoDB. Offers dedicated vCore architecture, zero RU limits, and zero RU throttling.
 - **Zero-Trust Network Perimeter (ADR-180)**:
-  - Eliminates the wildcard `0.0.0.0` rule (`allowAllAzureServices = false` by default).
-  - Outbound NSG rule `Allow-DocumentDB-Outbound` permits outbound traffic on ports `10255` and `27017` to service tag `AzureCosmosDB`.
-  - Inbound firewall rule `AllowContainerAppOutboundIp` authorizes only the dedicated static outbound IP of the ACA environment (`acaEnvironment.properties.staticIp`), eliminating cross-tenant access.
-  - Subnet Service Endpoints: Subnet declares `Microsoft.Sql` for Azure SQL, and strictly excludes `Microsoft.AzureCosmosDB` (DocumentDB vCore does not use VNet service endpoints, securing traffic via targeted ACA static outbound IP firewall rules).
+  - Azure Container Apps Connectivity: `infra.bicep` sets `allowAllAzureServices: true` on `documentdb.bicep`, deploying the Azure-internal `AllowAzureServices` (`0.0.0.0` - `0.0.0.0`) firewall rule to permit ACA container app egress on port 27017, while blocking all non-Azure internet traffic.
+  - Subnet Service Endpoints: Subnet declares `Microsoft.Sql` for Azure SQL, and strictly excludes `Microsoft.AzureCosmosDB` (DocumentDB vCore does not use VNet service endpoints, securing traffic via Azure Services firewall rules and Private Link).
   - Strict Port Segregation: Azure SQL (Port 1433 + 11000-11999) vs DocumentDB (Port 27017 + 10255) with zero port collisions.
 - **Sole-Authority Secret Storage**: Connection strings are stored directly into Key Vault as secret `documentdb-connection-string`. Zero plaintext passwords or connection strings are emitted in Bicep outputs.
 - **Workflow Parameters**:
