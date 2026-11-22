@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-21T06:37:26.303271+00:00",
-  "totalAdrs": 143,
+  "generatedAt": "2026-11-22T05:20:56.516651+00:00",
+  "totalAdrs": 144,
   "categoryCounts": {
     "architecture": 48,
     "security": 26,
-    "devops": 35,
+    "devops": 36,
     "presentation": 21,
     "governance": 13
   },
@@ -1725,6 +1725,18 @@
       "subsystem": "WebGateway | Application | Infrastructure | Tools.DataMigrator | EvalHarness.Tests",
       "filename": "ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md",
       "relativePath": "docs/adr/architecture/ADR-20261121-177-azure-documentdb-free-tier-support-and-tri-database-migration-engine.md"
+    },
+    {
+      "id": "ADR-179",
+      "number": 179,
+      "title": "Azure DocumentDB Free Tier Bicep IaC, CI/CD Pipeline Automation, and Database Initialization OOP Refactoring",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-21",
+      "subsystem": "Devops",
+      "filename": "ADR-20261121-179-azure-documentdb-bicep-iac-and-cicd-automation.md",
+      "relativePath": "docs/adr/devops/ADR-20261121-179-azure-documentdb-bicep-iac-and-cicd-automation.md"
     }
   ]
 }

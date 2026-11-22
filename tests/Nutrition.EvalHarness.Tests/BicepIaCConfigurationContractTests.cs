@@ -43,6 +43,12 @@ public class BicepIaCConfigurationContractTests
         return Path.Combine(repoRoot, "infra", environment, "infra.bicep");
     }
 
+    private static string GetDocumentDbBicepPath(string environment = "dev")
+    {
+        var repoRoot = GetRepoRoot();
+        return Path.Combine(repoRoot, "infra", environment, "documentdb.bicep");
+    }
+
     [Fact]
     public void AppBicep_Declares_RequiredConfigurationEnvironmentVariables()
     {
@@ -215,5 +221,49 @@ public class BicepIaCConfigurationContractTests
         Assert.Contains("param appInsightsConnectionString string", appContent);
         Assert.Contains("app-insights-connection-string", appContent);
         Assert.Contains("APPLICATIONINSIGHTS_CONNECTION_STRING", appContent);
+    }
+
+    [Fact]
+    public void DocumentDbBicep_Declares_FreeTier_Cluster_And_KeyVault_Secret()
+    {
+        var docDbBicepPath = GetDocumentDbBicepPath("dev");
+        Assert.True(File.Exists(docDbBicepPath), $"documentdb.bicep must exist at {docDbBicepPath}");
+
+        var bicepContent = File.ReadAllText(docDbBicepPath);
+
+        // Azure DocumentDB (Mongo vCore Free Tier - 32 GB dedicated storage)
+        Assert.Contains("Microsoft.DocumentDB/mongoClusters@2024-07-01", bicepContent);
+        Assert.Contains("tier: 'Free'", bicepContent);
+        Assert.Contains("sizeGb: 32", bicepContent);
+        Assert.Contains("serverVersion: '6.0'", bicepContent);
+        Assert.Contains("documentdb-connection-string", bicepContent);
+    }
+
+    [Fact]
+    public void InfraBicep_Declares_DocumentDb_Outbound_NSG_Rules_And_Module()
+    {
+        var infraBicepPath = GetInfraBicepPath("dev");
+        var infraContent = File.ReadAllText(infraBicepPath);
+
+        // Outbound NSG rule for DocumentDB / AzureCosmosDB ports 10255 and 27017
+        Assert.Contains("Allow-DocumentDB-Outbound", infraContent);
+        Assert.Contains("'10255'", infraContent);
+        Assert.Contains("'27017'", infraContent);
+        Assert.Contains("destinationAddressPrefix: 'AzureCosmosDB'", infraContent);
+
+        // DocumentDB module invocation and outputs
+        Assert.Contains("module documentdb 'documentdb.bicep'", infraContent);
+        Assert.Contains("output documentDbClusterFqdn string", infraContent);
+    }
+
+    [Fact]
+    public void AppBicep_Declares_DocumentDb_Connection_Configuration()
+    {
+        var appBicepPath = GetAppBicepPath("dev");
+        var appContent = File.ReadAllText(appBicepPath);
+
+        Assert.Contains("param documentDbConnectionString string", appContent);
+        Assert.Contains("documentdb-connection-string", appContent);
+        Assert.Contains("ConnectionStrings__DocumentDbConnection", appContent);
     }
 }

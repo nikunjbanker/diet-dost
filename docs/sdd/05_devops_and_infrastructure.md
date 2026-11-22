@@ -546,3 +546,28 @@ The full architectural blueprint is codified in the following repository visual 
   - Switched `migrate-sqlite-to-azuresql.ps1` from CLI arguments to `$env:TARGET_AZURE_SQL_CONNECTION_STRING` (GAP-30).
   - Added branch (`main`) and job conclusion validation to `scripts/auto-approve-daemon.ps1` before approving deployment runs (GAP-32).
   - Implemented `QrSessionCleanupService` background worker executing hourly TTL purges on expired QR sessions (GAP-41).
+
+---
+
+## 13. Azure DocumentDB (Free Tier) IaC Provisioning & Tri-Database CI/CD Architecture (ADR-177, ADR-179)
+
+### 13.1 Infrastructure as Code Architecture (`infra/dev/documentdb.bicep`)
+- **Resource Definition**: Provisioned via `Microsoft.DocumentDB/mongoClusters@2024-07-01` with `compute.tier = 'Free'`, `serverVersion = '6.0'`, and `storage.sizeGb = 32`.
+- **Architectural Distinction**: Strictly Azure DocumentDB (Mongo vCore Free Tier) and **NOT** Azure Cosmos DB for MongoDB. Provides dedicated vCore architecture, zero Request Unit (RU) limits, zero RU throttling, and full native MongoDB Wire Protocol compatibility.
+- **Perimeter & Network Security**:
+  - Outbound NSG rule `Allow-DocumentDB-Outbound` targeting destination port ranges `['10255', '27017']` and destination service tag `AzureCosmosDB`.
+  - Inbound firewall rules in `documentdb.bicep` permit Azure Container Apps services (`0.0.0.0`) and optional developer workstation IP (`allowedClientIp`).
+- **Zero-Plaintext Key Vault Governance**:
+  - Module outputs only Key Vault secret name (`documentdb-connection-string`), never plaintext credentials in ARM deployment outputs.
+  - Admin password and constructed connection string are sealed into Azure Key Vault using RBAC and Purge Protection.
+
+### 13.2 CI/CD Pipeline Automation
+- **Infrastructure Pipeline (`.github/workflows/azure-infra-deploy.yml`)**:
+  - Input parameters `deployDocumentDb` (boolean, default false) and `documentDbAdminLogin` (string, default `docdbadmin`).
+  - Stage 1 validation includes `az bicep build --file infra/${{ inputs.environment }}/documentdb.bicep`.
+  - Stage 2 & Stage 3 pass deployment parameters and report cluster FQDN and Free Tier storage quota in step summaries.
+- **Application Deployment Pipeline (`.github/workflows/azure-app-deploy.yml`)**:
+  - Parameter `databaseProvider` accepts `Sqlite`, `AzureSql`, and `DocumentDb`.
+  - When `databaseProvider == 'DocumentDb'`, ACA container environment receives Key Vault secret reference `ConnectionStrings__DocumentDbConnection`.
+- **Tri-Database Data Migration Automation**:
+  - Supported via `Nutrition.Tools.DataMigrator` and `scripts/migrate-data.ps1` enabling zero-downtime bidirectional pairwise migrations between SQLite, Azure SQL, and Azure DocumentDB.

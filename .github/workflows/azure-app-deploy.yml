@@ -47,7 +47,7 @@ on:
         type: string
         default: 'dev'
       databaseProvider:
-        description: 'Persistence database provider (Sqlite, AzureSql)'
+        description: 'Persistence database provider (Sqlite, AzureSql, DocumentDb)'
         required: false
         type: string
         default: 'AzureSql'
@@ -187,6 +187,7 @@ jobs:
           echo "Validating Bicep cloud infrastructure templates..."
           az bicep build --file infra/${{ inputs.environment }}/infra.bicep
           az bicep build --file infra/${{ inputs.environment }}/app.bicep
+          az bicep build --file infra/${{ inputs.environment }}/documentdb.bicep
           echo "✅ Pre-Deployment Bicep IaC Gate Passed: Templates compiled successfully."
 
       - name: 8. Aspire Publish - Validate AppHost Model & Generate Manifests
@@ -451,6 +452,8 @@ jobs:
             fileShareQuotaGb=1
             deployAzureSql=${{ (inputs.databaseProvider || 'AzureSql') == 'AzureSql' }}
             sqlAdminPassword=${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}
+            deployDocumentDb=${{ (inputs.databaseProvider || 'AzureSql') == 'DocumentDb' }}
+            documentDbAdminPassword=${{ secrets.AZURE_DOCUMENTDB_ADMIN_PASSWORD || '' }}
           failOnStderr: false
 
       - name: 5. Resolve ACR & ACA Environment Details

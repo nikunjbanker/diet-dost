@@ -41,7 +41,20 @@ param sqlAdminLogin string = 'sqladmin'
 @secure()
 param sqlAdminPassword string = ''
 
-@description('Optional client IP address of local developer workstation to permit through SQL Server firewall.')
+@description('Flag indicating whether Azure DocumentDB (Free Tier - 32 GB dedicated storage) should be provisioned.')
+param deployDocumentDb bool = false
+
+@description('Optional explicit name for Azure DocumentDB cluster. If omitted, a unique name is derived.')
+param documentDbClusterName string = ''
+
+@description('Administrator login username for DocumentDB cluster.')
+param documentDbAdminLogin string = 'docdbadmin'
+
+@description('Administrator login password for DocumentDB cluster.')
+@secure()
+param documentDbAdminPassword string = ''
+
+@description('Optional client IP address of local developer workstation to permit through SQL Server and DocumentDB firewall.')
 param allowedClientIp string = ''
 
 var uniqueSuffix = uniqueString(resourceGroup().id)
@@ -143,6 +156,22 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
           destinationPortRanges: [
             '1433'
             '11000-11999'
+          ]
+        }
+      }
+      {
+        name: 'Allow-DocumentDB-Outbound'
+        properties: {
+          priority: 107
+          direction: 'Outbound'
+          access: 'Allow'
+          protocol: 'Tcp'
+          sourceAddressPrefix: '*'
+          sourcePortRange: '*'
+          destinationAddressPrefix: 'AzureCosmosDB'
+          destinationPortRanges: [
+            '10255'
+            '27017'
           ]
         }
       }
@@ -599,6 +628,26 @@ module sql 'sql.bicep' = if (deployAzureSql) {
 }
 
 // ------------------------------------------------------------------------------
+// 12. Azure DocumentDB (Free Tier) Module
+// ------------------------------------------------------------------------------
+module documentdb 'documentdb.bicep' = if (deployDocumentDb) {
+  name: 'documentdb-deployment'
+  params: {
+    environment: environment
+    location: location
+    clusterName: documentDbClusterName
+    adminLogin: documentDbAdminLogin
+    adminPassword: documentDbAdminPassword
+    keyVaultName: keyVault.name
+    allowedClientIp: allowedClientIp
+  }
+  dependsOn: [
+    #disable-next-line no-unnecessary-dependson
+    keyVault
+  ]
+}
+
+// ------------------------------------------------------------------------------
 // Outputs for Application Deployment Pipeline
 // ------------------------------------------------------------------------------
 output acaEnvironmentId string = acaEnvironment.id
@@ -625,3 +674,6 @@ output sqlServerFqdn string = sql.?outputs.sqlServerFqdn ?? ''
 output sqlServerName string = sql.?outputs.sqlServerName ?? ''
 output sqlDatabaseName string = sql.?outputs.sqlDatabaseName ?? ''
 output azureSqlConnectionStringSecretName string = sql.?outputs.connectionStringSecretName ?? ''
+output documentDbClusterName string = documentdb.?outputs.clusterName ?? ''
+output documentDbClusterFqdn string = documentdb.?outputs.clusterFqdn ?? ''
+output documentDbConnectionStringSecretName string = documentdb.?outputs.connectionStringSecretName ?? ''

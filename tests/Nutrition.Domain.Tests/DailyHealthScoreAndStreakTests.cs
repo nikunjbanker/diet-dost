@@ -198,8 +198,8 @@ public class DailyHealthScoreAndStreakTests
     [Fact]
     public void CalculateConsistencyStreak_MultiDayConsecutive_ReturnsConsecutiveStreak()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var baseUtc = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(baseUtc, Ist));
 
         var meals = new List<MealLog>
         {
@@ -218,8 +218,8 @@ public class DailyHealthScoreAndStreakTests
     [Fact]
     public void CalculateConsistencyStreak_WhenNotLoggedTodayButLoggedYesterday_PreservesActiveStreakGraceWindow()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var baseUtc = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(baseUtc, Ist));
 
         var meals = new List<MealLog>
         {
@@ -238,8 +238,8 @@ public class DailyHealthScoreAndStreakTests
     [Fact]
     public void CalculateConsistencyStreak_WhenMissingYesterdayAndToday_ResetsStreakToZero()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var baseUtc = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(baseUtc, Ist));
 
         var meals = new List<MealLog>
         {
@@ -254,8 +254,8 @@ public class DailyHealthScoreAndStreakTests
     [Fact]
     public void CalculateConsistencyStreak_SoftDeletedMeals_AreExcludedFromStreak()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var baseUtc = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(baseUtc, Ist));
 
         var meals = new List<MealLog>
         {
@@ -275,8 +275,8 @@ public class DailyHealthScoreAndStreakTests
     [Fact]
     public void CalculateConsistencyStreak_FutureDatedMeals_AreIgnoredForStreak()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var baseUtc = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(baseUtc, Ist));
 
         var meals = new List<MealLog>
         {

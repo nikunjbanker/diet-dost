@@ -46,7 +46,7 @@ param acaSubnetName string = 'snet-aca-infra'
 @secure()
 param geminiApiKey string = ''
 
-@description('Database persistence provider (Sqlite, AzureSql, SqlServer).')
+@description('Database persistence provider (Sqlite, AzureSql, SqlServer, DocumentDb).')
 param databaseProvider string = 'AzureSql'
 
 @description('Optional Azure SQL Connection String (for Managed Identity or SQL auth).')
@@ -66,7 +66,24 @@ param sqlAdminLogin string = 'sqladmin'
 @secure()
 param sqlAdminPassword string = ''
 
-@description('Optional client IP address of local developer workstation to permit through SQL Server firewall.')
+@description('Flag indicating whether Azure DocumentDB (Free Tier - 32 GB dedicated storage) should be provisioned.')
+param deployDocumentDb bool = false
+
+@description('Optional explicit name for Azure DocumentDB cluster. If omitted, a unique name is derived.')
+param documentDbClusterName string = ''
+
+@description('Administrator login username for DocumentDB cluster.')
+param documentDbAdminLogin string = 'docdbadmin'
+
+@description('Administrator login password for DocumentDB cluster.')
+@secure()
+param documentDbAdminPassword string = ''
+
+@description('Optional DocumentDB Connection String (for MongoDB auth).')
+@secure()
+param documentDbConnectionString string = ''
+
+@description('Optional client IP address of local developer workstation to permit through SQL Server and DocumentDB firewall.')
 param allowedClientIp string = ''
 
 // 1. Foundation Infrastructure (VNet, Storage, SMB File Share, Log Analytics, ACA Environment, ACR)
@@ -83,6 +100,10 @@ module foundation 'infra.bicep' = {
     sqlServerName: sqlServerName
     sqlAdminLogin: sqlAdminLogin
     sqlAdminPassword: sqlAdminPassword
+    deployDocumentDb: deployDocumentDb
+    documentDbClusterName: documentDbClusterName
+    documentDbAdminLogin: documentDbAdminLogin
+    documentDbAdminPassword: documentDbAdminPassword
     allowedClientIp: allowedClientIp
   }
 }
@@ -107,6 +128,7 @@ module workload 'app.bicep' = {
     appInsightsConnectionString: foundation.outputs.appInsightsConnectionString
     databaseProvider: databaseProvider
     azureSqlConnectionString: azureSqlConnectionString
+    documentDbConnectionString: documentDbConnectionString
   }
 }
 
@@ -131,3 +153,6 @@ output appInsightsConnectionString string = foundation.outputs.appInsightsConnec
 output sqlServerFqdn string = foundation.outputs.sqlServerFqdn
 output sqlServerName string = foundation.outputs.sqlServerName
 output sqlDatabaseName string = foundation.outputs.sqlDatabaseName
+output documentDbClusterName string = foundation.outputs.documentDbClusterName
+output documentDbClusterFqdn string = foundation.outputs.documentDbClusterFqdn
+output documentDbConnectionStringSecretName string = foundation.outputs.documentDbConnectionStringSecretName

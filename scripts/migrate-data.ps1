@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
     Tri-Database Data Migration Runner for Diet-Dost (.NET 11).
     Supports pairwise migration between SQLite, Azure SQL, and Azure DocumentDB (Free Tier).
