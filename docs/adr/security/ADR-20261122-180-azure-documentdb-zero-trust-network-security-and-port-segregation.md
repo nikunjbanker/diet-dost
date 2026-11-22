@@ -39,9 +39,12 @@ Adversarial security review of the Azure DocumentDB (`Microsoft.DocumentDB/mongo
 - Provisioned targeted firewall rule `AllowContainerAppOutboundIp` (`startIpAddress: containerAppOutboundIp`, `endIpAddress: containerAppOutboundIp`), ensuring only the Diet-Dost Container App environment can reach the cluster over public routing.
 - Preserved developer workstation authorization rule `AllowDeveloperWorkstationIp` (`startIpAddress: allowedClientIp`, `endIpAddress: allowedClientIp`).
 
-### 2.3 Subnet Service Endpoint Integration (`Microsoft.AzureCosmosDB`)
-- Updated `snet-aca-infra` subnet in `infra/dev/infra.bicep` to include `Microsoft.AzureCosmosDB` in `serviceEndpoints` alongside `Microsoft.Storage`, `Microsoft.KeyVault`, and `Microsoft.Sql`.
-- Ensures traffic from the ACA subnet to Azure Cosmos DB and DocumentDB traverses Microsoft's internal private network backbone.
+### 2.3 Architectural Differentiation: Service Endpoints vs. IP Firewall Rules
+- **Azure DocumentDB (`mongoClusters`) vs. Azure Cosmos DB (`databaseAccounts`)**:
+  - `Microsoft.AzureCosmosDB` VNet service endpoint is specifically designed for multi-tenant Cosmos DB database accounts (`Microsoft.DocumentDB/databaseAccounts`).
+  - Dedicated Azure DocumentDB vCore clusters (`Microsoft.DocumentDB/mongoClusters`) do **not** support or bind to VNet Service Endpoints.
+  - Instead, Azure DocumentDB secures network ingress through **targeted IP firewall rules** (`Microsoft.DocumentDB/mongoClusters/firewallRules`) matching the Container App's dedicated static egress IP (`containerAppOutboundIp`), and optionally through **Azure Private Endpoints (Private Link)**.
+  - Therefore, `Microsoft.AzureCosmosDB` is **not** added to the subnet service endpoints, avoiding routing conflation between DocumentDB and Cosmos DB.
 
 ### 2.4 Strict Port Segregation & Contract Enforcement
 - **Azure SQL Ports**: Port `1433` (TCP TDS) + Port Range `11000–11999` (TCP Redirection).
@@ -53,7 +56,7 @@ Adversarial security review of the Azure DocumentDB (`Microsoft.DocumentDB/mongo
   - Wildcard `0.0.0.0` rule rejection by default.
   - Presence of `AllowContainerAppOutboundIp` and `AllowDeveloperWorkstationIp`.
   - Disjoint port configuration in NSG outbound rules.
-  - Subnet service endpoints declaration for both `Microsoft.Sql` and `Microsoft.AzureCosmosDB`.
+  - Subnet service endpoints declaration for `Microsoft.Sql` (for Azure SQL VNet rules) and exclusion of unneeded `Microsoft.AzureCosmosDB`.
 
 ---
 

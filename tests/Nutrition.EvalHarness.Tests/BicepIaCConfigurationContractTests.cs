@@ -288,9 +288,13 @@ public class BicepIaCConfigurationContractTests
         var infraBicepPath = GetInfraBicepPath("dev");
         var infraContent = File.ReadAllText(infraBicepPath);
 
-        // Subnet service endpoints must declare both Microsoft.Sql and Microsoft.AzureCosmosDB
+        // Subnet service endpoints must declare Microsoft.Sql for Azure SQL virtual network rules
         Assert.Contains("service: 'Microsoft.Sql'", infraContent);
-        Assert.Contains("service: 'Microsoft.AzureCosmosDB'", infraContent);
+
+        // DocumentDB (vCore mongoClusters) does NOT use VNet service endpoints; it secures traffic
+        // via dedicated container environment egress IP firewall rules (AllowContainerAppOutboundIp)
+        // Assert that Microsoft.AzureCosmosDB is NOT declared in subnet service endpoints to avoid Cosmos DB conflation
+        Assert.DoesNotContain("service: 'Microsoft.AzureCosmosDB'", infraContent);
 
         // SQL uses port 1433 and redirect 11000-11999; DocumentDB uses port 27017 and 10255
         Assert.Contains("'1433'", infraContent);

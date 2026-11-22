@@ -570,7 +570,7 @@ graph TD
   - Eliminates the wildcard `0.0.0.0` rule (`allowAllAzureServices = false` by default).
   - Outbound NSG rule `Allow-DocumentDB-Outbound` permits outbound traffic on ports `10255` and `27017` to service tag `AzureCosmosDB`.
   - Inbound firewall rule `AllowContainerAppOutboundIp` authorizes only the dedicated static outbound IP of the ACA environment (`acaEnvironment.properties.staticIp`), eliminating cross-tenant access.
-  - Subnet service endpoints declare both `Microsoft.Sql` and `Microsoft.AzureCosmosDB` for direct backbone routing.
+  - Subnet Service Endpoints: Subnet declares `Microsoft.Sql` for Azure SQL, and strictly excludes `Microsoft.AzureCosmosDB` (DocumentDB vCore does not use VNet service endpoints, securing traffic via targeted ACA static outbound IP firewall rules).
   - Strict Port Segregation: Azure SQL (Port 1433 + 11000-11999) vs DocumentDB (Port 27017 + 10255) with zero port collisions.
 - **Sole-Authority Secret Storage**: Connection strings are stored directly into Key Vault as secret `documentdb-connection-string`. Zero plaintext passwords or connection strings are emitted in Bicep outputs.
 - **Workflow Parameters**:

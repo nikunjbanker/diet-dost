@@ -559,7 +559,7 @@ The full architectural blueprint is codified in the following repository visual 
   - Strict Port Segregation: Azure SQL communicates over port `1433` (and redirect `11000-11999`), whereas DocumentDB communicates over port `27017` (and `10255`).
   - Elimination of Wildcard `0.0.0.0`: The overly permissive `AllowAzureServices` (`0.0.0.0` - `0.0.0.0`) rule is disabled by default (`allowAllAzureServices = false`).
   - Container Apps Egress Authorization: Inbound firewall rule `AllowContainerAppOutboundIp` authorizes only the dedicated static outbound IP of the ACA environment (`acaEnvironment.properties.staticIp`), eliminating cross-tenant access.
-  - Subnet Service Endpoint: `snet-aca-infra` declares `Microsoft.AzureCosmosDB` service endpoint alongside `Microsoft.Sql`, `Microsoft.KeyVault`, and `Microsoft.Storage`.
+  - Subnet Service Endpoints: `snet-aca-infra` declares `Microsoft.Sql` for Azure SQL VNet routing, but deliberately excludes `Microsoft.AzureCosmosDB` because DocumentDB (vCore `mongoClusters`) does not support VNet service endpoints and relies on Container App dedicated static egress IP firewall rules (`AllowContainerAppOutboundIp`) and Private Link.
   - Local Developer Ingress: Controlled strictly through explicit `AllowDeveloperWorkstationIp` (`allowedClientIp`).
 - **Zero-Plaintext Key Vault Governance**:
   - Module outputs only Key Vault secret name (`documentdb-connection-string`), never plaintext credentials in ARM deployment outputs.
