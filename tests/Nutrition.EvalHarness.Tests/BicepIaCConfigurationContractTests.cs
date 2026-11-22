@@ -43,6 +43,12 @@ public class BicepIaCConfigurationContractTests
         return Path.Combine(repoRoot, "infra", environment, "infra.bicep");
     }
 
+    private static string GetDocumentDbBicepPath(string environment = "dev")
+    {
+        var repoRoot = GetRepoRoot();
+        return Path.Combine(repoRoot, "infra", environment, "documentdb.bicep");
+    }
+
     [Fact]
     public void AppBicep_Declares_RequiredConfigurationEnvironmentVariables()
     {
@@ -215,5 +221,104 @@ public class BicepIaCConfigurationContractTests
         Assert.Contains("param appInsightsConnectionString string", appContent);
         Assert.Contains("app-insights-connection-string", appContent);
         Assert.Contains("APPLICATIONINSIGHTS_CONNECTION_STRING", appContent);
+    }
+
+    [Fact]
+    public void DocumentDbBicep_Declares_FreeTier_Cluster_And_KeyVault_Secret()
+    {
+        var docDbBicepPath = GetDocumentDbBicepPath("dev");
+        Assert.True(File.Exists(docDbBicepPath), $"documentdb.bicep must exist at {docDbBicepPath}");
+
+        var bicepContent = File.ReadAllText(docDbBicepPath);
+
+        // Azure DocumentDB (Mongo vCore Free Tier - 32 GB dedicated storage)
+        Assert.Contains("Microsoft.DocumentDB/mongoClusters@2024-07-01", bicepContent);
+        Assert.Contains("tier: 'Free'", bicepContent);
+        Assert.Contains("sizeGb: 32", bicepContent);
+        Assert.Contains("serverVersion: '6.0'", bicepContent);
+        Assert.Contains("documentdb-connection-string", bicepContent);
+    }
+
+    [Fact]
+    public void InfraBicep_Declares_DocumentDb_Outbound_NSG_Rules_And_Module()
+    {
+        var infraBicepPath = GetInfraBicepPath("dev");
+        var infraContent = File.ReadAllText(infraBicepPath);
+
+        // Outbound NSG rule for DocumentDB / AzureCosmosDB ports 10255 and 27017
+        Assert.Contains("Allow-DocumentDB-Outbound", infraContent);
+        Assert.Contains("'10255'", infraContent);
+        Assert.Contains("'27017'", infraContent);
+        Assert.Contains("destinationAddressPrefix: 'AzureCosmosDB'", infraContent);
+
+        // DocumentDB module invocation and outputs
+        Assert.Contains("module documentdb 'documentdb.bicep'", infraContent);
+        Assert.Contains("output documentDbClusterFqdn string", infraContent);
+    }
+
+    [Fact]
+    public void DocumentDbBicep_ZeroTrust_FirewallRules_Reject_Wildcard_By_Default_And_Allow_ContainerEgress_And_DeveloperIp()
+    {
+        var docDbBicepPath = GetDocumentDbBicepPath("dev");
+        var bicepContent = File.ReadAllText(docDbBicepPath);
+
+        // Zero-Trust Rule: AllowAzureServices (0.0.0.0) MUST NOT be unconditional
+        Assert.DoesNotContain("name: 'AllowAzureServices'\n  properties:\n    startIpAddress: '0.0.0.0'", bicepContent.Replace("\r\n", "\n"));
+        Assert.Contains("param allowAllAzureServices bool = false", bicepContent);
+        Assert.Contains("resource allowAzureServices 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (allowAllAzureServices)", bicepContent);
+
+        // Dedicated Container App Environment egress IP rule
+        Assert.Contains("param containerAppOutboundIp string = ''", bicepContent);
+        Assert.Contains("resource allowContainerAppOutboundIp 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (!empty(containerAppOutboundIp))", bicepContent);
+        Assert.Contains("startIpAddress: containerAppOutboundIp", bicepContent);
+        Assert.Contains("endIpAddress: containerAppOutboundIp", bicepContent);
+
+        // Developer workstation client IP rule
+        Assert.Contains("resource allowDeveloperIp 'Microsoft.DocumentDB/mongoClusters/firewallRules@2024-07-01' = if (!empty(allowedClientIp))", bicepContent);
+        Assert.Contains("startIpAddress: allowedClientIp", bicepContent);
+        Assert.Contains("endIpAddress: allowedClientIp", bicepContent);
+
+        // Standard DocumentDB / MongoDB protocol port
+        Assert.Contains("output databasePort int = 27017", bicepContent);
+    }
+
+    [Fact]
+    public void InfraBicep_Enforces_PortSegregation_Between_Sql_And_DocumentDb()
+    {
+        var infraBicepPath = GetInfraBicepPath("dev");
+        var infraContent = File.ReadAllText(infraBicepPath);
+
+        // Subnet service endpoints must declare Microsoft.Sql for Azure SQL virtual network rules
+        Assert.Contains("service: 'Microsoft.Sql'", infraContent);
+
+        // DocumentDB (vCore mongoClusters) does NOT use VNet service endpoints; it secures traffic
+        // via dedicated container environment egress IP firewall rules (AllowContainerAppOutboundIp)
+        // Assert that Microsoft.AzureCosmosDB is NOT declared in subnet service endpoints to avoid Cosmos DB conflation
+        Assert.DoesNotContain("service: 'Microsoft.AzureCosmosDB'", infraContent);
+
+        // SQL uses port 1433 and redirect 11000-11999; DocumentDB uses port 27017 and 10255
+        Assert.Contains("'1433'", infraContent);
+        Assert.Contains("'11000-11999'", infraContent);
+        Assert.Contains("'27017'", infraContent);
+        Assert.Contains("'10255'", infraContent);
+
+        // DocumentDB module must receive ACA static outbound IP and enable Azure Services egress
+        Assert.Contains("containerAppOutboundIp: acaEnvironment.properties.staticIp", infraContent);
+        Assert.Contains("allowAllAzureServices: true", infraContent);
+
+        // Disjoint port outputs
+        Assert.Contains("output sqlPort int", infraContent);
+        Assert.Contains("output documentDbPort int", infraContent);
+    }
+
+    [Fact]
+    public void AppBicep_Declares_DocumentDb_Connection_Configuration()
+    {
+        var appBicepPath = GetAppBicepPath("dev");
+        var appContent = File.ReadAllText(appBicepPath);
+
+        Assert.Contains("param documentDbConnectionString string", appContent);
+        Assert.Contains("documentdb-connection-string", appContent);
+        Assert.Contains("ConnectionStrings__DocumentDbConnection", appContent);
     }
 }

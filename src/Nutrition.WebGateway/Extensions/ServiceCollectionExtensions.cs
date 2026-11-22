@@ -58,6 +58,13 @@ public static class ServiceCollectionExtensions
         // Native .NET 11 Clean Architecture Application Services & CQRS Dispatcher
         services.AddApplicationServices();
 
+        // Database Schema Initializer Strategy, Factory & Ordered Data Seeders (OOP / SOLID Pattern)
+        services.AddScoped<Nutrition.WebGateway.Initialization.Abstractions.IDatabaseInitializerFactory, Nutrition.WebGateway.Initialization.Factories.DatabaseInitializerFactory>();
+        services.AddScoped<Nutrition.WebGateway.Initialization.Abstractions.IDatabaseSeeder, Nutrition.WebGateway.Initialization.Seeders.AppSecretsSeeder>();
+        services.AddScoped<Nutrition.WebGateway.Initialization.Abstractions.IDatabaseSeeder, Nutrition.WebGateway.Initialization.Seeders.DefaultDataSeeder>();
+        services.AddScoped<Nutrition.WebGateway.Initialization.Abstractions.IDatabaseSeeder, Nutrition.WebGateway.Initialization.Seeders.StorageMediaMirrorSeeder>();
+        services.AddScoped<Nutrition.WebGateway.Initialization.DatabaseInitializationService>();
+
         // Response Compression for Mobile payloads (Brotli & Gzip)
         services.AddResponseCompression(options =>
         {

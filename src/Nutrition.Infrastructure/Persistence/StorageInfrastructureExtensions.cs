@@ -152,14 +152,52 @@ public static class StorageInfrastructureExtensions
                 });
                 break;
 
+            case "documentdb":
+            case "mongodb":
+                var docDbConn = configuration.GetConnectionString("DocumentDbConnection")
+                    ?? (!string.IsNullOrWhiteSpace(defaultConnStr) && defaultConnStr.StartsWith("mongodb", StringComparison.OrdinalIgnoreCase) ? defaultConnStr : null)
+                    ?? (!string.IsNullOrWhiteSpace(dbOptions.ConnectionString) && dbOptions.ConnectionString.StartsWith("mongodb", StringComparison.OrdinalIgnoreCase) ? dbOptions.ConnectionString : null)
+                    ?? "mongodb://localhost:27017";
+
+                var docDbOptions = configuration.GetSection(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbOptions.SectionName).Get<Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbOptions>() ?? new Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbOptions();
+
+                Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbBsonMappings.Register();
+
+                var mongoUrl = new MongoDB.Driver.MongoUrl(docDbConn);
+                var mongoSettings = MongoDB.Driver.MongoClientSettings.FromUrl(mongoUrl);
+                mongoSettings.ConnectTimeout = TimeSpan.FromMilliseconds(docDbOptions.ConnectTimeoutMs);
+                mongoSettings.ServerSelectionTimeout = TimeSpan.FromMilliseconds(docDbOptions.ServerSelectionTimeoutMs);
+                mongoSettings.MaxConnectionIdleTime = TimeSpan.FromMilliseconds(docDbOptions.MaxConnectionIdleTimeMs);
+
+                var mongoClient = new MongoDB.Driver.MongoClient(mongoSettings);
+                var targetDbName = !string.IsNullOrWhiteSpace(mongoUrl.DatabaseName) ? mongoUrl.DatabaseName : docDbOptions.DatabaseName;
+                var mongoDatabase = mongoClient.GetDatabase(targetDbName);
+
+                services.AddSingleton<MongoDB.Driver.IMongoClient>(mongoClient);
+                services.AddSingleton<MongoDB.Driver.IMongoDatabase>(mongoDatabase);
+
+                // Register in-memory DbContext so existing background consumers can resolve cleanly
+                services.AddDbContext<DietTrackerDbContext>(options =>
+                    options.UseSqlite("Data Source=:memory:"));
+
+                services.AddScoped(typeof(IRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
+                services.AddScoped<IUnitOfWork, Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbUnitOfWork>();
+                break;
+
             default:
                 services.AddDbContext<DietTrackerDbContext>(options =>
                     options.UseSqlite(connectionString));
+                services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+                services.AddScoped<IUnitOfWork, EfUnitOfWork>();
                 break;
         }
 
-        services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
-        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        if (!provider.Equals("documentdb", StringComparison.OrdinalIgnoreCase) && !provider.Equals("mongodb", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+            services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        }
+
         services.AddScoped<IDatabaseWarmupService, DatabaseWarmupService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Nutrition.Infrastructure.Services.LocalPhotoStorageService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Nutrition.Infrastructure.Services.DatabaseSecretStore>();

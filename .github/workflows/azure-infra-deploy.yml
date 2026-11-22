@@ -62,6 +62,16 @@ on:
         required: false
         type: string
         default: 'sqladmin'
+      deployDocumentDb:
+        description: 'Deploy Azure DocumentDB Free Tier (Mongo vCore Free Tier - 32 GB dedicated storage)'
+        required: false
+        type: boolean
+        default: false
+      documentDbAdminLogin:
+        description: 'Azure DocumentDB Administrator login username'
+        required: false
+        type: string
+        default: 'docdbadmin'
       allowedClientIp:
         description: 'Optional local developer workstation client IP to allow in Azure SQL firewall'
         required: false
@@ -99,6 +109,8 @@ jobs:
             echo "| **Key Vault Name** | \`${{ inputs.keyVaultName || 'kvdostdevskehxuagttzos' }}\` | Azure Key Vault |"
             echo "| **Deploy Azure SQL Basic DTU** | \`${{ inputs.deployAzureSql != false }}\` | 5 DTUs, 2 GB maximum database size |"
             echo "| **SQL Admin Login** | \`${{ inputs.sqlAdminLogin || 'sqladmin' }}\` | SQL Server Authentication admin username |"
+            echo "| **Deploy Azure DocumentDB Free Tier** | \`${{ inputs.deployDocumentDb == true }}\` | Mongo vCore Free Tier, 32 GB dedicated storage |"
+            echo "| **DocumentDB Admin Login** | \`${{ inputs.documentDbAdminLogin || 'docdbadmin' }}\` | Mongo vCore cluster admin username |"
             echo "| **Allowed Client IP** | \`${{ inputs.allowedClientIp || 'None' }}\` | Local workstation IP permitted in firewall |"
             echo "| **Skip Pre-Flight Gates** | \`${{ inputs.skipPreFlightGates }}\` | Pre-flight security scan status |"
             echo "| **Triggered By** | \`@${{ github.actor }}\` | User / Identity initiating workflow |"
@@ -168,6 +180,7 @@ jobs:
           echo "Validating Bicep cloud infrastructure templates before provisioning..."
           az bicep build --file infra/${{ inputs.environment }}/infra.bicep
           az bicep build --file infra/${{ inputs.environment }}/app.bicep
+          az bicep build --file infra/${{ inputs.environment }}/documentdb.bicep
           echo "✅ Pre-Provisioning Bicep IaC Gate Passed: Templates compiled successfully."
 
       - name: 6. Aspire Publish - Validate AppHost Model & Generate Manifests
@@ -292,6 +305,9 @@ jobs:
               deployAzureSql=${{ inputs.deployAzureSql != false }} \
               sqlAdminLogin="${{ inputs.sqlAdminLogin || 'sqladmin' }}" \
               sqlAdminPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}" \
+              deployDocumentDb=${{ inputs.deployDocumentDb == true }} \
+              documentDbAdminLogin="${{ inputs.documentDbAdminLogin || 'docdbadmin' }}" \
+              documentDbAdminPassword="${{ secrets.AZURE_DOCUMENTDB_ADMIN_PASSWORD || '' }}" \
               allowedClientIp="${{ inputs.allowedClientIp || '' }}" \
             --output table
           echo "✅ Live Azure ARM Pre-Flight Validation Succeeded: 0 template or quota violations."
@@ -374,6 +390,9 @@ jobs:
               deployAzureSql=${{ inputs.deployAzureSql != false }} \
               sqlAdminLogin="${{ inputs.sqlAdminLogin || 'sqladmin' }}" \
               sqlAdminPassword="${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}" \
+              deployDocumentDb=${{ inputs.deployDocumentDb == true }} \
+              documentDbAdminLogin="${{ inputs.documentDbAdminLogin || 'docdbadmin' }}" \
+              documentDbAdminPassword="${{ secrets.AZURE_DOCUMENTDB_ADMIN_PASSWORD || '' }}" \
               allowedClientIp="${{ inputs.allowedClientIp || '' }}" \
             --result-format ResourceIdOnly > whatif_summary.txt || true
 
@@ -511,6 +530,9 @@ jobs:
             deployAzureSql=${{ inputs.deployAzureSql != false }}
             sqlAdminLogin=${{ inputs.sqlAdminLogin || 'sqladmin' }}
             sqlAdminPassword=${{ secrets.AZURE_SQL_ADMIN_PASSWORD || '' }}
+            deployDocumentDb=${{ inputs.deployDocumentDb == true }}
+            documentDbAdminLogin=${{ inputs.documentDbAdminLogin || 'docdbadmin' }}
+            documentDbAdminPassword=${{ secrets.AZURE_DOCUMENTDB_ADMIN_PASSWORD || '' }}
             allowedClientIp=${{ inputs.allowedClientIp || '' }}
           failOnStderr: false
 
@@ -533,6 +555,7 @@ jobs:
           echo "Key Vault URI:    ${{ steps.deploy-infra.outputs.keyVaultUri }}"
           echo "Managed Identity: ${{ steps.deploy-infra.outputs.managedIdentityId }}"
           echo "App Insights:     ${{ steps.deploy-infra.outputs.appInsightsName }}"
+          echo "DocumentDB FQDN:  ${{ steps.deploy-infra.outputs.documentDbClusterFqdn }}"
           echo "=========================================================="
 
       - name: 6. Publish Stage 3 Provisioning Completion Summary
@@ -554,6 +577,7 @@ jobs:
             echo "| **Managed Identity** | \`${{ steps.deploy-infra.outputs.managedIdentityId }}\` |"
             echo "| **Application Insights** | \`${{ steps.deploy-infra.outputs.appInsightsName }}\` (DisableLocalAuth: true) |"
             echo "| **Azure SQL Basic DTU** | $([ "${{ inputs.deployAzureSql }}" = "true" ] && echo "✅ Provisioned (\`${{ steps.deploy-infra.outputs.sqlServerFqdn }}\` / \`${{ steps.deploy-infra.outputs.sqlDatabaseName }}\`)" || echo "Disabled (Using SQLite)") |"
+            echo "| **Azure DocumentDB Free Tier** | $([ "${{ inputs.deployDocumentDb }}" = "true" ] && echo "✅ Provisioned (\`${{ steps.deploy-infra.outputs.documentDbClusterFqdn }}\` / 32 GB Free Tier)" || echo "Disabled") |"
             echo "| **Static Ingress IP** | \`${{ steps.deploy-infra.outputs.staticIp }}\` |"
             echo "| **Custom Domain Verification ID** | \`${{ steps.deploy-infra.outputs.customDomainVerificationId }}\` |"
           } >> "$GITHUB_STEP_SUMMARY"

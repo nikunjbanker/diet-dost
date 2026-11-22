@@ -145,4 +145,5 @@ output sqlServerId string = sqlServer.id
 output sqlServerName string = sqlServer.name
 output sqlServerFqdn string = sqlServer.properties.fullyQualifiedDomainName
 output sqlDatabaseName string = sqlDatabase.name
+output databasePort int = 1433
 output connectionStringSecretName string = 'azure-sql-connection-string'

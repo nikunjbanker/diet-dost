@@ -15,6 +15,9 @@ public sealed class DatabaseOptions
 {
     public const string SectionName = "Database";
 
+    /// <summary>
+    /// Configured database provider: "Sqlite", "AzureSql" (or "SqlServer"), or "DocumentDb" (Azure DocumentDB Free Tier / MongoDB).
+    /// </summary>
     public string Provider { get; set; } = "AzureSql";
     public string ConnectionString { get; set; } = "Data Source=diettracker.db";
 

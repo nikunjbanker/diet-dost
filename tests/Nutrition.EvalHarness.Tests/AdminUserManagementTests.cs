@@ -472,16 +472,23 @@ public class AdminUserManagementTests : IDisposable
             CurrentUserRole: nameof(UserRole.SuperAdmin)
         );
 
-        var result = await handler.HandleAsync(command);
+        try
+        {
+            var result = await handler.HandleAsync(command);
 
-        Assert.True(result.Succeeded);
-        Assert.Equal(12, result.Data!.Configuration.DailyAiDetectionLimit);
-        Assert.True(result.Data.Configuration.AllowPhotoCompare);
-        Assert.Equal(45, result.Data.Configuration.AnalyticsHistoryDays);
+            Assert.True(result.Succeeded);
+            Assert.Equal(12, result.Data!.Configuration.DailyAiDetectionLimit);
+            Assert.True(result.Data.Configuration.AllowPhotoCompare);
+            Assert.Equal(45, result.Data.Configuration.AnalyticsHistoryDays);
 
-        var configInDb = await tierService.GetConfigurationAsync(UserTier.Basic);
-        Assert.Equal(12, configInDb.DailyAiDetectionLimit);
-        Assert.True(configInDb.AllowPhotoCompare);
+            var configInDb = await tierService.GetConfigurationAsync(UserTier.Basic);
+            Assert.Equal(12, configInDb.DailyAiDetectionLimit);
+            Assert.True(configInDb.AllowPhotoCompare);
+        }
+        finally
+        {
+            TierConfigurationService.ClearCache();
+        }
     }
 
     [Fact]

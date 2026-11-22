@@ -77,12 +77,16 @@ param minReplicas int = 1
 @description('Maximum number of replicas for Container App (enforces SQLite single-writer invariant).')
 param maxReplicas int = 1
 
-@description('Database persistence provider (Sqlite, AzureSql, SqlServer).')
+@description('Database persistence provider (Sqlite, AzureSql, SqlServer, DocumentDb).')
 param databaseProvider string = 'AzureSql'
 
 @description('Optional Azure SQL Connection String (for Managed Identity or SQL auth).')
 @secure()
 param azureSqlConnectionString string = ''
+
+@description('Optional Azure DocumentDB Connection String (for MongoDB auth).')
+@secure()
+param documentDbConnectionString string = ''
 
 // ------------------------------------------------------------------------------
 // Container App (Web Gateway & Mobile BFF Workload)
@@ -149,12 +153,23 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           keyVaultUrl: '${keyVaultUri}secrets/azure-sql-connection-string'
           identity: managedIdentityId
         }
+      ] : (databaseProvider == 'DocumentDb' ? [
+        {
+          name: 'documentdb-connection-string'
+          keyVaultUrl: '${keyVaultUri}secrets/documentdb-connection-string'
+          identity: managedIdentityId
+        }
       ] : (!empty(azureSqlConnectionString) ? [
         {
           name: 'azure-sql-connection-string'
           value: azureSqlConnectionString
         }
-      ] : [])) : union(
+      ] : (!empty(documentDbConnectionString) ? [
+        {
+          name: 'documentdb-connection-string'
+          value: documentDbConnectionString
+        }
+      ] : [])))) : union(
         !empty(geminiApiKey) ? [
           {
             name: 'gemini-api-key'
@@ -183,6 +198,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           {
             name: 'azure-sql-connection-string'
             value: azureSqlConnectionString
+          }
+        ] : [],
+        !empty(documentDbConnectionString) ? [
+          {
+            name: 'documentdb-connection-string'
+            value: documentDbConnectionString
           }
         ] : []
       )
@@ -241,6 +262,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'ConnectionStrings__AzureSqlConnection'
               secretRef: databaseProvider == 'AzureSql' && ((!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(azureSqlConnectionString)) ? 'azure-sql-connection-string' : null
               value: databaseProvider != 'AzureSql' || ((empty(keyVaultUri) || empty(managedIdentityId)) && empty(azureSqlConnectionString)) ? '' : null
+            }
+            {
+              name: 'ConnectionStrings__DocumentDbConnection'
+              secretRef: databaseProvider == 'DocumentDb' && ((!empty(keyVaultUri) && !empty(managedIdentityId)) || !empty(documentDbConnectionString)) ? 'documentdb-connection-string' : null
+              value: databaseProvider != 'DocumentDb' || ((empty(keyVaultUri) || empty(managedIdentityId)) && empty(documentDbConnectionString)) ? '' : null
             }
             {
               name: 'Storage__WebRootPath'

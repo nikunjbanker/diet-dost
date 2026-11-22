@@ -189,27 +189,34 @@ To balance enterprise security, clinical data flexibility, scalability, and depl
 
 ---
 
-### 2.3 Option 3: Azure Cosmos DB (NoSQL Document — Cloud-Native Vision & Food Store)
+### 2.3 Option 3: Azure DocumentDB (Dedicated MongoDB Free Tier — 32 GB Storage)
 
 - **WHAT It Is**:
-  - A globally distributed, multi-model NoSQL document database offering guaranteed single-digit millisecond read/write latency at any scale. Includes **1,000 RU/s throughput and 25 GB storage free forever** per Azure subscription.
+  - A fully managed, dedicated MongoDB-compatible database service on Azure ([Microsoft Learn: Azure DocumentDB Free Tier](https://learn.microsoft.com/en-us/azure/documentdb/free-tier)).
+  - Includes **32 GB of dedicated storage free for the lifetime of your account** ($0.00/month).
+  - Operates on a **dedicated vCore architecture** with standard MongoDB wire protocol (v6.0/7.0 compatible).
+  - **Strict Architectural Separation**: This is **Azure DocumentDB**, explicitly distinct from Azure Cosmos DB for MongoDB. It has **NO Request Units (RU/s)** and **NO RU throttling (HTTP 429 / code 16500)**.
 - **WHY Consider It**:
-  - Nutrition meal logs, Indian food composition tables (IFCT 2017), and multimodal AI vision bounding boxes are naturally hierarchical JSON documents.
+  - Nutrition meal logs, Indian food composition tables (IFCT 2017), and multimodal AI vision metadata are naturally hierarchical JSON documents.
+  - Offers **16x more storage** than Azure SQL Basic DTU (32 GB vs. 2 GB) at guaranteed $0.00/month.
 - **HOW It Works**:
-  - Managed via `Microsoft.EntityFrameworkCore.Cosmos` or the `@azure/cosmos` SDK.
-  - Containers partitioned by `/userId` for optimal point-read performance and predictable Request Unit (RU) consumption.
-  - Uses the integrated Cosmos DB Change Feed to reactively trigger background AI analysis and sync to mobile clients.
+  - Managed via official `MongoDB.Driver` (3.14.0) with `DocumentDbRepository<T>` and `DocumentDbUnitOfWork`.
+  - Class mappings via `DocumentDbBsonMappings.Register()` explicitly map `Id` $\leftrightarrow$ `_id` (`BsonType.String`) and UTC DateTimes.
+  - Standard MongoDB connection string:
+    `mongodb://docdbadmin:<password>@dietdost-docdb-free.global.documentdb.azure.com:10255/?ssl=true&appName=@dietdost-docdb-free@`
 - **PROS**:
-  - **Free Tier Forever**: 1,000 RU/s + 25 GB free forever ($0.00/month).
-  - **Schema-Less Agility**: Add new spices, regional slang, or AI model confidence scores without running database migrations.
-  - **Blazing Performance**: Guaranteed sub-10ms read and write latencies globally.
-  - **Turnkey Global Replication**: Instant multi-region replication with a single click.
-  - **Event-Driven Change Feed**: Native reactive stream perfect for notifying mobile apps when meal vision analysis finishes.
-- **CONS**:
-  - **Relational Impedance Mismatch**: Enforcing ACID foreign keys, user role hierarchies, and complex financial/legal audit joins is difficult and expensive.
-  - **Cross-Partition Query Overhead**: Unindexed cross-partition queries burn Request Units (RUs) rapidly.
-  - **Steeper Learning Curve**: Requires strict partition-key modeling discipline compared to traditional relational SQL.
-  - **Verdict**: **The Best Specialized Store for High-Scale Food Catalogs and AI Vision Logs** when paired with a relational identity store.
+  - **Lifetime Free Tier**: 32 GB dedicated storage free forever ($0.00/month).
+  - **Zero RU Throttling**: Native vCore compute eliminates artificial Request Unit caps and rate-limit drops.
+  - **Schema-Less Agility**: Add new spices, regional slang, or AI vision bounding boxes without relational DDL migrations.
+  - **Seamless In-Place Upgrades**: Scale to paid tiers via Azure Portal Scale blade without data loss, IP rule changes, or connection string rewrites.
+- **CONS & MITIGATIONS**:
+  - **60-Day Inactivity Auto-Pause**: Azure DocumentDB pauses free-tier clusters after 60 days of dormancy.
+    - *Mitigation*: Application wraps initial connections with Polly connection retry (`connectTimeoutMS=60000`).
+  - **No Entra ID on Free Tier**: Uses native MongoDB SCRAM-SHA-256 authentication.
+    - *Mitigation*: Credentials secured strictly in Azure Key Vault (`ConnectionStrings:DocumentDbConnection`); plaintext secrets prohibited in Git.
+  - **No Automated Backup on Free Tier**: Single-node cluster with no automated point-in-time restore.
+    - *Mitigation*: Application-level snapshotting and cross-database backups via `Nutrition.Tools.DataMigrator`.
+  - **Verdict**: **The Premier Free Cloud Persistence Tier for High-Capacity Document Storage & Food Catalogs**.
 
 ---
 
@@ -297,10 +304,11 @@ graph LR
    - **Limits**: 5 DTUs and 2 GB maximum database size; price varies by region and is not a free-tier offer.
    - **Migration Effort**: Existing Azure SQL EF Core provider and relational schema remain unchanged.
 
-2. **Option B (Future Polyglot Option): Azure SQL + Azure Cosmos DB Free Tier**
-   - **Azure SQL Basic DTU**: Manages User Identities, DPDPA Consent audit trails, Tier Quotas, and Auth tokens.
-   - **Azure Cosmos DB Free Tier (Free Forever)**: 1,000 RU/s throughput + 25 GB storage free forever. Houses the IFCT food catalog and rich meal photo vision logs.
+2. **Option B (Cloud Document Free Tier): Azure DocumentDB Free Tier**
+   - **Specification**: **32 GB Dedicated Storage** free for the lifetime of your account ($0.00/month) ([learn.microsoft.com/en-us/azure/documentdb/free-tier](https://learn.microsoft.com/en-us/azure/documentdb/free-tier)).
+   - **Architecture**: Dedicated MongoDB vCore cluster; zero Request Unit (RU/s) limits; zero RU throttling.
    - **Cost**: **$0.00 / month**.
+   - **Migration Tooling**: Full bidirectional migration with SQLite and Azure SQL via `Nutrition.Tools.DataMigrator`.
 
 3. **Option C (The Future Scale Option): Azure PostgreSQL Flexible Server**
    - Ideal if migrating away from Microsoft-specific engines towards open-source PostgreSQL. Free for the first 12 months on Azure (750 hours/mo on B1ms instance), then ~$12-15/month.
@@ -473,20 +481,41 @@ az sql server firewall-rule create \
   --end-ip-address 0.0.0.0
 ```
 
-### 7.2 Azure Cosmos DB Free Tier Setup via Azure CLI
+### 7.2 Azure DocumentDB Free Tier Setup via Azure Portal / CLI
 ```bash
-# Provision Azure Cosmos DB NoSQL account with Free Tier (1,000 RU/s + 25 GB free forever)
-az cosmosdb create \
-  --name cosmos-dietdost-prod \
+# Provision Azure DocumentDB Free Tier cluster (32 GB dedicated storage free for life)
+# Authoritative Guide: https://learn.microsoft.com/en-us/azure/documentdb/free-tier
+# 1 Free Tier cluster allowed per Azure subscription
+az documentdb create \
+  --name dietdost-docdb-free \
   --resource-group rg-dietdost-prod \
-  --default-consistency-level Session \
-  --enable-free-tier true \
-  --locations regionName=centralindia failoverPriority=0
+  --location centralindia \
+  --tier Free
 ```
 
 ---
 
-## 8. Verification & Validation Checklist
+## 8. Tri-Database Data Migration Playbook (`Nutrition.Tools.DataMigrator`)
+
+Diet-Dost includes a standalone high-performance migration CLI tool (`Nutrition.Tools.DataMigrator`) supporting pairwise and round-trip streaming across all three providers:
+
+```powershell
+# 1. SQLite to Azure SQL
+dotnet run --project src/Nutrition.Tools.DataMigrator -- --source-type Sqlite --target-type AzureSql --mode Upsert
+
+# 2. Azure SQL to Azure DocumentDB
+dotnet run --project src/Nutrition.Tools.DataMigrator -- --source-type AzureSql --target-type DocumentDb --mode Upsert
+
+# 3. SQLite to Azure DocumentDB
+dotnet run --project src/Nutrition.Tools.DataMigrator -- --source-type Sqlite --target-type DocumentDb --mode Upsert
+
+# 4. Dry-Run Validation (0 database writes, verifies schema & conversions)
+dotnet run --project src/Nutrition.Tools.DataMigrator -- --dry-run
+```
+
+---
+
+## 9. Verification & Validation Checklist
 
 Before migrating any environment from SQLite to Azure Cloud persistence:
 - [ ] **Automated Test Suite**: Run `dotnet test` targeting the database provider to assert 100% pass rate.
@@ -497,14 +526,15 @@ Before migrating any environment from SQLite to Azure Cloud persistence:
 
 ---
 
-## 9. Mandatory Dual-Provider Schema Reconciliation Standard (Zero Error 207)
+## 10. Mandatory Tri-Provider Schema Reconciliation Standard (Zero Error 207)
 
 Whenever introducing new database entities, columns, or indexes to Diet-Dost:
-1. **Synchronize Both Initialization Paths**:
-   - In `DatabaseInitializationExtensions.cs`, update BOTH SQLite (`EnsureDatabaseCreatedAndMigratedAsync`) and Azure SQL (`EnsureSqlServerDatabaseMigratedAsync`).
-   - Every new table MUST be checked with `TableExistsAsync` and created with appropriate types (`TEXT` vs `NVARCHAR`, `INTEGER` vs `INT/BIT`, `DATETIME2`).
-   - Every new column MUST be reconciled via `EnsureColumnExistsAsync` on existing tables to handle migrations on live production/development databases.
-2. **Index Key Column Types in SQL Server**:
+1. **Synchronize All Three Initialization Paths**:
+   - In `DatabaseInitializationExtensions.cs`, maintain SQLite (`EnsureDatabaseCreatedAndMigratedAsync`), Azure SQL (`EnsureSqlServerDatabaseMigratedAsync`), and Azure DocumentDB (`EnsureDocumentDbCreatedAndMigratedAsync`).
+   - Every new table/collection MUST be checked with `TableExistsAsync` (or collection check) and created with appropriate types (`TEXT` vs `NVARCHAR` vs BSON, `INTEGER` vs `INT/BIT` vs BSON boolean/int, `DATETIME2` vs UTC BSON date).
+   - Every new column/property MUST be reconciled via `EnsureColumnExistsAsync` on existing tables or BsonClassMap to handle migrations on live production/development databases.
+2. **Index Key Column Types in SQL Server & DocumentDB**:
    - Never use `TEXT` or `NVARCHAR(MAX)` for index key columns in SQL Server (causes Error 1919 / Error 207). Always specify bounded types like `NVARCHAR(128)`.
-3. **Automated Dual-Provider Test Gate**:
-   - `DualDatabaseSchemaMigrationTests` executes real SQLite file and SQL Server LocalDB migrations, asserting that legacy databases migrate cleanly without throwing missing column or syntax errors.
+   - In DocumentDB, declare compound indexes programmatically (e.g. `(UserId, CreatedAtUtc)`).
+3. **Automated Tri-Provider Test Gate**:
+   - `DualDatabaseSchemaMigrationTests` and `TriDatabaseMigrationTests` execute real migrations across providers, asserting that legacy databases migrate cleanly without throwing missing column or syntax errors.
