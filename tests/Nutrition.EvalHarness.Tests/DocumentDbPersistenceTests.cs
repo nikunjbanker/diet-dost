@@ -162,4 +162,43 @@ public class DocumentDbPersistenceTests
         Assert.Equal(HealthStatus.Unhealthy, result.Status);
         Assert.Contains("Database health check threw an exception", result.Description);
     }
+
+    [Fact]
+    public void ResilientDateOnlySerializer_DeserializesNonZeroTimeComponentsAndStrings_WithoutException()
+    {
+        DocumentDbBsonMappings.Register();
+
+        // 1. Simulate BsonDateTime with non-zero time component (e.g. 18:30:00 UTC from IST offset)
+        var shiftedDt = new DateTime(2026, 11, 23, 18, 30, 45, DateTimeKind.Utc);
+        var bsonDoc = new BsonDocument
+        {
+            ["_id"] = "ledger-test-dateonly",
+            ["UserId"] = "usr-42",
+            ["Date"] = new BsonDateTime(shiftedDt),
+            ["BudgetedCalories"] = 1800.0,
+            ["ConsumedCalories"] = 650.0
+        };
+
+        // Act - deserialize DailyCalorieLedger
+        var ledger = BsonSerializer.Deserialize<DailyCalorieLedger>(bsonDoc);
+
+        // Assert
+        Assert.NotNull(ledger);
+        Assert.Equal(new DateOnly(2026, 11, 23), ledger.Date);
+        Assert.Equal("usr-42", ledger.UserId);
+        Assert.Equal(1800.0, ledger.BudgetedCalories);
+
+        // 2. Simulate ISO string date
+        var stringDateDoc = new BsonDocument
+        {
+            ["_id"] = "ledger-test-string",
+            ["UserId"] = "usr-43",
+            ["Date"] = "2026-11-25",
+            ["BudgetedCalories"] = 2000.0
+        };
+
+        var stringLedger = BsonSerializer.Deserialize<DailyCalorieLedger>(stringDateDoc);
+        Assert.NotNull(stringLedger);
+        Assert.Equal(new DateOnly(2026, 11, 25), stringLedger.Date);
+    }
 }
