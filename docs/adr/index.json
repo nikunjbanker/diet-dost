@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-23T06:32:06.976266+00:00",
-  "totalAdrs": 148,
+  "generatedAt": "2026-11-23T07:27:37.016824+00:00",
+  "totalAdrs": 149,
   "categoryCounts": {
-    "architecture": 48,
+    "architecture": 49,
     "security": 27,
     "devops": 39,
     "presentation": 21,
@@ -1785,6 +1785,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261123-183-azure-documentdb-nsg-azurecloud-and-port-range-remediation.md",
       "relativePath": "docs/adr/devops/ADR-20261123-183-azure-documentdb-nsg-azurecloud-and-port-range-remediation.md"
+    },
+    {
+      "id": "ADR-184",
+      "number": 184,
+      "title": "Clean Architecture Repository Decoupling of Background Workers and Application Services",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-23T12:55:00+05:30",
+      "subsystem": "WebGateway | Infrastructure | Application | EvalHarness.Tests",
+      "filename": "ADR-20261123-184-clean-architecture-repository-decoupling-for-background-workers.md",
+      "relativePath": "docs/adr/architecture/ADR-20261123-184-clean-architecture-repository-decoupling-for-background-workers.md"
     }
   ]
 }

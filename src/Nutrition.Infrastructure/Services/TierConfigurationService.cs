@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
@@ -6,23 +6,43 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Collections.Concurrent;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Nutrition.Application.Common;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Persistence;
 
 namespace Nutrition.Infrastructure.Services;
 
+/// <summary>
+/// Domain-driven service managing tier feature configurations.
+/// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
+/// </summary>
 public class TierConfigurationService : ITierConfigurationService
 {
-    private readonly DietTrackerDbContext _db;
+    private readonly IRepository<TierFeatureConfiguration> _tierRepo;
+    private readonly IUnitOfWork _unitOfWork;
     private static readonly ConcurrentDictionary<UserTier, TierFeatureConfiguration> _cache = new();
 
     public static void ClearCache() => _cache.Clear();
 
-    public TierConfigurationService(DietTrackerDbContext db)
+    public TierConfigurationService(
+        IRepository<TierFeatureConfiguration> tierRepo,
+        IUnitOfWork unitOfWork)
     {
-        _db = db;
+        _tierRepo = tierRepo ?? throw new ArgumentNullException(nameof(tierRepo));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    }
+
+    /// <summary>
+    /// Backwards-compatible internal constructor for test fixtures.
+    /// Internal so DI container never sees ambiguous public constructors.
+    /// </summary>
+    internal TierConfigurationService(DietTrackerDbContext db)
+        : this(new EfRepository<TierFeatureConfiguration>(db, NullLogger<EfRepository<TierFeatureConfiguration>>.Instance),
+               new EfUnitOfWork(db, NullLogger<EfUnitOfWork>.Instance))
+    {
     }
 
     public async Task<TierFeatureConfiguration> GetConfigurationAsync(UserTier tier, CancellationToken ct = default)
@@ -32,7 +52,7 @@ public class TierConfigurationService : ITierConfigurationService
             return cached;
         }
 
-        var config = await _db.TierConfigurations.AsNoTracking().FirstOrDefaultAsync(t => t.Tier == tier, ct);
+        var config = await _tierRepo.FirstOrDefaultAsync(t => t.Tier == tier, ct);
         if (config == null)
         {
             config = TierFeatureConfiguration.CreateDefault(tier);
@@ -44,7 +64,7 @@ public class TierConfigurationService : ITierConfigurationService
 
     public async Task<List<TierFeatureConfiguration>> GetAllConfigurationsAsync(CancellationToken ct = default)
     {
-        var configs = await _db.TierConfigurations.AsNoTracking().ToListAsync(ct);
+        var configs = await _tierRepo.GetAllAsync(ct);
         if (configs.Count == 0)
         {
             configs = [
@@ -65,7 +85,7 @@ public class TierConfigurationService : ITierConfigurationService
 
     public async Task<TierFeatureConfiguration> UpdateConfigurationAsync(TierFeatureConfiguration configuration, CancellationToken ct = default)
     {
-        var existing = await _db.TierConfigurations.FirstOrDefaultAsync(t => t.Tier == configuration.Tier, ct);
+        var existing = await _tierRepo.FirstOrDefaultAsync(t => t.Tier == configuration.Tier, ct);
         if (existing != null)
         {
             existing.DailyAiDetectionLimit = configuration.DailyAiDetectionLimit;
@@ -75,14 +95,15 @@ public class TierConfigurationService : ITierConfigurationService
             existing.Description = configuration.Description;
             existing.UpdatedAtUtc = DateTime.UtcNow;
             existing.UpdatedByUserId = configuration.UpdatedByUserId;
+            await _tierRepo.UpdateAsync(existing, ct);
         }
         else
         {
             configuration.UpdatedAtUtc = DateTime.UtcNow;
-            await _db.TierConfigurations.AddAsync(configuration, ct);
+            await _tierRepo.AddAsync(configuration, ct);
         }
 
-        await _db.SaveChangesAsync(ct);
+        await _unitOfWork.SaveChangesAsync(ct);
         _cache[configuration.Tier] = configuration;
         return configuration;
     }

@@ -22,6 +22,15 @@ public static class WebApplicationExtensions
         // Capture request/response payloads in OpenTelemetry activity for observability
         app.UseMiddleware<HttpPayloadTelemetryMiddleware>();
 
+        // Process forwarded headers from reverse proxy (Azure Container Apps / Kubernetes ingress)
+        var forwardedHeadersOptions = new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+        };
+        forwardedHeadersOptions.KnownIPNetworks.Clear();
+        forwardedHeadersOptions.KnownProxies.Clear();
+        app.UseForwardedHeaders(forwardedHeadersOptions);
+
         // 1. Enforce HTTPS & HSTS (Transport Security)
         if (!app.Environment.IsDevelopment())
         {

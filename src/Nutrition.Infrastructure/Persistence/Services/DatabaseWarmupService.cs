@@ -8,47 +8,79 @@
 using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using MongoDB.Bson;
+using MongoDB.Driver;
 using Nutrition.Application.Common.Interfaces;
 
 namespace Nutrition.Infrastructure.Persistence.Services;
 
 /// <summary>
-/// Pre-warms the active EF Core persistence layer by sending a lightweight query (e.g. SELECT 1; or CanConnect).
+/// Pre-warms the active persistence layer by sending a lightweight query (e.g. SELECT 1; ping; or CanConnect).
 /// For Azure SQL Serverless Free Tier, this triggers the cloud instance to resume from paused state
 /// before user-facing write or query operations take place.
+/// Supports SQLite, Azure SQL, and Azure DocumentDB (MongoDB vCore).
 /// </summary>
 public class DatabaseWarmupService : IDatabaseWarmupService
 {
-    private readonly DietTrackerDbContext _dbContext;
+    private readonly DietTrackerDbContext? _dbContext;
+    private readonly IMongoDatabase? _mongoDatabase;
     private readonly ILogger<DatabaseWarmupService> _logger;
 
     public DatabaseWarmupService(
-        DietTrackerDbContext dbContext,
-        ILogger<DatabaseWarmupService> logger)
+        DietTrackerDbContext? dbContext,
+        ILogger<DatabaseWarmupService> logger,
+        IMongoDatabase? mongoDatabase = null)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _dbContext = dbContext;
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _mongoDatabase = mongoDatabase;
     }
 
     public async Task<DatabaseWarmupResult> PingAndWarmupAsync(CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
-        var provider = _dbContext.Database.ProviderName ?? "Unknown";
 
         try
         {
+            if (_mongoDatabase != null)
+            {
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("[WARMUP] Probing database persistence via DocumentDB/MongoDB...");
+                }
+
+                var pingCmd = new BsonDocument("ping", 1);
+                await _mongoDatabase.RunCommandAsync<BsonDocument>(pingCmd, cancellationToken: ct);
+                sw.Stop();
+                var docDbLatency = sw.ElapsedMilliseconds;
+
+                if (_logger.IsEnabled(LogLevel.Information))
+                {
+                    _logger.LogInformation("[WARMUP] DocumentDB probe succeeded. Database: {DatabaseName}, Latency: {LatencyMs}ms",
+                        _mongoDatabase.DatabaseNamespace.DatabaseName, docDbLatency);
+                }
+
+                return new DatabaseWarmupResult(
+                    IsOnline: true,
+                    DatabaseProvider: "DocumentDb",
+                    LatencyMs: docDbLatency,
+                    Message: "Azure DocumentDB is active and ready."
+                );
+            }
+
+            var provider = _dbContext?.Database.ProviderName ?? "None";
             if (_logger.IsEnabled(LogLevel.Information))
             {
                 _logger.LogInformation("[WARMUP] Probing database persistence via provider '{Provider}'...", provider);
             }
 
-            if (_dbContext.Database.IsSqlServer())
+            if (_dbContext != null && _dbContext.Database.IsSqlServer())
             {
                 // ExecuteSqlRawAsync executes SELECT 1 directly against Azure SQL / SQL Server
                 // triggering instance resumption if paused.
                 await _dbContext.Database.ExecuteSqlRawAsync("SELECT 1;", ct);
             }
-            else
+            else if (_dbContext != null)
             {
                 // SQLite or other in-memory / file databases
                 await _dbContext.Database.CanConnectAsync(ct);
@@ -81,7 +113,7 @@ public class DatabaseWarmupService : IDatabaseWarmupService
 
             return new DatabaseWarmupResult(
                 IsOnline: false,
-                DatabaseProvider: provider,
+                DatabaseProvider: _mongoDatabase != null ? "DocumentDb" : (_dbContext?.Database.ProviderName ?? "Unknown"),
                 LatencyMs: latency,
                 Message: $"Database waking: {ex.Message}"
             );
