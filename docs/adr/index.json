@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-23T07:27:37.016824+00:00",
-  "totalAdrs": 149,
+  "generatedAt": "2026-11-23T10:38:14.970461+00:00",
+  "totalAdrs": 150,
   "categoryCounts": {
     "architecture": 49,
     "security": 27,
-    "devops": 39,
+    "devops": 40,
     "presentation": 21,
     "governance": 13
   },
@@ -1797,6 +1797,18 @@
       "subsystem": "WebGateway | Infrastructure | Application | EvalHarness.Tests",
       "filename": "ADR-20261123-184-clean-architecture-repository-decoupling-for-background-workers.md",
       "relativePath": "docs/adr/architecture/ADR-20261123-184-clean-architecture-repository-decoupling-for-background-workers.md"
+    },
+    {
+      "id": "ADR-185",
+      "number": 185,
+      "title": "Azure DocumentDB Default Cloud Persistence Provider & Automated Workflow Harmonization",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-23T16:05:00+05:30",
+      "subsystem": "Workflows | Infrastructure | WebGateway",
+      "filename": "ADR-20261123-185-documentdb-default-cloud-persistence-provider.md",
+      "relativePath": "docs/adr/devops/ADR-20261123-185-documentdb-default-cloud-persistence-provider.md"
     }
   ]
 }

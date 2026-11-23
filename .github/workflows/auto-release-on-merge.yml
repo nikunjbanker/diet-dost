@@ -44,6 +44,11 @@ on:
         required: false
         type: boolean
         default: true
+      databaseProvider:
+        description: 'Persistence database provider (DocumentDb, AzureSql, Sqlite)'
+        required: false
+        type: string
+        default: 'DocumentDb'
       dryRun:
         description: '⚡ Dry Run (Simulate version bump, tag and branch without push or deploy)'
         required: false
@@ -76,6 +81,7 @@ jobs:
       dry_run: ${{ steps.calc.outputs.dry_run }}
       deploy_requested: ${{ steps.calc.outputs.deploy_requested }}
       environment: ${{ steps.calc.outputs.environment }}
+      database_provider: ${{ steps.calc.outputs.database_provider }}
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -96,6 +102,8 @@ jobs:
           $deployInput = "${{ inputs.deploy }}" -ne "false"
           $envInput = "${{ inputs.environment }}"
           if (-not $envInput) { $envInput = "dev" }
+          $dbProviderInput = "${{ inputs.databaseProvider }}"
+          if (-not $dbProviderInput) { $dbProviderInput = "DocumentDb" }
 
           Write-Host "Evaluating commit and calculating next release tag..."
           $params = @{
@@ -109,6 +117,7 @@ jobs:
 
           $deployVal = if ($deployInput) { "true" } else { "false" }
           "deploy_requested=$deployVal" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "database_provider=$dbProviderInput" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: 3. Create & Push Tag and Release Branch
         if: steps.calc.outputs.dry_run != 'true'
@@ -184,8 +193,10 @@ jobs:
           $branch = "${{ needs.evaluate-and-tag.outputs.release_branch }}"
           $envName = "${{ needs.evaluate-and-tag.outputs.environment }}"
           $rgName = "rg-dietdost-$envName"
+          $dbProvider = "${{ needs.evaluate-and-tag.outputs.database_provider }}"
+          if (-not $dbProvider) { $dbProvider = "DocumentDb" }
 
-          Write-Host "Dispatching 'azure-app-deploy.yml' against branch '$branch'..."
+          Write-Host "Dispatching 'azure-app-deploy.yml' against branch '$branch' (Database: $dbProvider)..."
           gh workflow run azure-app-deploy.yml `
             --ref $branch `
             -f environment=$envName `
@@ -193,7 +204,7 @@ jobs:
             -f provisionInfra=true `
             -f enableCustomDomain=true `
             -f allowDemoUsers=true `
-            -f databaseProvider="AzureSql"
+            -f databaseProvider=$dbProvider
 
           Write-Host "Waiting for workflow run to register on GitHub..."
           $runId = $null
