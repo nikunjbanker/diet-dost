@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-22T22:24:27.262678+00:00",
-  "totalAdrs": 147,
+  "generatedAt": "2026-11-23T06:32:06.976266+00:00",
+  "totalAdrs": 148,
   "categoryCounts": {
     "architecture": 48,
     "security": 27,
-    "devops": 38,
+    "devops": 39,
     "presentation": 21,
     "governance": 13
   },
@@ -1773,6 +1773,18 @@
       "subsystem": "Devops",
       "filename": "ADR-20261122-182-datamigrator-cli-harmonization-and-dynamic-reporting.md",
       "relativePath": "docs/adr/devops/ADR-20261122-182-datamigrator-cli-harmonization-and-dynamic-reporting.md"
+    },
+    {
+      "id": "ADR-183",
+      "number": 183,
+      "title": "Azure DocumentDB NSG Outbound AzureCloud Service Tag and Replica Node Port Range Remediation",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[DEVOPS]",
+      "date": "2026-11-23",
+      "subsystem": "Devops",
+      "filename": "ADR-20261123-183-azure-documentdb-nsg-azurecloud-and-port-range-remediation.md",
+      "relativePath": "docs/adr/devops/ADR-20261123-183-azure-documentdb-nsg-azurecloud-and-port-range-remediation.md"
     }
   ]
 }
