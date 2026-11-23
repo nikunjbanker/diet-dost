@@ -55,6 +55,25 @@ public static class DocumentDbBsonMappings
                 // Already registered
             }
 
+            // Universal Resilient DateOnly Serializers (handles legacy timezone drifts and ISO strings)
+            try
+            {
+                BsonSerializer.RegisterSerializer(typeof(DateOnly), new ResilientDateOnlySerializer());
+            }
+            catch
+            {
+                // Serializer may already be registered
+            }
+
+            try
+            {
+                BsonSerializer.RegisterSerializer(typeof(DateOnly?), new NullableSerializer<DateOnly>(new ResilientDateOnlySerializer()));
+            }
+            catch
+            {
+                // Already registered
+            }
+
             // 1. UserProfile
             RegisterClassMapWithId<UserProfile>(cm =>
             {
@@ -93,6 +112,7 @@ public static class DocumentDbBsonMappings
                 cm.MapIdProperty(c => c.Id)
                   .SetIdGenerator(StringObjectIdGenerator.Instance)
                   .SetSerializer(new StringSerializer(BsonType.String));
+                cm.MapMember(c => c.Date).SetSerializer(new ResilientDateOnlySerializer());
             });
 
             // 5. UserCorrectionRecord
@@ -204,5 +224,65 @@ public static class DocumentDbBsonMappings
         {
             BsonClassMap.RegisterClassMap<T>(configure);
         }
+    }
+}
+
+/// <summary>
+/// Resilient BSON serializer for DateOnly that safely handles both pure dates and DateTimes with non-zero time components
+/// (e.g., from UTC timezone offsets, legacy migrations, or ISO-8601 string representations) without throwing FormatException.
+/// </summary>
+public sealed class ResilientDateOnlySerializer : SerializerBase<DateOnly>
+{
+    public override DateOnly Deserialize(BsonDeserializationContext context, BsonDeserializationArgs args)
+    {
+        var bsonType = context.Reader.GetCurrentBsonType();
+        switch (bsonType)
+        {
+            case BsonType.DateTime:
+                var millis = context.Reader.ReadDateTime();
+                var dt = BsonUtils.ToDateTimeFromMillisecondsSinceEpoch(millis);
+                return DateOnly.FromDateTime(dt.Date);
+
+            case BsonType.String:
+                var str = context.Reader.ReadString();
+                if (DateOnly.TryParse(str, out var parsedDateOnly))
+                {
+                    return parsedDateOnly;
+                }
+                if (DateTime.TryParse(str, out var parsedDt))
+                {
+                    return DateOnly.FromDateTime(parsedDt.Date);
+                }
+                return DateOnly.MinValue;
+
+            case BsonType.Int32:
+                var intVal = context.Reader.ReadInt32();
+                if (intVal > 19000101 && intVal < 21001231)
+                {
+                    var y = intVal / 10000;
+                    var m = (intVal % 10000) / 100;
+                    var d = intVal % 100;
+                    return new DateOnly(y, m, d);
+                }
+                return DateOnly.FromDayNumber(intVal);
+
+            case BsonType.Int64:
+                var longMillis = context.Reader.ReadInt64();
+                var longDt = BsonUtils.ToDateTimeFromMillisecondsSinceEpoch(longMillis);
+                return DateOnly.FromDateTime(longDt.Date);
+
+            case BsonType.Null:
+                context.Reader.ReadNull();
+                return default;
+
+            default:
+                throw new FormatException($"Cannot deserialize DateOnly from BsonType '{bsonType}'.");
+        }
+    }
+
+    public override void Serialize(BsonSerializationContext context, BsonSerializationArgs args, DateOnly value)
+    {
+        var dt = DateTime.SpecifyKind(value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+        context.Writer.WriteDateTime(BsonUtils.ToMillisecondsSinceEpoch(dt));
     }
 }

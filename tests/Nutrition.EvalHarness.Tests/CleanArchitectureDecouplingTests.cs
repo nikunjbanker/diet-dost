@@ -28,6 +28,7 @@ using Xunit;
 
 namespace Nutrition.EvalHarness.Tests;
 
+[Collection("TierConfigTests")]
 public class CleanArchitectureDecouplingTests : IDisposable
 {
     private readonly SqliteConnection _connection;

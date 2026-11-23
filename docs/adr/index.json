@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-23T10:38:14.970461+00:00",
-  "totalAdrs": 150,
+  "generatedAt": "2026-11-23T12:17:19.217576+00:00",
+  "totalAdrs": 151,
   "categoryCounts": {
-    "architecture": 49,
+    "architecture": 50,
     "security": 27,
     "devops": 40,
     "presentation": 21,
@@ -1809,6 +1809,18 @@
       "subsystem": "Workflows | Infrastructure | WebGateway",
       "filename": "ADR-20261123-185-documentdb-default-cloud-persistence-provider.md",
       "relativePath": "docs/adr/devops/ADR-20261123-185-documentdb-default-cloud-persistence-provider.md"
+    },
+    {
+      "id": "ADR-186",
+      "number": 186,
+      "title": "Resilient BSON DateOnly Serializer and Test Concurrency Isolation",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-23",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261123-186-resilient-bson-dateonly-serializer-and-test-concurrency-guard.md",
+      "relativePath": "docs/adr/architecture/ADR-20261123-186-resilient-bson-dateonly-serializer-and-test-concurrency-guard.md"
     }
   ]
 }

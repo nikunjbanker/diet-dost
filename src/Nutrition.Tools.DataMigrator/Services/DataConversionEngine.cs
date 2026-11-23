@@ -577,9 +577,21 @@ public class DataConversionEngine
                 continue;
             }
 
-            // 3. DateTime Conversion
+            // 3. DateTime / DateOnly Conversion
+            if (colVal is DateOnly dOnly)
+            {
+                var pureDate = DateTime.SpecifyKind(dOnly.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+                doc[targetPropName] = new BsonDateTime(pureDate);
+                continue;
+            }
             if (colVal is DateTime dt)
             {
+                if (colName.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                {
+                    var pureDate = DateTime.SpecifyKind(dt.Date, DateTimeKind.Utc);
+                    doc[targetPropName] = new BsonDateTime(pureDate);
+                    continue;
+                }
                 var utcDt = dt.Kind == DateTimeKind.Utc ? dt : dt.ToUniversalTime();
                 doc[targetPropName] = new BsonDateTime(utcDt);
                 continue;
@@ -591,6 +603,12 @@ public class DataConversionEngine
                 var convertedDt = ConvertToDateTime(colVal, tableName, colName, isNullable: true, rowKey, stats);
                 if (convertedDt is DateTime validDt)
                 {
+                    if (colName.Equals("Date", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var pureDate = DateTime.SpecifyKind(validDt.Date, DateTimeKind.Utc);
+                        doc[targetPropName] = new BsonDateTime(pureDate);
+                        continue;
+                    }
                     var utcDt = validDt.Kind == DateTimeKind.Utc ? validDt : validDt.ToUniversalTime();
                     doc[targetPropName] = new BsonDateTime(utcDt);
                     continue;
