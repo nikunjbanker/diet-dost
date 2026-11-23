@@ -1,11 +1,13 @@
-﻿/*
+/*
  * Copyright (c) 2026 diet-dost and/or its contributors.
  * Licensed under the "GNU Affero General Public License v3.0 only" and
  * the "Server Side Public License, v 1"; you may not use this file except
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Nutrition.Application.Common;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
@@ -13,15 +15,35 @@ using Nutrition.Infrastructure.Persistence;
 
 namespace Nutrition.Infrastructure.Services;
 
+/// <summary>
+/// Domain-driven service managing AI quota evaluation, usage stats, and audit telemetry.
+/// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
+/// </summary>
 public class AiQuotaService : IAiQuotaService
 {
-    private readonly DietTrackerDbContext _db;
+    private readonly IRepository<AiUsageLog> _aiLogRepo;
     private readonly ITierConfigurationService _tierConfigService;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AiQuotaService(DietTrackerDbContext db, ITierConfigurationService tierConfigService)
+    public AiQuotaService(
+        IRepository<AiUsageLog> aiLogRepo,
+        ITierConfigurationService tierConfigService,
+        IUnitOfWork unitOfWork)
     {
-        _db = db;
-        _tierConfigService = tierConfigService;
+        _aiLogRepo = aiLogRepo ?? throw new ArgumentNullException(nameof(aiLogRepo));
+        _tierConfigService = tierConfigService ?? throw new ArgumentNullException(nameof(tierConfigService));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    }
+
+    /// <summary>
+    /// Backwards-compatible internal constructor for test fixtures.
+    /// Internal so DI container never sees ambiguous public constructors.
+    /// </summary>
+    internal AiQuotaService(DietTrackerDbContext db, ITierConfigurationService tierConfigService)
+        : this(new EfRepository<AiUsageLog>(db, NullLogger<EfRepository<AiUsageLog>>.Instance),
+               tierConfigService,
+               new EfUnitOfWork(db, NullLogger<EfUnitOfWork>.Instance))
+    {
     }
 
     public async Task<AiQuotaCheckResult> CheckQuotaAsync(
@@ -36,8 +58,7 @@ public class AiQuotaService : IAiQuotaService
         // Admin & SuperAdmin have infinite quota
         if (config.DailyAiDetectionLimit < 0)
         {
-            var adminCount = await _db.AiUsageLogs
-                .AsNoTracking()
+            var adminCount = await _aiLogRepo
                 .CountAsync(l => l.UserId == userId &&
                                  l.TimestampUtc >= todayStartUtc &&
                                  l.TimestampUtc < tomorrowStartUtc &&
@@ -55,8 +76,7 @@ public class AiQuotaService : IAiQuotaService
             );
         }
 
-        var usedToday = await _db.AiUsageLogs
-            .AsNoTracking()
+        var usedToday = await _aiLogRepo
             .CountAsync(l => l.UserId == userId &&
                              l.TimestampUtc >= todayStartUtc &&
                              l.TimestampUtc < tomorrowStartUtc &&
@@ -100,34 +120,30 @@ public class AiQuotaService : IAiQuotaService
         var sevenDaysAgoUtc = DateTime.UtcNow.AddDays(-7);
         var thirtyDaysAgoUtc = DateTime.UtcNow.AddDays(-30);
 
-        var usedToday = await _db.AiUsageLogs
-            .AsNoTracking()
+        var usedToday = await _aiLogRepo
             .CountAsync(l => l.UserId == userId &&
                              l.TimestampUtc >= todayStartUtc &&
                              l.TimestampUtc < tomorrowStartUtc &&
                              l.IsSuccess &&
                              (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
 
-        var used7D = await _db.AiUsageLogs
-            .AsNoTracking()
+        var used7D = await _aiLogRepo
             .CountAsync(l => l.UserId == userId &&
                              l.TimestampUtc >= sevenDaysAgoUtc &&
                              l.IsSuccess &&
                              (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
 
-        var used30D = await _db.AiUsageLogs
-            .AsNoTracking()
+        var used30D = await _aiLogRepo
             .CountAsync(l => l.UserId == userId &&
                              l.TimestampUtc >= thirtyDaysAgoUtc &&
                              l.IsSuccess &&
                              (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
 
-        var recentLogs = await _db.AiUsageLogs
-            .AsNoTracking()
-            .Where(l => l.UserId == userId)
+        var userLogs = await _aiLogRepo.FindAsync(l => l.UserId == userId, ct);
+        var recentLogs = userLogs
             .OrderByDescending(l => l.TimestampUtc)
             .Take(20)
-            .ToListAsync(ct);
+            .ToList();
 
         var remaining = config.DailyAiDetectionLimit < 0
             ? int.MaxValue
@@ -168,8 +184,8 @@ public class AiQuotaService : IAiQuotaService
             TimestampUtc = DateTime.UtcNow
         };
 
-        await _db.AiUsageLogs.AddAsync(log, ct);
-        await _db.SaveChangesAsync(ct);
+        await _aiLogRepo.AddAsync(log, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
     }
 
     private static (DateTime TodayStartUtc, DateTime TomorrowStartUtc) ComputeLocalizedDayBoundariesUtc(string? userTimezone)

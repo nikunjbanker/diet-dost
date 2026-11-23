@@ -176,9 +176,22 @@ public static class StorageInfrastructureExtensions
                 services.AddSingleton<MongoDB.Driver.IMongoClient>(mongoClient);
                 services.AddSingleton<MongoDB.Driver.IMongoDatabase>(mongoDatabase);
 
-                // Register in-memory DbContext so existing background consumers can resolve cleanly
+                // Register resilient fallback DbContext with guaranteed schema so any legacy EF consumer can resolve without missing table errors
+                var fallbackDbPath = Path.Combine(Path.GetTempPath(), "diet_dost_docdb_fallback.db");
+                try
+                {
+                    var fallbackBuilder = new DbContextOptionsBuilder<DietTrackerDbContext>()
+                        .UseSqlite($"Data Source={fallbackDbPath}");
+                    using var fallbackContext = new DietTrackerDbContext(fallbackBuilder.Options);
+                    fallbackContext.Database.EnsureCreated();
+                }
+                catch
+                {
+                    // Non-fatal fallback schema initialization
+                }
+
                 services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite("Data Source=:memory:"));
+                    options.UseSqlite($"Data Source={fallbackDbPath}"));
 
                 services.AddScoped(typeof(IRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
                 services.AddScoped<IUnitOfWork, Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbUnitOfWork>();

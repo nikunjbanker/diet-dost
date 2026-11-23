@@ -168,9 +168,9 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-05-01' = {
           protocol: 'Tcp'
           sourceAddressPrefix: '*'
           sourcePortRange: '*'
-          destinationAddressPrefix: 'AzureCosmosDB'
+          destinationAddressPrefix: 'AzureCloud'
           destinationPortRanges: [
-            '10255'
+            '10250-10265'
             '27017'
           ]
         }

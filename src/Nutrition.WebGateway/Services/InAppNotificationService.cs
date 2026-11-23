@@ -7,7 +7,9 @@
  */
 using System.Text.Json;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Domain.Model.Security;
 using Nutrition.Infrastructure.Persistence;
@@ -17,7 +19,8 @@ namespace Nutrition.WebGateway.Services;
 
 /// <summary>
 /// Production implementation of IInAppNotificationService.
-/// Persists notifications in the database and broadcasts real-time events via SignalR.
+/// Persists notifications via IRepository and broadcasts real-time events via SignalR.
+/// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
 /// </summary>
 public class InAppNotificationService : IInAppNotificationService
 {
@@ -44,7 +47,8 @@ public class InAppNotificationService : IInAppNotificationService
         CancellationToken ct = default)
     {
         using var scope = _serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var repo = scope.ServiceProvider.GetService<IRepository<AppNotification>>();
+        var uow = scope.ServiceProvider.GetService<IUnitOfWork>();
 
         var notification = new AppNotification
         {
@@ -65,8 +69,20 @@ public class InAppNotificationService : IInAppNotificationService
             CreatedAtUtc = createdAtUtc
         };
 
-        await db.Notifications.AddAsync(notification, ct);
-        await db.SaveChangesAsync(ct);
+        if (repo != null && uow != null)
+        {
+            await repo.AddAsync(notification, ct);
+            await uow.SaveChangesAsync(ct);
+        }
+        else
+        {
+            var db = scope.ServiceProvider.GetService<DietTrackerDbContext>();
+            if (db != null)
+            {
+                await db.Notifications.AddAsync(notification, ct);
+                await db.SaveChangesAsync(ct);
+            }
+        }
 
         _logger.LogInformation("[NOTIFICATIONS] Persisted NewRegistration notification {NotificationId} for applicant {Email}", notification.Id, email);
 
@@ -97,7 +113,8 @@ public class InAppNotificationService : IInAppNotificationService
         CancellationToken ct = default)
     {
         using var scope = _serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var repo = scope.ServiceProvider.GetService<IRepository<AppNotification>>();
+        var uow = scope.ServiceProvider.GetService<IUnitOfWork>();
 
         var notification = new AppNotification
         {
@@ -116,8 +133,20 @@ public class InAppNotificationService : IInAppNotificationService
             CreatedAtUtc = DateTime.UtcNow
         };
 
-        await db.Notifications.AddAsync(notification, ct);
-        await db.SaveChangesAsync(ct);
+        if (repo != null && uow != null)
+        {
+            await repo.AddAsync(notification, ct);
+            await uow.SaveChangesAsync(ct);
+        }
+        else
+        {
+            var db = scope.ServiceProvider.GetService<DietTrackerDbContext>();
+            if (db != null)
+            {
+                await db.Notifications.AddAsync(notification, ct);
+                await db.SaveChangesAsync(ct);
+            }
+        }
 
         _logger.LogInformation("[NOTIFICATIONS] Persisted AccountActivated notification {NotificationId} for user {Email}", notification.Id, email);
 

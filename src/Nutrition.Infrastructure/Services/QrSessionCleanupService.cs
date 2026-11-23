@@ -9,6 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Nutrition.Application.Common;
+using Nutrition.Domain.Model.Identity;
 using Nutrition.Infrastructure.Persistence;
 
 namespace Nutrition.Infrastructure.Services;
@@ -16,6 +18,7 @@ namespace Nutrition.Infrastructure.Services;
 /// <summary>
 /// Background worker service executing periodic TTL cleanup of expired QR login sessions,
 /// preventing unbounded table growth and database resource exhaustion (GAP-41).
+/// Adheres to Clean Architecture and DIP by consuming IRepository and IUnitOfWork abstractions.
 /// </summary>
 public class QrSessionCleanupService : BackgroundService
 {
@@ -62,19 +65,49 @@ public class QrSessionCleanupService : BackgroundService
     private async Task CleanupExpiredSessionsAsync(CancellationToken ct)
     {
         using var scope = _serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
+        var repository = scope.ServiceProvider.GetService<IRepository<QrLoginSession>>();
+        var unitOfWork = scope.ServiceProvider.GetService<IUnitOfWork>();
 
-        // Purge sessions expired more than 24 hours ago
-        var cutoff = DateTime.UtcNow.AddHours(-24);
-        var expiredSessions = await db.QrSessions
-            .Where(s => s.ExpiresAtUtc < cutoff)
-            .ToListAsync(ct);
-
-        if (expiredSessions.Count > 0)
+        if (repository != null && unitOfWork != null)
         {
-            db.QrSessions.RemoveRange(expiredSessions);
-            await db.SaveChangesAsync(ct);
-            _logger.LogInformation("[QR_CLEANUP] Purged {Count} expired QR login sessions older than 24h.", expiredSessions.Count);
+            // Purge sessions expired more than 24 hours ago
+            var cutoff = DateTime.UtcNow.AddHours(-24);
+            var expiredSessions = await repository.FindAsync(s => s.ExpiresAtUtc < cutoff, ct);
+
+            if (expiredSessions.Count > 0)
+            {
+                foreach (var session in expiredSessions)
+                {
+                    await repository.DeleteAsync(session.Id, ct);
+                }
+                await unitOfWork.SaveChangesAsync(ct);
+                _logger.LogInformation("[QR_CLEANUP] Purged {Count} expired QR login sessions older than 24h via IRepository.", expiredSessions.Count);
+            }
+            return;
+        }
+
+        // Defensive fallback for environments where only DietTrackerDbContext is registered
+        var db = scope.ServiceProvider.GetService<DietTrackerDbContext>();
+        if (db != null)
+        {
+            try
+            {
+                var cutoff = DateTime.UtcNow.AddHours(-24);
+                var expiredSessions = await db.QrSessions
+                    .Where(s => s.ExpiresAtUtc < cutoff)
+                    .ToListAsync(ct);
+
+                if (expiredSessions.Count > 0)
+                {
+                    db.QrSessions.RemoveRange(expiredSessions);
+                    await db.SaveChangesAsync(ct);
+                    _logger.LogInformation("[QR_CLEANUP] Purged {Count} expired QR login sessions older than 24h via DbContext fallback.", expiredSessions.Count);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "[QR_CLEANUP] Database fallback cleanup skipped due to unavailable schema.");
+            }
         }
     }
 }

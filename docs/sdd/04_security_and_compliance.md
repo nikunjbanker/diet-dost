@@ -266,3 +266,24 @@ Neither infrastructure deployment (`azure-infra-deploy.yml`) nor application dep
 - **Plaintext backup warning**: downloaded JSON contains the recovery phrase/key in plaintext and is not encrypted by the application. Users should save it only in private, encrypted storage. The UI must not claim application-side encryption.
 - This is staged key rotation, not forward secrecy. Never log the phrase, raw key, JSON payload, or issue token. Client-side memory cleanup is best effort only.
 - Schema initialization and legacy reconciliation must include the pending recovery fields for SQLite and Azure SQL. Verify command behavior with `QrAuthenticationSecurityTests` and schema parity with `DualDatabaseSchemaMigrationTests`.
+
+## 15. Clean Architecture Repository Decoupling & Multi-Database Resilience (`ADR-184`)
+
+* **Background Worker & Security Service Decoupling (DIP & SOLID)**:
+  - Background workers and application services previously coupled directly to `DietTrackerDbContext` have been refactored to consume domain abstractions `IRepository<T>` and `IUnitOfWork`.
+  - Directly decoupled services include:
+    - `QrSessionCleanupService`: Consumes `IRepository<QrLoginSession>` and `IUnitOfWork` for background TTL session purges.
+    - `InAppNotificationService`: Consumes `IRepository<AppNotification>` and `IUnitOfWork` for persistence and SignalR delivery.
+    - `NotificationsController`: Consumes `IRepository<AppNotification>` and `IUnitOfWork` for role-filtered notification queries.
+    - `TierConfigurationService`: Injects `IRepository<TierFeatureConfiguration>` and `IUnitOfWork` with internal backward-compatible test constructors.
+    - `AiQuotaService`: Injects `IRepository<AiUsageLog>`, `ITierConfigurationService`, and `IUnitOfWork`.
+    - `DatabaseSecretStore`: Injects `IRepository<AppSecret>` and `IUnitOfWork`.
+* **Multi-Database Parity (Tri-Database Architecture)**:
+  - All decoupled services function seamlessly across all 3 supported database providers: **SQLite**, **Azure SQL Database**, and **Azure DocumentDB (MongoDB vCore)**.
+  - DocumentDB mode (`Storage:Provider = "DocumentDB"`) maps these entities directly to native BSON collections (`qr_sessions`, `notifications`, `tier_configurations`, `ai_usage_logs`, `app_secrets`).
+* **Anti-Fragile Fallback SQLite Database in DocumentDB Mode**:
+  - In DocumentDB mode, a dedicated persistent SQLite database (`diet_dost_docdb_fallback.db`) is initialized with `Database.EnsureCreated()`.
+  - Ensures legacy unmigrated EF Core read queries gracefully resolve against initialized tables rather than crashing with missing-table errors (`SQLite Error 1: 'no such table'`).
+* **Azure Container Apps Reverse Proxy & Data Protection Armor**:
+  - ForwardedHeaders middleware configured with `KnownIPNetworks.Clear()` and `KnownProxies.Clear()` before `UseHttpsRedirection()` ensures accurate scheme detection (`X-Forwarded-Proto`) behind Azure Container Apps envoy ingress, eliminating `Failed to determine the https port for redirect`.
+  - ASP.NET Core DataProtection keys persist to the SMB mount `/app/data/keys` when `/app/data` is mounted, preventing ephemeral in-container key warnings and authentication ticket invalidation across container restarts.

@@ -10,6 +10,35 @@ using Nutrition.Tools.DataMigrator.Services;
 
 namespace Nutrition.Tools.DataMigrator.Reporting;
 
+public record TableMigrationResult(
+    string TableName,
+    int SourceRows,
+    int TargetRowsBefore,
+    int InsertedRows,
+    int UpdatedRows,
+    int SkippedRows,
+    int TargetRowsAfter,
+    TableConversionStats ConversionStats,
+    List<string> Errors,
+    TimeSpan Elapsed
+)
+{
+    public TableMigrationResult(
+        string tableName,
+        int sourceRows,
+        int targetRowsBefore,
+        int insertedRows,
+        int updatedRows,
+        int skippedRows,
+        int targetRowsAfter,
+        TimeSpan elapsed,
+        TableConversionStats conversionStats,
+        List<string> errors)
+        : this(tableName, sourceRows, targetRowsBefore, insertedRows, updatedRows, skippedRows, targetRowsAfter, conversionStats, errors, elapsed)
+    {
+    }
+}
+
 public record MigrationRunSummary(
     string SourceDbPath,
     string TargetDatabaseName,
@@ -17,7 +46,9 @@ public record MigrationRunSummary(
     bool IsDryRun,
     DateTime StartedAtUtc,
     DateTime CompletedAtUtc,
-    List<TableMigrationResult> TableResults
+    List<TableMigrationResult> TableResults,
+    string SourceEngine = "Sqlite",
+    string TargetEngine = "AzureSql"
 );
 
 public class MigrationReporter
@@ -26,10 +57,10 @@ public class MigrationReporter
     {
         Console.WriteLine();
         Console.WriteLine("===============================================================================================================");
-        Console.WriteLine("  DIET-DOST TRI-DATABASE MIGRATION ENGINE REPORT");
+        Console.WriteLine($"  DIET-DOST TRI-DATABASE MIGRATION ENGINE REPORT ({summary.SourceEngine} -> {summary.TargetEngine})");
         Console.WriteLine("===============================================================================================================");
-        Console.WriteLine($"  Source SQLite File:    {summary.SourceDbPath}");
-        Console.WriteLine($"  Target Database:       {summary.TargetDatabaseName}");
+        Console.WriteLine($"  Source {summary.SourceEngine}:    {summary.SourceDbPath}");
+        Console.WriteLine($"  Target {summary.TargetEngine}:    {summary.TargetDatabaseName}");
         Console.WriteLine($"  Migration Strategy:    {summary.Mode} (DryRun: {summary.IsDryRun})");
         Console.WriteLine($"  Execution Time:        {summary.StartedAtUtc:yyyy-MM-dd HH:mm:ss} UTC -> {summary.CompletedAtUtc:HH:mm:ss} UTC ({(summary.CompletedAtUtc - summary.StartedAtUtc).TotalSeconds:F2}s)");
         Console.WriteLine("---------------------------------------------------------------------------------------------------------------");
@@ -56,7 +87,6 @@ public class MigrationReporter
             totalErrors += r.Errors.Count;
 
             string status = r.Errors.Count > 0 ? "[FAIL]" : (r.ConversionStats.TotalConversions > 0 ? "[WARN]" : "[OK]");
-            string convDetails = $"{r.ConversionStats.TotalConversions} (D:{r.ConversionStats.DateTimeConversions}/B:{r.ConversionStats.BooleanConversions}/J:{r.ConversionStats.JsonConversions})";
 
             Console.WriteLine(string.Format("{0,-18} | {1,7} | {2,7} | {3,8} | {4,7} | {5,7} | {6,11} | {7,-8} | {8,7:F2}s",
                 r.TableName,
@@ -133,16 +163,15 @@ public class MigrationReporter
         Console.WriteLine();
     }
 
-    public static async Task<string> GenerateMarkdownReportAsync(MigrationRunSummary summary, string? customReportPath = null)
+    public static string BuildMarkdownReport(MigrationRunSummary summary)
     {
         var sb = new StringBuilder();
-        var timestamp = summary.CompletedAtUtc.ToString("yyyyMMdd_HHmmss");
 
-        sb.AppendLine($"# SQLite to Azure SQL Data Migration Report — {summary.CompletedAtUtc:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine($"# {summary.SourceEngine} to {summary.TargetEngine} Data Migration Report — {summary.CompletedAtUtc:yyyy-MM-dd HH:mm:ss} UTC");
         sb.AppendLine();
         sb.AppendLine("> [!NOTE]");
-        sb.AppendLine($"> **Source Database**: `{summary.SourceDbPath}`  ");
-        sb.AppendLine($"> **Target Azure SQL Database**: `{summary.TargetDatabaseName}`  ");
+        sb.AppendLine($"> **Source {summary.SourceEngine} Database**: `{summary.SourceDbPath}`  ");
+        sb.AppendLine($"> **Target {summary.TargetEngine} Database**: `{summary.TargetDatabaseName}`  ");
         sb.AppendLine($"> **Strategy**: `{summary.Mode}` (DryRun: `{summary.IsDryRun}`)  ");
         sb.AppendLine($"> **Total Elapsed**: `{(summary.CompletedAtUtc - summary.StartedAtUtc).TotalSeconds:F2} seconds`");
         sb.AppendLine();
@@ -157,13 +186,13 @@ public class MigrationReporter
         else
         {
             sb.AppendLine("> [!TIP]");
-            sb.AppendLine("> **100% Zero-Error Execution**: All tables and rows were successfully processed and converted.");
+            sb.AppendLine($"> **100% Zero-Error Execution**: All {summary.SourceEngine} tables and rows were successfully processed and converted.");
             sb.AppendLine();
         }
 
         sb.AppendLine("## 1. Table Migration & Row Count Metrics");
         sb.AppendLine();
-        sb.AppendLine("| Table Name | SQLite Source Rows | Target Rows (Before) | Inserted | Updated | Skipped | Target Rows (After) | Conversions Resolved | Status | Duration |");
+        sb.AppendLine($"| Table Name | {summary.SourceEngine} Source Rows | Target Rows (Before) | Inserted | Updated | Skipped | Target Rows (After) | Conversions Resolved | Status | Duration |");
         sb.AppendLine("| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |");
 
         foreach (var r in summary.TableResults)
@@ -205,7 +234,7 @@ public class MigrationReporter
             foreach (var t in tablesWithEvents)
             {
                 sb.AppendLine($"#### Table: `{t.TableName}`");
-                sb.AppendLine("| Column | Row Key | Type | Original SQLite Value | Resolved Azure SQL Value | Details |");
+                sb.AppendLine($"| Column | Row Key | Type | Original {summary.SourceEngine} Value | Resolved {summary.TargetEngine} Value | Details |");
                 sb.AppendLine("| :--- | :--- | :--- | :--- | :--- | :--- |");
                 foreach (var s in t.ConversionStats.SampleConversions)
                 {
@@ -220,7 +249,7 @@ public class MigrationReporter
         sb.AppendLine();
         if (totalErrors == 0)
         {
-            sb.AppendLine("✅ **Zero errors recorded.** All source SQLite records were successfully converted, mapped, and committed.");
+            sb.AppendLine($"✅ **Zero errors recorded.** All source {summary.SourceEngine} records were successfully converted, mapped, and committed.");
         }
         else
         {
@@ -236,6 +265,14 @@ public class MigrationReporter
             }
         }
 
+        return sb.ToString();
+    }
+
+    public static async Task<string> GenerateMarkdownReportAsync(MigrationRunSummary summary, string? customReportPath = null)
+    {
+        var timestamp = summary.CompletedAtUtc.ToString("yyyyMMdd_HHmmss");
+        var reportContent = BuildMarkdownReport(summary);
+
         string reportPath = customReportPath ?? Path.Combine("docs", "migration-reports", $"migration_report_{timestamp}.md");
         var dir = Path.GetDirectoryName(reportPath);
         if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
@@ -243,7 +280,7 @@ public class MigrationReporter
             Directory.CreateDirectory(dir);
         }
 
-        await File.WriteAllTextAsync(reportPath, sb.ToString());
+        await File.WriteAllTextAsync(reportPath, reportContent);
         return reportPath;
     }
 

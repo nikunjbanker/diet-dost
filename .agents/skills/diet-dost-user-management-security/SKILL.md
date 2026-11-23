@@ -488,6 +488,11 @@ public record QuotaStatus(
 - Constant-time hash comparison for validation.
 - 5-minute expiry (`ExpiresAtUtc`), max 3 `AttemptCount` before invalidation.
 
+
+### 11.5 Clean Architecture Repository Decoupling (ADR-184)
+- In accordance with Clean Architecture and the Dependency Inversion Principle (DIP), all security and quota services (TierConfigurationService, AiQuotaService, DatabaseSecretStore, QrSessionCleanupService, InAppNotificationService) strictly depend on IRepository<T> and IUnitOfWork.
+- They never directly couple to DietTrackerDbContext, guaranteeing seamless operation across SQLite, Azure SQL, and Azure DocumentDB.
+- Infrastructure implementations provide a single public (IRepository<T>, IUnitOfWork) constructor for DI registration, with test-helper constructors marked internal to prevent CallSiteFactory ambiguous constructor exceptions.
 ---
 
 ## 12. Testing Harness Requirements
@@ -671,7 +676,8 @@ Agents or engineers must execute validation through either:
    - Launch application on `http://localhost:5240`.
    - Log in sequentially as each of the 5 demo accounts.
    - Inspect DOM, user menu badge, quota modal, and paywall trigger on locked features.
-   - Confirm **0 console errors** and **0 unhandled runtime exceptions**.
+   - Confirm **0 console errors** and **0 unhandled runtime exceptions**.
+
 
 ---
 

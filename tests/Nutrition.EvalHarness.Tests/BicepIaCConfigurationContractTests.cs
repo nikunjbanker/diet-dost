@@ -245,11 +245,11 @@ public class BicepIaCConfigurationContractTests
         var infraBicepPath = GetInfraBicepPath("dev");
         var infraContent = File.ReadAllText(infraBicepPath);
 
-        // Outbound NSG rule for DocumentDB / AzureCosmosDB ports 10255 and 27017
+        // Outbound NSG rule for DocumentDB ports 10250-10265 and 27017 under AzureCloud system tag
         Assert.Contains("Allow-DocumentDB-Outbound", infraContent);
-        Assert.Contains("'10255'", infraContent);
+        Assert.Contains("'10250-10265'", infraContent);
         Assert.Contains("'27017'", infraContent);
-        Assert.Contains("destinationAddressPrefix: 'AzureCosmosDB'", infraContent);
+        Assert.Contains("destinationAddressPrefix: 'AzureCloud'", infraContent);
 
         // DocumentDB module invocation and outputs
         Assert.Contains("module documentdb 'documentdb.bicep'", infraContent);
@@ -311,11 +311,11 @@ public class BicepIaCConfigurationContractTests
         // Assert that Microsoft.AzureCosmosDB is NOT declared in subnet service endpoints to avoid Cosmos DB conflation
         Assert.DoesNotContain("service: 'Microsoft.AzureCosmosDB'", infraContent);
 
-        // SQL uses port 1433 and redirect 11000-11999; DocumentDB uses port 27017 and 10255
+        // SQL uses port 1433 and redirect 11000-11999; DocumentDB uses port 27017 and shard replica node range 10250-10265 (including port 10260)
         Assert.Contains("'1433'", infraContent);
         Assert.Contains("'11000-11999'", infraContent);
         Assert.Contains("'27017'", infraContent);
-        Assert.Contains("'10255'", infraContent);
+        Assert.Contains("'10250-10265'", infraContent);
 
         // DocumentDB module must receive ACA static outbound IP and enable Azure Services egress
         Assert.Contains("containerAppOutboundIp: acaEnvironment.properties.staticIp", infraContent);

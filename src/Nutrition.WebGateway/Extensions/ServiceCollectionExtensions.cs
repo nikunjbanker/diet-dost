@@ -97,6 +97,25 @@ public static class ServiceCollectionExtensions
             .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("WebGateway service is live."), tags: ["live"])
             .AddCheck<Health.DatabaseHealthCheck>("database", tags: ["ready"]);
 
+        // Data Protection key persistence across container replicas & restarts on mounted Azure Files share
+        var dpBuilder = services.AddDataProtection();
+        var keysDirectory = "/app/data/keys";
+        try
+        {
+            if (Directory.Exists("/app/data"))
+            {
+                if (!Directory.Exists(keysDirectory))
+                {
+                    Directory.CreateDirectory(keysDirectory);
+                }
+                Microsoft.AspNetCore.DataProtection.DataProtectionBuilderExtensions.PersistKeysToFileSystem(dpBuilder, new DirectoryInfo(keysDirectory));
+            }
+        }
+        catch
+        {
+            // Non-fatal fallback to default ephemeral storage
+        }
+
         // Official Model Context Protocol (MCP) Server with HTTP/SSE Transport
         services.AddDietDostMcpServer();
 

@@ -7,16 +7,10 @@
  */
 using System.Data;
 using Microsoft.Data.SqlClient;
+using Nutrition.Tools.DataMigrator.Reporting;
 
 #pragma warning disable CA2100 // Dynamic SQL commands use verified table and column metadata discovered from INFORMATION_SCHEMA
 namespace Nutrition.Tools.DataMigrator.Services;
-
-public enum MigrationMode
-{
-    Upsert,
-    CleanInsert,
-    SkipExisting
-}
 
 public record TargetColumnInfo(
     string Name,
@@ -25,19 +19,6 @@ public record TargetColumnInfo(
     int? MaxLength,
     bool IsPrimaryKey,
     bool IsIdentity
-);
-
-public record TableMigrationResult(
-    string TableName,
-    int SourceRows,
-    int TargetRowsBefore,
-    int InsertedRows,
-    int UpdatedRows,
-    int SkippedRows,
-    int TargetRowsAfter,
-    TableConversionStats ConversionStats,
-    List<string> Errors,
-    TimeSpan Elapsed
 );
 
 public class AzureSqlTargetWriter : IDisposable

@@ -6,10 +6,12 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Collections.Concurrent;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
 using Nutrition.Domain.Model.Security;
@@ -19,12 +21,14 @@ namespace Nutrition.Infrastructure.Services;
 
 /// <summary>
 /// Database and Configuration-backed implementation of ISecretStore.
-/// Seamlessly checks strongly-typed Options, IConfiguration, and falls back to the AppSecrets database table.
+/// Seamlessly checks strongly-typed Options, IConfiguration, and falls back to AppSecrets repository.
+/// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
 /// Employs a thread-safe concurrent in-memory cache to ensure near-zero latency on hot read paths.
 /// </summary>
 public class DatabaseSecretStore : ISecretStore
 {
-    private readonly DietTrackerDbContext _db;
+    private readonly IRepository<AppSecret> _secretRepo;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<DatabaseSecretStore> _logger;
     private readonly IConfiguration? _configuration;
     private readonly IOptions<JwtOptions>? _jwtOptions;
@@ -33,19 +37,42 @@ public class DatabaseSecretStore : ISecretStore
     private static readonly ConcurrentDictionary<string, string> _cache = new(StringComparer.OrdinalIgnoreCase);
 
     public DatabaseSecretStore(
-        DietTrackerDbContext db,
+        IRepository<AppSecret> secretRepo,
+        IUnitOfWork unitOfWork,
         ILogger<DatabaseSecretStore> logger,
         IConfiguration? configuration = null,
         IOptions<JwtOptions>? jwtOptions = null,
         IOptions<AuthOptions>? authOptions = null,
         IOptions<AiOptions>? aiOptions = null)
     {
-        _db = db;
-        _logger = logger;
+        _secretRepo = secretRepo ?? throw new ArgumentNullException(nameof(secretRepo));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _configuration = configuration;
         _jwtOptions = jwtOptions;
         _authOptions = authOptions;
         _aiOptions = aiOptions;
+    }
+
+    /// <summary>
+    /// Backwards-compatible internal constructor for test fixtures.
+    /// Internal so DI container never sees ambiguous public constructors.
+    /// </summary>
+    internal DatabaseSecretStore(
+        DietTrackerDbContext db,
+        ILogger<DatabaseSecretStore> logger,
+        IConfiguration? configuration = null,
+        IOptions<JwtOptions>? jwtOptions = null,
+        IOptions<AuthOptions>? authOptions = null,
+        IOptions<AiOptions>? aiOptions = null)
+        : this(new EfRepository<AppSecret>(db, NullLogger<EfRepository<AppSecret>>.Instance),
+               new EfUnitOfWork(db, NullLogger<EfUnitOfWork>.Instance),
+               logger,
+               configuration,
+               jwtOptions,
+               authOptions,
+               aiOptions)
+    {
     }
 
     public static void ClearCache() => _cache.Clear();
@@ -87,12 +114,12 @@ public class DatabaseSecretStore : ISecretStore
             }
         }
 
-        // 2. Check local in-memory cache
+        // 3. Check local in-memory cache
         if (_cache.TryGetValue(key, out var cachedVal))
             return cachedVal;
 
-        // 3. Fall back to AppSecrets database table
-        var secret = await _db.AppSecrets.AsNoTracking().FirstOrDefaultAsync(s => s.Key == key, ct);
+        // 4. Fall back to AppSecrets database repository
+        var secret = await _secretRepo.FirstOrDefaultAsync(s => s.Key == key, ct);
         if (secret != null)
         {
             _cache[key] = secret.Value;
@@ -117,7 +144,7 @@ public class DatabaseSecretStore : ISecretStore
         ArgumentException.ThrowIfNullOrWhiteSpace(key);
         ArgumentNullException.ThrowIfNull(value);
 
-        var existing = await _db.AppSecrets.FirstOrDefaultAsync(s => s.Key == key, ct);
+        var existing = await _secretRepo.FirstOrDefaultAsync(s => s.Key == key, ct);
         if (existing == null)
         {
             var newSecret = new AppSecret
@@ -128,24 +155,24 @@ public class DatabaseSecretStore : ISecretStore
                 CreatedAtUtc = DateTime.UtcNow,
                 UpdatedAtUtc = DateTime.UtcNow
             };
-            await _db.AppSecrets.AddAsync(newSecret, ct);
+            await _secretRepo.AddAsync(newSecret, ct);
         }
         else
         {
             existing.Value = value;
             if (description != null) existing.Description = description;
             existing.UpdatedAtUtc = DateTime.UtcNow;
-            _db.AppSecrets.Update(existing);
+            await _secretRepo.UpdateAsync(existing, ct);
         }
 
-        await _db.SaveChangesAsync(ct);
+        await _unitOfWork.SaveChangesAsync(ct);
         _cache[key] = value;
         _logger.LogInformation("Updated database secret for key: {Key}", key);
     }
 
     public async Task<IReadOnlyDictionary<string, string>> GetAllSecretsAsync(CancellationToken ct = default)
     {
-        var list = await _db.AppSecrets.AsNoTracking().ToListAsync(ct);
+        var list = await _secretRepo.GetAllAsync(ct);
         var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var s in list)
         {

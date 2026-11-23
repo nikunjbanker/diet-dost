@@ -7,9 +7,8 @@
  */
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Nutrition.Domain.Model.Identity;
-using Nutrition.Infrastructure.Persistence;
+using Nutrition.Application.Common;
+using Nutrition.Domain.Model.Security;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
@@ -17,21 +16,25 @@ namespace Nutrition.WebGateway.Controllers;
 /// <summary>
 /// Controller for querying and managing in-app notifications.
 /// Role-gated to Admin/SuperAdmin for administrative alerts, or authenticated users for personal alerts.
+/// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
 /// </summary>
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class NotificationsController : ControllerBase
 {
-    private readonly DietTrackerDbContext _db;
+    private readonly IRepository<AppNotification> _notificationRepo;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<NotificationsController> _logger;
 
     public NotificationsController(
-        DietTrackerDbContext db,
+        IRepository<AppNotification> notificationRepo,
+        IUnitOfWork unitOfWork,
         ILogger<NotificationsController> logger)
     {
-        _db = db;
-        _logger = logger;
+        _notificationRepo = notificationRepo ?? throw new ArgumentNullException(nameof(notificationRepo));
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     [HttpGet]
@@ -40,28 +43,27 @@ public class NotificationsController : ControllerBase
         var userId = User.GetUserId();
         var isSuperAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
-        var query = _db.Notifications.AsNoTracking().Where(n => !n.IsDeleted);
-
+        List<AppNotification> list;
         if (isSuperAdmin)
         {
-            query = query.Where(n => n.RecipientRole == "SuperAdmin" || n.RecipientRole == "Admin" || n.RecipientUserId == userId);
+            list = await _notificationRepo.FindAsync(n => n.RecipientRole == "SuperAdmin" || n.RecipientRole == "Admin" || n.RecipientUserId == userId, ct);
         }
         else
         {
-            query = query.Where(n => n.RecipientUserId == userId);
+            list = await _notificationRepo.FindAsync(n => n.RecipientUserId == userId, ct);
         }
 
-        var list = await query
+        var sortedList = list
             .OrderByDescending(n => n.CreatedAtUtc)
             .Take(50)
-            .ToListAsync(ct);
+            .ToList();
 
-        var unreadCount = list.Count(n => !n.IsRead);
+        var unreadCount = sortedList.Count(n => !n.IsRead);
 
         return Ok(new
         {
             unreadCount,
-            notifications = list.Select(n => new
+            notifications = sortedList.Select(n => new
             {
                 n.Id,
                 n.Title,
@@ -78,13 +80,14 @@ public class NotificationsController : ControllerBase
     [HttpPut("{id}/read")]
     public async Task<IActionResult> MarkAsRead([FromRoute] string id, CancellationToken ct = default)
     {
-        var notif = await _db.Notifications.FirstOrDefaultAsync(n => n.Id == id && !n.IsDeleted, ct);
+        var notif = await _notificationRepo.GetByIdAsync(id, ct);
         if (notif == null)
             return NotFound(new { error = "Notification not found." });
 
         notif.IsRead = true;
         notif.ReadAtUtc = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        await _notificationRepo.UpdateAsync(notif, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
 
         return Ok(new { success = true, id });
     }
@@ -95,26 +98,25 @@ public class NotificationsController : ControllerBase
         var userId = User.GetUserId();
         var isSuperAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
-        var query = _db.Notifications.Where(n => !n.IsDeleted && !n.IsRead);
-
+        List<AppNotification> unread;
         if (isSuperAdmin)
         {
-            query = query.Where(n => n.RecipientRole == "SuperAdmin" || n.RecipientRole == "Admin" || n.RecipientUserId == userId);
+            unread = await _notificationRepo.FindAsync(n => !n.IsRead && (n.RecipientRole == "SuperAdmin" || n.RecipientRole == "Admin" || n.RecipientUserId == userId), ct);
         }
         else
         {
-            query = query.Where(n => n.RecipientUserId == userId);
+            unread = await _notificationRepo.FindAsync(n => !n.IsRead && n.RecipientUserId == userId, ct);
         }
 
-        var unread = await query.ToListAsync(ct);
         var now = DateTime.UtcNow;
         foreach (var item in unread)
         {
             item.IsRead = true;
             item.ReadAtUtc = now;
+            await _notificationRepo.UpdateAsync(item, ct);
         }
 
-        await _db.SaveChangesAsync(ct);
+        await _unitOfWork.SaveChangesAsync(ct);
 
         return Ok(new { success = true, count = unread.Count });
     }
