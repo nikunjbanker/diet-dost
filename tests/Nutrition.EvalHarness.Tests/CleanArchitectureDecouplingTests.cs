@@ -61,6 +61,8 @@ public class CleanArchitectureDecouplingTests : IDisposable
 
     public void Dispose()
     {
+        TierConfigurationService.ClearCache();
+        DatabaseSecretStore.ClearCache();
         _db.Dispose();
         _connection.Dispose();
     }
@@ -102,24 +104,34 @@ public class CleanArchitectureDecouplingTests : IDisposable
     public async Task TierConfigurationService_OperatesViaRepository_And_BackwardCompatibleCtor()
     {
         TierConfigurationService.ClearCache();
+        try
+        {
+            // 1. Test repository constructor (Clean Architecture DIP)
+            var tierService = new TierConfigurationService(_tierRepo, _unitOfWork);
+            var config = await tierService.GetConfigurationAsync(UserTier.Free);
+            Assert.NotNull(config);
+            Assert.Equal(UserTier.Free, config.Tier);
 
-        // 1. Test repository constructor (Clean Architecture DIP)
-        var tierService = new TierConfigurationService(_tierRepo, _unitOfWork);
-        var config = await tierService.GetConfigurationAsync(UserTier.Free);
-        Assert.NotNull(config);
-        Assert.Equal(UserTier.Free, config.Tier);
+            config.DailyAiDetectionLimit = 42;
+            await tierService.UpdateConfigurationAsync(config);
 
-        config.DailyAiDetectionLimit = 42;
-        await tierService.UpdateConfigurationAsync(config);
+            var updated = await tierService.GetConfigurationAsync(UserTier.Free);
+            Assert.Equal(42, updated.DailyAiDetectionLimit);
 
-        var updated = await tierService.GetConfigurationAsync(UserTier.Free);
-        Assert.Equal(42, updated.DailyAiDetectionLimit);
-
-        // 2. Test backward-compatible DbContext constructor
-        TierConfigurationService.ClearCache();
-        var legacyTierService = new TierConfigurationService(_db);
-        var legacyConfig = await legacyTierService.GetConfigurationAsync(UserTier.Free);
-        Assert.Equal(42, legacyConfig.DailyAiDetectionLimit);
+            // 2. Test backward-compatible DbContext constructor
+            TierConfigurationService.ClearCache();
+            var legacyTierService = new TierConfigurationService(_db);
+            var legacyConfig = await legacyTierService.GetConfigurationAsync(UserTier.Free);
+            Assert.Equal(42, legacyConfig.DailyAiDetectionLimit);
+        }
+        finally
+        {
+            var resetService = new TierConfigurationService(_tierRepo, _unitOfWork);
+            var freeConfig = await resetService.GetConfigurationAsync(UserTier.Free);
+            freeConfig.DailyAiDetectionLimit = 1;
+            await resetService.UpdateConfigurationAsync(freeConfig);
+            TierConfigurationService.ClearCache();
+        }
     }
 
     [Fact]
