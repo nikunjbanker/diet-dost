@@ -661,6 +661,39 @@ public class AzureSqlTargetWriter : IDisposable
                     [IsUsed] BIT NOT NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL
                 );",
+            "qrsessions" => @"
+                CREATE TABLE [QrSessions] (
+                    [Id] NVARCHAR(64) NOT NULL CONSTRAINT [PK_QrSessions] PRIMARY KEY,
+                    [ChallengeNonce] NVARCHAR(128) NOT NULL,
+                    [BrowserSecretHash] NVARCHAR(128) NOT NULL,
+                    [DesktopPublicKey] NVARCHAR(MAX) NULL,
+                    [MobilePublicKey] NVARCHAR(MAX) NULL,
+                    [EncryptedApprovalPayload] NVARCHAR(MAX) NULL,
+                    [ConfirmationCode] NVARCHAR(16) NOT NULL,
+                    [ConfirmationGlyph] NVARCHAR(64) NOT NULL,
+                    [ExchangeTicket] NVARCHAR(64) NULL,
+                    [Status] INT NOT NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [ExpiresAtUtc] DATETIME2 NOT NULL,
+                    [AuthorizedUserId] NVARCHAR(450) NULL,
+                    [ClientIpAddress] NVARCHAR(MAX) NULL,
+                    [ClientUserAgent] NVARCHAR(MAX) NULL
+                );",
+            "appnotifications" => @"
+                CREATE TABLE [AppNotifications] (
+                    [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_AppNotifications] PRIMARY KEY,
+                    [RecipientUserId] NVARCHAR(450) NULL,
+                    [RecipientRole] NVARCHAR(450) NULL,
+                    [Title] NVARCHAR(MAX) NOT NULL,
+                    [Message] NVARCHAR(MAX) NOT NULL,
+                    [Type] NVARCHAR(MAX) NOT NULL,
+                    [MetadataJson] NVARCHAR(MAX) NULL,
+                    [IsRead] BIT NOT NULL,
+                    [ReadAtUtc] DATETIME2 NULL,
+                    [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [IsDeleted] BIT NOT NULL,
+                    [DeletedAtUtc] DATETIME2 NULL
+                );",
             _ => null
         };
     }

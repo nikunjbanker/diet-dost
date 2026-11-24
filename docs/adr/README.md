@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 151 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 152 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -33,7 +33,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | :--- | :--- | :--- | :--- |
 | **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **50** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **27** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
-| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **40** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
+| **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **41** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **21** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
 | **⚖️ Governance, Standards & Agentic Workflows** | Token economics, GitHub Stacked PR protocol, ADR architecture, issue-driven workflow, and licensing. | **13** | [`docs/adr/governance/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/governance/) |
 
@@ -175,6 +175,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-182** | Tri-Database DataMigrator CLI Harmonization and Dynamic Reporting | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261122-182-datamigrator-cli-harmonization-and-dynamic-reporting.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261122-182-datamigrator-cli-harmonization-and-dynamic-reporting.md) |
 | **ADR-183** | Azure DocumentDB NSG Outbound AzureCloud Service Tag and Replica Node Port Range Remediation | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261123-183-azure-documentdb-nsg-azurecloud-and-port-range-remediation.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261123-183-azure-documentdb-nsg-azurecloud-and-port-range-remediation.md) |
 | **ADR-185** | Azure DocumentDB Default Cloud Persistence Provider & Automated Workflow Harmonization | `[DEVOPS]` | `ACCEPTED` | [`ADR-20261123-185-documentdb-default-cloud-persistence-provider.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261123-185-documentdb-default-cloud-persistence-provider.md) |
+| **ADR-188** | Azure SQL Serverless Free Tier Transition & Schema Reconciliation | `[ARCHITECTURE_REFACTOR]` | `ACCEPTED` | [`ADR-20261124-188-azure-sql-serverless-free-tier-transition.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/ADR-20261124-188-azure-sql-serverless-free-tier-transition.md) |
 
 ### 🎨 Presentation & UI/UX (`docs/adr/presentation/`)
 > *Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration.*
