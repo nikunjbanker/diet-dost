@@ -6,20 +6,20 @@
   License v3.0 only" or the "Server Side Public License, v 1".
 -->
 
-# Diet-Dost: Azure SQL Database Basic DTU Setup & Operations Guide
+# Diet-Dost: Azure SQL Database Serverless Free Tier Setup & Operations Guide
 
-This guide provides the authoritative architecture, Infrastructure-as-Code (Bicep) automation, security boundaries, and local developer workstation procedures for running Diet-Dost on **Azure SQL Database Basic DTU**.
+This guide provides the authoritative architecture, Infrastructure-as-Code (Bicep) automation, security boundaries, and local developer workstation procedures for running Diet-Dost on **Azure SQL Database Serverless (Free Tier)**.
 
 ---
 
-## 1. Architectural Summary & Basic DTU Limits
+## 1. Architectural Summary & Free Tier Limits
 
-The deployment uses the DTU purchasing model with a fixed **Basic** service objective:
-- **Compute Tier**: Basic DTU (`Basic` service objective), **5 DTUs**.
-- **Storage Limit**: **2 GB maximum** database size.
-- **Billing Model**: Provisioned DTU tier; it does not use vCore-based serverless compute, auto-pause, or a free-quota exhaustion mode.
-- **Existing Database Changes**: The next Bicep deployment applies the Basic SKU to an existing database as well. Back up the database and verify its current allocated/used size is compatible with the 2 GB maximum before deployment.
-- **Authoritative Limits**: [Microsoft Learn: Azure SQL DTU single-database resource limits](https://learn.microsoft.com/azure/azure-sql/database/resource-limits-dtu-single-databases?view=azuresql#single-database-storage-sizes-and-compute-sizes).
+The deployment uses the General Purpose Serverless compute model with Azure SQL lifetime **Free Offer**:
+- **Compute Tier**: General Purpose Serverless (`GP_S_Gen5_1`), **1 vCore max**, **0.5 vCore min**.
+- **Storage Ceiling**: **32 GB dedicated storage** (Free Tier quota ceiling).
+- **Billing Model**: Serverless compute with 100,000 vCore-seconds/month free allowance and automatic pause after 60 minutes of inactivity. When paused, compute cost is **$0.00**.
+- **Quota Exhaustion Behavior**: Configured to `AutoPause` upon exhaustion of monthly free compute to ensure zero unexpected charges.
+- **Authoritative Limits**: [Microsoft Learn: Azure SQL Database free offer](https://learn.microsoft.com/azure/azure-sql/database/free-offer).
 
 ---
 
@@ -45,7 +45,7 @@ flowchart TD
         subgraph SQLBoundary ["Azure SQL Logical Server (sql-dietdost-dev)"]
             VNET_RULE["VNet Rule: allow-aca-subnet"]
             FW_RULE["Firewall Rule: LocalDevWorkstationIP"]
-            DB[("dietdost (Basic DTU, 5 DTUs / 2 GB max)")]
+            DB[("dietdost (Serverless Free Tier, 32 GB max)")]
         end
 
         subgraph SecretVault ["Azure Key Vault (kvdostdev)"]
@@ -80,10 +80,10 @@ flowchart TD
 
 | File | Subsystem Role | Key Parameters & Safe Defaults |
 | :--- | :--- | :--- |
-| [`infra/dev/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep) | Dedicated SQL Basic DTU Module | Provisions logical server, `Basic` DTU database (5 DTUs, 2 GB maximum), VNet rule, firewall rules, and Key Vault secrets. |
+| [`infra/dev/sql.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/sql.bicep) | Dedicated SQL Serverless Free Tier Module | Provisions logical server, `GP_S_Gen5_1` Serverless database (100k vCore-s, 32 GB maximum), VNet rule, firewall rules, and Key Vault secrets. |
 | [`infra/dev/infra.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/infra.bicep) | Foundation Infrastructure | Adds `Microsoft.Sql` service endpoint to `acaSubnet`, `Allow-SQL-Outbound` NSG rule, and conditionally invokes `sql.bicep` when `deployAzureSql == true`. |
 | [`infra/dev/app.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/app.bicep) | Workload Container App | Maps Key Vault secret reference `azure-sql-connection-string` into `ConnectionStrings__AzureSqlConnection`. |
-| [`infra/dev/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep) | Composite Deployment | Defaults `deployAzureSql = true` and provisions the Basic DTU database unless explicitly disabled. |
+| [`infra/dev/main.bicep`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/infra/dev/main.bicep) | Composite Deployment | Defaults `deployAzureSql = true` and provisions the Serverless Free Tier database unless explicitly disabled. |
 
 ---
 
@@ -95,11 +95,11 @@ flowchart TD
 2. Navigate to **Actions** $\to$ **Aspire - Provision Azure Infrastructure** (`azure-infra-deploy.yml`).
 3. Click **Run workflow** and configure inputs:
    - **Target environment**: `dev`
-   - **Deploy Azure SQL Database Basic DTU**: Check `true` (default: `true`).
+   - **Deploy Azure SQL Database Serverless**: Check `true` (default: `true`).
    - **SQL Server Administrator login username**: `sqladmin`
    - **Optional developer workstation client IP**: (Optional: provide public IP for immediate workstation access).
 4. Run the workflow. Upon completion:
-   - SQL Server and Basic DTU database (5 DTUs, 2 GB maximum) are provisioned.
+   - SQL Server and Serverless Free Tier database (100k vCore-s, 32 GB maximum) are provisioned.
    - VNet rules and Service Endpoints are active.
    - Key Vault secret `azure-sql-connection-string` is written.
 5. Run **Aspire - Deploy Application Workload** (`azure-app-deploy.yml`) with:
@@ -180,7 +180,7 @@ dotnet user-secrets set "Database:Provider" "Sqlite"
 
 ## 6. Transient Connection Handling
 
-Basic DTU is a provisioned compute tier and does not auto-pause. The application still tolerates transient SQL connectivity failures; serverless-specific auto-resume behavior is not part of this deployment configuration.
+Serverless compute auto-pauses after 60 minutes of inactivity to keep costs at $0.00. The application gracefully tolerates the 15-45s wake-up latency when resuming from a paused state.
 
 ### Application Safeguards
 1. **60-Second Connection Timeout**: `StorageInfrastructureExtensions` enforces a minimum **60-second `ConnectTimeout`** to tolerate transient connection delays.

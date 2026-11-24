@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-23T12:17:19.217576+00:00",
-  "totalAdrs": 151,
+  "generatedAt": "2026-11-24T07:54:08.841291+00:00",
+  "totalAdrs": 152,
   "categoryCounts": {
     "architecture": 50,
     "security": 27,
-    "devops": 40,
+    "devops": 41,
     "presentation": 21,
     "governance": 13
   },
@@ -1821,6 +1821,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261123-186-resilient-bson-dateonly-serializer-and-test-concurrency-guard.md",
       "relativePath": "docs/adr/architecture/ADR-20261123-186-resilient-bson-dateonly-serializer-and-test-concurrency-guard.md"
+    },
+    {
+      "id": "ADR-188",
+      "number": 188,
+      "title": "Azure SQL Serverless Free Tier Transition & Schema Reconciliation",
+      "category": "devops",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE_REFACTOR]",
+      "date": "2026-11-24T13:25:00+05:30",
+      "subsystem": "Infrastructure, CI/CD, Database, Tools",
+      "filename": "ADR-20261124-188-azure-sql-serverless-free-tier-transition.md",
+      "relativePath": "docs/adr/devops/ADR-20261124-188-azure-sql-serverless-free-tier-transition.md"
     }
   ]
 }
