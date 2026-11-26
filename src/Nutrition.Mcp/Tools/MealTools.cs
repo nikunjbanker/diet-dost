@@ -250,15 +250,22 @@ public class MealTools
         }
         else
         {
-            // Ingest photo (Base64 string or file path)
-            byte[] imageBytes;
-            if (File.Exists(photoData))
+            // Ingest photo strictly as Base64 payload (never read arbitrary local filesystem paths to prevent LFI)
+            var rawPhoto = photoData!.Trim();
+            var commaIdx = rawPhoto.IndexOf(',');
+            if (rawPhoto.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && commaIdx >= 0)
             {
-                imageBytes = await File.ReadAllBytesAsync(photoData, ct);
+                rawPhoto = rawPhoto[(commaIdx + 1)..];
             }
-            else
+
+            byte[] imageBytes;
+            try
             {
-                imageBytes = Convert.FromBase64String(photoData!);
+                imageBytes = Convert.FromBase64String(rawPhoto);
+            }
+            catch (FormatException)
+            {
+                return new McpErrorResult("ValidationError", "photoData must be a valid Base64-encoded image string.");
             }
 
             using var stream = new MemoryStream(imageBytes);

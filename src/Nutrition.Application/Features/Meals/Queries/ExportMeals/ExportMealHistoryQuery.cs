@@ -82,7 +82,12 @@ public class ExportMealHistoryQueryHandler : IQueryHandler<ExportMealHistoryQuer
         static string EscapeCsv(string? value)
         {
             if (string.IsNullOrEmpty(value)) return "\"\"";
-            var escaped = value.Replace("\"", "\"\"");
+            var sanitized = value;
+            if (sanitized[0] is '=' or '+' or '-' or '@' or '\t' or '\r')
+            {
+                sanitized = "'" + sanitized;
+            }
+            var escaped = sanitized.Replace("\"", "\"\"");
             return $"\"{escaped}\"";
         }
 

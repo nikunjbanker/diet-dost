@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 157 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 158 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **55** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **56** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **27** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **41** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **21** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -101,6 +101,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-191** | DocumentDB Specialized Ports, CAS Concurrency, and Fail-Closed Fallback Removal | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261126-191-documentdb-specialized-ports-cas-and-fail-closed-removal.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261126-191-documentdb-specialized-ports-cas-and-fail-closed-removal.md) |
 | **ADR-192** | DocumentDB PascalCase 13-Collection Indexes, TTLs, and DataMigrator Aggregate Parity | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261126-192-documentdb-pascalcase-indexes-ttls-and-datamigrator.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261126-192-documentdb-pascalcase-indexes-ttls-and-datamigrator.md) |
 | **ADR-193** | Tri-Database Contract Tests, E2E Tier Script Fix, and Living Documentation Sync | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261126-193-tri-database-tests-and-living-documentation-sync.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261126-193-tri-database-tests-and-living-documentation-sync.md) |
+| **ADR-194** | Security Hotfix — MCP LFI, SignalR Broadcast Scoping, PHI Telemetry Redaction, and CSV Formula Escaping | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261126-194-security-hotfix-lfi-signalr-telemetry-and-csv.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261126-194-security-hotfix-lfi-signalr-telemetry-and-csv.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*

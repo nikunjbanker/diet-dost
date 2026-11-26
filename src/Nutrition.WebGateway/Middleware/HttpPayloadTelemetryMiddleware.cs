@@ -55,84 +55,32 @@ public partial class HttpPayloadTelemetryMiddleware
         var sw = Stopwatch.StartNew();
         string requestPayload = string.Empty;
 
-        // 1. Capture Request Payload
+        // 1. Capture Request Metadata Only (never log or tag raw PHI/auth payloads)
         if (context.Request.ContentType?.StartsWith("multipart/form-data", StringComparison.OrdinalIgnoreCase) == true)
         {
-            requestPayload = $"[Multipart Form Upload: ContentLength={context.Request.ContentLength} bytes, ContentType={context.Request.ContentType}]";
+            requestPayload = $"[Multipart Form Upload: ContentLength={context.Request.ContentLength} bytes]";
             activity?.SetTag(NutritionTelemetry.TagHttpRequestPayload, requestPayload);
         }
-        else if (context.Request.ContentLength > 0 &&
-                 (context.Request.ContentType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true ||
-                  context.Request.ContentType?.Contains("text", StringComparison.OrdinalIgnoreCase) == true ||
-                  context.Request.ContentType?.Contains("form-urlencoded", StringComparison.OrdinalIgnoreCase) == true))
+        else if (context.Request.ContentLength > 0)
         {
-            context.Request.EnableBuffering();
-            using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-            var bodyText = await reader.ReadToEndAsync();
-            context.Request.Body.Position = 0;
-
-            if (bodyText.Length > MaxPayloadCaptureBytes)
-            {
-                requestPayload = bodyText[..MaxPayloadCaptureBytes] + " ...[TRUNCATED]";
-            }
-            else
-            {
-                requestPayload = bodyText;
-            }
-
+            requestPayload = $"[Redacted Payload: {context.Request.ContentLength} bytes]";
             activity?.SetTag(NutritionTelemetry.TagHttpRequestPayload, requestPayload);
         }
 
-        // 2. Capture Response Payload by swapping response stream
-        var originalBodyStream = context.Response.Body;
-        using var responseMemoryStream = new MemoryStream();
-        context.Response.Body = responseMemoryStream;
-
-        string responsePayload = string.Empty;
-
+        // 2. Execute downstream pipeline without buffering or logging raw PHI response bodies
         try
         {
             await _next(context);
 
-            responseMemoryStream.Position = 0;
             var contentType = context.Response.ContentType ?? string.Empty;
-
-            if (contentType.Contains("json", StringComparison.OrdinalIgnoreCase) ||
-                contentType.Contains("text", StringComparison.OrdinalIgnoreCase) ||
-                context.Response.StatusCode >= 400)
-            {
-                using var respReader = new StreamReader(responseMemoryStream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, bufferSize: 1024, leaveOpen: true);
-                var fullRespText = await respReader.ReadToEndAsync();
-
-                if (fullRespText.Length > MaxPayloadCaptureBytes)
-                {
-                    responsePayload = fullRespText[..MaxPayloadCaptureBytes] + " ...[TRUNCATED]";
-                }
-                else
-                {
-                    responsePayload = fullRespText;
-                }
-
-                activity?.SetTag(NutritionTelemetry.TagHttpResponsePayload, responsePayload);
-            }
-            else if (responseMemoryStream.Length > 0)
-            {
-                responsePayload = $"[Binary / Stream response: {responseMemoryStream.Length} bytes, ContentType={contentType}]";
-                activity?.SetTag(NutritionTelemetry.TagHttpResponsePayload, responsePayload);
-            }
-
+            var contentLength = context.Response.ContentLength ?? 0;
+            activity?.SetTag(NutritionTelemetry.TagHttpResponsePayload, $"[Redacted Response: {contentLength} bytes, ContentType={contentType}]");
             activity?.SetTag(NutritionTelemetry.TagHttpResponseStatusCode, context.Response.StatusCode);
-
-            // Copy the intercepted stream back so the client receives the response
-            responseMemoryStream.Position = 0;
-            await responseMemoryStream.CopyToAsync(originalBodyStream);
         }
         finally
         {
-            context.Response.Body = originalBodyStream;
             sw.Stop();
 
-            // Emit structured log with metrics and byte sizes (raw payloads stored in OpenTelemetry activity tags)
             var sanitizedMethod = HttpMethods.IsGet(context.Request.Method) ? "GET"
                 : HttpMethods.IsPost(context.Request.Method) ? "POST"
                 : HttpMethods.IsPut(context.Request.Method) ? "PUT"
@@ -149,7 +97,7 @@ public partial class HttpPayloadTelemetryMiddleware
                     context.Response.StatusCode,
                     sw.Elapsed.TotalMilliseconds,
                     context.Request.ContentLength ?? 0,
-                    responseMemoryStream.Length);
+                    context.Response.ContentLength ?? 0);
             }
         }
     }
