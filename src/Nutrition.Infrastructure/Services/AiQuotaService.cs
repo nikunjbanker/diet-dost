@@ -8,6 +8,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
+using Nutrition.Application.Common.Repositories;
 using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
@@ -18,22 +19,25 @@ namespace Nutrition.Infrastructure.Services;
 
 /// <summary>
 /// Domain-driven service managing AI quota evaluation, usage stats, and audit telemetry.
-/// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
+/// Decoupled from EF Core via IRepository, IAiUsageRepository, and IUnitOfWork abstractions.
 /// </summary>
 public class AiQuotaService : IAiQuotaService
 {
     private readonly IRepository<AiUsageLog> _aiLogRepo;
     private readonly ITierConfigurationService _tierConfigService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IAiUsageRepository? _aiUsageRepo;
 
     public AiQuotaService(
         IRepository<AiUsageLog> aiLogRepo,
         ITierConfigurationService tierConfigService,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IAiUsageRepository? aiUsageRepo = null)
     {
         _aiLogRepo = aiLogRepo ?? throw new ArgumentNullException(nameof(aiLogRepo));
         _tierConfigService = tierConfigService ?? throw new ArgumentNullException(nameof(tierConfigService));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _aiUsageRepo = aiUsageRepo;
     }
 
     /// <summary>
@@ -121,31 +125,48 @@ public class AiQuotaService : IAiQuotaService
         var sevenDaysAgoUtc = DateTime.UtcNow.AddDays(-7);
         var thirtyDaysAgoUtc = DateTime.UtcNow.AddDays(-30);
 
-        var usedToday = await _aiLogRepo
-            .CountAsync(l => l.UserId == userId &&
-                             l.TimestampUtc >= todayStartUtc &&
-                             l.TimestampUtc < tomorrowStartUtc &&
-                             l.IsSuccess &&
-                             (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
+        int usedToday;
+        int used7D;
+        int used30D;
+        List<AiUsageLogDto> recentLogs;
 
-        var used7D = await _aiLogRepo
-            .CountAsync(l => l.UserId == userId &&
-                             l.TimestampUtc >= sevenDaysAgoUtc &&
-                             l.IsSuccess &&
-                             (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
+        if (_aiUsageRepo != null)
+        {
+            var summary = await _aiUsageRepo.GetQuotaWindowSummaryAsync(
+                userId, todayStartUtc, tomorrowStartUtc, sevenDaysAgoUtc, thirtyDaysAgoUtc, 20, ct);
+            usedToday = summary.UsedToday;
+            used7D = summary.UsedLast7Days;
+            used30D = summary.UsedLast30Days;
+            recentLogs = summary.RecentOperations.Select(l => l.ToDto()).ToList();
+        }
+        else
+        {
+            usedToday = await _aiLogRepo
+                .CountAsync(l => l.UserId == userId &&
+                                 l.TimestampUtc >= todayStartUtc &&
+                                 l.TimestampUtc < tomorrowStartUtc &&
+                                 l.IsSuccess &&
+                                 (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
 
-        var used30D = await _aiLogRepo
-            .CountAsync(l => l.UserId == userId &&
-                             l.TimestampUtc >= thirtyDaysAgoUtc &&
-                             l.IsSuccess &&
-                             (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
+            used7D = await _aiLogRepo
+                .CountAsync(l => l.UserId == userId &&
+                                 l.TimestampUtc >= sevenDaysAgoUtc &&
+                                 l.IsSuccess &&
+                                 (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
 
-        var userLogs = await _aiLogRepo.FindAsync(l => l.UserId == userId, ct);
-        var recentLogs = userLogs
-            .OrderByDescending(l => l.TimestampUtc)
-            .Take(20)
-            .Select(l => l.ToDto())
-            .ToList();
+            used30D = await _aiLogRepo
+                .CountAsync(l => l.UserId == userId &&
+                                 l.TimestampUtc >= thirtyDaysAgoUtc &&
+                                 l.IsSuccess &&
+                                 (l.OperationType == AiOperationType.PhotoDetection || l.OperationType == AiOperationType.TextDetection), ct);
+
+            var userLogs = await _aiLogRepo.FindAsync(new QuerySpec<AiUsageLog>(
+                Filter: l => l.UserId == userId,
+                OrderBy: l => l.TimestampUtc,
+                Descending: true,
+                Take: 20), ct);
+            recentLogs = userLogs.Select(l => l.ToDto()).ToList();
+        }
 
         var remaining = config.DailyAiDetectionLimit < 0
             ? int.MaxValue

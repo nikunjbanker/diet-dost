@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-26T07:50:07.948457+00:00",
-  "totalAdrs": 154,
+  "generatedAt": "2026-11-26T08:06:19.183409+00:00",
+  "totalAdrs": 155,
   "categoryCounts": {
-    "architecture": 52,
+    "architecture": 53,
     "security": 27,
     "devops": 41,
     "presentation": 21,
@@ -1857,6 +1857,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261126-190-explicit-updateasync-bounded-queries-and-thin-controllers.md",
       "relativePath": "docs/adr/architecture/ADR-20261126-190-explicit-updateasync-bounded-queries-and-thin-controllers.md"
+    },
+    {
+      "id": "ADR-191",
+      "number": 191,
+      "title": "DocumentDB Specialized Ports, CAS Concurrency, and Fail-Closed Fallback Removal",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-26",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261126-191-documentdb-specialized-ports-cas-and-fail-closed-removal.md",
+      "relativePath": "docs/adr/architecture/ADR-20261126-191-documentdb-specialized-ports-cas-and-fail-closed-removal.md"
     }
   ]
 }

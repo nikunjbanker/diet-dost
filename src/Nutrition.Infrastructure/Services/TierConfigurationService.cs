@@ -5,7 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using System.Collections.Concurrent;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
@@ -16,16 +16,17 @@ using Nutrition.Infrastructure.Persistence;
 namespace Nutrition.Infrastructure.Services;
 
 /// <summary>
-/// Domain-driven service managing tier feature configurations.
+/// Domain-driven service managing tier feature configurations with a bounded 5-minute TTL cache.
 /// Decoupled from EF Core via IRepository and IUnitOfWork abstractions (Clean Architecture & DIP).
 /// </summary>
 public class TierConfigurationService : ITierConfigurationService
 {
+    private static readonly MemoryCache _cache = new(new MemoryCacheOptions());
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromMinutes(5);
     private readonly IRepository<TierFeatureConfiguration> _tierRepo;
     private readonly IUnitOfWork _unitOfWork;
-    private static readonly ConcurrentDictionary<UserTier, TierFeatureConfiguration> _cache = new();
 
-    public static void ClearCache() => _cache.Clear();
+    public static void ClearCache() => _cache.Compact(1.0);
 
     public TierConfigurationService(
         IRepository<TierFeatureConfiguration> tierRepo,
@@ -47,7 +48,7 @@ public class TierConfigurationService : ITierConfigurationService
 
     public async Task<TierFeatureConfiguration> GetConfigurationAsync(UserTier tier, CancellationToken ct = default)
     {
-        if (_cache.TryGetValue(tier, out var cached))
+        if (_cache.TryGetValue(tier, out TierFeatureConfiguration? cached) && cached != null)
         {
             return cached;
         }
@@ -58,7 +59,7 @@ public class TierConfigurationService : ITierConfigurationService
             config = TierFeatureConfiguration.CreateDefault(tier);
         }
 
-        _cache[tier] = config;
+        _cache.Set(tier, config, CacheTtl);
         return config;
     }
 
@@ -77,7 +78,7 @@ public class TierConfigurationService : ITierConfigurationService
 
         foreach (var c in configs)
         {
-            _cache[c.Tier] = c;
+            _cache.Set(c.Tier, c, CacheTtl);
         }
 
         return configs.OrderBy(c => c.Tier).ToList();
@@ -104,7 +105,7 @@ public class TierConfigurationService : ITierConfigurationService
         }
 
         await _unitOfWork.SaveChangesAsync(ct);
-        _cache[configuration.Tier] = configuration;
+        _cache.Set(configuration.Tier, configuration, CacheTtl);
         return configuration;
     }
 }
