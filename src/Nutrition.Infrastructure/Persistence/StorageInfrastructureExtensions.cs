@@ -194,6 +194,8 @@ public static class StorageInfrastructureExtensions
                     options.UseSqlite($"Data Source={fallbackDbPath}"));
 
                 services.AddScoped(typeof(IRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
+                services.AddScoped(typeof(IReadRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
+                services.AddScoped(typeof(IWriteRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
                 services.AddScoped<IUnitOfWork, Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbUnitOfWork>();
                 break;
 
@@ -201,6 +203,8 @@ public static class StorageInfrastructureExtensions
                 services.AddDbContext<DietTrackerDbContext>(options =>
                     options.UseSqlite(connectionString));
                 services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+                services.AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
+                services.AddScoped(typeof(IWriteRepository<>), typeof(EfRepository<>));
                 services.AddScoped<IUnitOfWork, EfUnitOfWork>();
                 break;
         }
@@ -208,6 +212,8 @@ public static class StorageInfrastructureExtensions
         if (!provider.Equals("documentdb", StringComparison.OrdinalIgnoreCase) && !provider.Equals("mongodb", StringComparison.OrdinalIgnoreCase))
         {
             services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+            services.AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
+            services.AddScoped(typeof(IWriteRepository<>), typeof(EfRepository<>));
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         }
 

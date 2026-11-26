@@ -5,7 +5,6 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using System.Security.Claims;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Nutrition.Application.Common;
@@ -14,6 +13,7 @@ using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Common.Options;
 using Nutrition.Application.Common.Security;
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Application.Features.Auth.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
@@ -132,17 +132,15 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
         var token = _jwtTokenService.GenerateToken(user, effectiveName);
         var tierConfig = await _tierRepo.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, effectiveName),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString()),
-            new("tier", user.Tier.ToString()),
-            new("security_stamp", user.SecurityStamp),
-            new("is_anonymous", "true")
-        };
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "SmartScheme"));
+        var claimsPayload = new AuthenticatedClaimsPayload(
+            UserId: user.Id,
+            DisplayName: effectiveName,
+            Email: user.Email,
+            Role: user.Role.ToString(),
+            Tier: user.Tier.ToString(),
+            SecurityStamp: user.SecurityStamp,
+            IsAnonymous: true
+        );
 
         var responseUser = new CurrentUserResponseDto(
             user.Id,
@@ -153,7 +151,7 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig,
+            tierConfig?.ToDto(),
             user.IsOnboarded,
             user.IsAnonymous
         );
@@ -172,7 +170,7 @@ public class RegisterAnonymousCommandHandler : ICommandHandler<RegisterAnonymous
             recoveryKit.RecoveryLookupId,
             recoveryKit.JsonBackupPayload,
             responseUser,
-            principal
+            claimsPayload
         ), 201);
     }
 }

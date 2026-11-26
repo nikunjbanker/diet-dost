@@ -7,8 +7,8 @@
  */
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Analytics.DTOs;
 using Nutrition.Application.Services;
-using Nutrition.Domain.Model.Ledger;
 
 namespace Nutrition.Application.Features.Analytics.Queries.GetDailyLedger;
 
@@ -17,9 +17,9 @@ public record GetDailyLedgerQuery(
     string? TargetUserId,
     bool IsAdminOrSuper,
     string? Date
-) : IQuery<Result<DailyCalorieLedger>>;
+) : IQuery<Result<DailyCalorieLedgerDto>>;
 
-public class GetDailyLedgerQueryHandler : IQueryHandler<GetDailyLedgerQuery, Result<DailyCalorieLedger>>
+public class GetDailyLedgerQueryHandler : IQueryHandler<GetDailyLedgerQuery, Result<DailyCalorieLedgerDto>>
 {
     private readonly ClinicalDietitianService _dietitianService;
 
@@ -28,15 +28,15 @@ public class GetDailyLedgerQueryHandler : IQueryHandler<GetDailyLedgerQuery, Res
         _dietitianService = dietitianService;
     }
 
-    public async Task<Result<DailyCalorieLedger>> HandleAsync(GetDailyLedgerQuery request, CancellationToken ct = default)
+    public async Task<Result<DailyCalorieLedgerDto>> HandleAsync(GetDailyLedgerQuery request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.CurrentUserId))
-            return Result<DailyCalorieLedger>.Unauthorized();
+            return Result<DailyCalorieLedgerDto>.Unauthorized();
 
         var targetUserId = string.IsNullOrWhiteSpace(request.TargetUserId) ? request.CurrentUserId : request.TargetUserId;
         if (targetUserId != request.CurrentUserId && !request.IsAdminOrSuper)
         {
-            return Result<DailyCalorieLedger>.Forbidden("Access denied to inspect another user's ledger.");
+            return Result<DailyCalorieLedgerDto>.Forbidden("Access denied to inspect another user's ledger.");
         }
 
         var dateOnly = !string.IsNullOrWhiteSpace(request.Date) && DateOnly.TryParse(request.Date, out var parsed)
@@ -44,6 +44,6 @@ public class GetDailyLedgerQueryHandler : IQueryHandler<GetDailyLedgerQuery, Res
             : DateOnly.FromDateTime(DateTime.UtcNow);
 
         var ledger = await _dietitianService.GetOrCreateDailyLedgerAsync(targetUserId, dateOnly, ct);
-        return Result<DailyCalorieLedger>.Success(ledger);
+        return Result<DailyCalorieLedgerDto>.Success(ledger.ToDto());
     }
 }

@@ -16,9 +16,11 @@ public enum ProgressPhotoType
     FullBodySide
 }
 
-public class ProgressPhoto : ISoftDeletable
+public class ProgressPhoto : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public string UserId { get; set; } = string.Empty;
     public DateTime CapturedAtUtc { get; set; } = DateTime.UtcNow;
     public double WeightKg { get; set; }

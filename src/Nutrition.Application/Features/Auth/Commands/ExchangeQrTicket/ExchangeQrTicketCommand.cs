@@ -5,7 +5,6 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Logging;
@@ -13,6 +12,7 @@ using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Application.Features.Auth.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
@@ -118,16 +118,14 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
         var token = _jwtTokenService.GenerateToken(user, displayName);
         var tierConfig = await _tierRepo.FirstOrDefaultAsync(t => t.Tier == user.Tier, ct);
 
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id),
-            new(ClaimTypes.Name, displayName),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role.ToString()),
-            new("tier", user.Tier.ToString()),
-            new("security_stamp", user.SecurityStamp)
-        };
-        var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, "SmartScheme"));
+        var claimsPayload = new AuthenticatedClaimsPayload(
+            UserId: user.Id,
+            DisplayName: displayName,
+            Email: user.Email,
+            Role: user.Role.ToString(),
+            Tier: user.Tier.ToString(),
+            SecurityStamp: user.SecurityStamp
+        );
 
         var responseUser = new CurrentUserResponseDto(
             user.Id,
@@ -138,7 +136,7 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig,
+            tierConfig?.ToDto(),
             user.IsOnboarded,
             user.IsAnonymous
         );
@@ -151,7 +149,7 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
         return Result<ExchangeQrTicketResultDto>.Success(new ExchangeQrTicketResultDto(
             token,
             responseUser,
-            principal
+            claimsPayload
         ));
     }
 }

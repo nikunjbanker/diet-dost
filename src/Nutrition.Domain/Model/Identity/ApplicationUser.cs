@@ -15,9 +15,10 @@ namespace Nutrition.Domain.Model.Identity;
 /// Root aggregate entity representing an authenticated, registered application user.
 /// Maintains identity credentials, roles, subscription tier, and forensic legal consent audit records.
 /// </summary>
-public partial class ApplicationUser : ISoftDeletable
+public partial class ApplicationUser : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
 
     /// <summary>
     /// User's primary email address (mandatory for registration and verification).

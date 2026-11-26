@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Features.Analytics.Queries.GetDailyLedger;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Features.Meals.Queries.GetAiQuota;
 using Nutrition.Application.Features.Meals.Queries.GetMealHistory;
 using Nutrition.Application.Features.MobileBff.DTOs;
@@ -22,7 +23,6 @@ using Nutrition.Application.Features.Profile.Queries.GetProfile;
 using Nutrition.Application.Features.WebBff.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
-using Nutrition.Domain.Model.Meal;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers.Mobile;
@@ -164,7 +164,7 @@ public class MobileBffController : ControllerBase
             NetCalories: Math.Round(net, 1)
         );
 
-        var rawMeals = mealsResult.Data?.Meals ?? new List<MealLog>();
+        var rawMeals = mealsResult.Data?.Meals ?? new List<MealLogDto>();
         var todayMeals = rawMeals
             .Select(m => new MobileMealDto(
                 Id: m.Id,

@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-24T07:54:08.841291+00:00",
-  "totalAdrs": 152,
+  "generatedAt": "2026-11-26T07:40:52.700822+00:00",
+  "totalAdrs": 153,
   "categoryCounts": {
-    "architecture": 50,
+    "architecture": 51,
     "security": 27,
     "devops": 41,
     "presentation": 21,
@@ -1833,6 +1833,18 @@
       "subsystem": "Infrastructure, CI/CD, Database, Tools",
       "filename": "ADR-20261124-188-azure-sql-serverless-free-tier-transition.md",
       "relativePath": "docs/adr/devops/ADR-20261124-188-azure-sql-serverless-free-tier-transition.md"
+    },
+    {
+      "id": "ADR-189",
+      "number": 189,
+      "title": "Domain Contracts, QuerySpec Repositories, and A1 DTO Boundaries",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-26",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261126-189-domain-contracts-queryspec-and-a1-dtos.md",
+      "relativePath": "docs/adr/architecture/ADR-20261126-189-domain-contracts-queryspec-and-a1-dtos.md"
     }
   ]
 }

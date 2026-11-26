@@ -9,11 +9,13 @@ using Nutrition.Domain.Common;
 
 namespace Nutrition.Domain.Model.Meal;
 
-public class UserCorrectionRecord : ISoftDeletable
+public class UserCorrectionRecord : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
     public string UserId { get; set; } = string.Empty;
     public string OriginalDetectedItem { get; set; } = string.Empty;
+    public string NormalizedOriginalItem { get; set; } = string.Empty;
     public string CorrectedItemName { get; set; } = string.Empty;
     public string HindiOrRegionalName { get; set; } = string.Empty;
     public string EstimatedPortion { get; set; } = "1 Katori";
@@ -23,7 +25,11 @@ public class UserCorrectionRecord : ISoftDeletable
     public double FatGrams { get; set; }
     public string MealType { get; set; } = "Lunch";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public int FrequencyCount { get; set; } = 1;
     public bool IsDeleted { get; set; } = false;
     public DateTime? DeletedAtUtc { get; set; }
+
+    public static string NormalizeItemKey(string value) =>
+        string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
 }

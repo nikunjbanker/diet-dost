@@ -41,9 +41,10 @@ public class MedicationEntry
     public string? TimingNotes { get; set; }
 }
 
-public class UserProfile : ISoftDeletable
+public class UserProfile : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
     public string Name { get; set; } = string.Empty;
     public BiologicalSex Sex { get; set; }
     public int Age { get; set; }

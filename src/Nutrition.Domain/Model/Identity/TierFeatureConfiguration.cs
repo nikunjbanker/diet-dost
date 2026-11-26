@@ -5,15 +5,18 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Domain.Common;
+
 namespace Nutrition.Domain.Model.Identity;
 
 /// <summary>
 /// Dynamic configuration for user subscription tiers.
 /// Allows administrators to tune feature limits and quotas at runtime without redeployment.
 /// </summary>
-public class TierFeatureConfiguration
+public class TierFeatureConfiguration : IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
 
     /// <summary>
     /// The subscription tier this configuration applies to.

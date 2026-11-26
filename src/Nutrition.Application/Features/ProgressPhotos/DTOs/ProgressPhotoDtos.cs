@@ -9,19 +9,44 @@ using Nutrition.Domain.Model.Progress;
 
 namespace Nutrition.Application.Features.ProgressPhotos.DTOs;
 
+public sealed record ProgressPhotoDto(
+    string Id,
+    string UserId,
+    DateTime CapturedAtUtc,
+    double WeightKg,
+    ProgressPhotoType PhotoType,
+    string PhotoUri,
+    bool IsBaseline,
+    string? Notes
+);
+
 public record ProgressPhotoUploadResultDto(
-    ProgressPhoto Photo,
+    ProgressPhotoDto Photo,
     string Message
 );
 
 public record ProgressPhotoComparisonDto(
     bool HasComparison,
-    ProgressPhoto? BaselineFace,
-    ProgressPhoto? CurrentFace,
-    ProgressPhoto? BaselineFullBody,
-    ProgressPhoto? CurrentFullBody,
+    ProgressPhotoDto? BaselineFace,
+    ProgressPhotoDto? CurrentFace,
+    ProgressPhotoDto? BaselineFullBody,
+    ProgressPhotoDto? CurrentFullBody,
     double WeightDeltaKg,
     int DaysElapsed,
     int TotalPhotosCount,
-    IReadOnlyList<ProgressPhoto> AllPhotos
+    IReadOnlyList<ProgressPhotoDto> AllPhotos
 );
+
+public static class ProgressPhotoDtoMapper
+{
+    public static ProgressPhotoDto ToDto(this ProgressPhoto entity) => new(
+        Id: entity.Id,
+        UserId: entity.UserId,
+        CapturedAtUtc: entity.CapturedAtUtc,
+        WeightKg: entity.WeightKg,
+        PhotoType: entity.PhotoType,
+        PhotoUri: $"/api/media/progress/{entity.Id}",
+        IsBaseline: entity.IsBaseline,
+        Notes: entity.Notes
+    );
+}

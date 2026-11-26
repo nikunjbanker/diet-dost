@@ -7,6 +7,7 @@
  */
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Meal;
 
@@ -38,7 +39,7 @@ public record MealHistoryResponseDto(
     string? MealType,
     int TotalMealsCount,
     MealHistorySummaryDto Summary,
-    List<MealLog> Meals
+    List<MealLogDto> Meals
 );
 
 public class GetMealHistoryQueryHandler : IQueryHandler<GetMealHistoryQuery, Result<MealHistoryResponseDto>>
@@ -98,7 +99,7 @@ public class GetMealHistoryQueryHandler : IQueryHandler<GetMealHistoryQuery, Res
             parsedMealType?.ToString(),
             meals.Count,
             summary,
-            meals
+            meals.Select(m => m.ToDto()).ToList()
         ));
     }
 }

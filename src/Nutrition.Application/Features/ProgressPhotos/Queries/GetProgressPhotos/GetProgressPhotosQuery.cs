@@ -8,6 +8,7 @@
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.ProgressPhotos.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Progress;
@@ -20,9 +21,9 @@ public record GetProgressPhotosQuery(
     UserTier Tier,
     bool IsAdminOrSuper,
     ProgressPhotoType? PhotoType
-) : IQuery<Result<List<ProgressPhoto>>>;
+) : IQuery<Result<List<ProgressPhotoDto>>>;
 
-public class GetProgressPhotosQueryHandler : IQueryHandler<GetProgressPhotosQuery, Result<List<ProgressPhoto>>>
+public class GetProgressPhotosQueryHandler : IQueryHandler<GetProgressPhotosQuery, Result<List<ProgressPhotoDto>>>
 {
     private readonly IRepository<ProgressPhoto> _photoRepo;
     private readonly ITierConfigurationService _tierConfigService;
@@ -35,17 +36,17 @@ public class GetProgressPhotosQueryHandler : IQueryHandler<GetProgressPhotosQuer
         _tierConfigService = tierConfigService;
     }
 
-    public async Task<Result<List<ProgressPhoto>>> HandleAsync(GetProgressPhotosQuery request, CancellationToken ct = default)
+    public async Task<Result<List<ProgressPhotoDto>>> HandleAsync(GetProgressPhotosQuery request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.CurrentUserId))
         {
-            return Result<List<ProgressPhoto>>.Unauthorized();
+            return Result<List<ProgressPhotoDto>>.Unauthorized();
         }
 
         var config = await _tierConfigService.GetConfigurationAsync(request.Tier, ct);
         if (!config.AllowPhotoCompare && !request.IsAdminOrSuper)
         {
-            return Result<List<ProgressPhoto>>.Failure(
+            return Result<List<ProgressPhotoDto>>.Failure(
                 "Progress photo gallery is a Premium tier feature. Please upgrade your plan.",
                 errorCode: "FeatureTierUpgradeRequired",
                 statusCode: 403);
@@ -54,7 +55,7 @@ public class GetProgressPhotosQueryHandler : IQueryHandler<GetProgressPhotosQuer
         var targetUserId = string.IsNullOrWhiteSpace(request.TargetUserId) ? request.CurrentUserId : request.TargetUserId;
         if (targetUserId != request.CurrentUserId && !request.IsAdminOrSuper)
         {
-            return Result<List<ProgressPhoto>>.Forbidden();
+            return Result<List<ProgressPhotoDto>>.Forbidden();
         }
 
         var photos = await _photoRepo.FindAsync(
@@ -62,20 +63,9 @@ public class GetProgressPhotosQueryHandler : IQueryHandler<GetProgressPhotosQuer
             ct);
 
         var ordered = photos.OrderBy(p => p.CapturedAtUtc)
-            .Select(p => new ProgressPhoto
-            {
-                Id = p.Id,
-                UserId = p.UserId,
-                CapturedAtUtc = p.CapturedAtUtc,
-                WeightKg = p.WeightKg,
-                PhotoType = p.PhotoType,
-                PhotoUri = $"/api/media/progress/{p.Id}",
-                IsBaseline = p.IsBaseline,
-                Notes = p.Notes,
-                IsDeleted = p.IsDeleted,
-                DeletedAtUtc = p.DeletedAtUtc
-            }).ToList();
+            .Select(p => p.ToDto())
+            .ToList();
 
-        return Result<List<ProgressPhoto>>.Success(ordered);
+        return Result<List<ProgressPhotoDto>>.Success(ordered);
     }
 }

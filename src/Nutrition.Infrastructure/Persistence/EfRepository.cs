@@ -120,7 +120,42 @@ public class EfRepository<T> : IRepository<T> where T : class
         }
     }
 
+    public async Task<List<T>> FindAsync(QuerySpec<T> spec, CancellationToken ct = default)
+    {
+        try
+        {
+            return await ApplyQuerySpec(spec).ToListAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
+                nameof(FindAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<TResult>> ProjectAsync<TResult>(QuerySpec<T> spec, Expression<Func<T, TResult>> selector, CancellationToken ct = default)
+    {
+        try
+        {
+            return await ApplyQuerySpec(spec).Select(selector).ToListAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Database error in {Operation} for entity {EntityType}. ErrorType: {ErrorType}, Message: {ErrorMessage}",
+                nameof(ProjectAsync), typeof(T).Name, ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
     public async Task<List<T>> FindDeletedAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+    {
+        return await FindDeletedAsync(new QuerySpec<T>(Filter: predicate, IncludeDeleted: true), ct);
+    }
+
+    public async Task<List<T>> FindDeletedAsync(QuerySpec<T> spec, CancellationToken ct = default)
     {
         try
         {
@@ -129,9 +164,21 @@ public class EfRepository<T> : IRepository<T> where T : class
             {
                 query = query.Where(e => EF.Property<bool>(e, "IsDeleted"));
             }
-            if (predicate != null)
+            if (spec.Filter != null)
             {
-                query = query.Where(predicate);
+                query = query.Where(spec.Filter);
+            }
+            if (spec.OrderBy != null)
+            {
+                query = spec.Descending ? query.OrderByDescending(spec.OrderBy) : query.OrderBy(spec.OrderBy);
+            }
+            if (spec.Skip.HasValue && spec.Skip.Value > 0)
+            {
+                query = query.Skip(spec.Skip.Value);
+            }
+            if (spec.Take.HasValue && spec.Take.Value > 0)
+            {
+                query = query.Take(Math.Clamp(spec.Take.Value, 1, 500));
             }
             return await query.ToListAsync(ct);
         }
@@ -144,9 +191,26 @@ public class EfRepository<T> : IRepository<T> where T : class
         }
     }
 
-    public IQueryable<T> Query()
+    private IQueryable<T> ApplyQuerySpec(QuerySpec<T> spec)
     {
-        return _dbSet.AsQueryable();
+        IQueryable<T> query = spec.IncludeDeleted ? _dbSet.IgnoreQueryFilters() : _dbSet;
+        if (spec.Filter != null)
+        {
+            query = query.Where(spec.Filter);
+        }
+        if (spec.OrderBy != null)
+        {
+            query = spec.Descending ? query.OrderByDescending(spec.OrderBy) : query.OrderBy(spec.OrderBy);
+        }
+        if (spec.Skip.HasValue && spec.Skip.Value > 0)
+        {
+            query = query.Skip(spec.Skip.Value);
+        }
+        if (spec.Take.HasValue && spec.Take.Value > 0)
+        {
+            query = query.Take(Math.Clamp(spec.Take.Value, 1, 500));
+        }
+        return query;
     }
 
     public async Task AddAsync(T entity, CancellationToken ct = default)

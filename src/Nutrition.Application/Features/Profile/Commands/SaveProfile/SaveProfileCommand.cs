@@ -12,12 +12,11 @@ using Nutrition.Application.Features.Profile.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
-using Nutrition.Domain.Model.Profile;
 
 namespace Nutrition.Application.Features.Profile.Commands.SaveProfile;
 
 public record SaveProfileCommand(
-    UserProfile Profile,
+    SaveProfileRequestDto Profile,
     string CurrentUserId
 ) : ICommand<Result<ProfileResponseDto>>;
 
@@ -50,11 +49,11 @@ public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Res
         if (request.Profile == null)
             return Result<ProfileResponseDto>.Failure("Profile payload cannot be null.", "InvalidPayload", 400);
 
-        request.Profile.Id = request.CurrentUserId;
+        var profileEntity = request.Profile.ToDomainEntity(request.CurrentUserId);
 
         try
         {
-            var saved = await _dietitianService.SaveProfileAsync(request.Profile, ct);
+            var saved = await _dietitianService.SaveProfileAsync(profileEntity, ct);
             if (_userRepo != null && _uow != null)
             {
                 var user = await _userRepo.GetByIdAsync(request.CurrentUserId, ct);
@@ -69,7 +68,7 @@ public class SaveProfileCommandHandler : ICommandHandler<SaveProfileCommand, Res
             var macros = ClinicalCalculators.CalculateMacroDistribution(saved, budget);
 
             return Result<ProfileResponseDto>.Success(new ProfileResponseDto(
-                saved,
+                saved.ToDto(),
                 budget,
                 macros,
                 "Clinical profile saved successfully. Caloric budget and macronutrients calculated per ICMR-NIN & WHO standards."

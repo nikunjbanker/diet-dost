@@ -7,10 +7,10 @@
  */
 namespace Nutrition.Application.Features.WebBff.DTOs;
 
+using Nutrition.Application.Features.Analytics.DTOs;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
-using Nutrition.Domain.Model.Ledger;
-using Nutrition.Domain.Model.Meal;
 
 /// <summary>
 /// Composite DTO consolidating all required data for the initial web dashboard render.
@@ -18,9 +18,9 @@ using Nutrition.Domain.Model.Meal;
 /// </summary>
 public record WebDashboardCompositeDto(
     WebUserProfileDto User,
-    DailyCalorieLedger TodayLedger,
+    DailyCalorieLedgerDto TodayLedger,
     AnalyticsProjection Projections,
-    IReadOnlyList<MealLog> RecentMeals,
+    IReadOnlyList<MealLogDto> RecentMeals,
     AiUsageStatsResult Quota,
     TierFeatureFlagsDto FeatureFlags,
     bool IsIntakePending = false,

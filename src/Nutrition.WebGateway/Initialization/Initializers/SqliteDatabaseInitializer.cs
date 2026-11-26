@@ -216,6 +216,16 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         await EnsureColumnExistsAsync("Users", "ConsentUserAgent", "TEXT NULL", cancellationToken);
         await EnsureColumnExistsAsync("Users", "LastLoginAtUtc", "TEXT NULL", cancellationToken);
         await EnsureColumnExistsAsync("Users", "LastActiveUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Users", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("Profiles", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("Meals", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("Meals", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Ledgers", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("Ledgers", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("ProgressPhotos", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Corrections", "NormalizedOriginalItem", "TEXT NOT NULL DEFAULT ''", cancellationToken);
+        await EnsureColumnExistsAsync("Corrections", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("TierConfigurations", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureIndexExistsAsync("Users", "IX_Users_LastActiveUtc", "\"LastActiveUtc\"", cancellationToken);
         await EnsureIndexExistsAsync("Users", "IX_Users_RecoveryLookupId", "\"RecoveryLookupId\"", cancellationToken);
 
@@ -388,6 +398,11 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             CREATE INDEX IF NOT EXISTS ""IX_AppNotifications_RecipientRole_IsRead"" ON ""AppNotifications"" (""RecipientRole"", ""IsRead"");
             CREATE INDEX IF NOT EXISTS ""IX_AppNotifications_RecipientUserId_IsRead"" ON ""AppNotifications"" (""RecipientUserId"", ""IsRead"");
         ", cancellationToken);
+
+        await EnsureColumnExistsAsync("QrSessions", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("QrSessions", "ApprovedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("QrSessions", "ConsumedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("AppNotifications", "SubjectUserId", "TEXT NULL", cancellationToken);
     }
 
     private async Task<bool> TableExistsAsync(string tableName, CancellationToken cancellationToken)

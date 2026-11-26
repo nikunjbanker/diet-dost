@@ -16,6 +16,7 @@ using Nutrition.Application.Features.Meals.Commands.DeleteMeal;
 using Nutrition.Application.Features.Meals.Commands.SubmitFeedback;
 using Nutrition.Application.Features.Meals.Commands.UpdateMeal;
 using Nutrition.Application.Features.Meals.Commands.UploadAndAnalyzeMeal;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Features.Meals.Queries.EstimateFoodItem;
 using Nutrition.Application.Features.Meals.Queries.ExportMeals;
 using Nutrition.Application.Features.Meals.Queries.GetAiFeedbacks;
@@ -145,7 +146,7 @@ public class MealsController : ControllerBase
     }
 
     [HttpPost("confirm")]
-    public async Task<IActionResult> ConfirmMeal([FromBody] MealLog meal, CancellationToken ct)
+    public async Task<IActionResult> ConfirmMeal([FromBody] SaveMealRequestDto meal, CancellationToken ct)
     {
         var currentUserId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(currentUserId))
@@ -198,7 +199,7 @@ public class MealsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateMeal([FromRoute] string id, [FromBody] MealLog meal, CancellationToken ct)
+    public async Task<IActionResult> UpdateMeal([FromRoute] string id, [FromBody] SaveMealRequestDto meal, CancellationToken ct)
     {
         var currentUserId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(currentUserId))

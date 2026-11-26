@@ -38,11 +38,13 @@ public class FoodItemRecord
     public double ConfidenceScore { get; set; } = 0.85;
 }
 
-public class MealLog : ISoftDeletable
+public class MealLog : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public const double ConfidenceThreshold = 0.70; // Mandatory >= 70% threshold
 
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public string UserId { get; set; } = string.Empty;
     public DateTime LoggedAt { get; set; } = DateTime.UtcNow;
     public MealType MealType { get; set; } = MealType.Lunch;

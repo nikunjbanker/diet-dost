@@ -293,7 +293,7 @@ public class MobileBffCompositeTests : IDisposable
         var clientMutationId = Guid.NewGuid().ToString("N");
         var clientTimestamp = DateTime.UtcNow;
 
-        var meal1 = new MealLog
+        var meal1 = new Nutrition.Application.Features.Meals.DTOs.SaveMealRequestDto
         {
             UserId = userId,
             DishName = "Paneer Tikka with Mint Chutney",
@@ -301,7 +301,7 @@ public class MobileBffCompositeTests : IDisposable
             LoggedAt = clientTimestamp,
             ClientMutationId = clientMutationId,
             ClientTimestampUtc = clientTimestamp,
-            Items = new List<FoodItemRecord>
+            Items = new List<Nutrition.Application.Features.Meals.DTOs.FoodItemRequestDto>
             {
                 new()
                 {
@@ -325,7 +325,7 @@ public class MobileBffCompositeTests : IDisposable
         var savedMealId1 = result1.Data.Meal.Id;
 
         // Second retry attempt (simulating 4G packet loss retry with identical clientMutationId)
-        var meal2 = new MealLog
+        var meal2 = new Nutrition.Application.Features.Meals.DTOs.SaveMealRequestDto
         {
             UserId = userId,
             DishName = "Paneer Tikka with Mint Chutney",
@@ -333,7 +333,7 @@ public class MobileBffCompositeTests : IDisposable
             LoggedAt = clientTimestamp,
             ClientMutationId = clientMutationId,
             ClientTimestampUtc = clientTimestamp,
-            Items = new List<FoodItemRecord>
+            Items = new List<Nutrition.Application.Features.Meals.DTOs.FoodItemRequestDto>
             {
                 new()
                 {
