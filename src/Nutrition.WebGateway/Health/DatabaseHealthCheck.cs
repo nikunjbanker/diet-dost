@@ -20,7 +20,7 @@ namespace Nutrition.WebGateway.Health;
 /// </summary>
 public class DatabaseHealthCheck : IHealthCheck
 {
-    private readonly DietTrackerDbContext _dbContext;
+    private readonly DietTrackerDbContext? _dbContext;
     private readonly IMongoDatabase? _mongoDatabase;
 
     public DatabaseHealthCheck(DietTrackerDbContext dbContext)
@@ -28,10 +28,16 @@ public class DatabaseHealthCheck : IHealthCheck
     {
     }
 
-    public DatabaseHealthCheck(DietTrackerDbContext dbContext, IServiceProvider? serviceProvider)
+    public DatabaseHealthCheck(DietTrackerDbContext? dbContext, IServiceProvider? serviceProvider)
     {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        _dbContext = dbContext ?? serviceProvider?.GetService<DietTrackerDbContext>();
         _mongoDatabase = serviceProvider?.GetService<IMongoDatabase>();
+    }
+
+    [ActivatorUtilitiesConstructor]
+    public DatabaseHealthCheck(IServiceProvider serviceProvider)
+        : this(serviceProvider?.GetService<DietTrackerDbContext>(), serviceProvider)
+    {
     }
 
     public async Task<HealthCheckResult> CheckHealthAsync(
@@ -52,6 +58,11 @@ public class DatabaseHealthCheck : IHealthCheck
                 };
 
                 return HealthCheckResult.Healthy($"Azure DocumentDB is connected and ready (Database: {_mongoDatabase.DatabaseNamespace.DatabaseName}).", docDbData);
+            }
+
+            if (_dbContext == null)
+            {
+                return HealthCheckResult.Unhealthy("No database provider (DocumentDB or EF Core DbContext) is registered.");
             }
 
             var canConnect = await _dbContext.Database.CanConnectAsync(cancellationToken);

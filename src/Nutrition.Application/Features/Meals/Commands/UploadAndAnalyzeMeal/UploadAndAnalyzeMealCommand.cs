@@ -38,6 +38,7 @@ public class UploadAndAnalyzeMealCommandHandler : ICommandHandler<UploadAndAnaly
     private readonly IRepository<UserCorrectionRecord> _correctionsRepo;
     private readonly IAiQuotaService _quotaService;
     private readonly IPhotoStorageService _photoStorageService;
+    private readonly IAiQuotaReservationGate? _quotaGate;
     private readonly ILogger<UploadAndAnalyzeMealCommandHandler> _logger;
 
     public UploadAndAnalyzeMealCommandHandler(
@@ -46,7 +47,8 @@ public class UploadAndAnalyzeMealCommandHandler : ICommandHandler<UploadAndAnaly
         IRepository<UserCorrectionRecord> correctionsRepo,
         IAiQuotaService quotaService,
         IPhotoStorageService photoStorageService,
-        ILogger<UploadAndAnalyzeMealCommandHandler> logger)
+        ILogger<UploadAndAnalyzeMealCommandHandler> logger,
+        IAiQuotaReservationGate? quotaGate = null)
     {
         _visionAgent = visionAgent;
         _dietitianService = dietitianService;
@@ -54,6 +56,7 @@ public class UploadAndAnalyzeMealCommandHandler : ICommandHandler<UploadAndAnaly
         _quotaService = quotaService;
         _photoStorageService = photoStorageService;
         _logger = logger;
+        _quotaGate = quotaGate;
     }
 
     public async Task<Result<MealAnalysisResultDto>> HandleAsync(UploadAndAnalyzeMealCommand request, CancellationToken ct = default)
@@ -63,6 +66,10 @@ public class UploadAndAnalyzeMealCommandHandler : ICommandHandler<UploadAndAnaly
 
         UserProfile? userProfile = await _dietitianService.GetProfileAsync(request.UserId, ct);
         List<UserCorrectionRecord>? userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == request.UserId, ct);
+
+        await using var quotaLock = _quotaGate != null
+            ? await _quotaGate.AcquireUserLockAsync(request.UserId, ct)
+            : null;
 
         // Tier Quota Gating (OWASP AI LLM04)
         var quota = await _quotaService.CheckQuotaAsync(request.UserId, request.Tier, userProfile?.Timezone, ct);

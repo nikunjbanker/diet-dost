@@ -13,7 +13,12 @@ using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Options;
+using Nutrition.Application.Common.Repositories;
+using Nutrition.Application.Services;
+using Nutrition.Infrastructure.Persistence.DocumentDb.Repositories;
+using Nutrition.Infrastructure.Persistence.Repositories;
 using Nutrition.Infrastructure.Persistence.Services;
+using Nutrition.Infrastructure.Services;
 
 namespace Nutrition.Infrastructure.Persistence;
 
@@ -156,8 +161,13 @@ public static class StorageInfrastructureExtensions
             case "mongodb":
                 var docDbConn = configuration.GetConnectionString("DocumentDbConnection")
                     ?? (!string.IsNullOrWhiteSpace(defaultConnStr) && defaultConnStr.StartsWith("mongodb", StringComparison.OrdinalIgnoreCase) ? defaultConnStr : null)
-                    ?? (!string.IsNullOrWhiteSpace(dbOptions.ConnectionString) && dbOptions.ConnectionString.StartsWith("mongodb", StringComparison.OrdinalIgnoreCase) ? dbOptions.ConnectionString : null)
-                    ?? "mongodb://localhost:27017";
+                    ?? (!string.IsNullOrWhiteSpace(dbOptions.ConnectionString) && dbOptions.ConnectionString.StartsWith("mongodb", StringComparison.OrdinalIgnoreCase) ? dbOptions.ConnectionString : null);
+
+                if (string.IsNullOrWhiteSpace(docDbConn))
+                {
+                    throw new InvalidOperationException(
+                        "Database:Provider is set to DocumentDb, but ConnectionStrings:DocumentDbConnection (or DocumentDb:ConnectionString) is missing. Fail-closed: refusing to start without a DocumentDB connection string.");
+                }
 
                 var docDbOptions = configuration.GetSection(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbOptions.SectionName).Get<Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbOptions>() ?? new Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbOptions();
 
@@ -165,6 +175,15 @@ public static class StorageInfrastructureExtensions
 
                 var mongoUrl = new MongoDB.Driver.MongoUrl(docDbConn);
                 var mongoSettings = MongoDB.Driver.MongoClientSettings.FromUrl(mongoUrl);
+                var isLocalMongo = docDbConn.Contains("localhost", StringComparison.OrdinalIgnoreCase)
+                    || docDbConn.Contains("127.0.0.1", StringComparison.OrdinalIgnoreCase);
+
+                if (!isLocalMongo && !mongoSettings.UseTls)
+                {
+                    throw new InvalidOperationException(
+                        "DocumentDB connection string must enforce TLS (tls=true or ssl=true) for non-local connections.");
+                }
+
                 mongoSettings.ConnectTimeout = TimeSpan.FromMilliseconds(docDbOptions.ConnectTimeoutMs);
                 mongoSettings.ServerSelectionTimeout = TimeSpan.FromMilliseconds(docDbOptions.ServerSelectionTimeoutMs);
                 mongoSettings.MaxConnectionIdleTime = TimeSpan.FromMilliseconds(docDbOptions.MaxConnectionIdleTimeMs);
@@ -176,27 +195,17 @@ public static class StorageInfrastructureExtensions
                 services.AddSingleton<MongoDB.Driver.IMongoClient>(mongoClient);
                 services.AddSingleton<MongoDB.Driver.IMongoDatabase>(mongoDatabase);
 
-                // Register resilient fallback DbContext with guaranteed schema so any legacy EF consumer can resolve without missing table errors
-                var fallbackDbPath = Path.Combine(Path.GetTempPath(), "diet_dost_docdb_fallback.db");
-                try
-                {
-                    var fallbackBuilder = new DbContextOptionsBuilder<DietTrackerDbContext>()
-                        .UseSqlite($"Data Source={fallbackDbPath}");
-                    using var fallbackContext = new DietTrackerDbContext(fallbackBuilder.Options);
-                    fallbackContext.Database.EnsureCreated();
-                }
-                catch
-                {
-                    // Non-fatal fallback schema initialization
-                }
-
-                services.AddDbContext<DietTrackerDbContext>(options =>
-                    options.UseSqlite($"Data Source={fallbackDbPath}"));
-
                 services.AddScoped(typeof(IRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
                 services.AddScoped(typeof(IReadRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
                 services.AddScoped(typeof(IWriteRepository<>), typeof(Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbRepository<>));
                 services.AddScoped<IUnitOfWork, Nutrition.Infrastructure.Persistence.DocumentDb.DocumentDbUnitOfWork>();
+
+                services.AddScoped<IMealRepository, DocumentDbMealRepository>();
+                services.AddScoped<IUserRepository, DocumentDbUserRepository>();
+                services.AddScoped<IQrLoginSessionRepository, DocumentDbQrLoginSessionRepository>();
+                services.AddScoped<IAiUsageRepository, DocumentDbAiUsageRepository>();
+                services.AddScoped<INotificationRepository, DocumentDbNotificationRepository>();
+                services.AddScoped<IAccountErasurePort, DocumentDbAccountErasurePort>();
                 break;
 
             default:
@@ -215,8 +224,16 @@ public static class StorageInfrastructureExtensions
             services.AddScoped(typeof(IReadRepository<>), typeof(EfRepository<>));
             services.AddScoped(typeof(IWriteRepository<>), typeof(EfRepository<>));
             services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+
+            services.AddScoped<IMealRepository, EfMealRepository>();
+            services.AddScoped<IUserRepository, EfUserRepository>();
+            services.AddScoped<IQrLoginSessionRepository, EfQrLoginSessionRepository>();
+            services.AddScoped<IAiUsageRepository, EfAiUsageRepository>();
+            services.AddScoped<INotificationRepository, EfNotificationRepository>();
+            services.AddScoped<IAccountErasurePort, EfAccountErasurePort>();
         }
 
+        services.AddSingleton<IAiQuotaReservationGate, InMemoryAiQuotaReservationGate>();
         services.AddScoped<IDatabaseWarmupService, DatabaseWarmupService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.IPhotoStorageService, Nutrition.Infrastructure.Services.LocalPhotoStorageService>();
         services.AddScoped<Nutrition.Application.Common.Interfaces.ISecretStore, Nutrition.Infrastructure.Services.DatabaseSecretStore>();

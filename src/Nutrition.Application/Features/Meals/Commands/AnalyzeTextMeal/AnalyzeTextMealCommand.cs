@@ -31,17 +31,20 @@ public class AnalyzeTextMealCommandHandler : ICommandHandler<AnalyzeTextMealComm
     private readonly ClinicalDietitianService _dietitianService;
     private readonly IRepository<UserCorrectionRecord> _correctionsRepo;
     private readonly IAiQuotaService _quotaService;
+    private readonly IAiQuotaReservationGate? _quotaGate;
 
     public AnalyzeTextMealCommandHandler(
         IFoodVisionAgent visionAgent,
         ClinicalDietitianService dietitianService,
         IRepository<UserCorrectionRecord> correctionsRepo,
-        IAiQuotaService quotaService)
+        IAiQuotaService quotaService,
+        IAiQuotaReservationGate? quotaGate = null)
     {
         _visionAgent = visionAgent;
         _dietitianService = dietitianService;
         _correctionsRepo = correctionsRepo;
         _quotaService = quotaService;
+        _quotaGate = quotaGate;
     }
 
     public async Task<Result<MealAnalysisResultDto>> HandleAsync(AnalyzeTextMealCommand request, CancellationToken ct = default)
@@ -55,6 +58,10 @@ public class AnalyzeTextMealCommandHandler : ICommandHandler<AnalyzeTextMealComm
         var descTrimmed = request.Description.Trim();
         UserProfile? userProfile = await _dietitianService.GetProfileAsync(request.UserId, ct);
         List<UserCorrectionRecord>? userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == request.UserId, ct);
+
+        await using var quotaLock = _quotaGate != null
+            ? await _quotaGate.AcquireUserLockAsync(request.UserId, ct)
+            : null;
 
         // Tier Quota Gating (OWASP AI LLM04)
         var quota = await _quotaService.CheckQuotaAsync(request.UserId, request.Tier, userProfile?.Timezone, ct);

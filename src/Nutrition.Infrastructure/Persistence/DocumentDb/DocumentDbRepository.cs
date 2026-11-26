@@ -225,10 +225,10 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
         var find = _collection.Find(filter);
         if (spec.OrderBy != null)
         {
-            var fieldExpr = UnwrapSortExpression(spec.OrderBy);
+            var sortField = ResolveSortField(spec.OrderBy);
             find = spec.Descending
-                ? find.Sort(Builders<T>.Sort.Descending(fieldExpr))
-                : find.Sort(Builders<T>.Sort.Ascending(fieldExpr));
+                ? find.Sort(Builders<T>.Sort.Descending(sortField))
+                : find.Sort(Builders<T>.Sort.Ascending(sortField));
         }
 
         if (spec.Skip.HasValue && spec.Skip.Value > 0)
@@ -244,13 +244,21 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
         return find;
     }
 
-    private static Expression<Func<T, object>> UnwrapSortExpression(Expression<Func<T, object>> expr)
+    private static FieldDefinition<T> ResolveSortField(Expression<Func<T, object>> expr)
     {
-        if (expr.Body is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+        Expression body = expr.Body;
+        if (body is UnaryExpression unary && (unary.NodeType == ExpressionType.Convert || unary.NodeType == ExpressionType.ConvertChecked))
         {
-            return Expression.Lambda<Func<T, object>>(expr.Body, expr.Parameters);
+            body = unary.Operand;
         }
-        return expr;
+
+        if (body is MemberExpression member)
+        {
+            var fieldName = member.Member.Name == "Id" || member.Member.Name == "Key" ? "_id" : member.Member.Name;
+            return new StringFieldDefinition<T>(fieldName);
+        }
+
+        return new ExpressionFieldDefinition<T>(expr);
     }
 
     public async Task AddAsync(T entity, CancellationToken ct = default)
@@ -272,8 +280,40 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
         try
         {
             var id = GetEntityId(entity);
-            var filter = Builders<T>.Filter.Eq("_id", id);
-            await _collection.ReplaceOneAsync(filter, entity, new ReplaceOptions { IsUpsert = true }, ct);
+            var idFilter = Builders<T>.Filter.Eq("_id", id);
+
+            if (entity is IConcurrencyAware concurrencyAware)
+            {
+                var expectedVersion = concurrencyAware.ConcurrencyVersion;
+                concurrencyAware.ConcurrencyVersion = expectedVersion + 1;
+
+                var casFilter = Builders<T>.Filter.And(
+                    idFilter,
+                    Builders<T>.Filter.Or(
+                        Builders<T>.Filter.Eq(nameof(IConcurrencyAware.ConcurrencyVersion), expectedVersion),
+                        Builders<T>.Filter.Exists(nameof(IConcurrencyAware.ConcurrencyVersion), false)));
+
+                var result = await _collection.ReplaceOneAsync(casFilter, entity, new ReplaceOptions { IsUpsert = false }, ct);
+                if (result.MatchedCount == 0)
+                {
+                    var exists = await _collection.CountDocumentsAsync(idFilter, new CountOptions { Limit = 1 }, ct) > 0;
+                    if (exists)
+                    {
+                        concurrencyAware.ConcurrencyVersion = expectedVersion;
+                        throw new DbConcurrencyConflictException(typeof(T).Name, id);
+                    }
+
+                    await _collection.ReplaceOneAsync(idFilter, entity, new ReplaceOptions { IsUpsert = true }, ct);
+                }
+
+                return;
+            }
+
+            await _collection.ReplaceOneAsync(idFilter, entity, new ReplaceOptions { IsUpsert = true }, ct);
+        }
+        catch (DbConcurrencyConflictException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -287,19 +327,16 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
     {
         try
         {
+            var filter = Builders<T>.Filter.Eq("_id", id);
             if (typeof(ISoftDeletable).IsAssignableFrom(typeof(T)))
             {
-                var entity = await GetByIdAsync(id, ct);
-                if (entity is ISoftDeletable soft)
-                {
-                    soft.IsDeleted = true;
-                    soft.DeletedAtUtc = DateTime.UtcNow;
-                    await UpdateAsync(entity, ct);
-                    return;
-                }
+                var update = Builders<T>.Update
+                    .Set(nameof(ISoftDeletable.IsDeleted), true)
+                    .Set(nameof(ISoftDeletable.DeletedAtUtc), DateTime.UtcNow);
+                await _collection.UpdateOneAsync(filter, update, cancellationToken: ct);
+                return;
             }
 
-            var filter = Builders<T>.Filter.Eq("_id", id);
             await _collection.DeleteOneAsync(filter, ct);
         }
         catch (Exception ex)

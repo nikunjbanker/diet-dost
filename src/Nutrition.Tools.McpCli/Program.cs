@@ -64,17 +64,20 @@ builder.Services.AddDietDostMcpStdioServer();
 
 var app = builder.Build();
 
-// Ensure local SQLite database and schema exist for CLI execution
+// Ensure local SQLite database and schema exist for CLI execution when EF Core is active
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<DietTrackerDbContext>();
-    await db.Database.EnsureCreatedAsync();
-
-    if (db.Database.IsSqlite())
+    var db = scope.ServiceProvider.GetService<DietTrackerDbContext>();
+    if (db != null)
     {
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN HealthScoreStatusText TEXT NOT NULL DEFAULT 'Awaiting First Meal 🌅';"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN TargetSugarGrams REAL NOT NULL DEFAULT 25.0;"); } catch { }
-        try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN ConsumedSugarGrams REAL NOT NULL DEFAULT 0.0;"); } catch { }
+        await db.Database.EnsureCreatedAsync();
+
+        if (db.Database.IsSqlite())
+        {
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN HealthScoreStatusText TEXT NOT NULL DEFAULT 'Awaiting First Meal 🌅';"); } catch { }
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN TargetSugarGrams REAL NOT NULL DEFAULT 25.0;"); } catch { }
+            try { await db.Database.ExecuteSqlRawAsync("ALTER TABLE Ledgers ADD COLUMN ConsumedSugarGrams REAL NOT NULL DEFAULT 0.0;"); } catch { }
+        }
     }
 }
 

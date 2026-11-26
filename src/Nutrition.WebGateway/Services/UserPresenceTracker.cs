@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.Interfaces;
+using Nutrition.Application.Common.Repositories;
 using Nutrition.Domain.Model.Identity;
 
 namespace Nutrition.WebGateway.Services;
@@ -120,9 +121,23 @@ public class UserPresenceTracker : IUserPresenceTracker
         if (_scopeFactory != null)
         {
             using var scope = _scopeFactory.CreateScope();
-            var userRepo = scope.ServiceProvider.GetRequiredService<IRepository<ApplicationUser>>();
-            var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
-            await FlushWithRepositoriesAsync(userRepo, uow, pendingUpdates, ct);
+            var userPort = scope.ServiceProvider.GetService<IUserRepository>();
+            if (userPort != null)
+            {
+                var batch = pendingUpdates.Select(e => (e.UserId, e.LastSeenUtc)).ToList();
+                await userPort.UpdateLastActiveBatchAsync(batch, ct);
+                foreach (var entry in pendingUpdates)
+                {
+                    entry.LastFlushedUtc = entry.LastSeenUtc;
+                    entry.HasPendingDbUpdate = false;
+                }
+            }
+            else
+            {
+                var userRepo = scope.ServiceProvider.GetRequiredService<IRepository<ApplicationUser>>();
+                var uow = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                await FlushWithRepositoriesAsync(userRepo, uow, pendingUpdates, ct);
+            }
         }
         else if (_testUserRepo != null && _testUow != null)
         {
