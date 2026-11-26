@@ -9,8 +9,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Features.Profile.Commands.SaveProfile;
+using Nutrition.Application.Features.Profile.DTOs;
 using Nutrition.Application.Features.Profile.Queries.GetProfile;
-using Nutrition.Domain.Model.Profile;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
@@ -55,7 +55,7 @@ public class ProfileController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveProfile([FromBody] UserProfile profile, CancellationToken ct)
+    public async Task<IActionResult> SaveProfile([FromBody] SaveProfileRequestDto profile, CancellationToken ct)
     {
         var currentUserId = User.GetUserId();
         if (string.IsNullOrWhiteSpace(currentUserId))

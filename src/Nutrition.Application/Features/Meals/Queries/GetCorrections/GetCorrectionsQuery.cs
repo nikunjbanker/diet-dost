@@ -8,6 +8,7 @@
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Domain.Model.Meal;
 
 namespace Nutrition.Application.Features.Meals.Queries.GetCorrections;
@@ -16,9 +17,9 @@ public record GetCorrectionsQuery(
     string CurrentUserId,
     string? TargetUserId,
     bool IsAdminOrSuper
-) : IQuery<Result<List<UserCorrectionRecord>>>;
+) : IQuery<Result<List<UserCorrectionDto>>>;
 
-public class GetCorrectionsQueryHandler : IQueryHandler<GetCorrectionsQuery, Result<List<UserCorrectionRecord>>>
+public class GetCorrectionsQueryHandler : IQueryHandler<GetCorrectionsQuery, Result<List<UserCorrectionDto>>>
 {
     private readonly IRepository<UserCorrectionRecord> _correctionsRepo;
 
@@ -27,16 +28,17 @@ public class GetCorrectionsQueryHandler : IQueryHandler<GetCorrectionsQuery, Res
         _correctionsRepo = correctionsRepo;
     }
 
-    public async Task<Result<List<UserCorrectionRecord>>> HandleAsync(GetCorrectionsQuery request, CancellationToken ct = default)
+    public async Task<Result<List<UserCorrectionDto>>> HandleAsync(GetCorrectionsQuery request, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(request.CurrentUserId))
-            return Result<List<UserCorrectionRecord>>.Unauthorized();
+            return Result<List<UserCorrectionDto>>.Unauthorized();
 
         var effectiveUserId = (!string.IsNullOrWhiteSpace(request.TargetUserId) && request.IsAdminOrSuper)
             ? request.TargetUserId
             : request.CurrentUserId;
 
         var corrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
-        return Result<List<UserCorrectionRecord>>.Success(corrections.OrderByDescending(c => c.CreatedAtUtc).ToList());
+        return Result<List<UserCorrectionDto>>.Success(
+            corrections.OrderByDescending(c => c.CreatedAtUtc).Select(c => c.ToDto()).ToList());
     }
 }

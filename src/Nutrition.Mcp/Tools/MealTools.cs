@@ -174,25 +174,15 @@ public class MealTools
                 );
             }
 
-            // Construct verified MealLog from pending draft
-            var mealLog = new MealLog
+            // Construct verified SaveMealRequestDto from pending draft
+            var parsedMealType = Enum.TryParse<MealType>(pendingState.MealType, true, out var mt) ? mt : MealType.Lunch;
+            var mealRequest = new SaveMealRequestDto
             {
-                Id = Guid.NewGuid().ToString("N"),
                 UserId = userId,
-                MealType = Enum.TryParse<MealType>(pendingState.MealType, true, out var mt) ? mt : MealType.Lunch,
+                MealType = parsedMealType,
                 DishName = pendingState.Description,
                 LoggedAt = DateTime.UtcNow,
-                IsVerifiedByUser = true, // Verified by human user
-                TotalCalories = pendingState.TotalCalories,
-                TotalProteinGrams = pendingState.TotalProtein,
-                TotalCarbsGrams = pendingState.TotalCarbs,
-                TotalFatGrams = pendingState.TotalFat,
-                TotalFiberGrams = pendingState.TotalFiber
-            };
-
-            foreach (var itm in pendingState.Items)
-            {
-                mealLog.Items.Add(new FoodItemRecord
+                Items = pendingState.Items.Select(itm => new FoodItemRequestDto
                 {
                     Name = itm.Name,
                     EstimatedPortion = itm.Portion,
@@ -202,11 +192,11 @@ public class MealTools
                     FatGrams = itm.Fat,
                     FiberGrams = itm.Fiber,
                     OriginalDetection = itm.Name
-                });
-            }
+                }).ToList()
+            };
 
             var confirmCommand = new ConfirmMealCommand(
-                Meal: mealLog,
+                Meal: mealRequest,
                 CurrentUserId: userId,
                 IsAdminOrSuper: user != null && (user.IsInRole("Admin") || user.IsInRole("SuperAdmin"))
             );
@@ -219,12 +209,12 @@ public class MealTools
 
             return new MealConfirmedResult(
                 Status: "Confirmed",
-                Message: $"Successfully verified and logged {mealLog.MealType} to your health diary!",
-                MealId: confirmResult.Data?.Meal?.Id ?? mealLog.Id,
-                TotalCalories: confirmResult.Data?.Meal?.TotalCalories ?? mealLog.TotalCalories,
-                ProteinGrams: confirmResult.Data?.Meal?.TotalProteinGrams ?? mealLog.TotalProteinGrams,
-                CarbsGrams: confirmResult.Data?.Meal?.TotalCarbsGrams ?? mealLog.TotalCarbsGrams,
-                FatGrams: confirmResult.Data?.Meal?.TotalFatGrams ?? mealLog.TotalFatGrams
+                Message: $"Successfully verified and logged {parsedMealType} to your health diary!",
+                MealId: confirmResult.Data?.Meal?.Id ?? string.Empty,
+                TotalCalories: confirmResult.Data?.Meal?.TotalCalories ?? pendingState.TotalCalories,
+                ProteinGrams: confirmResult.Data?.Meal?.TotalProteinGrams ?? pendingState.TotalProtein,
+                CarbsGrams: confirmResult.Data?.Meal?.TotalCarbsGrams ?? pendingState.TotalCarbs,
+                FatGrams: confirmResult.Data?.Meal?.TotalFatGrams ?? pendingState.TotalFat
             );
         }
 

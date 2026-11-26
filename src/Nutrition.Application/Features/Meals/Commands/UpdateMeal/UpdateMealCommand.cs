@@ -7,15 +7,15 @@
  */
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Analytics.DTOs;
 using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Services;
-using Nutrition.Domain.Model.Meal;
 
 namespace Nutrition.Application.Features.Meals.Commands.UpdateMeal;
 
 public record UpdateMealCommand(
     string Id,
-    MealLog Meal,
+    SaveMealRequestDto Meal,
     string CurrentUserId,
     bool IsAdminOrSuper
 ) : ICommand<Result<UpdateMealResultDto>>;
@@ -47,18 +47,16 @@ public class UpdateMealCommandHandler : ICommandHandler<UpdateMealCommand, Resul
         if (existing.UserId != request.CurrentUserId && !request.IsAdminOrSuper)
             return Result<UpdateMealResultDto>.Forbidden("Access denied to update another user's meal.");
 
-        request.Meal.Id = request.Id;
-        request.Meal.UserId = existing.UserId;
-
-        var updated = await _dietitianService.UpdateMealAsync(request.Meal, ct);
+        var updatedMealEntity = request.Meal.ToUpdateDomainEntity(request.Id, existing.UserId);
+        var updated = await _dietitianService.UpdateMealAsync(updatedMealEntity, ct);
         if (updated == null)
             return Result<UpdateMealResultDto>.NotFound($"Meal with ID '{request.Id}' was not found.");
 
         var ledger = await _dietitianService.GetOrCreateDailyLedgerAsync(updated.UserId, DateOnly.FromDateTime(updated.LoggedAt), ct);
 
         return Result<UpdateMealResultDto>.Success(new UpdateMealResultDto(
-            updated,
-            ledger,
+            updated.ToDto(),
+            ledger.ToDto(),
             "Meal updated successfully! Daily ledger and trends synchronized ✨"
         ));
     }

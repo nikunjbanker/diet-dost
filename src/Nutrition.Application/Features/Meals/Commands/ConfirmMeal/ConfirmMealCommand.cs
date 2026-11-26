@@ -9,6 +9,7 @@ using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
 using Nutrition.Application.Common.Security;
+using Nutrition.Application.Features.Analytics.DTOs;
 using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Meal;
@@ -16,7 +17,7 @@ using Nutrition.Domain.Model.Meal;
 namespace Nutrition.Application.Features.Meals.Commands.ConfirmMeal;
 
 public record ConfirmMealCommand(
-    MealLog Meal,
+    SaveMealRequestDto Meal,
     string CurrentUserId,
     bool IsAdminOrSuper,
     string? ClientMutationId = null,
@@ -44,10 +45,16 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
         if (string.IsNullOrWhiteSpace(request.CurrentUserId))
             return Result<ConfirmMealResultDto>.Unauthorized();
 
-        var meal = request.Meal;
-        if (meal == null)
+        var mealDto = request.Meal;
+        if (mealDto == null)
             return Result<ConfirmMealResultDto>.Failure("Meal payload cannot be null.", "InvalidPayload", 400);
 
+        // Tenant isolation: meal belongs to authenticated user unless admin explicitly overrides
+        var effectiveUserId = request.IsAdminOrSuper && !string.IsNullOrWhiteSpace(mealDto.UserId)
+            ? mealDto.UserId
+            : request.CurrentUserId;
+
+        var meal = mealDto.ToNewDomainEntity(effectiveUserId);
         if (!string.IsNullOrWhiteSpace(request.ClientMutationId))
         {
             meal.ClientMutationId ??= request.ClientMutationId;
@@ -57,18 +64,6 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
             meal.ClientTimestampUtc ??= request.ClientTimestampUtc.Value;
         }
 
-        // Tenant isolation: meal belongs to authenticated user unless admin explicitly overrides
-        if (!request.IsAdminOrSuper)
-        {
-            meal.UserId = request.CurrentUserId;
-        }
-        else if (string.IsNullOrWhiteSpace(meal.UserId))
-        {
-            meal.UserId = request.CurrentUserId;
-        }
-
-        meal.IsVerifiedByUser = true;
-        meal.LoggedAt = meal.LoggedAt != default ? meal.LoggedAt.ToUniversalTime() : DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(meal.PhotoUri))
         {
             meal.PhotoUri = PhotoPathSanitizer.NormalizeToRelativePath(meal.PhotoUri);
@@ -155,8 +150,8 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
         var ledger = await _dietitianService.GetOrCreateDailyLedgerAsync(meal.UserId, DateOnly.FromDateTime(meal.LoggedAt), ct);
 
         return Result<ConfirmMealResultDto>.Success(new ConfirmMealResultDto(
-            saved,
-            ledger,
+            saved.ToDto(),
+            ledger.ToDto(),
             learnedNotes,
             learnedNotes.Count > 0 ? string.Join(". ", learnedNotes) : null,
             "Meal logged successfully! Confetti burst triggered 🎉"

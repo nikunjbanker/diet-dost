@@ -8,6 +8,7 @@
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Application.Features.Auth.DTOs;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Profile;
@@ -54,7 +55,7 @@ public class GetCurrentUserQueryHandler : IQueryHandler<GetCurrentUserQuery, Res
             user.Tier,
             user.IsEmailVerified,
             user.IsMobileVerified,
-            tierConfig,
+            tierConfig?.ToDto(),
             user.IsOnboarded,
             user.IsAnonymous
         );

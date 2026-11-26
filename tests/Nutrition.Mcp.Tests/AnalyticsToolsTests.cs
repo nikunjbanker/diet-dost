@@ -9,6 +9,7 @@ using System.Security.Claims;
 using Moq;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Analytics.DTOs;
 using Nutrition.Application.Features.Analytics.Queries.GetDailyLedger;
 using Nutrition.Domain.Model.Ledger;
 using Nutrition.Mcp.Models;
@@ -56,7 +57,7 @@ public class AnalyticsToolsTests
         };
 
         _dispatcherMock.Setup(d => d.QueryAsync(It.IsAny<GetDailyLedgerQuery>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<DailyCalorieLedger>.Success(ledger));
+            .ReturnsAsync(Result<DailyCalorieLedgerDto>.Success(ledger.ToDto()));
 
         var result = await _analyticsTools.ViewDailyLedger(_dispatcherMock.Object, date: "2026-11-18", user: _user);
         Assert.NotNull(result);

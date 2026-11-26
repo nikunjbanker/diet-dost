@@ -8,6 +8,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Nutrition.Application.Common;
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Clinical;
 using Nutrition.Domain.Model.Identity;
@@ -143,6 +144,7 @@ public class AiQuotaService : IAiQuotaService
         var recentLogs = userLogs
             .OrderByDescending(l => l.TimestampUtc)
             .Take(20)
+            .Select(l => l.ToDto())
             .ToList();
 
         var remaining = config.DailyAiDetectionLimit < 0

@@ -10,9 +10,11 @@ using Nutrition.Domain.Common;
 
 namespace Nutrition.Domain.Model.Ledger;
 
-public class DailyCalorieLedger : ISoftDeletable
+public class DailyCalorieLedger : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
+    public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public string UserId { get; set; } = string.Empty;
     public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
     public bool IsDeleted { get; set; } = false;

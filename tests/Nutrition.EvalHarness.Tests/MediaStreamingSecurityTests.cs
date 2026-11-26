@@ -334,7 +334,25 @@ public sealed class MediaStreamingSecurityTests : IDisposable
     {
         private readonly List<ProgressPhoto> _photos = new();
 
-        public IQueryable<ProgressPhoto> Query() => _photos.AsQueryable();
+        public Task<List<ProgressPhoto>> FindAsync(QuerySpec<ProgressPhoto> spec, CancellationToken ct = default) =>
+            Task.FromResult(ApplySpec(_photos, spec).ToList());
+
+        public Task<List<TResult>> ProjectAsync<TResult>(QuerySpec<ProgressPhoto> spec, Expression<Func<ProgressPhoto, TResult>> selector, CancellationToken ct = default) =>
+            Task.FromResult(ApplySpec(_photos, spec).Select(selector).ToList());
+
+        public Task<List<ProgressPhoto>> FindDeletedAsync(QuerySpec<ProgressPhoto> spec, CancellationToken ct = default) =>
+            Task.FromResult(ApplySpec(_photos.Where(p => p.IsDeleted), spec with { IncludeDeleted = true }).ToList());
+
+        private static IQueryable<ProgressPhoto> ApplySpec(IEnumerable<ProgressPhoto> source, QuerySpec<ProgressPhoto> spec)
+        {
+            var q = source.AsQueryable();
+            if (!spec.IncludeDeleted) q = q.Where(p => !p.IsDeleted);
+            if (spec.Filter != null) q = q.Where(spec.Filter);
+            if (spec.OrderBy != null) q = spec.Descending ? q.OrderByDescending(spec.OrderBy) : q.OrderBy(spec.OrderBy);
+            if (spec.Skip.HasValue) q = q.Skip(spec.Skip.Value);
+            if (spec.Take.HasValue) q = q.Take(spec.Take.Value);
+            return q;
+        }
 
         public Task<ProgressPhoto?> GetByIdAsync(string id, CancellationToken ct = default) =>
             Task.FromResult(_photos.FirstOrDefault(p => p.Id == id));

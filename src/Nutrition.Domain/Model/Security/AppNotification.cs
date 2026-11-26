@@ -13,9 +13,15 @@ namespace Nutrition.Domain.Model.Security;
 /// Root aggregate entity representing an in-app persistent notification.
 /// Dispatched in real-time over SignalR and persisted for historical / offline retrieval.
 /// </summary>
-public class AppNotification : ISoftDeletable
+public class AppNotification : ISoftDeletable, IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    public long ConcurrencyVersion { get; set; }
+
+    /// <summary>
+    /// Optional subject user identifier (e.g. applicant userId for NewRegistration alerts) for DPDPA scrubbing.
+    /// </summary>
+    public string? SubjectUserId { get; set; }
 
     /// <summary>
     /// Target user identifier (null if role-based notification, e.g. all SuperAdmins).

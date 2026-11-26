@@ -155,7 +155,40 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
         }
     }
 
+    public async Task<List<T>> FindAsync(QuerySpec<T> spec, CancellationToken ct = default)
+    {
+        try
+        {
+            return await BuildFindFluent(spec, deletedOnly: false).ToListAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DocumentDB error in {Operation} for entity {EntityType}. Error: {Message}",
+                nameof(FindAsync), typeof(T).Name, ex.Message);
+            throw;
+        }
+    }
+
+    public async Task<List<TResult>> ProjectAsync<TResult>(QuerySpec<T> spec, Expression<Func<T, TResult>> selector, CancellationToken ct = default)
+    {
+        try
+        {
+            return await BuildFindFluent(spec, deletedOnly: false).Project(selector).ToListAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "DocumentDB error in {Operation} for entity {EntityType}. Error: {Message}",
+                nameof(ProjectAsync), typeof(T).Name, ex.Message);
+            throw;
+        }
+    }
+
     public async Task<List<T>> FindDeletedAsync(Expression<Func<T, bool>>? predicate = null, CancellationToken ct = default)
+    {
+        return await FindDeletedAsync(new QuerySpec<T>(Filter: predicate, IncludeDeleted: true), ct);
+    }
+
+    public async Task<List<T>> FindDeletedAsync(QuerySpec<T> spec, CancellationToken ct = default)
     {
         try
         {
@@ -164,12 +197,7 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
                 return new List<T>();
             }
 
-            FilterDefinition<T> filter = Builders<T>.Filter.Eq("IsDeleted", true);
-            if (predicate != null)
-            {
-                filter = Builders<T>.Filter.And(filter, predicate);
-            }
-            return await _collection.Find(filter).ToListAsync(ct);
+            return await BuildFindFluent(spec, deletedOnly: true).ToListAsync(ct);
         }
         catch (Exception ex)
         {
@@ -179,18 +207,50 @@ public class DocumentDbRepository<T> : IRepository<T> where T : class
         }
     }
 
-    public IQueryable<T> Query()
+    private IFindFluent<T, T> BuildFindFluent(QuerySpec<T> spec, bool deletedOnly)
     {
-        var query = _collection.AsQueryable();
+        FilterDefinition<T> filter = spec.Filter ?? Builders<T>.Filter.Empty;
         if (typeof(ISoftDeletable).IsAssignableFrom(typeof(T)))
         {
-            var param = Expression.Parameter(typeof(T), "e");
-            var prop = Expression.Property(param, nameof(ISoftDeletable.IsDeleted));
-            var notDeleted = Expression.Not(prop);
-            var lambda = Expression.Lambda<Func<T, bool>>(notDeleted, param);
-            query = query.Where(lambda);
+            if (deletedOnly)
+            {
+                filter = Builders<T>.Filter.And(filter, Builders<T>.Filter.Eq("IsDeleted", true));
+            }
+            else if (!spec.IncludeDeleted)
+            {
+                filter = Builders<T>.Filter.And(filter, Builders<T>.Filter.Ne("IsDeleted", true));
+            }
         }
-        return query;
+
+        var find = _collection.Find(filter);
+        if (spec.OrderBy != null)
+        {
+            var fieldExpr = UnwrapSortExpression(spec.OrderBy);
+            find = spec.Descending
+                ? find.Sort(Builders<T>.Sort.Descending(fieldExpr))
+                : find.Sort(Builders<T>.Sort.Ascending(fieldExpr));
+        }
+
+        if (spec.Skip.HasValue && spec.Skip.Value > 0)
+        {
+            find = find.Skip(spec.Skip.Value);
+        }
+
+        if (spec.Take.HasValue && spec.Take.Value > 0)
+        {
+            find = find.Limit(Math.Clamp(spec.Take.Value, 1, 500));
+        }
+
+        return find;
+    }
+
+    private static Expression<Func<T, object>> UnwrapSortExpression(Expression<Func<T, object>> expr)
+    {
+        if (expr.Body is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+        {
+            return Expression.Lambda<Func<T, object>>(expr.Body, expr.Parameters);
+        }
+        return expr;
     }
 
     public async Task AddAsync(T entity, CancellationToken ct = default)

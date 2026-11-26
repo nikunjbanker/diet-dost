@@ -140,11 +140,11 @@ public class QrAuthController : ControllerBase
             }
 
             // Issue HttpOnly browser session cookie
-            if (result.Data!.Principal != null)
+            if (result.Data!.Claims != null)
             {
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    result.Data.Principal,
+                    result.Data.Claims.ToClaimsPrincipal(),
                     new AuthenticationProperties
                     {
                         IsPersistent = true,
@@ -450,11 +450,11 @@ public class QrAuthController : ControllerBase
                 });
             }
 
-            if (result.Data!.Principal != null)
+            if (result.Data!.Claims != null)
             {
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    result.Data.Principal,
+                    result.Data.Claims.ToClaimsPrincipal(),
                     new AuthenticationProperties
                     {
                         IsPersistent = true,
@@ -491,11 +491,11 @@ public class QrAuthController : ControllerBase
                 });
             }
 
-            if (result.Data!.Principal != null)
+            if (result.Data!.Claims != null)
             {
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    result.Data.Principal,
+                    result.Data.Claims.ToClaimsPrincipal(),
                     new AuthenticationProperties
                     {
                         IsPersistent = true,

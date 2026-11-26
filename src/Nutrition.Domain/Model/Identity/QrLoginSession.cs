@@ -5,6 +5,8 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Domain.Common;
+
 namespace Nutrition.Domain.Model.Identity;
 
 public enum QrSessionStatus
@@ -21,9 +23,10 @@ public enum QrSessionStatus
 /// Domain entity representing an ephemeral, cryptographically bound cross-device QR login session.
 /// Enforces single-use atomic state transitions and time-bounded validity.
 /// </summary>
-public class QrLoginSession
+public class QrLoginSession : IAggregateRoot, IConcurrencyAware
 {
     public string Id { get; set; } = Guid.NewGuid().ToString();
+    public long ConcurrencyVersion { get; set; }
 
     /// <summary>
     /// High-entropy challenge nonce embedded in the QR code.
@@ -72,6 +75,8 @@ public class QrLoginSession
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime ExpiresAtUtc { get; set; }
+    public DateTime? ApprovedAtUtc { get; set; }
+    public DateTime? ConsumedAtUtc { get; set; }
 
     public string? AuthorizedUserId { get; set; }
     public string? ClientIpAddress { get; set; }
@@ -148,6 +153,7 @@ public class QrLoginSession
         MobilePublicKey = mobilePublicKey;
         EncryptedApprovalPayload = encryptedApprovalPayload;
         ExchangeTicket = Guid.NewGuid().ToString("N");
+        ApprovedAtUtc = DateTime.UtcNow;
         Status = QrSessionStatus.Approved;
 
         return ExchangeTicket;
@@ -169,6 +175,7 @@ public class QrLoginSession
             throw new InvalidOperationException($"Invalid state transition: Cannot consume session with status '{Status}'.");
         }
 
+        ConsumedAtUtc = DateTime.UtcNow;
         Status = QrSessionStatus.Consumed;
     }
 

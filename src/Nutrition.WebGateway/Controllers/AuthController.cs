@@ -182,12 +182,12 @@ public class AuthController : ControllerBase
                 return StatusCode(result.StatusCode, new { error = result.ErrorCode, message = result.Error });
             }
 
-            // Issue HttpOnly browser session cookie if principal provided
-            if (result.Data!.Principal != null)
+            // Issue HttpOnly browser session cookie if claims provided
+            if (result.Data!.Claims != null)
             {
                 await HttpContext.SignInAsync(
                     CookieAuthenticationDefaults.AuthenticationScheme,
-                    result.Data.Principal,
+                    result.Data.Claims.ToClaimsPrincipal(),
                     new AuthenticationProperties
                     {
                         IsPersistent = true,
@@ -249,7 +249,7 @@ public class AuthController : ControllerBase
             // Sign-in HttpOnly cookie for browser clients
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
-                result.Data!.Principal,
+                result.Data!.Claims.ToClaimsPrincipal(),
                 new AuthenticationProperties
                 {
                     IsPersistent = true,

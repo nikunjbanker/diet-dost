@@ -90,7 +90,26 @@ public class SuperAdminBootstrapTests
             return Task.FromResult(query.ToList());
         }
 
-        public IQueryable<T> Query() => _items.AsQueryable();
+        public Task<List<T>> FindAsync(QuerySpec<T> spec, CancellationToken ct = default) =>
+            Task.FromResult(ApplySpec(_items, spec).ToList());
+
+        public Task<List<TResult>> ProjectAsync<TResult>(QuerySpec<T> spec, Expression<Func<T, TResult>> selector, CancellationToken ct = default) =>
+            Task.FromResult(ApplySpec(_items, spec).Select(selector).ToList());
+
+        public Task<List<T>> FindDeletedAsync(QuerySpec<T> spec, CancellationToken ct = default) =>
+            Task.FromResult(ApplySpec(_items, spec with { IncludeDeleted = true }).ToList());
+
+        private static IQueryable<T> ApplySpec(IEnumerable<T> source, QuerySpec<T> spec)
+        {
+            var q = source.AsQueryable();
+            if (!spec.IncludeDeleted && typeof(Nutrition.Domain.Common.ISoftDeletable).IsAssignableFrom(typeof(T)))
+                q = q.Where(x => !((Nutrition.Domain.Common.ISoftDeletable)x).IsDeleted);
+            if (spec.Filter != null) q = q.Where(spec.Filter);
+            if (spec.OrderBy != null) q = spec.Descending ? q.OrderByDescending(spec.OrderBy) : q.OrderBy(spec.OrderBy);
+            if (spec.Skip.HasValue) q = q.Skip(spec.Skip.Value);
+            if (spec.Take.HasValue) q = q.Take(spec.Take.Value);
+            return q;
+        }
 
         public Task AddAsync(T entity, CancellationToken ct = default)
         {

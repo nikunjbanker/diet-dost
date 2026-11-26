@@ -9,14 +9,15 @@ using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 
 namespace Nutrition.Application.Features.Admin.Commands.TierConfiguration;
 
-public record GetTierConfigsQuery : IQuery<Result<List<TierFeatureConfiguration>>>;
+public record GetTierConfigsQuery : IQuery<Result<List<TierFeatureConfigurationDto>>>;
 
-public class GetTierConfigsQueryHandler : IQueryHandler<GetTierConfigsQuery, Result<List<TierFeatureConfiguration>>>
+public class GetTierConfigsQueryHandler : IQueryHandler<GetTierConfigsQuery, Result<List<TierFeatureConfigurationDto>>>
 {
     private readonly ITierConfigurationService _tierConfigService;
 
@@ -25,10 +26,10 @@ public class GetTierConfigsQueryHandler : IQueryHandler<GetTierConfigsQuery, Res
         _tierConfigService = tierConfigService;
     }
 
-    public async Task<Result<List<TierFeatureConfiguration>>> HandleAsync(GetTierConfigsQuery request, CancellationToken ct = default)
+    public async Task<Result<List<TierFeatureConfigurationDto>>> HandleAsync(GetTierConfigsQuery request, CancellationToken ct = default)
     {
         var configs = await _tierConfigService.GetAllConfigurationsAsync(ct);
-        return Result<List<TierFeatureConfiguration>>.Success(configs);
+        return Result<List<TierFeatureConfigurationDto>>.Success(configs.Select(c => c.ToDto()).ToList());
     }
 }
 
@@ -45,7 +46,7 @@ public record UpdateTierConfigCommand(
 
 public record UpdateTierConfigResultDto(
     string Message,
-    TierFeatureConfiguration Configuration
+    TierFeatureConfigurationDto Configuration
 );
 
 public class UpdateTierConfigCommandHandler : ICommandHandler<UpdateTierConfigCommand, Result<UpdateTierConfigResultDto>>
@@ -88,7 +89,7 @@ public class UpdateTierConfigCommandHandler : ICommandHandler<UpdateTierConfigCo
 
         return Result<UpdateTierConfigResultDto>.Success(new UpdateTierConfigResultDto(
             $"Tier configuration for {request.Tier} updated successfully.",
-            updated
+            updated.ToDto()
         ));
     }
 }
@@ -96,9 +97,9 @@ public class UpdateTierConfigCommandHandler : ICommandHandler<UpdateTierConfigCo
 public record GetAiLogsQuery(
     string? UserId,
     int Limit
-) : IQuery<Result<List<AiUsageLog>>>;
+) : IQuery<Result<List<AiUsageLogDto>>>;
 
-public class GetAiLogsQueryHandler : IQueryHandler<GetAiLogsQuery, Result<List<AiUsageLog>>>
+public class GetAiLogsQueryHandler : IQueryHandler<GetAiLogsQuery, Result<List<AiUsageLogDto>>>
 {
     private readonly IRepository<AiUsageLog> _aiLogRepo;
 
@@ -107,7 +108,7 @@ public class GetAiLogsQueryHandler : IQueryHandler<GetAiLogsQuery, Result<List<A
         _aiLogRepo = aiLogRepo;
     }
 
-    public async Task<Result<List<AiUsageLog>>> HandleAsync(GetAiLogsQuery request, CancellationToken ct = default)
+    public async Task<Result<List<AiUsageLogDto>>> HandleAsync(GetAiLogsQuery request, CancellationToken ct = default)
     {
         var logs = !string.IsNullOrWhiteSpace(request.UserId)
             ? await _aiLogRepo.FindAsync(l => l.UserId == request.UserId, ct)
@@ -116,8 +117,9 @@ public class GetAiLogsQueryHandler : IQueryHandler<GetAiLogsQuery, Result<List<A
         var ordered = logs
             .OrderByDescending(l => l.TimestampUtc)
             .Take(Math.Min(request.Limit, 100))
+            .Select(l => l.ToDto())
             .ToList();
 
-        return Result<List<AiUsageLog>>.Success(ordered);
+        return Result<List<AiUsageLogDto>>.Success(ordered);
     }
 }

@@ -11,8 +11,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Features.Analytics.DTOs;
 using Nutrition.Application.Features.Analytics.Queries.GetDailyLedger;
 using Nutrition.Application.Features.Analytics.Queries.GetProjections;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Features.Meals.Queries.GetAiQuota;
 using Nutrition.Application.Features.Meals.Queries.GetMealHistory;
 using Nutrition.Application.Features.Profile.Queries.GetProfile;
@@ -20,7 +22,6 @@ using Nutrition.Application.Features.WebBff.DTOs;
 using Nutrition.Application.Services;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Ledger;
-using Nutrition.Domain.Model.Meal;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers.Web;
@@ -137,7 +138,7 @@ public class WebBffController : ControllerBase
             ?? profileResult.Data?.Profile?.Name
             ?? email;
 
-        var isIntakePending = profileResult.Data?.Profile == null || !profileResult.Data.Profile.IsOnboarded || !profileResult.Data.Profile.IsIntakeComplete();
+        var isIntakePending = profileResult.Data?.Profile == null || !profileResult.Data.Profile.IsOnboarded || profileResult.Data.Budget == null;
         var isOnboarded = !isIntakePending;
 
         var userDto = new WebUserProfileDto(
@@ -163,7 +164,7 @@ public class WebBffController : ControllerBase
 
         var composite = new WebDashboardCompositeDto(
             User: userDto,
-            TodayLedger: ledgerResult.Data ?? new DailyCalorieLedger { UserId = userId },
+            TodayLedger: ledgerResult.Data ?? new DailyCalorieLedger { UserId = userId }.ToDto(),
             Projections: projectionsResult.Data ?? new AnalyticsProjection(
                 Period: sanitizedPeriod,
                 TotalDeficitKcal: 0,
@@ -175,7 +176,7 @@ public class WebBffController : ControllerBase
                 PlateauRiskDetected: false,
                 DailyTrends: new()
             ),
-            RecentMeals: mealsResult.Data?.Meals ?? new List<MealLog>(),
+            RecentMeals: mealsResult.Data?.Meals ?? new List<MealLogDto>(),
             Quota: quotaResult.Data ?? new AiUsageStatsResult(
                 userTier,
                 DailyLimit: userTier switch { UserTier.Free => 1, UserTier.Basic => 7, UserTier.Premium => 30, _ => -1 },

@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using System.ComponentModel.DataAnnotations;
 using Nutrition.Domain.Model.Identity;
 
 namespace Nutrition.Application.Features.Admin.DTOs;
@@ -29,3 +30,54 @@ public record AdminUserSummaryDto(
     bool IsOnboarded = false,
     bool CanSetOnboarding = false
 );
+
+public sealed record TierFeatureConfigurationDto(
+    string Id,
+    UserTier Tier,
+    int DailyAiDetectionLimit,
+    bool AllowPhotoCompare,
+    bool AllowDataExport,
+    int AnalyticsHistoryDays,
+    string Description,
+    DateTime UpdatedAtUtc,
+    string? UpdatedByUserId
+);
+
+public sealed record AiUsageLogDto(
+    string Id,
+    string UserId,
+    AiOperationType OperationType,
+    string ModelId,
+    int EstimatedTokensUsed,
+    double LatencyMs,
+    bool IsSuccess,
+    string? ErrorReason,
+    DateTime TimestampUtc
+);
+
+public static class AdminDtoMapper
+{
+    public static TierFeatureConfigurationDto ToDto(this TierFeatureConfiguration entity) => new(
+        entity.Id,
+        entity.Tier,
+        entity.DailyAiDetectionLimit,
+        entity.AllowPhotoCompare,
+        entity.AllowDataExport,
+        entity.AnalyticsHistoryDays,
+        entity.Description,
+        entity.UpdatedAtUtc,
+        entity.UpdatedByUserId
+    );
+
+    public static AiUsageLogDto ToDto(this AiUsageLog entity) => new(
+        entity.Id,
+        entity.UserId,
+        entity.OperationType,
+        entity.ModelId,
+        entity.EstimatedTokensUsed,
+        entity.LatencyMs,
+        entity.IsSuccess,
+        entity.ErrorReason,
+        entity.TimestampUtc
+    );
+}

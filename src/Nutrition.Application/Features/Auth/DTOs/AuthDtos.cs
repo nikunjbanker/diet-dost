@@ -5,10 +5,25 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
-using System.Security.Claims;
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Domain.Model.Identity;
 
 namespace Nutrition.Application.Features.Auth.DTOs;
+
+/// <summary>
+/// Persistence- and framework-free claims payload returned by Auth CQRS handlers
+/// and materialized into ClaimsPrincipal by the Presentation layer.
+/// </summary>
+public sealed record AuthenticatedClaimsPayload(
+    string UserId,
+    string DisplayName,
+    string Email,
+    string Role,
+    string Tier,
+    string SecurityStamp,
+    bool IsAnonymous = false,
+    string AuthenticationScheme = "SmartScheme"
+);
 
 public record RegisterResultDto(
     string UserId,
@@ -28,7 +43,7 @@ public record CurrentUserResponseDto(
     UserTier Tier,
     bool IsEmailVerified,
     bool IsMobileVerified,
-    TierFeatureConfiguration? Entitlements,
+    TierFeatureConfigurationDto? Entitlements,
     bool IsOnboarded = false,
     bool IsAnonymous = false
 );
@@ -36,14 +51,14 @@ public record CurrentUserResponseDto(
 public record LoginResultDto(
     string Token,
     CurrentUserResponseDto User,
-    ClaimsPrincipal Principal
+    AuthenticatedClaimsPayload Claims
 );
 
 public record VerifyOtpResultDto(
     string Message,
     string? Token,
     CurrentUserResponseDto? User,
-    ClaimsPrincipal? Principal
+    AuthenticatedClaimsPayload? Claims
 );
 
 public record ForgotPasswordResultDto(
@@ -60,7 +75,7 @@ public record RegisterAnonymousResultDto(
     string RecoveryLookupId,
     string JsonBackupPayload,
     CurrentUserResponseDto User,
-    ClaimsPrincipal Principal
+    AuthenticatedClaimsPayload Claims
 );
 
 public record InitiateQrSessionResultDto(
@@ -90,13 +105,13 @@ public record QrSessionStatusDto(
 public record ExchangeQrTicketResultDto(
     string Token,
     CurrentUserResponseDto User,
-    ClaimsPrincipal Principal
+    AuthenticatedClaimsPayload Claims
 );
 
 public record RecoverAccountResultDto(
     string Token,
     CurrentUserResponseDto User,
-    ClaimsPrincipal Principal,
+    AuthenticatedClaimsPayload Claims,
     string NewRecoveryKeyHex,
     string NewMnemonicPhrase,
     string NewRecoveryLookupId,

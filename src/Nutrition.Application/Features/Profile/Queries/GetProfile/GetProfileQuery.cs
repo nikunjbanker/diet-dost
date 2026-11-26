@@ -49,6 +49,6 @@ public class GetProfileQueryHandler : IQueryHandler<GetProfileQuery, Result<Prof
         var budget = isComplete ? ClinicalCalculators.CalculateCaloricBudget(profile) : null;
         var macros = (budget != null) ? ClinicalCalculators.CalculateMacroDistribution(profile, budget) : null;
 
-        return Result<ProfileResponseDto>.Success(new ProfileResponseDto(profile, budget, macros));
+        return Result<ProfileResponseDto>.Success(new ProfileResponseDto(profile.ToDto(), budget, macros));
     }
 }

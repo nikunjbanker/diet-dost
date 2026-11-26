@@ -5,6 +5,7 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using Nutrition.Application.Features.Admin.DTOs;
 using Nutrition.Domain.Model.Identity;
 
 namespace Nutrition.Application.Services;
@@ -27,7 +28,7 @@ public record AiUsageStatsResult(
     DateTime ResetsAtUtc,
     int UsedLast7Days,
     int UsedLast30Days,
-    List<AiUsageLog> RecentOperations
+    List<AiUsageLogDto> RecentOperations
 );
 
 /// <summary>

@@ -87,37 +87,19 @@ public class CompareProgressPhotosQueryHandler : IQueryHandler<CompareProgressPh
         var hasComparison = (baselineFace != null && currentFace != null && baselineFace.Id != currentFace.Id) ||
                             (baselineFullBody != null && currentFullBody != null && baselineFullBody.Id != currentFullBody.Id);
 
-        var projectedAll = allPhotos.Select(ProjectPhoto).Where(p => p != null).Select(p => p!).ToList();
+        var projectedAll = allPhotos.Select(p => p.ToDto()).ToList();
 
         var dto = new ProgressPhotoComparisonDto(
             hasComparison,
-            ProjectPhoto(baselineFace),
-            ProjectPhoto(currentFace),
-            ProjectPhoto(baselineFullBody),
-            ProjectPhoto(currentFullBody),
+            baselineFace?.ToDto(),
+            currentFace?.ToDto(),
+            baselineFullBody?.ToDto(),
+            currentFullBody?.ToDto(),
             weightDeltaKg,
             daysElapsed,
             projectedAll.Count,
             projectedAll);
 
         return Result<ProgressPhotoComparisonDto>.Success(dto);
-    }
-
-    private static ProgressPhoto? ProjectPhoto(ProgressPhoto? p)
-    {
-        if (p == null) return null;
-        return new ProgressPhoto
-        {
-            Id = p.Id,
-            UserId = p.UserId,
-            CapturedAtUtc = p.CapturedAtUtc,
-            WeightKg = p.WeightKg,
-            PhotoType = p.PhotoType,
-            PhotoUri = $"/api/media/progress/{p.Id}",
-            IsBaseline = p.IsBaseline,
-            Notes = p.Notes,
-            IsDeleted = p.IsDeleted,
-            DeletedAtUtc = p.DeletedAtUtc
-        };
     }
 }

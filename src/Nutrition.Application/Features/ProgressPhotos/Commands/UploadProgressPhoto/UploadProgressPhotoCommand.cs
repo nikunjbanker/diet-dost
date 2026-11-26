@@ -91,20 +91,6 @@ public class UploadProgressPhotoCommandHandler : ICommandHandler<UploadProgressP
             ? "🌟 Baseline progress photo successfully recorded!"
             : "📸 Progress check-in photo saved! Visual timeline updated.";
 
-        var projectedPhoto = new ProgressPhoto
-        {
-            Id = photo.Id,
-            UserId = photo.UserId,
-            CapturedAtUtc = photo.CapturedAtUtc,
-            WeightKg = photo.WeightKg,
-            PhotoType = photo.PhotoType,
-            PhotoUri = $"/api/media/progress/{photo.Id}",
-            IsBaseline = photo.IsBaseline,
-            Notes = photo.Notes,
-            IsDeleted = photo.IsDeleted,
-            DeletedAtUtc = photo.DeletedAtUtc
-        };
-
-        return Result<ProgressPhotoUploadResultDto>.Success(new ProgressPhotoUploadResultDto(projectedPhoto, message));
+        return Result<ProgressPhotoUploadResultDto>.Success(new ProgressPhotoUploadResultDto(photo.ToDto(), message));
     }
 }

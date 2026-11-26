@@ -6,6 +6,9 @@
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
 using System.Text.Json;
+using Nutrition.Application.Features.Admin.DTOs;
+using Nutrition.Application.Features.Analytics.DTOs;
+using Nutrition.Application.Features.Meals.DTOs;
 using Nutrition.Application.Features.MobileBff.DTOs;
 using Nutrition.Application.Features.WebBff.DTOs;
 using Nutrition.Application.Services;
@@ -51,11 +54,11 @@ public class BffContractSnapshotTests
         };
 
         var projections = new AnalyticsProjection("7D", 3500.0, 0.45, 1850.0, 85.0, 0, 1, false, new List<DailyTrendPoint>());
-        var meals = Array.Empty<MealLog>();
-        var quota = new AiUsageStatsResult(UserTier.Free, 1, 0, 1, DateTime.UtcNow.AddHours(5), 3, 10, new List<AiUsageLog>());
+        var meals = Array.Empty<MealLogDto>();
+        var quota = new AiUsageStatsResult(UserTier.Free, 1, 0, 1, DateTime.UtcNow.AddHours(5), 3, 10, new List<AiUsageLogDto>());
         var flags = new TierFeatureFlagsDto(false, false, 7, false, false);
 
-        var composite = new WebDashboardCompositeDto(userDto, ledger, projections, meals, quota, flags);
+        var composite = new WebDashboardCompositeDto(userDto, ledger.ToDto(), projections, meals, quota, flags);
 
         var json = JsonSerializer.Serialize(composite, JsonOptions);
         using var doc = JsonDocument.Parse(json);

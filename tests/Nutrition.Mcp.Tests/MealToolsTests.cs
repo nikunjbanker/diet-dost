@@ -10,6 +10,7 @@ using Moq;
 using Nutrition.Application.Agents;
 using Nutrition.Application.Common.CQRS;
 using Nutrition.Application.Common.Models;
+using Nutrition.Application.Features.Analytics.DTOs;
 using Nutrition.Application.Features.Meals.Commands.AnalyzeTextMeal;
 using Nutrition.Application.Features.Meals.Commands.ConfirmMeal;
 using Nutrition.Application.Features.Meals.DTOs;
@@ -65,9 +66,9 @@ public class MealToolsTests
             MealType: null,
             TotalMealsCount: 1,
             Summary: summary,
-            Meals: new List<MealLog>
+            Meals: new List<MealLogDto>
             {
-                new()
+                new MealLog
                 {
                     Id = "meal-1",
                     UserId = "test@dietdost.app",
@@ -79,7 +80,7 @@ public class MealToolsTests
                     {
                         new() { Name = "Oatmeal", EstimatedPortion = "1 bowl", Calories = 350, ProteinGrams = 15, CarbsGrams = 50, FatGrams = 5, FiberGrams = 6 }
                     }
-                }
+                }.ToDto()
             }
         );
 
@@ -204,8 +205,8 @@ public class MealToolsTests
             .Returns(pendingState);
 
         var confirmDto = new ConfirmMealResultDto(
-            Meal: new MealLog { Id = "meal-verified-99", UserId = "test@dietdost.app", IsVerifiedByUser = true, TotalCalories = 420 },
-            DailyLedger: new DailyCalorieLedger(),
+            Meal: new MealLog { Id = "meal-verified-99", UserId = "test@dietdost.app", IsVerifiedByUser = true, TotalCalories = 420 }.ToDto(),
+            DailyLedger: new DailyCalorieLedger().ToDto(),
             LearnedNotes: new List<string>(),
             LearnedMessage: null,
             Message: "Logged"
@@ -226,8 +227,8 @@ public class MealToolsTests
         Assert.Equal("Confirmed", typed.Status);
         Assert.Equal("meal-verified-99", typed.MealId);
 
-        // Verify ConfirmMealCommand was called with IsVerifiedByUser == true
-        _dispatcherMock.Verify(d => d.SendAsync(It.Is<ConfirmMealCommand>(c => c.Meal.IsVerifiedByUser == true), It.IsAny<CancellationToken>()), Times.Once);
+        // Verify ConfirmMealCommand was called with expected DishName and CurrentUserId
+        _dispatcherMock.Verify(d => d.SendAsync(It.Is<ConfirmMealCommand>(c => c.Meal.DishName == "2 Rotis & Dal" && c.CurrentUserId == "test@dietdost.app"), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -270,8 +271,8 @@ public class MealToolsTests
             .Returns(pendingState);
 
         var confirmDto = new ConfirmMealResultDto(
-            Meal: new MealLog { Id = "snack-101", UserId = "test@dietdost.app", IsVerifiedByUser = true, TotalCalories = 110 },
-            DailyLedger: new DailyCalorieLedger(),
+            Meal: new MealLog { Id = "snack-101", UserId = "test@dietdost.app", IsVerifiedByUser = true, TotalCalories = 110 }.ToDto(),
+            DailyLedger: new DailyCalorieLedger().ToDto(),
             LearnedNotes: new List<string>(),
             LearnedMessage: null,
             Message: "Logged"
