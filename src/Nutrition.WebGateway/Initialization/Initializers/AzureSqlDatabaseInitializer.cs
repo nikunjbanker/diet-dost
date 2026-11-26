@@ -371,12 +371,13 @@ public sealed class AzureSqlDatabaseInitializer : IDatabaseInitializer
         await EnsureColumnExistsAsync("Users", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnExistsAsync("Profiles", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnExistsAsync("Meals", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
-        await EnsureColumnExistsAsync("Meals", "UpdatedAtUtc", "DATETIME2 NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Meals", "UpdatedAtUtc", "DATETIME2 NOT NULL DEFAULT '2026-01-01T00:00:00'", cancellationToken);
         await EnsureColumnExistsAsync("Ledgers", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
-        await EnsureColumnExistsAsync("Ledgers", "UpdatedAtUtc", "DATETIME2 NULL", cancellationToken);
-        await EnsureColumnExistsAsync("ProgressPhotos", "UpdatedAtUtc", "DATETIME2 NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Ledgers", "UpdatedAtUtc", "DATETIME2 NOT NULL DEFAULT '2026-01-01T00:00:00'", cancellationToken);
+        await EnsureColumnExistsAsync("ProgressPhotos", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("ProgressPhotos", "UpdatedAtUtc", "DATETIME2 NOT NULL DEFAULT '2026-01-01T00:00:00'", cancellationToken);
         await EnsureColumnExistsAsync("Corrections", "NormalizedOriginalItem", "NVARCHAR(450) NOT NULL DEFAULT ''", cancellationToken);
-        await EnsureColumnExistsAsync("Corrections", "UpdatedAtUtc", "DATETIME2 NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Corrections", "UpdatedAtUtc", "DATETIME2 NOT NULL DEFAULT '2026-01-01T00:00:00'", cancellationToken);
         await EnsureColumnExistsAsync("TierConfigurations", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnExistsAsync("QrSessions", "ConcurrencyVersion", "BIGINT NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnExistsAsync("QrSessions", "ApprovedAtUtc", "DATETIME2 NULL", cancellationToken);

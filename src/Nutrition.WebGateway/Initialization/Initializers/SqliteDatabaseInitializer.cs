@@ -219,12 +219,23 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         await EnsureColumnExistsAsync("Users", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnExistsAsync("Profiles", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureColumnExistsAsync("Meals", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
-        await EnsureColumnExistsAsync("Meals", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Meals", "UpdatedAtUtc", "TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'", cancellationToken);
         await EnsureColumnExistsAsync("Ledgers", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
-        await EnsureColumnExistsAsync("Ledgers", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
-        await EnsureColumnExistsAsync("ProgressPhotos", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Ledgers", "UpdatedAtUtc", "TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'", cancellationToken);
+        await EnsureColumnExistsAsync("ProgressPhotos", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
+        await EnsureColumnExistsAsync("ProgressPhotos", "UpdatedAtUtc", "TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'", cancellationToken);
         await EnsureColumnExistsAsync("Corrections", "NormalizedOriginalItem", "TEXT NOT NULL DEFAULT ''", cancellationToken);
-        await EnsureColumnExistsAsync("Corrections", "UpdatedAtUtc", "TEXT NULL", cancellationToken);
+        await EnsureColumnExistsAsync("Corrections", "UpdatedAtUtc", "TEXT NOT NULL DEFAULT '2026-01-01T00:00:00Z'", cancellationToken);
+        try
+        {
+            await _db.Database.ExecuteSqlRawAsync(@"
+                UPDATE ""Meals"" SET ""UpdatedAtUtc"" = COALESCE(""UpdatedAtUtc"", '2026-01-01T00:00:00Z') WHERE ""UpdatedAtUtc"" IS NULL;
+                UPDATE ""Ledgers"" SET ""UpdatedAtUtc"" = COALESCE(""UpdatedAtUtc"", '2026-01-01T00:00:00Z') WHERE ""UpdatedAtUtc"" IS NULL;
+                UPDATE ""ProgressPhotos"" SET ""UpdatedAtUtc"" = COALESCE(""UpdatedAtUtc"", '2026-01-01T00:00:00Z') WHERE ""UpdatedAtUtc"" IS NULL;
+                UPDATE ""Corrections"" SET ""UpdatedAtUtc"" = COALESCE(""UpdatedAtUtc"", '2026-01-01T00:00:00Z') WHERE ""UpdatedAtUtc"" IS NULL;
+            ", cancellationToken);
+        }
+        catch { /* Tables may not exist yet on first run */ }
         await EnsureColumnExistsAsync("TierConfigurations", "ConcurrencyVersion", "INTEGER NOT NULL DEFAULT 0", cancellationToken);
         await EnsureIndexExistsAsync("Users", "IX_Users_LastActiveUtc", "\"LastActiveUtc\"", cancellationToken);
         await EnsureIndexExistsAsync("Users", "IX_Users_RecoveryLookupId", "\"RecoveryLookupId\"", cancellationToken);
