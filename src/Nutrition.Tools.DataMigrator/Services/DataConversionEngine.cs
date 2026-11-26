@@ -409,6 +409,92 @@ public class DataConversionEngine
             };
         }
 
+        if (columnName.Equals("Status", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "pending" => 0,
+                "scanned" => 1,
+                "approved" => 2,
+                "rejected" => 3,
+                "consumed" => 4,
+                "expired" => 5,
+                _ => null
+            };
+        }
+
+        if (columnName.Equals("OperationType", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "photodetection" => 0,
+                "textdetection" => 1,
+                "progresscompare" => 2,
+                "selflearning" => 3,
+                _ => null
+            };
+        }
+
+        if (columnName.Equals("Channel", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "email" => 0,
+                "sms" => 1,
+                _ => null
+            };
+        }
+
+        if (columnName.Equals("Sex", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "male" => 0,
+                "female" => 1,
+                _ => null
+            };
+        }
+
+        if (columnName.Equals("ActivityLevel", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "sedentary" => 0,
+                "light" => 1,
+                "moderate" => 2,
+                "active" => 3,
+                "veryactive" => 4,
+                _ => null
+            };
+        }
+
+        if (columnName.Equals("DietaryPreference", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "lactoveg" => 0,
+                "ovovegetarian" => 1,
+                "lactoovovegetarian" => 2,
+                "vegan" => 3,
+                "nonveg" => 4,
+                "eggitarian" => 5,
+                "jain" => 6,
+                _ => null
+            };
+        }
+
+        if (columnName.Equals("DetectionMode", StringComparison.OrdinalIgnoreCase) ||
+            columnName.Equals("AiDetectionMode", StringComparison.OrdinalIgnoreCase))
+        {
+            return value.ToLowerInvariant() switch
+            {
+                "auto" => 0,
+                "gemini" => 1,
+                "foundry" => 2,
+                _ => null
+            };
+        }
+
         return null;
     }
 

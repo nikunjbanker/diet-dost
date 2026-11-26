@@ -65,6 +65,12 @@ public class DocumentDbTargetWriter : IDisposable
     public async Task EnsureSchemaForTableAsync(string tableName)
     {
         EnsureConnected();
+        if (tableName.Equals("FoodItems", StringComparison.OrdinalIgnoreCase))
+        {
+            // FoodItems are embedded inside Meals.Items in DocumentDB (no standalone FoodItems collection).
+            return;
+        }
+
         var collectionName = ResolveCollectionName(tableName);
         var collectionsCursor = await _database!.ListCollectionNamesAsync();
         var collections = await collectionsCursor.ToListAsync();
@@ -89,7 +95,7 @@ public class DocumentDbTargetWriter : IDisposable
         else if (tableName.Equals("Meals", StringComparison.OrdinalIgnoreCase))
         {
             var userIndex = new CreateIndexModel<BsonDocument>(
-                Builders<BsonDocument>.IndexKeys.Ascending("UserId").Descending("CreatedAtUtc"));
+                Builders<BsonDocument>.IndexKeys.Ascending("UserId").Descending("LoggedAt"));
             await collection.Indexes.CreateOneAsync(userIndex);
         }
         else if (tableName.Equals("Ledgers", StringComparison.OrdinalIgnoreCase))
@@ -129,7 +135,8 @@ public class DocumentDbTargetWriter : IDisposable
     {
         EnsureConnected();
         var stopwatch = Stopwatch.StartNew();
-        var collectionName = ResolveCollectionName(tbl.TableName);
+        var isEmbeddedFoodItems = tbl.TableName.Equals("FoodItems", StringComparison.OrdinalIgnoreCase);
+        var collectionName = isEmbeddedFoodItems ? "Meals" : ResolveCollectionName(tbl.TableName);
         var collection = _database!.GetCollection<BsonDocument>(collectionName);
         var stats = new TableConversionStats { TableName = tbl.TableName };
         var errors = new List<string>();
@@ -166,7 +173,9 @@ public class DocumentDbTargetWriter : IDisposable
                 {
                     if (!isDryRun)
                     {
-                        var (ins, upd, skp) = await WriteBatchAsync(collection, batch, mode);
+                        var (ins, upd, skp) = isEmbeddedFoodItems
+                            ? await EmbedFoodItemsBatchAsync(collection, batch)
+                            : await WriteBatchAsync(collection, batch, mode);
                         inserted += ins;
                         updated += upd;
                         skipped += skp;
@@ -188,7 +197,9 @@ public class DocumentDbTargetWriter : IDisposable
         {
             if (!isDryRun)
             {
-                var (ins, upd, skp) = await WriteBatchAsync(collection, batch, mode);
+                var (ins, upd, skp) = isEmbeddedFoodItems
+                    ? await EmbedFoodItemsBatchAsync(collection, batch)
+                    : await WriteBatchAsync(collection, batch, mode);
                 inserted += ins;
                 updated += upd;
                 skipped += skp;
@@ -235,6 +246,16 @@ public class DocumentDbTargetWriter : IDisposable
             return (inserted, updated, skipped);
         }
 
+        HashSet<BsonValue>? existingIds = null;
+        if (mode == MigrationMode.SkipExisting && batch.Count > 0)
+        {
+            var batchIds = batch.Select(d => d["_id"]).ToList();
+            var existingDocs = await collection.Find(Builders<BsonDocument>.Filter.In("_id", batchIds))
+                .Project(Builders<BsonDocument>.Projection.Include("_id"))
+                .ToListAsync();
+            existingIds = existingDocs.Select(d => d["_id"]).ToHashSet();
+        }
+
         var writeModels = new List<WriteModel<BsonDocument>>(batch.Count);
         foreach (var doc in batch)
         {
@@ -248,8 +269,7 @@ public class DocumentDbTargetWriter : IDisposable
             }
             else if (mode == MigrationMode.SkipExisting)
             {
-                var exists = await collection.CountDocumentsAsync(filter) > 0;
-                if (!exists)
+                if (existingIds == null || !existingIds.Contains(id))
                 {
                     writeModels.Add(new InsertOneModel<BsonDocument>(doc));
                 }
@@ -268,6 +288,36 @@ public class DocumentDbTargetWriter : IDisposable
         }
 
         return (inserted, updated, skipped);
+    }
+
+    private static async Task<(int inserted, int updated, int skipped)> EmbedFoodItemsBatchAsync(
+        IMongoCollection<BsonDocument> mealsCollection,
+        List<BsonDocument> foodItemBatch)
+    {
+        int updated = 0;
+        int skipped = 0;
+        var writeModels = new List<WriteModel<BsonDocument>>(foodItemBatch.Count);
+
+        foreach (var item in foodItemBatch)
+        {
+            if (!item.TryGetValue("MealLogId", out var mealLogId) || mealLogId.IsBsonNull)
+            {
+                skipped++;
+                continue;
+            }
+
+            var filter = Builders<BsonDocument>.Filter.Eq("_id", mealLogId);
+            var update = Builders<BsonDocument>.Update.AddToSet("Items", item);
+            writeModels.Add(new UpdateOneModel<BsonDocument>(filter, update));
+        }
+
+        if (writeModels.Count > 0)
+        {
+            var bulkResult = await mealsCollection.BulkWriteAsync(writeModels, new BulkWriteOptions { IsOrdered = false });
+            updated += (int)bulkResult.ModifiedCount;
+        }
+
+        return (0, updated, skipped);
     }
 
     private static string ResolveCollectionName(string tableName)
