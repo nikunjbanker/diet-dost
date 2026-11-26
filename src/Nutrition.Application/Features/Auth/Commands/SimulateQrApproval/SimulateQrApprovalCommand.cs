@@ -100,8 +100,8 @@ public class SimulateQrApprovalCommandHandler : ICommandHandler<SimulateQrApprov
         var user = await _userRepo.FirstOrDefaultAsync(u => u.Email == targetEmail, ct);
         if (user == null && targetEmail.Equals("basic@dietdost.app", StringComparison.OrdinalIgnoreCase))
         {
-            // Fallback to any active non-admin demo user
-            user = await _userRepo.FirstOrDefaultAsync(u => u.IsActive && !u.IsDeleted && u.Role != UserRole.SuperAdmin && u.Role != UserRole.Admin, ct);
+            // Fallback only to an active non-admin seeded demo user
+            user = await _userRepo.FirstOrDefaultAsync(u => ApplicationUser.EndUserDemoEmails.Contains(u.NormalizedEmail) && u.IsActive && !u.IsDeleted && u.Role != UserRole.SuperAdmin && u.Role != UserRole.Admin, ct);
         }
 
         if (user == null)
@@ -117,9 +117,19 @@ public class SimulateQrApprovalCommandHandler : ICommandHandler<SimulateQrApprov
                 400);
         }
 
+        // Doubt 3 Option A: Restrict simulated QR approval strictly to seeded non-admin demo accounts
+        if (!user.IsDemoAccount || !ApplicationUser.IsDemoEmail(user.Email) || !user.IsActive || user.IsDeleted)
+        {
+            return Result<string>.Failure(
+                "Simulated QR approval is strictly restricted to active seeded demo accounts.",
+                "DemoApprovalRestricted",
+                403);
+        }
+
         try
         {
             var exchangeTicket = session.Approve(user.Id);
+            await _qrRepo.UpdateAsync(session, ct);
             await _uow.SaveChangesAsync(ct);
 
             if (_logger.IsEnabled(LogLevel.Information))

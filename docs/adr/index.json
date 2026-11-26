@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-26T07:40:52.700822+00:00",
-  "totalAdrs": 153,
+  "generatedAt": "2026-11-26T07:50:07.948457+00:00",
+  "totalAdrs": 154,
   "categoryCounts": {
-    "architecture": 51,
+    "architecture": 52,
     "security": 27,
     "devops": 41,
     "presentation": 21,
@@ -1845,6 +1845,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261126-189-domain-contracts-queryspec-and-a1-dtos.md",
       "relativePath": "docs/adr/architecture/ADR-20261126-189-domain-contracts-queryspec-and-a1-dtos.md"
+    },
+    {
+      "id": "ADR-190",
+      "number": 190,
+      "title": "Explicit UpdateAsync Mutations, Bounded Queries, and Thin Notification/Media Controllers",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-26",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261126-190-explicit-updateasync-bounded-queries-and-thin-controllers.md",
+      "relativePath": "docs/adr/architecture/ADR-20261126-190-explicit-updateasync-bounded-queries-and-thin-controllers.md"
     }
   ]
 }

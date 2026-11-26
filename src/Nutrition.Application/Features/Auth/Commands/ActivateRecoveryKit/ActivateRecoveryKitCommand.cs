@@ -76,6 +76,7 @@ public class ActivateRecoveryKitCommandHandler
             user.PendingRecoveryKeyCreatedAtUtc is not DateTime createdAtUtc)
         {
             ClearPendingIssue(user);
+            await _userRepo.UpdateAsync(user, ct);
             await _uow.SaveChangesAsync(ct);
             return Result<string>.Failure(
                 "Recovery kit confirmation is no longer available.", "RecoveryKitIssueUnavailable", 409);
@@ -88,6 +89,7 @@ public class ActivateRecoveryKitCommandHandler
         user.LastActivatedRecoveryIssueTokenHash = user.PendingRecoveryIssueTokenHash;
         ClearPendingIssue(user);
 
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))

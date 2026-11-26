@@ -160,6 +160,7 @@ public class RecoverAccountCommandHandler : ICommandHandler<RecoverAccountComman
             returnJsonBackup = RecoveryKit.GenerateJsonBackup(user.Id, user.DisplayName, returnKeyHex, returnMnemonic, user.RecoveryKeyCreatedAtUtc ?? DateTime.UtcNow);
         }
 
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         var profile = await _profileRepo.FirstOrDefaultAsync(p => p.Id == user.Id, ct);

@@ -64,8 +64,8 @@ public class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, Result<
         var normalizedPhone = ApplicationUser.NormalizePhoneNumber(targetTrimmed);
 
         var user = await _userRepo.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail || u.NormalizedMobileNumber == normalizedPhone, ct);
-        if (user == null)
-            return Result<VerifyOtpResultDto>.Failure("No user found associated with this email or mobile.", "UserNotFound", 404);
+        if (user == null || user.IsDeleted || !user.IsActive)
+            return Result<VerifyOtpResultDto>.Failure("No active user found associated with this email or mobile.", "UserNotFound", 404);
 
         var now = DateTime.UtcNow;
         var otps = await _otpRepo.FindAsync(o => o.UserId == user.Id && !o.IsUsed && o.ExpiresAtUtc > now, ct);
@@ -79,9 +79,12 @@ public class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, Result<
         var isValid = _otpService.ValidateCode(activeOtp, request.Code, out var failureReason);
         if (!isValid)
         {
+            await _otpRepo.UpdateAsync(activeOtp, ct);
             await _uow.SaveChangesAsync(ct);
             return Result<VerifyOtpResultDto>.Failure(failureReason ?? "Invalid verification code.", "InvalidOtp", 400);
         }
+
+        await _otpRepo.UpdateAsync(activeOtp, ct);
 
         if (request.Channel == OtpChannel.Email || activeOtp.Channel == OtpChannel.Email)
         {
@@ -93,6 +96,7 @@ public class VerifyOtpCommandHandler : ICommandHandler<VerifyOtpCommand, Result<
         }
 
         user.LastLoginAtUtc = DateTime.UtcNow;
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         var profile = await _profileRepo.FirstOrDefaultAsync(p => p.Id == user.Id, ct);

@@ -69,6 +69,7 @@ public class UpdateUserTierCommandHandler : ICommandHandler<UpdateUserTierComman
         }
 
         targetUser.Tier = request.NewTier;
+        await _userRepo.UpdateAsync(targetUser, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -131,6 +132,7 @@ public class UpdateUserRoleCommandHandler : ICommandHandler<UpdateUserRoleComman
         }
 
         targetUser.Role = request.NewRole;
+        await _userRepo.UpdateAsync(targetUser, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -209,6 +211,7 @@ public class UpdateUserStatusCommandHandler : ICommandHandler<UpdateUserStatusCo
         {
             targetUser.IsEmailVerified = true;
         }
+        await _userRepo.UpdateAsync(targetUser, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (wasInactive && request.IsActive && _notificationService != null)
@@ -432,6 +435,7 @@ public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserComm
             {
                 targetProfile.IsOnboarded = request.IsOnboarded.Value;
                 targetProfile.UpdatedAtUtc = DateTime.UtcNow;
+                await _profileRepo.UpdateAsync(targetProfile, ct);
             }
         }
 
@@ -448,10 +452,15 @@ public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserComm
                 return Result<AdminUserSummaryDto>.Failure("Cannot lock or deactivate the SuperAdmin account.", "CannotLockSuperAdmin", 400);
         }
 
-        // Only SuperAdmin can assign SuperAdmin role
+        // Only SuperAdmin can assign SuperAdmin role or tier
         if (request.Role.HasValue && request.Role.Value == UserRole.SuperAdmin && request.CurrentAdminRole != nameof(UserRole.SuperAdmin))
         {
             return Result<AdminUserSummaryDto>.Forbidden("Only SuperAdmin can assign SuperAdmin role.");
+        }
+
+        if (request.Tier.HasValue && request.Tier.Value == UserTier.SuperAdmin && request.CurrentAdminRole != nameof(UserRole.SuperAdmin))
+        {
+            return Result<AdminUserSummaryDto>.Forbidden("Only SuperAdmin can assign SuperAdmin tier.");
         }
 
         if (!string.IsNullOrWhiteSpace(request.MobileNumber))
@@ -494,6 +503,7 @@ public class AdminUpdateUserCommandHandler : ICommandHandler<AdminUpdateUserComm
             targetUser.SecurityStamp = Guid.NewGuid().ToString("N");
         }
 
+        await _userRepo.UpdateAsync(targetUser, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))
@@ -634,12 +644,15 @@ public class AdminDeleteUserCommandHandler : ICommandHandler<AdminDeleteUserComm
         targetUser.IsActive = false;
         targetUser.SecurityStamp = Guid.NewGuid().ToString("N"); // Revoke all active sessions/tokens immediately
 
+        await _userRepo.UpdateAsync(targetUser, ct);
+
         // Cascade soft-delete profile if present
         var profile = await _profileRepo.GetByIdAsync(targetUser.Id, ct);
         if (profile != null)
         {
             profile.IsDeleted = true;
             profile.DeletedAtUtc = deletedAtUtc;
+            await _profileRepo.UpdateAsync(profile, ct);
         }
 
         await _uow.SaveChangesAsync(ct);

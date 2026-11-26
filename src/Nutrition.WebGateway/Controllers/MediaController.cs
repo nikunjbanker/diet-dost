@@ -9,18 +9,15 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
-using Nutrition.Application.Common;
-using Nutrition.Application.Common.Options;
-using Nutrition.Application.Common.Security;
+using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Features.ProgressPhotos.Queries.GetProgressPhotoStream;
 using Nutrition.Domain.Model.Identity;
-using Nutrition.Domain.Model.Progress;
 using Nutrition.WebGateway.Extensions;
 
 namespace Nutrition.WebGateway.Controllers;
 
 /// <summary>
-/// Authenticated Media Controller for sensitive user progress photos,
+/// Thin Authenticated Media Controller for sensitive user progress photos via CQRS dispatcher,
 /// enforcing role-based and user-scoped authorization per GAP-05 and DPDPA 2023.
 /// </summary>
 [Authorize]
@@ -28,18 +25,13 @@ namespace Nutrition.WebGateway.Controllers;
 [Route("api/media")]
 public class MediaController : ControllerBase
 {
-    private readonly IRepository<ProgressPhoto> _photoRepo;
-    private readonly IOptions<StorageOptions> _storageOptions;
+    private readonly IDispatcher _dispatcher;
     private readonly IWebHostEnvironment _env;
 
-    public MediaController(
-        IRepository<ProgressPhoto> photoRepo,
-        IOptions<StorageOptions> storageOptions,
-        IWebHostEnvironment env)
+    public MediaController(IDispatcher dispatcher, IWebHostEnvironment env)
     {
-        _photoRepo = photoRepo;
-        _storageOptions = storageOptions;
-        _env = env;
+        _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _env = env ?? throw new ArgumentNullException(nameof(env));
     }
 
     [HttpGet("progress/{id}")]
@@ -47,61 +39,22 @@ public class MediaController : ControllerBase
         Justification = "Photo URI is retrieved from a verified database entity, sanitized against path traversal, and verified to remain strictly within the web root.")]
     public async Task<IActionResult> GetProgressPhoto(string id, CancellationToken ct)
     {
-        var photo = await _photoRepo.GetByIdAsync(id, ct);
-        var currentUserId = User.GetUserId();
+        var currentUserId = User.GetUserId() ?? string.Empty;
         var isAdmin = User.IsInRole(UserRole.Admin.ToString()) || User.IsInRole(UserRole.SuperAdmin.ToString());
 
-        if (photo == null || (photo.IsDeleted && !isAdmin))
+        var result = await _dispatcher.QueryAsync(
+            new GetProgressPhotoStreamQuery(id, currentUserId, isAdmin, _env.ContentRootPath),
+            ct);
+
+        if (!result.Succeeded || result.Data is null)
         {
-            return NotFound();
+            return result.StatusCode == 403 ? Forbid() : NotFound();
         }
-
-        if (photo.UserId != currentUserId && !isAdmin)
-        {
-            return Forbid();
-        }
-
-        var primaryWebRoot = !string.IsNullOrWhiteSpace(_storageOptions.Value?.WebRootPath)
-            ? _storageOptions.Value.WebRootPath
-            : Path.Combine(_env.ContentRootPath, "wwwroot");
-
-        var canonicalRoot = Path.GetFullPath(primaryWebRoot);
-        var sanitizedRel = PhotoPathSanitizer.NormalizeToRelativePath(photo.PhotoUri).TrimStart('/', '\\');
-        var fullPath = Path.GetFullPath(Path.Combine(canonicalRoot, sanitizedRel));
-
-        if (!fullPath.StartsWith(canonicalRoot, StringComparison.OrdinalIgnoreCase))
-        {
-            return Forbid();
-        }
-
-        if (!System.IO.File.Exists(fullPath))
-        {
-            // Probe fallback wwwroot (e.g. for seeded SVG assets in web root while storage points to /app/data)
-            var fallbackWebRoot = Path.GetFullPath(Path.Combine(_env.ContentRootPath, "wwwroot"));
-            var fallbackFullPath = Path.GetFullPath(Path.Combine(fallbackWebRoot, sanitizedRel));
-            if (fallbackFullPath.StartsWith(fallbackWebRoot, StringComparison.OrdinalIgnoreCase) && System.IO.File.Exists(fallbackFullPath))
-            {
-                fullPath = fallbackFullPath;
-            }
-            else
-            {
-                return NotFound();
-            }
-        }
-
-        var contentType = Path.GetExtension(fullPath).ToLowerInvariant() switch
-        {
-            ".png" => "image/png",
-            ".webp" => "image/webp",
-            ".svg" => "image/svg+xml",
-            ".gif" => "image/gif",
-            _ => "image/jpeg"
-        };
 
         Response.Headers.Append("X-Content-Type-Options", "nosniff");
         Response.Headers.Append("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'");
         Response.Headers.Append("Cache-Control", "private, no-store");
 
-        return PhysicalFile(fullPath, contentType, enableRangeProcessing: true);
+        return PhysicalFile(result.Data.FullPath, result.Data.ContentType, enableRangeProcessing: true);
     }
 }

@@ -64,6 +64,7 @@ public class ForgotPasswordCommandHandler : ICommandHandler<ForgotPasswordComman
         foreach (var old in existingOtps)
         {
             old.IsUsed = true;
+            await _otpRepo.UpdateAsync(old, ct);
         }
 
         var rawCode = _otpService.GenerateCode();

@@ -110,6 +110,7 @@ public class LoginCommandHandler : ICommandHandler<LoginCommand, Result<LoginRes
         }
 
         user.LastLoginAtUtc = DateTime.UtcNow;
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         var profile = await _profileRepo.FirstOrDefaultAsync(p => p.Id == user.Id, ct);

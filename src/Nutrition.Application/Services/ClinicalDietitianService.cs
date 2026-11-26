@@ -41,20 +41,17 @@ public class ClinicalDietitianService
 {
     private readonly IRepository<UserProfile> _profileRepo;
     private readonly IRepository<MealLog> _mealRepo;
-    private readonly IRepository<FoodItemRecord> _foodItemRepo;
     private readonly IRepository<DailyCalorieLedger> _ledgerRepo;
     private readonly IUnitOfWork _uow;
 
     public ClinicalDietitianService(
         IRepository<UserProfile> profileRepo,
         IRepository<MealLog> mealRepo,
-        IRepository<FoodItemRecord> foodItemRepo,
         IRepository<DailyCalorieLedger> ledgerRepo,
         IUnitOfWork uow)
     {
         _profileRepo = profileRepo;
         _mealRepo = mealRepo;
-        _foodItemRepo = foodItemRepo;
         _ledgerRepo = ledgerRepo;
         _uow = uow;
     }
@@ -146,17 +143,22 @@ public class ClinicalDietitianService
             }
         }
 
-        // Fetch day's meals to synchronize ledger using user's local timezone
+        // Fetch bounded meal window to synchronize ledger using user's local timezone
         var userTz = GetUserTimeZoneInfo(profile?.Timezone);
-        var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
-        var dayMeals = allUserMeals.Where(m =>
+        var streakStartUtc = date.AddDays(-365).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var recentUserMeals = await _mealRepo.FindAsync(new QuerySpec<MealLog>(
+            Filter: m => m.UserId == userId && m.LoggedAt >= streakStartUtc,
+            OrderBy: m => m.LoggedAt,
+            Descending: true,
+            Take: 2000), ct);
+        var dayMeals = recentUserMeals.Where(m =>
         {
             var userLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz));
-            var utcDate = DateOnly.FromDateTime(m.LoggedAt);
-            return userLocalDate == date || utcDate == date;
+            return userLocalDate == date;
         }).ToList();
         ledger.RecalculateLedger(dayMeals);
-        ledger.ConsistencyStreakDays = ClinicalCalculators.CalculateConsistencyStreak(allUserMeals, userTz, date);
+        ledger.UpdatedAtUtc = DateTime.UtcNow;
+        ledger.ConsistencyStreakDays = ClinicalCalculators.CalculateConsistencyStreak(recentUserMeals, userTz, date);
         await _ledgerRepo.UpdateAsync(ledger, ct);
         await _uow.SaveChangesAsync(ct);
 
@@ -253,19 +255,13 @@ public class ClinicalDietitianService
             existing.AiFeedbackRemarks = updatedMeal.AiFeedbackRemarks;
         }
 
-        // Synchronize child food items
+        // Synchronize embedded child food items directly on the MealLog aggregate
         var updatedItemIds = updatedMeal.Items
             .Where(i => !string.IsNullOrWhiteSpace(i.Id))
             .Select(i => i.Id)
             .ToHashSet();
 
-        // Remove deleted items
-        var toRemove = existing.Items.Where(i => !updatedItemIds.Contains(i.Id)).ToList();
-        foreach (var item in toRemove)
-        {
-            existing.Items.Remove(item);
-            await _foodItemRepo.DeleteAsync(item.Id, ct);
-        }
+        existing.Items.RemoveAll(i => !updatedItemIds.Contains(i.Id));
 
         // Update existing or add new items
         foreach (var item in updatedMeal.Items)
@@ -286,7 +282,6 @@ public class ClinicalDietitianService
                 existingItem.SugarGrams = item.SugarGrams;
                 existingItem.SodiumMg = item.SodiumMg;
                 existingItem.CookingMediumEstimate = item.CookingMediumEstimate;
-                await _foodItemRepo.UpdateAsync(existingItem, ct);
             }
             else
             {
@@ -311,9 +306,10 @@ public class ClinicalDietitianService
                     ConfidenceScore = item.ConfidenceScore > 0 ? item.ConfidenceScore : 0.85
                 };
                 existing.Items.Add(newItem);
-                await _foodItemRepo.AddAsync(newItem, ct);
             }
         }
+
+        existing.UpdatedAtUtc = DateTime.UtcNow;
 
         existing.RecalculateTotals();
 
@@ -399,8 +395,14 @@ public class ClinicalDietitianService
 
         if (normPeriod is "1D" or "DAILY")
         {
-            var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
-            var meals = allUserMeals.Where(m => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz)) == today).ToList();
+            var windowStartUtc = today.AddDays(-1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var windowEndUtc = today.AddDays(2).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var windowMeals = await _mealRepo.FindAsync(new QuerySpec<MealLog>(
+                Filter: m => m.UserId == userId && m.LoggedAt >= windowStartUtc && m.LoggedAt < windowEndUtc,
+                OrderBy: m => m.LoggedAt,
+                Descending: true,
+                Take: 200), ct);
+            var meals = windowMeals.Where(m => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz)) == today).ToList();
             var todayLedger = (await _ledgerRepo.FindAsync(l => l.UserId == userId && l.Date == today, ct)).FirstOrDefault();
 
             double bFast = Math.Round(meals.Where(m => m.MealType == MealType.Breakfast).Sum(m => m.TotalCalories), 0);
@@ -559,14 +561,21 @@ public class ClinicalDietitianService
         MealType? mealType = null,
         CancellationToken ct = default)
     {
-        var allUserMeals = await _mealRepo.FindAsync(m => m.UserId == userId, ct);
         var profile = await _profileRepo.GetByIdAsync(userId, ct);
         var userTz = GetUserTimeZoneInfo(profile?.Timezone);
 
         if (specificDate.HasValue)
         {
             var target = specificDate.Value;
-            var filtered = allUserMeals.Where(m =>
+            var dayStartUtc = target.AddDays(-1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var dayEndUtc = target.AddDays(2).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var windowMeals = await _mealRepo.FindAsync(new QuerySpec<MealLog>(
+                Filter: m => m.UserId == userId && m.LoggedAt >= dayStartUtc && m.LoggedAt < dayEndUtc,
+                OrderBy: m => m.LoggedAt,
+                Descending: true,
+                Take: 250), ct);
+
+            var filtered = windowMeals.Where(m =>
             {
                 var userLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz));
                 return userLocalDate == target;
@@ -592,7 +601,15 @@ public class ClinicalDietitianService
             _ => today.AddDays(-6)
         };
 
-        var query = allUserMeals.Where(m =>
+        var rangeStartUtc = startDate.AddDays(-1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var rangeEndUtc = today.AddDays(2).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var periodMeals = await _mealRepo.FindAsync(new QuerySpec<MealLog>(
+            Filter: m => m.UserId == userId && m.LoggedAt >= rangeStartUtc && m.LoggedAt < rangeEndUtc,
+            OrderBy: m => m.LoggedAt,
+            Descending: true,
+            Take: 1000), ct);
+
+        var query = periodMeals.Where(m =>
         {
             var userLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(m.LoggedAt, userTz));
             return userLocalDate >= startDate && userLocalDate <= today;

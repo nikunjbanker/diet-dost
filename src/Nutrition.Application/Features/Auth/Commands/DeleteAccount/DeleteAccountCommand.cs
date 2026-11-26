@@ -5,15 +5,19 @@
  * in compliance with, at your election, the "GNU Affero General Public
  * License v3.0 only" or the "Server Side Public License, v 1".
  */
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Nutrition.Application.Common;
 using Nutrition.Application.Common.CQRS;
+using Nutrition.Application.Common.Interfaces;
 using Nutrition.Application.Common.Models;
 using Nutrition.Domain.Model.Identity;
 using Nutrition.Domain.Model.Ledger;
 using Nutrition.Domain.Model.Meal;
 using Nutrition.Domain.Model.Profile;
 using Nutrition.Domain.Model.Progress;
+using Nutrition.Domain.Model.Security;
 
 namespace Nutrition.Application.Features.Auth.Commands.DeleteAccount;
 
@@ -30,6 +34,9 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand,
     private readonly IRepository<UserCorrectionRecord> _correctionRepo;
     private readonly IRepository<VerificationOtp> _otpRepo;
     private readonly IRepository<AiUsageLog> _aiLogRepo;
+    private readonly IRepository<QrLoginSession>? _qrRepo;
+    private readonly IRepository<AppNotification>? _notificationRepo;
+    private readonly IPhotoStorageService? _photoStorageService;
     private readonly IUnitOfWork _uow;
     private readonly ILogger<DeleteAccountCommandHandler> _logger;
 
@@ -44,7 +51,10 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand,
         IRepository<VerificationOtp> otpRepo,
         IRepository<AiUsageLog> aiLogRepo,
         IUnitOfWork uow,
-        ILogger<DeleteAccountCommandHandler> logger)
+        ILogger<DeleteAccountCommandHandler> logger,
+        IRepository<QrLoginSession>? qrRepo = null,
+        IRepository<AppNotification>? notificationRepo = null,
+        IPhotoStorageService? photoStorageService = null)
     {
         _userRepo = userRepo;
         _profileRepo = profileRepo;
@@ -57,6 +67,9 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand,
         _aiLogRepo = aiLogRepo;
         _uow = uow;
         _logger = logger;
+        _qrRepo = qrRepo;
+        _notificationRepo = notificationRepo;
+        _photoStorageService = photoStorageService;
     }
 
     public async Task<Result<string>> HandleAsync(DeleteAccountCommand request, CancellationToken ct = default)
@@ -94,8 +107,42 @@ public class DeleteAccountCommandHandler : ICommandHandler<DeleteAccountCommand,
         var otps = await _otpRepo.FindAsync(o => o.UserId == request.UserId, ct);
         foreach (var o in otps) await _otpRepo.DeleteAsync(o.Id, ct);
 
+        if (_qrRepo != null)
+        {
+            var qrSessions = await _qrRepo.FindAsync(q => q.AuthorizedUserId == request.UserId, ct);
+            foreach (var q in qrSessions) await _qrRepo.DeleteAsync(q.Id, ct);
+        }
+
+        if (_notificationRepo != null)
+        {
+            var notifications = await _notificationRepo.FindAsync(n => n.RecipientUserId == request.UserId, ct);
+            foreach (var n in notifications) await _notificationRepo.DeleteAsync(n.Id, ct);
+        }
+
+        // Pseudonymize AI usage telemetry logs for DPDPA compliance while preserving aggregate cost metrics
+        var pseudoUserId = $"anon_{Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(request.UserId)))[..12].ToLowerInvariant()}";
+        var aiLogs = await _aiLogRepo.FindAsync(a => a.UserId == request.UserId, ct);
+        foreach (var log in aiLogs)
+        {
+            log.UserId = pseudoUserId;
+            await _aiLogRepo.UpdateAsync(log, ct);
+        }
+
         var profile = await _profileRepo.GetByIdAsync(request.UserId, ct);
-        if (profile != null) { profile.IsDeleted = true; profile.DeletedAtUtc = now; await _profileRepo.UpdateAsync(profile, ct); }
+        if (profile != null)
+        {
+            profile.Name = "Deleted User";
+            profile.DiagnosedConditions = new List<string>();
+            profile.Medications = new List<MedicationEntry>();
+            profile.IsDeleted = true;
+            profile.DeletedAtUtc = now;
+            await _profileRepo.UpdateAsync(profile, ct);
+        }
+
+        if (_photoStorageService != null)
+        {
+            await _photoStorageService.DeleteUserDirectoryAsync(request.UserId, ct);
+        }
 
         user.IsActive = false;
         user.IsDeleted = true;

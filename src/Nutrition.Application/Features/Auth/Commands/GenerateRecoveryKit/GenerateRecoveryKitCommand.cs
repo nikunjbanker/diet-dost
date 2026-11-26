@@ -72,6 +72,7 @@ public class GenerateRecoveryKitCommandHandler
         user.PendingRecoveryIssueTokenHash = RecoveryKitIssueToken.ComputeHash(issueId);
         user.LastActivatedRecoveryIssueTokenHash = null;
 
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))

@@ -61,8 +61,32 @@ public class LocalPhotoStorageService : IPhotoStorageService
         if (string.IsNullOrWhiteSpace(relativePathOrUrl))
             return Task.FromResult(false);
 
-        // Zero Physical Deletion Policy: Physical assets are strictly preserved for troubleshooting & forensic audit
+        // Zero Physical Deletion Policy: Physical assets are strictly preserved for single-item soft deletes
         _logger.LogInformation("[STORAGE] Bypassing physical deletion per zero-physical-delete retention policy: {Path}", relativePathOrUrl);
+        return Task.FromResult(true);
+    }
+
+    public Task<bool> DeleteUserDirectoryAsync(string userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            return Task.FromResult(false);
+
+        var usersRoot = Path.GetFullPath(Path.Combine(_webRootPath, "uploads", "users"));
+        var sanitizedUser = PhotoPathSanitizer.SanitizeUserId(userId);
+        var userDir = Path.GetFullPath(Path.Combine(usersRoot, sanitizedUser));
+
+        if (!userDir.StartsWith(usersRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("[DPDPA] Blocked unsafe directory deletion path for UserId {UserId}", userId);
+            return Task.FromResult(false);
+        }
+
+        if (Directory.Exists(userDir))
+        {
+            Directory.Delete(userDir, recursive: true);
+            _logger.LogInformation("[DPDPA] Physically erased upload directory for user {UserId}.", userId);
+        }
+
         return Task.FromResult(true);
     }
 

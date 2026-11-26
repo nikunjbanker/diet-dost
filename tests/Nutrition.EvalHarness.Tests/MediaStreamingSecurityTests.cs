@@ -71,7 +71,7 @@ public sealed class MediaStreamingSecurityTests : IDisposable
 
     private MediaController CreateController(string userId, string role = "User")
     {
-        var controller = new MediaController(_photoRepo, _storageOptions, _env);
+        var controller = new MediaController(new MediaTestDispatcher(_photoRepo, _storageOptions), _env);
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, userId),
@@ -330,6 +330,31 @@ public sealed class MediaStreamingSecurityTests : IDisposable
 
     // --- In-Memory Test Fakes ---
 
+    private sealed class MediaTestDispatcher : Nutrition.Application.Common.CQRS.IDispatcher
+    {
+        private readonly IReadRepository<ProgressPhoto> _photoRepo;
+        private readonly IOptions<StorageOptions> _storageOptions;
+
+        public MediaTestDispatcher(IReadRepository<ProgressPhoto> photoRepo, IOptions<StorageOptions> storageOptions)
+        {
+            _photoRepo = photoRepo;
+            _storageOptions = storageOptions;
+        }
+
+        public Task<Nutrition.Application.Common.Models.Result> SendAsync(Nutrition.Application.Common.CQRS.ICommand command, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException(command.GetType().Name);
+
+        public Task<TResponse> SendAsync<TResponse>(Nutrition.Application.Common.CQRS.ICommand<TResponse> command, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException(command.GetType().Name);
+
+        public Task<TResponse> QueryAsync<TResponse>(Nutrition.Application.Common.CQRS.IQuery<TResponse> query, CancellationToken cancellationToken = default)
+        {
+            if (query is Nutrition.Application.Features.ProgressPhotos.Queries.GetProgressPhotoStream.GetProgressPhotoStreamQuery streamQuery)
+                return (Task<TResponse>)(object)new Nutrition.Application.Features.ProgressPhotos.Queries.GetProgressPhotoStream.GetProgressPhotoStreamQueryHandler(_photoRepo, _storageOptions).HandleAsync(streamQuery, cancellationToken);
+            throw new NotSupportedException(query.GetType().Name);
+        }
+    }
+
     private class InMemoryPhotoRepo : IRepository<ProgressPhoto>
     {
         private readonly List<ProgressPhoto> _photos = new();
@@ -414,6 +439,9 @@ public sealed class MediaStreamingSecurityTests : IDisposable
             Task.FromResult("/uploads/progress/prog.jpg");
 
         public Task<bool> DeletePhotoAsync(string relativePathOrUrl, CancellationToken ct = default) =>
+            Task.FromResult(true);
+
+        public Task<bool> DeleteUserDirectoryAsync(string userId, CancellationToken ct = default) =>
             Task.FromResult(true);
     }
 

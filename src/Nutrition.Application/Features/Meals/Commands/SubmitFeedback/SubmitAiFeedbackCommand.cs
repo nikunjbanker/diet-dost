@@ -100,11 +100,13 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
             var origKey = retrainingResult.OriginalDetectedDish.Trim();
             var correctedKey = retrainingResult.CorrectedDish.Trim();
 
-            var contradictory = await _correctionsRepo.FindAsync(
-                c => c.UserId == effectiveUserId &&
-                     ((c.OriginalDetectedItem.Equals(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Equals(origKey, StringComparison.OrdinalIgnoreCase)) ||
-                      (c.OriginalDetectedItem.Contains(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Contains(origKey, StringComparison.OrdinalIgnoreCase))),
-                ct);
+            var normalizedOrig = UserCorrectionRecord.NormalizeItemKey(origKey);
+            var normalizedCorrected = UserCorrectionRecord.NormalizeItemKey(correctedKey);
+
+            var userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == effectiveUserId, ct);
+            var contradictory = userCorrections.Where(c =>
+                (c.NormalizedOriginalItem == normalizedCorrected && c.CorrectedItemName.Equals(origKey, StringComparison.OrdinalIgnoreCase)) ||
+                (c.OriginalDetectedItem.Contains(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Contains(origKey, StringComparison.OrdinalIgnoreCase)));
 
             foreach (var contra in contradictory)
             {
@@ -112,13 +114,15 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
             }
 
             var existing = (await _correctionsRepo.FindAsync(
-                c => c.UserId == effectiveUserId && c.OriginalDetectedItem.Equals(origKey, StringComparison.OrdinalIgnoreCase), ct))
-                .FirstOrDefault();
+                c => c.UserId == effectiveUserId && c.NormalizedOriginalItem == normalizedOrig, ct))
+                .FirstOrDefault()
+                ?? userCorrections.FirstOrDefault(c => c.OriginalDetectedItem.Equals(origKey, StringComparison.OrdinalIgnoreCase));
 
             var updatedEstimate = retrainingResult.UpdatedItemEstimate;
 
             if (existing != null)
             {
+                existing.NormalizedOriginalItem = normalizedOrig;
                 existing.CorrectedItemName = correctedKey;
                 existing.HindiOrRegionalName = updatedEstimate?.HindiOrRegionalName ?? correctedKey;
                 existing.EstimatedPortion = updatedEstimate?.EstimatedPortion ?? "1 Katori";
@@ -127,6 +131,7 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
                 existing.CarbsGrams = updatedEstimate?.CarbsGrams ?? 10;
                 existing.FatGrams = updatedEstimate?.FatGrams ?? 6;
                 existing.CreatedAtUtc = DateTime.UtcNow;
+                existing.UpdatedAtUtc = DateTime.UtcNow;
                 existing.FrequencyCount++;
                 await _correctionsRepo.UpdateAsync(existing, ct);
             }
@@ -136,6 +141,7 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
                 {
                     UserId = effectiveUserId,
                     OriginalDetectedItem = origKey,
+                    NormalizedOriginalItem = normalizedOrig,
                     CorrectedItemName = correctedKey,
                     HindiOrRegionalName = updatedEstimate?.HindiOrRegionalName ?? correctedKey,
                     EstimatedPortion = updatedEstimate?.EstimatedPortion ?? "1 Katori",
@@ -145,6 +151,7 @@ public class SubmitAiFeedbackCommandHandler : ICommandHandler<SubmitAiFeedbackCo
                     FatGrams = updatedEstimate?.FatGrams ?? 6,
                     MealType = "Lunch",
                     CreatedAtUtc = DateTime.UtcNow,
+                    UpdatedAtUtc = DateTime.UtcNow,
                     FrequencyCount = 1
                 };
                 await _correctionsRepo.AddAsync(newCorrection, ct);

@@ -102,6 +102,7 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
 
         // Consume session
         session.Consume();
+        await _qrRepo.UpdateAsync(session, ct);
 
         var user = await _userRepo.FirstOrDefaultAsync(u => u.Id == session.AuthorizedUserId, ct);
         if (user == null || user.IsDeleted || !user.IsActive)
@@ -110,6 +111,7 @@ public class ExchangeQrTicketCommandHandler : ICommandHandler<ExchangeQrTicketCo
         }
 
         user.LastLoginAtUtc = DateTime.UtcNow;
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         var profile = await _profileRepo.FirstOrDefaultAsync(p => p.Id == user.Id, ct);

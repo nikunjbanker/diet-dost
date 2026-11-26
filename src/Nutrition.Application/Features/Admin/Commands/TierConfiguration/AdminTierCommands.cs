@@ -110,16 +110,13 @@ public class GetAiLogsQueryHandler : IQueryHandler<GetAiLogsQuery, Result<List<A
 
     public async Task<Result<List<AiUsageLogDto>>> HandleAsync(GetAiLogsQuery request, CancellationToken ct = default)
     {
-        var logs = !string.IsNullOrWhiteSpace(request.UserId)
-            ? await _aiLogRepo.FindAsync(l => l.UserId == request.UserId, ct)
-            : await _aiLogRepo.GetAllAsync(ct);
+        var take = Math.Clamp(request.Limit <= 0 ? 50 : request.Limit, 1, 100);
+        var logs = await _aiLogRepo.FindAsync(new QuerySpec<AiUsageLog>(
+            Filter: !string.IsNullOrWhiteSpace(request.UserId) ? l => l.UserId == request.UserId : null,
+            OrderBy: l => l.TimestampUtc,
+            Descending: true,
+            Take: take), ct);
 
-        var ordered = logs
-            .OrderByDescending(l => l.TimestampUtc)
-            .Take(Math.Min(request.Limit, 100))
-            .Select(l => l.ToDto())
-            .ToList();
-
-        return Result<List<AiUsageLogDto>>.Success(ordered);
+        return Result<List<AiUsageLogDto>>.Success(logs.Select(l => l.ToDto()).ToList());
     }
 }
