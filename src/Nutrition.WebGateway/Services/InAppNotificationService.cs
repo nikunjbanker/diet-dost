@@ -150,10 +150,10 @@ public class InAppNotificationService : IInAppNotificationService
 
         _logger.LogInformation("[NOTIFICATIONS] Persisted AccountActivated notification {NotificationId} for user {Email}", notification.Id, email);
 
-        // Push real-time SignalR event to all listeners tracking this user's approval
+        // Push real-time SignalR event strictly to the activated user (prevent cross-user email/userId leakage)
         try
         {
-            await _hubContext.Clients.All.SendAsync("AccountApproved", new
+            await _hubContext.Clients.User(userId).SendAsync("AccountApproved", new
             {
                 userId,
                 email,

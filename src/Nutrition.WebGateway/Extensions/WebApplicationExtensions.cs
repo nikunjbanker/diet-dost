@@ -83,9 +83,9 @@ public static class WebApplicationExtensions
             OnPrepareResponse = ctx =>
             {
                 var reqPath = ctx.Context.Request.Path.Value ?? string.Empty;
-                // GAP-05: Block unauthenticated direct access to user progress photos via static file server.
+                // GAP-05: Block unauthenticated direct access to ALL user-scoped uploads (/uploads/users/*) via static file server.
                 // Public demo assets (/uploads/progress/*.svg) remain accessible for initial page render.
-                if (reqPath.Contains("/users/", StringComparison.OrdinalIgnoreCase) && reqPath.Contains("/progress/", StringComparison.OrdinalIgnoreCase))
+                if (reqPath.Contains("/users/", StringComparison.OrdinalIgnoreCase))
                 {
                     ctx.Context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     ctx.Context.Response.ContentLength = 0;

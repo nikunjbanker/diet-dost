@@ -42,7 +42,7 @@ public static class SecurityAndAuthExtensions
         var jwtAudience = !string.IsNullOrWhiteSpace(jwtOptions.Audience) ? jwtOptions.Audience : "DietDostClient";
         var jwtKey = !string.IsNullOrWhiteSpace(jwtOptions.Key)
             ? jwtOptions.Key
-            : ((isDev || isDemo) ? ConfigurationExtensions.DefaultDevJwtKey : null)
+            : (isDev ? ConfigurationExtensions.DefaultDevJwtKey : null)
             ?? throw new InvalidOperationException(
                 "CRITICAL SECURITY CONFIGURATION ERROR: 'Jwt:Key' is not configured. " +
                 "In non-development / deployed environments, the cryptographic JWT signing key MUST be provided via Azure Key Vault or secure environment variables.");
