@@ -589,6 +589,8 @@ public class AzureSqlTargetWriter : IDisposable
                     [FatGrams] FLOAT NOT NULL,
                     [MealType] NVARCHAR(MAX) NOT NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL,
+                    [UpdatedAtUtc] DATETIME2 NULL,
+                    [NormalizedOriginalItem] NVARCHAR(450) NOT NULL DEFAULT '',
                     [FrequencyCount] INT NOT NULL
                 );",
             "progressphotos" => @"
@@ -596,6 +598,7 @@ public class AzureSqlTargetWriter : IDisposable
                     [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_ProgressPhotos] PRIMARY KEY,
                     [UserId] NVARCHAR(450) NOT NULL,
                     [CapturedAtUtc] DATETIME2 NOT NULL,
+                    [UpdatedAtUtc] DATETIME2 NULL,
                     [WeightKg] FLOAT NOT NULL,
                     [PhotoType] INT NOT NULL,
                     [PhotoUri] NVARCHAR(MAX) NOT NULL,
@@ -620,6 +623,7 @@ public class AzureSqlTargetWriter : IDisposable
             "tierconfigurations" => @"
                 CREATE TABLE [TierConfigurations] (
                     [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_TierConfigurations] PRIMARY KEY,
+                    [ConcurrencyVersion] BIGINT NOT NULL DEFAULT 0,
                     [Tier] INT NOT NULL,
                     [DailyAiDetectionLimit] INT NOT NULL,
                     [AllowPhotoCompare] BIT NOT NULL,
@@ -664,6 +668,7 @@ public class AzureSqlTargetWriter : IDisposable
             "qrsessions" => @"
                 CREATE TABLE [QrSessions] (
                     [Id] NVARCHAR(64) NOT NULL CONSTRAINT [PK_QrSessions] PRIMARY KEY,
+                    [ConcurrencyVersion] BIGINT NOT NULL DEFAULT 0,
                     [ChallengeNonce] NVARCHAR(128) NOT NULL,
                     [BrowserSecretHash] NVARCHAR(128) NOT NULL,
                     [DesktopPublicKey] NVARCHAR(MAX) NULL,
@@ -675,6 +680,8 @@ public class AzureSqlTargetWriter : IDisposable
                     [Status] INT NOT NULL,
                     [CreatedAtUtc] DATETIME2 NOT NULL,
                     [ExpiresAtUtc] DATETIME2 NOT NULL,
+                    [ApprovedAtUtc] DATETIME2 NULL,
+                    [ConsumedAtUtc] DATETIME2 NULL,
                     [AuthorizedUserId] NVARCHAR(450) NULL,
                     [ClientIpAddress] NVARCHAR(MAX) NULL,
                     [ClientUserAgent] NVARCHAR(MAX) NULL
@@ -684,6 +691,7 @@ public class AzureSqlTargetWriter : IDisposable
                     [Id] NVARCHAR(450) NOT NULL CONSTRAINT [PK_AppNotifications] PRIMARY KEY,
                     [RecipientUserId] NVARCHAR(450) NULL,
                     [RecipientRole] NVARCHAR(450) NULL,
+                    [SubjectUserId] NVARCHAR(450) NULL,
                     [Title] NVARCHAR(MAX) NOT NULL,
                     [Message] NVARCHAR(MAX) NOT NULL,
                     [Type] NVARCHAR(MAX) NOT NULL,
