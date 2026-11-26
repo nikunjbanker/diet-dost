@@ -200,7 +200,9 @@ To balance enterprise security, clinical data flexibility, scalability, and depl
   - Nutrition meal logs, Indian food composition tables (IFCT 2017), and multimodal AI vision metadata are naturally hierarchical JSON documents.
   - Offers **16x more storage** than Azure SQL Basic DTU (32 GB vs. 2 GB) at guaranteed $0.00/month.
 - **HOW It Works**:
-  - Managed via official `MongoDB.Driver` (3.14.0) with `DocumentDbRepository<T>` and `DocumentDbUnitOfWork`.
+  - Managed via official `MongoDB.Driver` (3.14.0) with `DocumentDbRepository<T>` (`QuerySpec<T>` + CAS `ConcurrencyVersion`), `DocumentDbUnitOfWork`, and 6 specialized NoSQL ports (`IMealRepository`, `IUserRepository`, `IQrLoginSessionRepository`, `IAiUsageRepository`, `INotificationRepository`, `IAccountErasurePort`).
+  - 13 canonical PascalCase collections with `FoodItemRecord` embedded directly inside `Meals.Items` (no standalone `FoodItems` collection) and native TTL indexes on `VerificationOtps` (24h), `QrSessions` (24h), and `AppNotifications.ReadAtUtc` (90d).
+  - Fail-closed startup: requires `ConnectionStrings:DocumentDbConnection` with mandatory TLS for non-local hosts and registers no SQLite fallback `DbContext`.
   - Class mappings via `DocumentDbBsonMappings.Register()` explicitly map `Id` $\leftrightarrow$ `_id` (`BsonType.String`) and UTC DateTimes.
   - Standard MongoDB connection string:
     `mongodb://docdbadmin:<password>@dietdost-docdb-free.global.documentdb.azure.com:10255/?ssl=true&appName=@dietdost-docdb-free@`

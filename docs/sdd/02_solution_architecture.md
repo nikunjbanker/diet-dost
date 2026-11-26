@@ -1168,8 +1168,11 @@ Per [ADR-20261121-177](file:///c:/Users/nikunj.banker/source/repos/diet-dost/doc
    - **60-Day Inactivity Auto-Pause**: Pauses clusters after 60 days of complete inactivity. Inbound connections trigger auto-resume, hardened by Polly reconnection retry policies (`connectTimeoutMS=60000`).
    - **Security**: Native SCRAM-SHA-256 credentials protected strictly in **Azure Key Vault** (`ConnectionStrings:DocumentDbConnection`); TLS 1.2+ encryption in transit.
 
-2. **Clean Architecture Persistence Abstraction**:
-   - `DocumentDbRepository<T>` implements `IRepository<T>` over `IMongoCollection<T>` with automatic soft-delete filtering (`e.IsDeleted == false`).
+2. **Clean Architecture Persistence Abstraction (13-Collection NoSQL Model)**:
+   - `DocumentDbRepository<T>` implements `IRepository<T>` (`IReadRepository<T>`, `IWriteRepository<T>`, `QuerySpec<T>`) over `IMongoCollection<T>` with automatic soft-delete filtering (`e.IsDeleted != true`), CAS `ConcurrencyVersion` enforcement (`DbConcurrencyConflictException`), and atomic `UpdateOneAsync` soft-deletes.
+   - 6 specialized ports (`IMealRepository`, `IUserRepository`, `IQrLoginSessionRepository`, `IAiUsageRepository`, `INotificationRepository`, `IAccountErasurePort`) eliminate N+1 loops, full-document presence replacements, and unbounded scans.
+   - `Meals` embeds `FoodItemRecord` items directly inside `Meals.Items` (retiring any standalone `FoodItems` collection in DocumentDB); `DocumentDbDatabaseInitializer` provisions PascalCase compound indexes and TTLs across all 13 collections (`VerificationOtps` 24h, `QrSessions` 24h, `AppNotifications` 90d post-read).
+   - Fail-closed startup: DocumentDB mode omits `DietTrackerDbContext` / SQLite fallback and requires a valid `DocumentDbConnection` with TLS enforced for non-local hosts.
    - `DocumentDbUnitOfWork` implements `IUnitOfWork`.
    - `DocumentDbBsonMappings.Register()` guarantees exact BSON mapping for string GUIDs (`Id` $\leftrightarrow$ `_id`) and UTC DateTimes.
    - `DatabaseOptions.Provider` supports values `"DocumentDb"`, `"DocumentDB"`, `"MongoDb"`, `"Sqlite"`, and `"AzureSql"`. Automated health check via `DatabaseHealthCheck` issues `{ ping: 1 }` against the configured cluster.
