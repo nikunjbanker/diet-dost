@@ -72,6 +72,7 @@ public class ApproveQrSessionCommandHandler : ICommandHandler<ApproveQrSessionCo
         try
         {
             var exchangeTicket = session.Approve(user.Id, request.MobilePublicKey, request.EncryptedApprovalPayload);
+            await _qrRepo.UpdateAsync(session, ct);
             await _uow.SaveChangesAsync(ct);
 
             if (_logger.IsEnabled(LogLevel.Information))

@@ -505,9 +505,19 @@ public sealed class QrAuthenticationSecurityTests : IDisposable
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDispatcher>();
 
         // 1. Seed demo user
-        var regCmd = new RegisterAnonymousCommand("Demo User", AcceptTerms: true, AcceptHealthConsent: true);
-        var regResult = await dispatcher.SendAsync(regCmd);
-        Assert.True(regResult.Succeeded);
+        var userRepo = scope.ServiceProvider.GetRequiredService<Nutrition.Application.Common.IRepository<ApplicationUser>>();
+        var uow = scope.ServiceProvider.GetRequiredService<Nutrition.Application.Common.IUnitOfWork>();
+        await userRepo.AddAsync(new ApplicationUser
+        {
+            Email = "basic@dietdost.app",
+            NormalizedEmail = "BASIC@DIETDOST.APP",
+            DisplayName = "Demo User",
+            IsActive = true,
+            IsEmailVerified = true,
+            Role = UserRole.User,
+            Tier = UserTier.Basic
+        });
+        await uow.SaveChangesAsync();
 
         // 2. Initiate QR
         var secret = "demo-secret-1234567890123456789012345";

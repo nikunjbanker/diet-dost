@@ -55,6 +55,7 @@ public class RejectQrSessionCommandHandler : ICommandHandler<RejectQrSessionComm
         try
         {
             session.Reject();
+            await _qrRepo.UpdateAsync(session, ct);
             await _uow.SaveChangesAsync(ct);
 
             if (_logger.IsEnabled(LogLevel.Information))

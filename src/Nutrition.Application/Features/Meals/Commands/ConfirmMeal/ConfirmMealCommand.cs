@@ -86,12 +86,14 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                     continue;
                 }
 
-                // Purge contradictory rules
-                var contradictory = await _correctionsRepo.FindAsync(
-                    c => c.UserId == meal.UserId &&
-                         ((c.OriginalDetectedItem.Equals(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Equals(origKey, StringComparison.OrdinalIgnoreCase)) ||
-                          (c.OriginalDetectedItem.Contains(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Contains(origKey, StringComparison.OrdinalIgnoreCase))),
-                    ct);
+                var normalizedOrig = UserCorrectionRecord.NormalizeItemKey(origKey);
+                var normalizedCorrected = UserCorrectionRecord.NormalizeItemKey(correctedKey);
+
+                // Purge contradictory rules using bounded user corrections
+                var userCorrections = await _correctionsRepo.FindAsync(c => c.UserId == meal.UserId, ct);
+                var contradictory = userCorrections.Where(c =>
+                    (c.NormalizedOriginalItem == normalizedCorrected && c.CorrectedItemName.Equals(origKey, StringComparison.OrdinalIgnoreCase)) ||
+                    (c.OriginalDetectedItem.Contains(correctedKey, StringComparison.OrdinalIgnoreCase) && c.CorrectedItemName.Contains(origKey, StringComparison.OrdinalIgnoreCase)));
 
                 foreach (var contra in contradictory)
                 {
@@ -99,11 +101,13 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                 }
 
                 var existing = (await _correctionsRepo.FindAsync(
-                    c => c.UserId == meal.UserId && c.OriginalDetectedItem.Equals(origKey, StringComparison.OrdinalIgnoreCase), ct))
-                    .FirstOrDefault();
+                    c => c.UserId == meal.UserId && c.NormalizedOriginalItem == normalizedOrig, ct))
+                    .FirstOrDefault()
+                    ?? userCorrections.FirstOrDefault(c => c.OriginalDetectedItem.Equals(origKey, StringComparison.OrdinalIgnoreCase));
 
                 if (existing != null)
                 {
+                    existing.NormalizedOriginalItem = normalizedOrig;
                     existing.CorrectedItemName = correctedKey;
                     existing.HindiOrRegionalName = item.HindiOrRegionalName;
                     existing.EstimatedPortion = item.EstimatedPortion;
@@ -113,6 +117,7 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                     existing.FatGrams = item.FatGrams;
                     existing.MealType = meal.MealType.ToString();
                     existing.CreatedAtUtc = DateTime.UtcNow;
+                    existing.UpdatedAtUtc = DateTime.UtcNow;
                     existing.FrequencyCount++;
                     await _correctionsRepo.UpdateAsync(existing, ct);
                 }
@@ -122,6 +127,7 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                     {
                         UserId = meal.UserId,
                         OriginalDetectedItem = origKey,
+                        NormalizedOriginalItem = normalizedOrig,
                         CorrectedItemName = correctedKey,
                         HindiOrRegionalName = item.HindiOrRegionalName,
                         EstimatedPortion = item.EstimatedPortion,
@@ -131,6 +137,7 @@ public class ConfirmMealCommandHandler : ICommandHandler<ConfirmMealCommand, Res
                         FatGrams = item.FatGrams,
                         MealType = meal.MealType.ToString(),
                         CreatedAtUtc = DateTime.UtcNow,
+                        UpdatedAtUtc = DateTime.UtcNow,
                         FrequencyCount = 1
                     };
                     await _correctionsRepo.AddAsync(newCorrection, ct);

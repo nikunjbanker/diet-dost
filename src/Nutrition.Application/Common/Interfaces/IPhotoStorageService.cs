@@ -22,4 +22,9 @@ public interface IPhotoStorageService
         => SaveProgressPhotoAsync(null, fileStream, originalFileName, contentType, ct);
 
     Task<bool> DeletePhotoAsync(string relativePathOrUrl, CancellationToken ct = default);
+
+    /// <summary>
+    /// Physically erases a user's isolated upload directory under uploads/users/{sanitizedUserId}/ for DPDPA 2023 self-service erasure.
+    /// </summary>
+    Task<bool> DeleteUserDirectoryAsync(string userId, CancellationToken ct = default);
 }

@@ -54,13 +54,14 @@ public class GetDeletedRecordsQueryHandler : IQueryHandler<GetDeletedRecordsQuer
         // 1. Soft-deleted Meals
         if (type == "all" || type == "meals" || type == "meal")
         {
-            var deletedMeals = await _mealRepo.FindDeletedAsync(
-                m => string.IsNullOrWhiteSpace(request.UserId) || m.UserId == request.UserId,
-                ct);
+            var deletedMeals = await _mealRepo.FindDeletedAsync(new QuerySpec<MealLog>(
+                Filter: string.IsNullOrWhiteSpace(request.UserId) ? null : m => m.UserId == request.UserId,
+                OrderBy: m => m.DeletedAtUtc!,
+                Descending: true,
+                Take: 100,
+                IncludeDeleted: true), ct);
 
             records.AddRange(deletedMeals
-                .OrderByDescending(m => m.DeletedAtUtc)
-                .Take(100)
                 .Select(m => new DeletedRecordDto(
                     m.Id,
                     "Meal",
@@ -76,13 +77,14 @@ public class GetDeletedRecordsQueryHandler : IQueryHandler<GetDeletedRecordsQuer
         // 2. Soft-deleted Progress Photos
         if (type == "all" || type == "progress" || type == "photos")
         {
-            var deletedPhotos = await _photoRepo.FindDeletedAsync(
-                p => string.IsNullOrWhiteSpace(request.UserId) || p.UserId == request.UserId,
-                ct);
+            var deletedPhotos = await _photoRepo.FindDeletedAsync(new QuerySpec<ProgressPhoto>(
+                Filter: string.IsNullOrWhiteSpace(request.UserId) ? null : p => p.UserId == request.UserId,
+                OrderBy: p => p.DeletedAtUtc!,
+                Descending: true,
+                Take: 100,
+                IncludeDeleted: true), ct);
 
             records.AddRange(deletedPhotos
-                .OrderByDescending(p => p.DeletedAtUtc)
-                .Take(100)
                 .Select(p => new DeletedRecordDto(
                     p.Id,
                     "ProgressPhoto",
@@ -98,13 +100,14 @@ public class GetDeletedRecordsQueryHandler : IQueryHandler<GetDeletedRecordsQuer
         // 3. Soft-deleted Users
         if (type == "all" || type == "users" || type == "user")
         {
-            var deletedUsers = await _userRepo.FindDeletedAsync(
-                u => string.IsNullOrWhiteSpace(request.UserId) || u.Id == request.UserId,
-                ct);
+            var deletedUsers = await _userRepo.FindDeletedAsync(new QuerySpec<ApplicationUser>(
+                Filter: string.IsNullOrWhiteSpace(request.UserId) ? null : u => u.Id == request.UserId,
+                OrderBy: u => u.DeletedAtUtc!,
+                Descending: true,
+                Take: 100,
+                IncludeDeleted: true), ct);
 
             records.AddRange(deletedUsers
-                .OrderByDescending(u => u.DeletedAtUtc)
-                .Take(100)
                 .Select(u => new DeletedRecordDto(
                     u.Id,
                     "User",

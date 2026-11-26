@@ -84,12 +84,15 @@ public class ResetPasswordCommandHandler : ICommandHandler<ResetPasswordCommand,
         var isValid = _otpService.ValidateCode(activeOtp, request.OtpCode, out var failureReason);
         if (!isValid)
         {
+            await _otpRepo.UpdateAsync(activeOtp, ct);
             await _uow.SaveChangesAsync(ct);
             return Result<string>.Failure(failureReason ?? "Invalid verification code.", "InvalidOtp", 400);
         }
 
+        await _otpRepo.UpdateAsync(activeOtp, ct);
         user.PasswordHash = _passwordHasher.HashPassword(request.NewPassword);
         user.SecurityStamp = Guid.NewGuid().ToString("N"); // Invalidate existing sessions
+        await _userRepo.UpdateAsync(user, ct);
         await _uow.SaveChangesAsync(ct);
 
         if (_logger.IsEnabled(LogLevel.Information))

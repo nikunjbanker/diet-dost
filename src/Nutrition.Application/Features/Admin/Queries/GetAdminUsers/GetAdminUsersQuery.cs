@@ -34,7 +34,14 @@ public class GetAdminUsersQueryHandler : IQueryHandler<GetAdminUsersQuery, Resul
 
     public async Task<Result<List<AdminUserSummaryDto>>> HandleAsync(GetAdminUsersQuery request, CancellationToken ct = default)
     {
-        var users = await _userRepo.GetAllAsync(ct);
+        var tierFilter = request.Tier;
+        var roleFilter = request.Role;
+        var users = await _userRepo.FindAsync(new QuerySpec<ApplicationUser>(
+            Filter: u => (!tierFilter.HasValue || u.Tier == tierFilter.Value) &&
+                         (!roleFilter.HasValue || u.Role == roleFilter.Value),
+            OrderBy: u => u.CreatedAtUtc,
+            Descending: true,
+            Take: 500), ct);
         IEnumerable<ApplicationUser> filtered = users;
 
         if (!string.IsNullOrWhiteSpace(request.Search))
@@ -42,16 +49,6 @@ public class GetAdminUsersQueryHandler : IQueryHandler<GetAdminUsersQuery, Resul
             var search = request.Search.Trim();
             filtered = filtered.Where(u => u.Email.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                                            u.MobileNumber.Contains(search, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (request.Tier.HasValue)
-        {
-            filtered = filtered.Where(u => u.Tier == request.Tier.Value);
-        }
-
-        if (request.Role.HasValue)
-        {
-            filtered = filtered.Where(u => u.Role == request.Role.Value);
         }
 
         var orderedUsers = filtered.OrderByDescending(u => u.CreatedAtUtc).ToList();

@@ -209,7 +209,8 @@ public class CleanArchitectureDecouplingTests : IDisposable
         await _notifRepo.AddAsync(notif);
         await _unitOfWork.SaveChangesAsync();
 
-        var controller = new NotificationsController(_notifRepo, _unitOfWork, NullLogger<NotificationsController>.Instance)
+        var dispatcher = new NotificationTestDispatcher(_notifRepo, _unitOfWork);
+        var controller = new NotificationsController(dispatcher)
         {
             ControllerContext = new ControllerContext
             {
@@ -234,6 +235,37 @@ public class CleanArchitectureDecouplingTests : IDisposable
         var updated = await _notifRepo.GetByIdAsync("notif-1");
         Assert.NotNull(updated);
         Assert.True(updated.IsRead);
+    }
+
+    private sealed class NotificationTestDispatcher : Nutrition.Application.Common.CQRS.IDispatcher
+    {
+        private readonly IRepository<AppNotification> _repo;
+        private readonly IUnitOfWork _uow;
+
+        public NotificationTestDispatcher(IRepository<AppNotification> repo, IUnitOfWork uow)
+        {
+            _repo = repo;
+            _uow = uow;
+        }
+
+        public Task<Nutrition.Application.Common.Models.Result> SendAsync(Nutrition.Application.Common.CQRS.ICommand command, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException(command.GetType().Name);
+
+        public Task<TResponse> SendAsync<TResponse>(Nutrition.Application.Common.CQRS.ICommand<TResponse> command, CancellationToken cancellationToken = default)
+        {
+            if (command is Nutrition.Application.Features.Notifications.Commands.MarkNotificationRead.MarkNotificationReadCommand readCmd)
+                return (Task<TResponse>)(object)new Nutrition.Application.Features.Notifications.Commands.MarkNotificationRead.MarkNotificationReadCommandHandler(_repo, _uow).HandleAsync(readCmd, cancellationToken);
+            if (command is Nutrition.Application.Features.Notifications.Commands.MarkAllNotificationsRead.MarkAllNotificationsReadCommand allCmd)
+                return (Task<TResponse>)(object)new Nutrition.Application.Features.Notifications.Commands.MarkAllNotificationsRead.MarkAllNotificationsReadCommandHandler(_repo, _uow).HandleAsync(allCmd, cancellationToken);
+            throw new NotSupportedException(command.GetType().Name);
+        }
+
+        public Task<TResponse> QueryAsync<TResponse>(Nutrition.Application.Common.CQRS.IQuery<TResponse> query, CancellationToken cancellationToken = default)
+        {
+            if (query is Nutrition.Application.Features.Notifications.Queries.GetNotifications.GetNotificationsQuery getQuery)
+                return (Task<TResponse>)(object)new Nutrition.Application.Features.Notifications.Queries.GetNotifications.GetNotificationsQueryHandler(_repo).HandleAsync(getQuery, cancellationToken);
+            throw new NotSupportedException(query.GetType().Name);
+        }
     }
 
     [Fact]

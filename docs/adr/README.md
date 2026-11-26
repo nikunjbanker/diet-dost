@@ -9,7 +9,7 @@
 # Architectural Decision Records (ADRs) - Diet-Dost
 > **Classification**: Authoritative Architectural Decision Record (ADR) Registry & Standards  
 > **Pattern**: Subsystem / Domain-Driven Atomic Fragment Pattern (Zero Merge Conflicts & Zero Baseline System Tokens)  
-> **Total Decisions**: 153 Active Records Across 5 Domain Hierarchies  
+> **Total Decisions**: 154 Active Records Across 5 Domain Hierarchies  
 > **Machine-Readable Registry**: [`docs/adr/index.json`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/index.json)  
 > **Governance**: Dual AGPLv3 / SSPL v1, DPDPA 2023, ICMR-NIN 2024 Clinical Standards  
 
@@ -31,7 +31,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 
 | Subsystem Domain | Description | Total Decisions | Directory |
 | :--- | :--- | :--- | :--- |
-| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **51** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
+| **🏛️ Architecture & Domain Logic** | Clean Architecture, CQRS, Database persistence, Options Pattern, and BFF facade specifications. | **52** | [`docs/adr/architecture/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/) |
 | **🛡️ Security & Identity** | Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates. | **27** | [`docs/adr/security/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/security/) |
 | **🚀 DevOps & Cloud Infrastructure** | Azure Container Apps, .NET Aspire deployment, SQLite SMB persistence, and GitHub OIDC CI/CD pipelines. | **41** | [`docs/adr/devops/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/devops/) |
 | **🎨 Presentation & UI/UX** | Client hydration, responsive mobile/tablet layout, touch ergonomics, and modal orchestration. | **21** | [`docs/adr/presentation/`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/presentation/) |
@@ -97,6 +97,7 @@ To ensure high maintainability, rapid discoverability, and zero merge conflicts,
 | **ADR-184** | Clean Architecture Repository Decoupling of Background Workers and Application Services | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261123-184-clean-architecture-repository-decoupling-for-background-workers.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261123-184-clean-architecture-repository-decoupling-for-background-workers.md) |
 | **ADR-186** | Resilient BSON DateOnly Serializer and Test Concurrency Isolation | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261123-186-resilient-bson-dateonly-serializer-and-test-concurrency-guard.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261123-186-resilient-bson-dateonly-serializer-and-test-concurrency-guard.md) |
 | **ADR-189** | Domain Contracts, QuerySpec Repositories, and A1 DTO Boundaries | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261126-189-domain-contracts-queryspec-and-a1-dtos.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261126-189-domain-contracts-queryspec-and-a1-dtos.md) |
+| **ADR-190** | Explicit UpdateAsync Mutations, Bounded Queries, and Thin Notification/Media Controllers | `[ARCHITECTURE]` | `ACCEPTED` | [`ADR-20261126-190-explicit-updateasync-bounded-queries-and-thin-controllers.md`](file:///c:/Users/nikunj.banker/source/repos/diet-dost/docs/adr/architecture/ADR-20261126-190-explicit-updateasync-bounded-queries-and-thin-controllers.md) |
 
 ### 🛡️ Security & Identity (`docs/adr/security/`)
 > *Authentication, authorization, RBAC, Key Vault secrets, OWASP LLM defense, and code scanning gates.*
