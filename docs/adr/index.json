@@ -1,9 +1,9 @@
 {
   "version": "1.0.0",
-  "generatedAt": "2026-11-26T08:18:29.355014+00:00",
-  "totalAdrs": 156,
+  "generatedAt": "2026-11-26T08:27:06.100552+00:00",
+  "totalAdrs": 157,
   "categoryCounts": {
-    "architecture": 54,
+    "architecture": 55,
     "security": 27,
     "devops": 41,
     "presentation": 21,
@@ -1881,6 +1881,18 @@
       "subsystem": "Architecture",
       "filename": "ADR-20261126-192-documentdb-pascalcase-indexes-ttls-and-datamigrator.md",
       "relativePath": "docs/adr/architecture/ADR-20261126-192-documentdb-pascalcase-indexes-ttls-and-datamigrator.md"
+    },
+    {
+      "id": "ADR-193",
+      "number": 193,
+      "title": "Tri-Database Contract Tests, E2E Tier Script Fix, and Living Documentation Sync",
+      "category": "architecture",
+      "status": "ACCEPTED",
+      "changeType": "[ARCHITECTURE]",
+      "date": "2026-11-26",
+      "subsystem": "Architecture",
+      "filename": "ADR-20261126-193-tri-database-tests-and-living-documentation-sync.md",
+      "relativePath": "docs/adr/architecture/ADR-20261126-193-tri-database-tests-and-living-documentation-sync.md"
     }
   ]
 }
